@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TODO(node-description) add an icon -->
+<knimeNode icon="icon.png" type="Manipulator" xmlns="http://knime.org/node/v4.1"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
+	<name>Expression (Labs)</name>
+	<shortDescription>
+		Allows executing custom expressions on the data table.
+	</shortDescription>
+	<fullDescription>
+		<intro>
+			TODO(node-description)
+		</intro>
+	</fullDescription>
+	<ports>
+		<inPort index="0" name="Input table">TODO(node-description)</inPort>
+		<outPort index="0" name="Output table">TODO(node-description)</outPort>
+	</ports>
+</knimeNode>

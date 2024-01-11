@@ -97,7 +97,11 @@ sw.*
 **/bin/
 .history/
 
+# Maven Frontend Plugin
+org.knime.base.expressions/js-src/**/node/
+
 # Maven
 **/.flattened-pom.xml
 **/CHANGELOG.md
 .polyglot.build.properties
+org.knime.base.expressions/knime-base-expressions.jar

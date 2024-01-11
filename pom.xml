@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.knime.maven</groupId>
+		<artifactId>ap.parent</artifactId>
+		<version>5.3.0</version>
+	</parent>
+
+	<groupId>org.knime</groupId>
+	<artifactId>knime-base-expressions</artifactId>
+	<version>${revision}${changelist}</version>
+	<packaging>pom</packaging>
+	<name>KNIME Base Expressions</name>
+	<description>Expression nodes for KNIME Analytics Platform</description>
+
+	<modules>
+		<module>org.knime.base.expressions</module>
+		<module>org.knime.features.base.expressions</module>
+		<module>org.knime.update.base.expressions</module>
+	</modules>
+
+	<properties>
+		<revision>5.3.0</revision>
+		<changelist>-SNAPSHOT</changelist>
+		<changelog.baseref>3f178f6</changelog.baseref>
+		<feature-branch-extension.branchListProperty>git.branch</feature-branch-extension.branchListProperty>
+		<feature-branch-extension.appendArtifactoryProperties>false</feature-branch-extension.appendArtifactoryProperties>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>p2-knime-core</id>
+			<layout>p2</layout>
+			<url>${knime.core.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-base</id>
+			<layout>p2</layout>
+			<url>${knime.base.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-svg</id>
+			<layout>p2</layout>
+			<url>${knime.svg.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-core-ui</id>
+			<layout>p2</layout>
+			<url>${knime.core.ui.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-filehandling-core</id>
+			<layout>p2</layout>
+			<url>${knime.filehandling.core.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-js-core</id>
+			<layout>p2</layout>
+			<url>${knime.js.core.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-workbench</id>
+			<layout>p2</layout>
+			<url>${knime.workbench.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-shared</id>
+			<layout>p2</layout>
+			<url>${knime.shared.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-gateway</id>
+			<layout>p2</layout>
+			<url>${knime.gateway.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-tp</id>
+			<layout>p2</layout>
+			<url>${knime.tp.p2}</url>
+		</repository>
+	</repositories>
+</project>
