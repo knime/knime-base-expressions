@@ -16,6 +16,7 @@
 	<description>Expression nodes for KNIME Analytics Platform</description>
 
 	<modules>
+		<module>org.knime.base.expressions/js-src</module>
 		<module>org.knime.base.expressions</module>
 		<module>org.knime.features.base.expressions</module>
 		<module>org.knime.update.base.expressions</module>
@@ -30,6 +31,11 @@
 	</properties>
 
 	<repositories>
+		<repository>
+			<id>p2-knime-scripting-editor</id>
+			<layout>p2</layout>
+			<url>${knime.scripting.editor.p2}</url>
+		</repository>
 		<repository>
 			<id>p2-knime-core</id>
 			<layout>p2</layout>
