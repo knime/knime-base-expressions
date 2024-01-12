@@ -44,80 +44,60 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 11, 2024 (benjamin): created
+ *   Jan 12, 2024 (benjamin): created
  */
 package org.knime.base.expressions.node;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.Optional;
+import java.util.Set;
 
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeModel;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.webui.data.RpcDataService;
+import org.knime.core.webui.node.dialog.NodeDialog;
+import org.knime.core.webui.node.dialog.NodeSettingsService;
+import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.page.Page;
 
 /**
- * The node model for the Expression node.
+ * The node dialog implementation of the Expression node.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction") // webui node dialogs are not API yet
-class ExpressionNodeModel extends NodeModel {
+@SuppressWarnings("restriction")
+final class ExpressionNodeDialog implements NodeDialog {
 
-    private final ExpressionNodeSettings m_settings;
+    private final ExpressionNodeScriptingService m_scriptingService;
 
-    ExpressionNodeModel() {
-        super(1, 1);
-        m_settings = new ExpressionNodeSettings();
+    ExpressionNodeDialog() {
+        m_scriptingService = new ExpressionNodeScriptingService();
     }
 
     @Override
-    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
-        // TODO(node-impl) parse the expression and compute the output spec
-        return new DataTableSpec[]{null};
+    public Page getPage() {
+        return Page //
+            .builder(ExpressionNodeFactory.class, "js-src/dist", "index.html") //
+            .addResourceDirectory("assets") //
+            .addResourceDirectory("monacoeditorwork") //
+            .build();
     }
 
     @Override
-    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
-        throws Exception {
-        // TODO(node-impl) execute the expression
-        return new BufferedDataTable[]{null};
+    public Set<SettingsType> getSettingsTypes() {
+        return Set.of(SettingsType.MODEL);
     }
 
     @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) {
-        m_settings.saveModelSettingsTo(settings);
+    public NodeSettingsService getNodeSettingsService() {
+        return ExpressionNodeSettings.createNodeSettingsService();
     }
 
     @Override
-    protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        new ExpressionNodeSettings().loadModelSettings(settings);
+    public Optional<RpcDataService> createRpcDataService() {
+        return Optional.of(RpcDataService.builder(m_scriptingService.getJsonRpcService())
+            .onDeactivate(m_scriptingService::onDeactivate).build());
     }
 
     @Override
-    protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_settings.loadModelSettings(settings);
-    }
-
-    @Override
-    protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
-        throws IOException, CanceledExecutionException {
-        // nothing to do
-    }
-
-    @Override
-    protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
-        throws IOException, CanceledExecutionException {
-        // nothing to do
-    }
-
-    @Override
-    protected void reset() {
-        // nothing to do
+    public boolean canBeEnlarged() {
+        return true;
     }
 }

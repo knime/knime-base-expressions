@@ -44,80 +44,54 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 11, 2024 (benjamin): created
+ *   Jan 12, 2024 (benjamin): created
  */
 package org.knime.base.expressions.node;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.ExecutionMonitor;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeModel;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
+import org.knime.scripting.editor.InputOutputModel;
+import org.knime.scripting.editor.ScriptingService;
 
 /**
- * The node model for the Expression node.
+ *
+ * {@link ScriptingService} implementation for the Expression node.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction") // webui node dialogs are not API yet
-class ExpressionNodeModel extends NodeModel {
-
-    private final ExpressionNodeSettings m_settings;
-
-    ExpressionNodeModel() {
-        super(1, 1);
-        m_settings = new ExpressionNodeSettings();
-    }
+@SuppressWarnings("restriction")
+final class ExpressionNodeScriptingService extends ScriptingService {
 
     @Override
-    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
-        // TODO(node-impl) parse the expression and compute the output spec
-        return new DataTableSpec[]{null};
+    public RpcService getJsonRpcService() {
+        return new ExpressionNodeRpcService();
     }
 
-    @Override
-    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
-        throws Exception {
-        // TODO(node-impl) execute the expression
-        return new BufferedDataTable[]{null};
-    }
+    public final class ExpressionNodeRpcService extends RpcService {
 
-    @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) {
-        m_settings.saveModelSettingsTo(settings);
-    }
+        @Override
+        public InputOutputModel getFlowVariableInputs() {
+            // TODO(input-outputs) implement
+            return null;
+        }
 
-    @Override
-    protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        new ExpressionNodeSettings().loadModelSettings(settings);
-    }
+        @Override
+        public List<InputOutputModel> getInputObjects() {
+            // TODO(input-outputs) implement
+            return null;
+        }
 
-    @Override
-    protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_settings.loadModelSettings(settings);
-    }
+        @Override
+        public List<InputOutputModel> getOutputObjects() {
+            // TODO(input-outputs) implement
+            return null;
+        }
 
-    @Override
-    protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
-        throws IOException, CanceledExecutionException {
-        // nothing to do
-    }
-
-    @Override
-    protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
-        throws IOException, CanceledExecutionException {
-        // nothing to do
-    }
-
-    @Override
-    protected void reset() {
-        // nothing to do
+        @Override
+        protected String getCodeSuggestion(final String userPrompt, final String currentCode) throws IOException {
+            // TODO(code-assistant) implement
+            return null;
+        }
     }
 }

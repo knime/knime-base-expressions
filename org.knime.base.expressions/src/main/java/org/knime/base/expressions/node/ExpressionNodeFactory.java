@@ -54,8 +54,6 @@ import org.knime.core.node.NodeView;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
-import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeDialog;
 
 /**
  * The factory for the Expression node.
@@ -92,7 +90,6 @@ public class ExpressionNodeFactory extends NodeFactory<ExpressionNodeModel> impl
 
     @Override
     public NodeDialog createNodeDialog() {
-        // TODO(dialog-setup) replace by custom expression scripting dialog
-        return new DefaultNodeDialog(SettingsType.MODEL, ExpressionNodeSettings.class);
+        return new ExpressionNodeDialog();
     }
 }

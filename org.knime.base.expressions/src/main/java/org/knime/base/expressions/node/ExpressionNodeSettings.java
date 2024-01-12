@@ -48,17 +48,37 @@
  */
 package org.knime.base.expressions.node;
 
-import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettings;
-import org.knime.core.webui.node.dialog.defaultdialog.widget.Widget;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.webui.node.dialog.NodeSettingsService;
+import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.scripting.editor.ScriptingNodeSettings;
+import org.knime.scripting.editor.ScriptingNodeSettingsService;
 
 /**
- * TODO(dialog-setup) replace by scripting settings
+ * Settings of the Expression node.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction") // webui node dialogs are not API yet
-class ExpressionNodeSettings implements DefaultNodeSettings {
+@SuppressWarnings("restriction") // SettingsType is not yet public API
+final class ExpressionNodeSettings extends ScriptingNodeSettings {
 
-    @Widget(title = "Expression", description = "The expression")
-    String m_script = "";
+    private static final String DEFAULT_SCRIPT = "myexpression";
+
+    ExpressionNodeSettings() {
+        this(DEFAULT_SCRIPT);
+    }
+
+    ExpressionNodeSettings(final String script) {
+        super(script, SettingsType.MODEL);
+    }
+
+    static void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+        // Just try to load the settings - if this works they are valid
+        new ExpressionNodeSettings().loadViewSettings(settings);
+    }
+
+    static NodeSettingsService createNodeSettingsService() {
+        return new ScriptingNodeSettingsService(SettingsType.MODEL);
+    }
 }
