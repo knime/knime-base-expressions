@@ -48,61 +48,50 @@
  */
 package org.knime.base.expressions.node;
 
-import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
-import org.knime.core.node.workflow.VariableType;
-import org.knime.core.node.workflow.VariableType.BooleanType;
-import org.knime.core.node.workflow.VariableType.DoubleType;
-import org.knime.core.node.workflow.VariableType.IntType;
-import org.knime.core.node.workflow.VariableType.LongType;
-import org.knime.core.node.workflow.VariableType.StringType;
+import org.knime.core.data.DataTableSpec;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.scripting.editor.InputOutputModel;
-import org.knime.scripting.editor.ScriptingService;
+import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItem;
+import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
+
+import com.google.common.base.Preconditions;
 
 /**
- *
- * {@link ScriptingService} implementation for the Expression node.
+ * Utilities for providing the {@link InputOutputModel} for the scripting editor dialog.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("restriction")
-final class ExpressionNodeScriptingService extends ScriptingService {
+final class ExpressionNodeScriptingInputOutputModelUtils {
 
-    static final Set<VariableType<?>> SUPPORTED_FLOW_VARIABLE_TYPES =
-        Set.of(BooleanType.INSTANCE, DoubleType.INSTANCE, IntType.INSTANCE, LongType.INSTANCE, StringType.INSTANCE);
-
-    ExpressionNodeScriptingService() {
-        super(null, (flowVar) -> SUPPORTED_FLOW_VARIABLE_TYPES.contains(flowVar.getVariableType()));
+    private ExpressionNodeScriptingInputOutputModelUtils() {
+        // utility class
     }
 
-    @Override
-    public RpcService getJsonRpcService() {
-        return new ExpressionNodeRpcService();
+    // TODO(language-features) add code aliases
+
+    static InputOutputModel getFlowVariableInputs(final Collection<FlowVariable> flowVariables) {
+        var subItems = flowVariables.stream() //
+            .map(f -> new InputOutputModelSubItem(f.getName(), f.getVariableType().toString())) //
+            .toArray(InputOutputModelSubItem[]::new);
+        return new InputOutputModel("Flow Variables", null, null, null, false, subItems);
     }
 
-    public final class ExpressionNodeRpcService extends RpcService {
-
-        @Override
-        public InputOutputModel getFlowVariableInputs() {
-            return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(getFlowVariables());
+    static List<InputOutputModel> getInputObjects(final InputPortInfo[] inputPorts) {
+        Preconditions.checkArgument(inputPorts.length == 1, "expected one input port");
+        final var spec = inputPorts[0].portSpec();
+        if (spec != null) {
+            Preconditions.checkArgument(spec instanceof DataTableSpec, "expected data table spec");
+            return List.of(InputOutputModel.createFromTableSpec("Input Table", (DataTableSpec)spec, null, null, null));
+        } else {
+            return List.of(new InputOutputModel("Input Table", null, null, null, false, null));
         }
+    }
 
-        @Override
-        public List<InputOutputModel> getInputObjects() {
-            return ExpressionNodeScriptingInputOutputModelUtils.getInputObjects(getWorkflowControl().getInputInfo());
-        }
-
-        @Override
-        public List<InputOutputModel> getOutputObjects() {
-            return ExpressionNodeScriptingInputOutputModelUtils.getOutputObjects();
-        }
-
-        @Override
-        protected String getCodeSuggestion(final String userPrompt, final String currentCode) throws IOException {
-            // TODO(code-assistant) implement
-            return null;
-        }
+    static List<InputOutputModel> getOutputObjects() {
+        return List.of(new InputOutputModel("Output Table", null, null, null, false, null));
     }
 }

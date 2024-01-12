@@ -10,5 +10,6 @@ Automatic-Module-Name: org.knime.base.expressions
 Require-Bundle: org.knime.workbench.repository;bundle-version="[5.3.0,6.0.0)",
  org.knime.core;bundle-version="[5.3.0,6.0.0)",
  org.knime.core.ui;bundle-version="[5.3.0,6.0.0)",
- org.knime.scripting.editor;bundle-version="[5.3.0,6.0.0)"
+ org.knime.scripting.editor;bundle-version="[5.3.0,6.0.0)",
+ com.google.guava;bundle-version="[31.0.1,32.0.0)"
 Bundle-ClassPath: knime-base-expressions.jar
