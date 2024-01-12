@@ -1,0 +1,3 @@
+[submodule "org.knime.base.expressions/js-src/webapps-common"]
+	path = org.knime.base.expressions/js-src/webapps-common
+	url = ../webapps-common
