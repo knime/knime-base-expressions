@@ -50,8 +50,32 @@ package org.knime.base.expressions.node;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.IntFunction;
+import java.util.function.IntSupplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import org.knime.core.data.DataColumnSpec;
+import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataTableSpecCreator;
+import org.knime.core.data.DataType;
+import org.knime.core.data.columnar.ColumnarTableBackend;
+import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
+import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
+import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
+import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
+import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
+import org.knime.core.data.def.BooleanCell;
+import org.knime.core.data.def.DoubleCell;
+import org.knime.core.data.def.IntCell;
+import org.knime.core.data.def.LongCell;
+import org.knime.core.data.def.StringCell;
+import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
+import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -60,11 +84,26 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.table.schema.BooleanDataSpec;
+import org.knime.core.table.schema.ByteDataSpec;
+import org.knime.core.table.schema.DataSpec;
+import org.knime.core.table.schema.DoubleDataSpec;
+import org.knime.core.table.schema.IntDataSpec;
+import org.knime.core.table.schema.LongDataSpec;
+import org.knime.core.table.schema.StringDataSpec;
+import org.knime.core.table.virtual.expression.Ast;
+import org.knime.core.table.virtual.expression.AstType;
+import org.knime.core.table.virtual.expression.ExpressionGrammar;
+import org.knime.core.table.virtual.expression.ExpressionGrammar.Expr;
+import org.knime.core.table.virtual.expression.Typing;
+import org.rekex.parser.PegParser;
 
 /**
  * The node model for the Expression node.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction") // webui node dialogs are not API yet
 class ExpressionNodeModel extends NodeModel {
@@ -78,15 +117,143 @@ class ExpressionNodeModel extends NodeModel {
 
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
-        // TODO(node-impl) parse the expression and compute the output spec
-        return new DataTableSpec[]{null};
+        String input = m_settings.getScript();
+        final PegParser<Expr> parser = ExpressionGrammar.parser();
+        try {
+            final Ast.Node ast = parser.matchFull(input).ast();
+            final List<Ast.Node> postorder = Ast.postorder(ast);
+
+            // We use a NotInWorkflowWriteFileStoreHandler here because we only want to deduce the type,
+            // we'll never write any data in configure.
+            var fsHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
+            final IntFunction<AstType> columnIndexToAstType = i -> ValueFactoryUtils
+                .getValueFactory(inSpecs[0].getColumnSpec(i).getType(), fsHandler).getSpec().accept(Typing.toAstType);
+            Typing.inferTypes(postorder, columnIndexToAstType);
+
+            var outputType = ast.inferredType();
+            var outputDataSpec = Typing.toDataSpec(outputType);
+            var outputColumnSpec = primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), "Expression Result");
+
+            return new DataTableSpec[]{new DataTableSpecCreator(inSpecs[0]).addColumns(outputColumnSpec).createSpec()};
+        } catch (Exception e) {
+            throw new InvalidSettingsException("Cannot parse expression", e);
+        }
     }
 
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws Exception {
-        // TODO(node-impl) execute the expression
-        return new BufferedDataTable[]{null};
+
+        var dataRepo = NodeContext.getContext().getWorkflowManager().getWorkflowDataRepository();
+
+        try (var expressionResultTable = applyExpression(inData[0], m_settings.getScript(),
+            new NewColumnPosition(ColumnInsertionMode.APPEND, "Expression Result"), dataRepo::generateNewID)) {
+            return new BufferedDataTable[]{expressionResultTable.create(exec)};
+        }
+    }
+
+    /**
+     * What should happen with new columns, whether they're appended at the end or replace an existing column.
+     *
+     * @since 5.3
+     */
+    enum ColumnInsertionMode {
+            APPEND, REPLACE_EXISTING
+    }
+
+    /**
+     * Specifies where and with which name a new column should be added to a table
+     *
+     * @param mode The {@link ColumnInsertionMode}
+     * @param columnName The name of the new column (also of the column to replace if that mode is selected)
+     *
+     * @since 5.3
+     */
+    final record NewColumnPosition(ColumnInsertionMode mode, String columnName) {
+    }
+
+    /**
+     * TODO: move this function to {@link ColumnarTableBackend} and make it public API by adding it in the
+     * InternalTableAPI and ExecutionContext.
+     *
+     * Creates a table by executing the provided expression on the given table, adding or replacing a new column with
+     * the expression result.
+     *
+     * WARNING: this only works with the columnar backend at the moment!
+     *
+     * @param table The table to apply the expression on
+     * @param expression The expression to evaluate
+     * @param columnPosition Where to put the column with the expression results
+     * @param tableIDSupplier provides IDs for created ContainerTables
+     * @return The table with a newly computed column added at the specified position
+     * @since 5.3
+     * @noreference This method is not intended to be referenced by clients.
+     */
+    private static VirtualTableExtensionTable applyExpression(final BufferedDataTable table, final String expression,
+        final NewColumnPosition columnPosition, final IntSupplier tableIDSupplier) {
+        ReferenceTable refTable;
+        try {
+            refTable = ReferenceTables.createReferenceTable(UUID.randomUUID(), table);
+        } catch (VirtualTableIncompatibleException ex) {
+            throw new IllegalStateException(
+                "The provided table cannot be used as reference table. Please use the columnar backend.");
+        }
+        var inColViTa = refTable.getVirtualTable();
+
+        ColumnarVirtualTable outColViTa = inColViTa.map(expression, columnPosition.columnName());
+        if (columnPosition.mode().equals(ColumnInsertionMode.APPEND)) {
+            outColViTa = inColViTa.append(outColViTa);
+        } else {
+            // FIXME: untested
+            var matchingColumnIndices = table.getDataTableSpec().columnsToIndices(columnPosition.columnName());
+            if (matchingColumnIndices.length == 0) {
+                throw new IllegalStateException(
+                    "Cannot replace column with name '" + columnPosition.columnName() + "', no such column available.");
+            }
+            int replacedColIdx = matchingColumnIndices[0];
+            List<Integer> allColumnIndices =
+                IntStream.range(0, table.getDataTableSpec().getNumColumns() + 1).boxed().collect(Collectors.toList()); // +1 for RowID
+
+            // keep all but replaced, append new column at the end
+            List<Integer> columnIndicesWithoutOldColumn = new ArrayList<>(allColumnIndices);
+            columnIndicesWithoutOldColumn.remove(replacedColIdx + 1); // +1 to skip RowID
+
+            outColViTa = inColViTa.selectColumns(columnIndicesWithoutOldColumn.stream().mapToInt(i -> i).toArray())
+                .append(outColViTa);
+
+            // move appended (=last) column to the position of the column to replace
+            List<Integer> columnIndicesWithNewColumnAtPositionOfOld = new ArrayList<>(allColumnIndices);
+            columnIndicesWithNewColumnAtPositionOfOld.add(replacedColIdx + 1, allColumnIndices.size()); // +1 to skip RowID
+
+            outColViTa =
+                outColViTa.selectColumns(columnIndicesWithNewColumnAtPositionOfOld.stream().mapToInt(i -> i).toArray());
+        }
+
+        return new VirtualTableExtensionTable(new ReferenceTable[]{refTable}, outColViTa, table.size(),
+            tableIDSupplier.getAsInt());
+    }
+
+    /**
+     * WARNING: Duplicated from ColumnarVirtualTable
+     */
+    private static final DataColumnSpec primitiveDataSpecToDataColumnSpec(final DataSpec spec,
+        final String columnName) {
+        DataType type = null;
+        if (spec instanceof BooleanDataSpec) {
+            type = BooleanCell.TYPE;
+        } else if (spec instanceof ByteDataSpec || spec instanceof IntDataSpec) {
+            type = IntCell.TYPE;
+        } else if (spec instanceof LongDataSpec) {
+            type = LongCell.TYPE;
+        } else if (spec instanceof DoubleDataSpec) {
+            type = DoubleCell.TYPE;
+        } else if (spec instanceof StringDataSpec) {
+            type = StringCell.TYPE;
+        } else {
+            throw new UnsupportedOperationException("Cannot convert " + spec + " to DataColumnSpec");
+        }
+
+        return new DataColumnSpecCreator(columnName, type).createSpec();
     }
 
     @Override
