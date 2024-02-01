@@ -58,22 +58,15 @@ import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.knime.core.data.DataColumnSpec;
-import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
-import org.knime.core.data.DataType;
 import org.knime.core.data.columnar.ColumnarTableBackend;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
+import org.knime.core.data.columnar.table.virtual.ExpressionMapperFactory;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
-import org.knime.core.data.def.BooleanCell;
-import org.knime.core.data.def.DoubleCell;
-import org.knime.core.data.def.IntCell;
-import org.knime.core.data.def.LongCell;
-import org.knime.core.data.def.StringCell;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.node.BufferedDataTable;
@@ -85,19 +78,8 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.table.schema.BooleanDataSpec;
-import org.knime.core.table.schema.ByteDataSpec;
-import org.knime.core.table.schema.DataSpec;
-import org.knime.core.table.schema.DoubleDataSpec;
-import org.knime.core.table.schema.IntDataSpec;
-import org.knime.core.table.schema.LongDataSpec;
-import org.knime.core.table.schema.StringDataSpec;
-import org.knime.core.table.virtual.expression.Ast;
 import org.knime.core.table.virtual.expression.AstType;
-import org.knime.core.table.virtual.expression.ExpressionGrammar;
-import org.knime.core.table.virtual.expression.ExpressionGrammar.Expr;
 import org.knime.core.table.virtual.expression.Typing;
-import org.rekex.parser.PegParser;
 
 /**
  * The node model for the Expression node.
@@ -118,21 +100,19 @@ class ExpressionNodeModel extends NodeModel {
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
         String input = m_settings.getScript();
-        final PegParser<Expr> parser = ExpressionGrammar.parser();
+
+        // We use a NotInWorkflowWriteFileStoreHandler here because we only want to deduce the type,
+        // we'll never write any data in configure.
+        var fsHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
+        final IntFunction<AstType> columnIndexToAstType = i -> ValueFactoryUtils
+            .getValueFactory(inSpecs[0].getColumnSpec(i).getType(), fsHandler).getSpec().accept(Typing.toAstType);
+
         try {
-            final Ast.Node ast = parser.matchFull(input).ast();
-            final List<Ast.Node> postorder = Ast.postorder(ast);
-
-            // We use a NotInWorkflowWriteFileStoreHandler here because we only want to deduce the type,
-            // we'll never write any data in configure.
-            var fsHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
-            final IntFunction<AstType> columnIndexToAstType = i -> ValueFactoryUtils
-                .getValueFactory(inSpecs[0].getColumnSpec(i).getType(), fsHandler).getSpec().accept(Typing.toAstType);
-            Typing.inferTypes(postorder, columnIndexToAstType);
-
+            var ast = ExpressionMapperFactory.parseExpression(input, columnIndexToAstType);
             var outputType = ast.inferredType();
             var outputDataSpec = Typing.toDataSpec(outputType);
-            var outputColumnSpec = primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), "Expression Result");
+            var outputColumnSpec =
+                ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), "Expression Result");
 
             return new DataTableSpec[]{new DataTableSpecCreator(inSpecs[0]).addColumns(outputColumnSpec).createSpec()};
         } catch (Exception e) {
@@ -231,29 +211,6 @@ class ExpressionNodeModel extends NodeModel {
 
         return new VirtualTableExtensionTable(new ReferenceTable[]{refTable}, outColViTa, table.size(),
             tableIDSupplier.getAsInt());
-    }
-
-    /**
-     * WARNING: Duplicated from ColumnarVirtualTable
-     */
-    private static final DataColumnSpec primitiveDataSpecToDataColumnSpec(final DataSpec spec,
-        final String columnName) {
-        DataType type = null;
-        if (spec instanceof BooleanDataSpec) {
-            type = BooleanCell.TYPE;
-        } else if (spec instanceof ByteDataSpec || spec instanceof IntDataSpec) {
-            type = IntCell.TYPE;
-        } else if (spec instanceof LongDataSpec) {
-            type = LongCell.TYPE;
-        } else if (spec instanceof DoubleDataSpec) {
-            type = DoubleCell.TYPE;
-        } else if (spec instanceof StringDataSpec) {
-            type = StringCell.TYPE;
-        } else {
-            throw new UnsupportedOperationException("Cannot convert " + spec + " to DataColumnSpec");
-        }
-
-        return new DataColumnSpecCreator(columnName, type).createSpec();
     }
 
     @Override
