@@ -149,7 +149,7 @@ class ExpressionNodeModel extends NodeModel {
      *
      * @since 5.3
      */
-    final record NewColumnPosition(ColumnInsertionMode mode, String columnName) {
+    record NewColumnPosition(ColumnInsertionMode mode, String columnName) {
     }
 
     /**
@@ -169,21 +169,22 @@ class ExpressionNodeModel extends NodeModel {
      * @since 5.3
      * @noreference This method is not intended to be referenced by clients.
      */
-    private static VirtualTableExtensionTable applyExpression(final BufferedDataTable table, final String expression,
+    static VirtualTableExtensionTable applyExpression(final BufferedDataTable table, final String expression,
         final NewColumnPosition columnPosition, final IntSupplier tableIDSupplier) {
         ReferenceTable refTable;
         try {
             refTable = ReferenceTables.createReferenceTable(UUID.randomUUID(), table);
         } catch (VirtualTableIncompatibleException ex) {
             throw new IllegalStateException(
-                "The provided table cannot be used as reference table. Please use the columnar backend.");
+                "The provided table cannot be used as reference table. Please use the columnar backend.", ex);
         }
         var inColViTa = refTable.getVirtualTable();
 
         ColumnarVirtualTable outColViTa = inColViTa.map(expression, columnPosition.columnName());
-        if (columnPosition.mode().equals(ColumnInsertionMode.APPEND)) {
+        if (columnPosition.mode() == ColumnInsertionMode.APPEND) {
             outColViTa = inColViTa.append(outColViTa);
         } else {
+            // TODO: Should we add a "replace" method to "ColumnarVirtualTable"?
             // FIXME: untested
             var matchingColumnIndices = table.getDataTableSpec().columnsToIndices(columnPosition.columnName());
             if (matchingColumnIndices.length == 0) {
@@ -191,8 +192,9 @@ class ExpressionNodeModel extends NodeModel {
                     "Cannot replace column with name '" + columnPosition.columnName() + "', no such column available.");
             }
             int replacedColIdx = matchingColumnIndices[0];
+            // +1 for RowID
             List<Integer> allColumnIndices =
-                IntStream.range(0, table.getDataTableSpec().getNumColumns() + 1).boxed().collect(Collectors.toList()); // +1 for RowID
+                IntStream.range(0, table.getDataTableSpec().getNumColumns() + 1).boxed().collect(Collectors.toList());
 
             // keep all but replaced, append new column at the end
             List<Integer> columnIndicesWithoutOldColumn = new ArrayList<>(allColumnIndices);
@@ -202,8 +204,9 @@ class ExpressionNodeModel extends NodeModel {
                 .append(outColViTa);
 
             // move appended (=last) column to the position of the column to replace
+            // +1 to skip RowID
             List<Integer> columnIndicesWithNewColumnAtPositionOfOld = new ArrayList<>(allColumnIndices);
-            columnIndicesWithNewColumnAtPositionOfOld.add(replacedColIdx + 1, allColumnIndices.size()); // +1 to skip RowID
+            columnIndicesWithNewColumnAtPositionOfOld.add(replacedColIdx + 1, allColumnIndices.size());
 
             outColViTa =
                 outColViTa.selectColumns(columnIndicesWithNewColumnAtPositionOfOld.stream().mapToInt(i -> i).toArray());

@@ -52,6 +52,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import org.knime.base.expressions.node.ExpressionNodeModel.ColumnInsertionMode;
+import org.knime.base.expressions.node.ExpressionNodeModel.NewColumnPosition;
+import org.knime.core.data.container.filter.TableFilter;
+import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableType.BooleanType;
 import org.knime.core.node.workflow.VariableType.DoubleType;
@@ -69,6 +73,8 @@ import org.knime.scripting.editor.ScriptingService;
  */
 @SuppressWarnings("restriction")
 final class ExpressionNodeScriptingService extends ScriptingService {
+
+    private static final int DIALOG_PREVIEW_NUM_ROWS = 10;
 
     static final Set<VariableType<?>> SUPPORTED_FLOW_VARIABLE_TYPES =
         Set.of(BooleanType.INSTANCE, DoubleType.INSTANCE, IntType.INSTANCE, LongType.INSTANCE, StringType.INSTANCE);
@@ -106,7 +112,34 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         }
 
         public void runExpression(final String expression) {
-            // TODO run the given expression
+            var inTable = (BufferedDataTable)getWorkflowControl().getInputData()[0];
+            if (inTable == null) {
+                throw new IllegalStateException("Input table not available");
+            }
+
+            var numRows = (int) Math.min(DIALOG_PREVIEW_NUM_ROWS, inTable.size());
+            var result = new String[numRows];
+            try (var expressionResultTable = ExpressionNodeModel.applyExpression(inTable, expression,
+                new NewColumnPosition(ColumnInsertionMode.APPEND, "result"), () -> 1)) {
+                try (var cursor =
+                    expressionResultTable.cursor(TableFilter.filterRangeOfRows(0, numRows))) {
+                    var resultIdx = expressionResultTable.getDataTableSpec().getNumColumns() - 1;
+                    for (var i = 0; i < numRows && cursor.canForward(); i++) {
+                        result[i] = cursor.forward().getValue(resultIdx).materializeDataCell().toString();
+                    }
+                }
+            }
+            addConsoleOutputEvent(new ConsoleText(formatResult(result), false));
+        }
+
+        private static String formatResult(final String[] result) {
+            var sb = new StringBuilder();
+            sb.append("Result on the first ").append(result.length).append(" rows:").append('\n');
+            for (var value : result) {
+                sb.append('\t').append(value).append('\n');
+            }
+            sb.append('\n');
+            return sb.toString();
         }
     }
 }
