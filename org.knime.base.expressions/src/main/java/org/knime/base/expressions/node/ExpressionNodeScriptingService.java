@@ -104,5 +104,9 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             // TODO(code-assistant) implement
             return null;
         }
+
+        public void runExpression(final String expression) {
+            // TODO run the given expression
+        }
     }
 }
