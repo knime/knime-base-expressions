@@ -52,8 +52,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.function.IntFunction;
+import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -69,6 +70,9 @@ import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.data.v2.ValueFactoryUtils;
+import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.AstType;
+import org.knime.core.expressions.Expressions;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -78,8 +82,7 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.table.virtual.expression.AstType;
-import org.knime.core.table.virtual.expression.Typing;
+import org.knime.core.table.virtual.expression.Exec;
 
 /**
  * The node model for the Expression node.
@@ -104,13 +107,16 @@ class ExpressionNodeModel extends NodeModel {
         // We use a NotInWorkflowWriteFileStoreHandler here because we only want to deduce the type,
         // we'll never write any data in configure.
         var fsHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
-        final IntFunction<AstType> columnIndexToAstType = i -> ValueFactoryUtils
-            .getValueFactory(inSpecs[0].getColumnSpec(i).getType(), fsHandler).getSpec().accept(Typing.toAstType);
+        final Function<Ast.ColumnAccess, Optional<AstType>> columnToAstType =
+            col -> Optional.ofNullable(inSpecs[0].getColumnSpec(col.name())) // column spec
+                .map(s -> ValueFactoryUtils.getValueFactory(s.getType(), fsHandler)) // value factory
+                .map(v -> v.getSpec()) // data spec
+                .map(s -> s.accept(Exec.DATA_SPEC_TO_AST_TYPE_MAPPER)); // ast type
 
         try {
-            var ast = ExpressionMapperFactory.parseExpression(input, columnIndexToAstType);
-            var outputType = ast.inferredType();
-            var outputDataSpec = Typing.toDataSpec(outputType);
+            var ast = Expressions.parse(input);
+            var outputType = Expressions.inferTypes(ast, columnToAstType);
+            var outputDataSpec = Exec.toDataSpec(outputType);
             var outputColumnSpec =
                 ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), "Expression Result");
 
