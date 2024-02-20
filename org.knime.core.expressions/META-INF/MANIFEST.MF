@@ -1,0 +1,21 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KNIME Expressions Core Plugin
+Bundle-SymbolicName: org.knime.core.expressions;singleton:=true
+Bundle-Version: 5.3.0.qualifier
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: libs/rekex-common_util-1.2.0.jar,
+ libs/rekex-grammar-1.2.0.jar,
+ libs/rekex-parser-1.2.0.jar,
+ libs/rekex-regexp-1.2.0.jar,
+ libs/javassist-3.30.2-GA.jar,
+ .
+Require-Bundle: 
+ org.slf4j.api;bundle-version="[1.7.2,2.0.0)",
+ com.google.guava;bundle-version="[19.0.0,20.0.0)",
+ com.fasterxml.jackson.core.jackson-core;bundle-version="[2.11.0,3.0.0)",
+ com.fasterxml.jackson.core.jackson-databind;bundle-version="[2.11.0,3.0.0)"
+Export-Package: org.knime.core.expressions;x-internal:=true
+Automatic-Module-Name: org.knime.core.expressions
