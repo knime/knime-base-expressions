@@ -153,6 +153,7 @@ final class Typing {
                 return BOOLEAN;
             } else if (op.isEqualityComparison()) {
                 // Equality comparison
+                checkEqualityTypes(t1, t2);
                 return BOOLEAN;
             } else if (op.isLogical() && t1 == BOOLEAN && t2 == BOOLEAN) {
                 // Logical operation
@@ -205,6 +206,18 @@ final class Typing {
                 // At least one FLOAT
                 return DOUBLE;
             }
+        }
+
+        /** @throws TypingError if the given types cannot be compared with an equality operator */
+        private static void checkEqualityTypes(final AstType typeA, final AstType typeB) throws TypingError {
+            // TODO(AP-22025) support optional types
+            if (typeA == typeB) {
+                return;
+            }
+            if (typeA.isNumeric() && typeB.isNumeric()) {
+                return;
+            }
+            throw new TypingError("Equality comparison is not applicable for " + typeA + " and " + typeB + ".");
         }
     }
 }
