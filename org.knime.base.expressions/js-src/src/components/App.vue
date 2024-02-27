@@ -12,11 +12,6 @@ import { onMounted, ref } from "vue";
 const scriptingService = getScriptingService();
 const mainEditor = editor.useMainCodeEditorStore();
 
-const saveSettings = async (settings: any) => {
-  await scriptingService.saveSettings(settings);
-  scriptingService.closeDialog();
-};
-
 // Run button
 
 const inputsAvailable = ref(false);
@@ -46,7 +41,6 @@ const runExpression = () => {
       :title="`Expression (Labs)`"
       language="knime-expression"
       file-name="main.knexp"
-      @save-settings="saveSettings"
     >
       <template #code-editor-controls>
         <Button
