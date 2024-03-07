@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import {
-  ScriptingEditor,
-  getScriptingService,
-  editor,
   consoleHandler,
+  editor,
+  getScriptingService,
+  ScriptingEditor,
 } from "@knime/scripting-editor";
 import Button from "webapps-common/ui/components/Button.vue";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import { onMounted, ref } from "vue";
+import { getFunctionCatalogData } from "@/components/mockFunctionCatalogData";
+import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 
 const scriptingService = getScriptingService();
 const mainEditor = editor.useMainCodeEditorStore();
@@ -32,6 +34,8 @@ const runExpression = () => {
   ]);
 };
 
+const functionCatalogData = getFunctionCatalogData();
+
 // TODO(language-features) register knime expression language
 </script>
 
@@ -41,6 +45,7 @@ const runExpression = () => {
       :title="`Expression (Labs)`"
       language="knime-expression"
       file-name="main.knexp"
+      :right-pane-minimum-width-in-pixel="280"
     >
       <template #code-editor-controls>
         <Button
@@ -50,6 +55,12 @@ const runExpression = () => {
           @click="runExpression"
           ><PlayIcon /> Run</Button
         >
+      </template>
+      <template #right-pane>
+        <FunctionCatalog
+          :function-catalog-data="functionCatalogData"
+          :initially-expanded="true"
+        />
       </template>
     </ScriptingEditor>
   </main>
