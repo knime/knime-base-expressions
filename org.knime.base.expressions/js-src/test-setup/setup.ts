@@ -11,6 +11,7 @@ export const consola = new Consola({
 window.consola = consola;
 
 vi.mock("@knime/scripting-editor", async () => {
+  const initialSettings = { script: "myexpression" };
   const mockScriptingService = {
     sendToService: vi.fn((args) => {
       // If this method is not mocked, the tests fail with a hard to debug
@@ -19,20 +20,22 @@ vi.mock("@knime/scripting-editor", async () => {
         `ScriptingService.sendToService should have been mocked for method ${args}`,
       );
     }),
-    getInitialSettings: vi.fn(() =>
-      Promise.resolve({ script: "myexpression" }),
-    ),
-    saveSettings: vi.fn(),
     registerEventHandler: vi.fn(),
-    connectToLanguageServer: vi.fn(),
-    configureLanguageServer: vi.fn(),
+    isCodeAssistantEnabled: vi.fn(() => Promise.resolve(true)),
+    isCodeAssistantInstalled: vi.fn(() => Promise.resolve(true)),
     inputsAvailable: vi.fn(() => Promise.resolve(true)),
-    closeDialog: vi.fn(),
-    getInputObjects: vi.fn(),
-    getFlowVariableInputs: vi.fn(),
+    getInputObjects: vi.fn(() => Promise.resolve([])),
+    getOutputObjects: vi.fn(() => Promise.resolve([])),
+    getFlowVariableInputs: vi.fn(() => Promise.resolve({} as any)),
+    getInitialSettings: vi.fn(() => Promise.resolve(initialSettings)),
+    registerSettingsGetterForApply: vi.fn(),
   } satisfies Partial<ScriptingServiceType>;
 
   const scriptEditorModule = await vi.importActual("@knime/scripting-editor");
+
+  // Replace the original implementations by the mocks
+  // @ts-ignore
+  Object.assign(scriptEditorModule.getScriptingService(), mockScriptingService);
 
   return {
     ...scriptEditorModule,
