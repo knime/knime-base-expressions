@@ -10,11 +10,16 @@ import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import { onMounted, ref } from "vue";
 import { getFunctionCatalogData } from "@/components/mockFunctionCatalogData";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
+import ColumnOutputSelector, {
+  type ColumnSelectorState,
+  type AllowedDropDownValue,
+} from "@/components/ColumnOutputSelector.vue";
 
 const scriptingService = getScriptingService();
 const mainEditor = editor.useMainCodeEditorStore();
 
-// Run button
+const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
+const columnSectorState = ref<ColumnSelectorState>();
 
 const inputsAvailable = ref(false);
 onMounted(() => {
@@ -24,6 +29,16 @@ onMounted(() => {
       consoleHandler.writeln({
         warning: "No input available. Connect an executed node.",
       });
+    }
+  });
+
+  scriptingService.getInputObjects().then((result) => {
+    if (result && result.length > 0 && result[0].subItems) {
+      allowedReplacementColumns.value = result[0].subItems.map(
+        (c: { name: string }) => {
+          return { id: c.name, text: c.name };
+        },
+      );
     }
   });
 });
@@ -48,6 +63,12 @@ const functionCatalogData = getFunctionCatalogData();
       :right-pane-minimum-width-in-pixel="280"
     >
       <template #code-editor-controls>
+        <ColumnOutputSelector
+          v-model="columnSectorState"
+          default-output-mode="create"
+          :allowed-replacement-columns="allowedReplacementColumns"
+        />
+
         <Button
           primary
           compact
