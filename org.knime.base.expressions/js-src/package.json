@@ -22,7 +22,8 @@
     "audit": "npm audit --omit dev",
     "test:unit": "vitest",
     "coverage": "vitest run --coverage",
-    "prepare": "cd ../.. && husky install ./org.knime.base.expressions/js-src/.husky"
+    "prepare": "cd ../.. && husky install ./org.knime.base.expressions/js-src/.husky",
+    "sbom": "npx @cyclonedx/cyclonedx-npm --output-file bom.json --ignore-npm-errors --omit dev"
   },
   "dependencies": {
     "@knime/scripting-editor": "0.0.50",
@@ -33,6 +34,7 @@
     "webapps-common": "file:webapps-common"
   },
   "devDependencies": {
+    "@cyclonedx/cyclonedx-npm": "^1.16.1",
     "@knime/eslint-config": "8.0.10",
     "@rushstack/eslint-patch": "1.7.0",
     "@tsconfig/node18": "18.2.2",

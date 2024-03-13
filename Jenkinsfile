@@ -30,6 +30,8 @@ try {
 		// TODO(workflow-tests) remove empty list once workflow tests are enabled
         workflowTests.runSonar([])
     }
+
+    owasp.sendNodeJSSBOMs('5.3.0-beta-0-79befdd3')
 } catch (ex) {
     currentBuild.result = 'FAILURE'
     throw ex
