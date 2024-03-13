@@ -14,24 +14,26 @@ properties([
 ])
 
 try {
-    knimetools.defaultTychoBuild('org.knime.update.base.expressions')
+    node('maven && java17') {
+        knimetools.defaultTychoBuild('org.knime.update.base.expressions')
 
-    // TODO(workflow-tests)
-    // workflowTests.runTests(
-    //     dependencies: [
-    //         repositories: [
-    //             'knime-core-columnar',
-    //         ]
-    //     ]
-    // )
+        // TODO(workflow-tests)
+        // workflowTests.runTests(
+        //     dependencies: [
+        //         repositories: [
+        //             'knime-core-columnar',
+        //         ]
+        //     ]
+        // )
 
-    stage('Sonarqube analysis') {
-        env.lastStage = env.STAGE_NAME
-		// TODO(workflow-tests) remove empty list once workflow tests are enabled
-        workflowTests.runSonar([])
+        stage('Sonarqube analysis') {
+            env.lastStage = env.STAGE_NAME
+            // TODO(workflow-tests) remove empty list once workflow tests are enabled
+            workflowTests.runSonar([])
+        }
+
+        owasp.sendNodeJSSBOMs('5.3.0-beta-0-79befdd3')
     }
-
-    owasp.sendNodeJSSBOMs('5.3.0-beta-0-79befdd3')
 } catch (ex) {
     currentBuild.result = 'FAILURE'
     throw ex
