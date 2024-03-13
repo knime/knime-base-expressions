@@ -15,7 +15,7 @@ properties([
 
 try {
     node('maven && java17') {
-        knimetools.defaultTychoBuild('org.knime.update.base.expressions')
+        knimetools.defaultTychoBuild(updateSiteProject: 'org.knime.update.base.expressions')
 
         // TODO(workflow-tests)
         // workflowTests.runTests(
