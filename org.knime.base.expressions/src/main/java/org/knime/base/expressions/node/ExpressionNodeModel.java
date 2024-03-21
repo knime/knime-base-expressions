@@ -71,8 +71,8 @@ import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.expressions.Ast;
-import org.knime.core.expressions.AstType;
 import org.knime.core.expressions.Expressions;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -107,16 +107,16 @@ class ExpressionNodeModel extends NodeModel {
         // We use a NotInWorkflowWriteFileStoreHandler here because we only want to deduce the type,
         // we'll never write any data in configure.
         var fsHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
-        final Function<Ast.ColumnAccess, Optional<AstType>> columnToAstType =
+        final Function<Ast.ColumnAccess, Optional<ValueType>> columnToAstType =
             col -> Optional.ofNullable(inSpecs[0].getColumnSpec(col.name())) // column spec
                 .map(s -> ValueFactoryUtils.getValueFactory(s.getType(), fsHandler)) // value factory
                 .map(v -> v.getSpec()) // data spec
-                .map(s -> s.accept(Exec.DATA_SPEC_TO_AST_TYPE_MAPPER)); // ast type
+                .map(s -> s.accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE));
 
         try {
             var ast = Expressions.parse(input);
             var outputType = Expressions.inferTypes(ast, columnToAstType);
-            var outputDataSpec = Exec.toDataSpec(outputType);
+            var outputDataSpec = Exec.valueTypeToDataSpec(outputType);
             var outputColumnSpec =
                 ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), "Expression Result");
 
