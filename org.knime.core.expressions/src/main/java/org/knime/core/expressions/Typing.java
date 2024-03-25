@@ -167,7 +167,7 @@ final class Typing {
                 return BOOLEAN(t1.isOptional() || t2.isOptional());
             } else {
                 throw new TypingError(
-                    "Operator '" + op.symbol() + "' is not applicable for " + t1 + " and " + t2 + ".");
+                    "Operator '" + op.symbol() + "' is not applicable for " + t1.name() + " and " + t2.name() + ".");
             }
         }
 
@@ -181,7 +181,7 @@ final class Typing {
             } else if (op == UnaryOperator.NOT && BOOLEAN.equals(type.baseType())) {
                 return type;
             } else {
-                throw new TypingError("Operator '" + op.symbol() + "' is not applicable for " + type + ".");
+                throw new TypingError("Operator '" + op.symbol() + "' is not applicable for " + type.name() + ".");
             }
         }
 
@@ -204,8 +204,8 @@ final class Typing {
                 if (INTEGER.equals(baseTypeA) && INTEGER.equals(baseTypeB)) {
                     return INTEGER(optional);
                 }
-                throw new TypingError(
-                    "Operator '" + op.symbol() + "' is not applicable for " + baseTypeA + " and " + baseTypeB + ".");
+                throw new TypingError("Operator '" + op.symbol() + "' is not applicable for " + baseTypeA.name()
+                    + " and " + baseTypeB.name() + ".");
             } else if (INTEGER.equals(baseTypeA) && INTEGER.equals(baseTypeB)) {
                 // Both INTEGER
                 return INTEGER(optional);
@@ -229,7 +229,8 @@ final class Typing {
                 // All numbers can be compared with each other
                 return;
             }
-            throw new TypingError("Equality comparison is not applicable for " + typeA + " and " + typeB + ".");
+            throw new TypingError(
+                "Equality comparison is not applicable for " + typeA.name() + " and " + typeB.name() + ".");
         }
 
         // Small helpers
