@@ -42,26 +42,90 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
+ *
+ * History
+ *   Mar 25, 2024 (benjamin): created
  */
 package org.knime.core.expressions;
 
-// TODO(AP-22025) remove types that we do not support
-public enum AstType {
-        BYTE(true), // TODO(AP-22025) remove
-        INTEGER(true), //
-        LONG(true), // TODO(AP-22025) remove INTEGER and rename LONG to INTEGER
-        FLOAT(true), //
-        DOUBLE(true), // TODO(AP-22025) remove FLOAT and rename DOUBLE to FLOAT
-        BOOLEAN(false), //
-        STRING(false);
+import java.util.List;
 
-    private final boolean m_isNumeric;
+/**
+ * Helpers to create {@link Ast}s with as few characters as possible. Only for tests.
+ *
+ * @author Benjamin Wilhelm, KNIME GmbH, Berlin Germany
+ */
+public final class AstTestUtils {
 
-    AstType(final boolean isNumeric) {
-        this.m_isNumeric = isNumeric;
+    private AstTestUtils() {
     }
 
-    public boolean isNumeric() {
-        return m_isNumeric;
+    /**
+     * @param value
+     * @return a {@link Ast.BooleanConstant}
+     */
+    public static Ast.BooleanConstant BOOL(final boolean value) { // NOSONAR - name useful for visual clarity
+        return Ast.booleanConstant(value);
+    }
+
+    /**
+     * @param value
+     * @return an {@link Ast.IntegerConstant}
+     */
+    public static Ast.IntegerConstant INT(final long value) { // NOSONAR - name useful for visual clarity
+        return Ast.integerConstant(value);
+    }
+
+    /**
+     * @param value
+     * @return a {@link Ast.FloatConstant}
+     */
+    public static Ast.FloatConstant FLOAT(final double value) { // NOSONAR - name useful for visual clarity
+        return Ast.floatConstant(value);
+    }
+
+    /**
+     * @param value
+     * @return a {@link Ast.StringConstant}
+     */
+    public static Ast.StringConstant STR(final String value) { // NOSONAR - name useful for visual clarity
+        return Ast.stringConstant(value);
+    }
+
+    /**
+     * @param name
+     * @return a {@link Ast.ColumnAccess}
+     */
+    public static Ast.ColumnAccess COL(final String name) { // NOSONAR - name useful for visual clarity
+        return Ast.columnAccess(name);
+    }
+
+    /**
+     * @param leftArg
+     * @param op
+     * @param rightArg
+     * @return a {@link Ast.BinaryOp}
+     */
+    public static Ast.BinaryOp OP( // NOSONAR - name useful for visual clarity
+        final Ast leftArg, final Ast.BinaryOperator op, final Ast rightArg) {
+        return Ast.binaryOp(op, leftArg, rightArg);
+    }
+
+    /**
+     * @param op
+     * @param arg
+     * @return an {@link Ast.UnaryOp}
+     */
+    public static Ast.UnaryOp OP(final Ast.UnaryOperator op, final Ast arg) { // NOSONAR - name useful for visual clarity
+        return Ast.unaryOp(op, arg);
+    }
+
+    /**
+     * @param name
+     * @param args
+     * @return a {@link Ast.FunctionCall}
+     */
+    public static Ast.FunctionCall FUN(final String name, final Ast... args) { // NOSONAR - name useful for visual clarity
+        return Ast.functionCall(name, List.of(args));
     }
 }

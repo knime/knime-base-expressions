@@ -48,10 +48,10 @@
  */
 package org.knime.core.expressions;
 
-import static org.knime.core.expressions.AstType.BOOLEAN;
-import static org.knime.core.expressions.AstType.DOUBLE;
-import static org.knime.core.expressions.AstType.LONG;
-import static org.knime.core.expressions.AstType.STRING;
+import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.FLOAT;
+import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.STRING;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -83,7 +83,7 @@ final class Typing {
     private Typing() {
     }
 
-    static AstType inferTypes(final Ast root, final Function<ColumnAccess, Optional<AstType>> columnType)
+    static ValueType inferTypes(final Ast root, final Function<ColumnAccess, Optional<ValueType>> columnType)
         throws TypingError, MissingColumnError { // NOSONAR: Sonar is wrong
         try {
             return Ast.putDataRecursive(root, TYPE_DATA_KEY, new TypingVisitor(columnType));
@@ -95,70 +95,69 @@ final class Typing {
         }
     }
 
-    static AstType getType(final Ast node) {
+    static ValueType getType(final Ast node) {
         Object type = node.data(TYPE_DATA_KEY);
-        if (type instanceof AstType astType) {
+        if (type instanceof ValueType astType) {
             return astType;
         } else {
             throw new IllegalArgumentException("The node " + node + " has no type.");
         }
     }
 
-    private static final class TypingVisitor implements Ast.AstVisitor<AstType, ExpressionError> {
+    private static final class TypingVisitor implements Ast.AstVisitor<ValueType, ExpressionError> {
 
-        private final Function<ColumnAccess, Optional<AstType>> m_columnType;
+        private final Function<ColumnAccess, Optional<ValueType>> m_columnType;
 
-        TypingVisitor(final Function<ColumnAccess, Optional<AstType>> columnType) {
+        TypingVisitor(final Function<ColumnAccess, Optional<ValueType>> columnType) {
             m_columnType = columnType;
         }
 
         @Override
-        public AstType visit(final BooleanConstant node) throws ExpressionError {
+        public ValueType visit(final BooleanConstant node) throws ExpressionError {
             return BOOLEAN;
         }
 
         @Override
-        public AstType visit(final IntegerConstant node) throws ExpressionError {
-            return LONG;
+        public ValueType visit(final IntegerConstant node) throws ExpressionError {
+            return INTEGER;
         }
 
         @Override
-        public AstType visit(final FloatConstant node) throws ExpressionError {
-            return DOUBLE;
+        public ValueType visit(final FloatConstant node) throws ExpressionError {
+            return FLOAT;
         }
 
         @Override
-        public AstType visit(final StringConstant node) throws ExpressionError {
+        public ValueType visit(final StringConstant node) throws ExpressionError {
             return STRING;
         }
 
         @Override
-        public AstType visit(final ColumnAccess node) throws ExpressionError {
+        public ValueType visit(final ColumnAccess node) throws ExpressionError {
             return m_columnType.apply(node).orElseThrow(() -> new MissingColumnError(node.name()));
         }
 
         @Override
-        public AstType visit(final BinaryOp node) throws ExpressionError {
+        public ValueType visit(final BinaryOp node) throws ExpressionError { // NOSONAR - this method is not too complex
             var op = node.op();
             var t1 = getType(node.arg1());
             var t2 = getType(node.arg2());
 
-            if (op == BinaryOperator.PLUS && (t1 == STRING || t2 == STRING)) {
+            if (op == BinaryOperator.PLUS && isAnyString(t1, t2)) {
                 return STRING;
-            } else if (op.isArithmetic() && t1.isNumeric() && t2.isNumeric()) {
+            } else if (op.isArithmetic() && isAllNumeric(t1, t2)) {
                 // Arithmetic operation
                 return arithmeticType(op, t1, t2);
-            } else if (op.isOrderingComparison() && t1.isNumeric() && t2.isNumeric()) {
+            } else if (op.isOrderingComparison() && isAllNumeric(t1, t2)) {
                 // Ordering comparison
                 return BOOLEAN;
             } else if (op.isEqualityComparison()) {
                 // Equality comparison
                 checkEqualityTypes(t1, t2);
                 return BOOLEAN;
-            } else if (op.isLogical() && t1 == BOOLEAN && t2 == BOOLEAN) {
+            } else if (op.isLogical() && isAllBoolean(t1, t2)) {
                 // Logical operation
-                // TODO(AP-22025) support optional types
-                return BOOLEAN;
+                return BOOLEAN(t1.isOptional() || t2.isOptional());
             } else {
                 throw new TypingError(
                     "Operator '" + op.symbol() + "' is not applicable for " + t1 + " and " + t2 + ".");
@@ -166,13 +165,13 @@ final class Typing {
         }
 
         @Override
-        public AstType visit(final UnaryOp node) throws ExpressionError {
+        public ValueType visit(final UnaryOp node) throws ExpressionError {
             var op = node.op();
             var type = getType(node.arg());
 
-            if (op == UnaryOperator.MINUS && type.isNumeric()) {
+            if (op == UnaryOperator.MINUS && isNumeric(type)) {
                 return type;
-            } else if (op == UnaryOperator.NOT && type == BOOLEAN) {
+            } else if (op == UnaryOperator.NOT && BOOLEAN.equals(type.baseType())) {
                 return type;
             } else {
                 throw new TypingError("Operator '" + op.symbol() + "' is not applicable for " + type + ".");
@@ -180,44 +179,63 @@ final class Typing {
         }
 
         @Override
-        public AstType visit(final FunctionCall node) throws ExpressionError {
+        public ValueType visit(final FunctionCall node) throws ExpressionError {
             throw new IllegalStateException("functions are not yet implemented");
         }
 
-        private static AstType arithmeticType(final BinaryOperator op, final AstType typeA, final AstType typeB)
+        private static ValueType arithmeticType(final BinaryOperator op, final ValueType typeA, final ValueType typeB)
             throws TypingError {
-            // TODO(AP-22025) support optional types
-            // var optional = typeA.isOptional() || typeB.isOptional();
+            var baseTypeA = typeA.baseType();
+            var baseTypeB = typeB.baseType();
+            var optional = typeA.isOptional() || typeB.isOptional();
 
             if (op == BinaryOperator.DIVIDE) {
                 // Special rule for "/" : we always return FLOAT
-                return DOUBLE;
+                return FLOAT(optional);
             } else if (op == BinaryOperator.FLOOR_DIVIDE) {
                 // Special rule for "//" : only applicable to INTEGER
-                if (typeA == LONG && typeB == LONG) {
-                    return LONG;
+                if (INTEGER.equals(baseTypeA) && INTEGER.equals(baseTypeB)) {
+                    return INTEGER(optional);
                 }
                 throw new TypingError(
-                    "Operator '" + op.symbol() + "' is not applicable for " + typeA + " and " + typeB + ".");
-            } else if (typeA == LONG && typeB == LONG) {
+                    "Operator '" + op.symbol() + "' is not applicable for " + baseTypeA + " and " + baseTypeB + ".");
+            } else if (INTEGER.equals(baseTypeA) && INTEGER.equals(baseTypeB)) {
                 // Both INTEGER
-                return LONG;
+                return INTEGER(optional);
             } else {
                 // At least one FLOAT
-                return DOUBLE;
+                return FLOAT(optional);
             }
         }
 
         /** @throws TypingError if the given types cannot be compared with an equality operator */
-        private static void checkEqualityTypes(final AstType typeA, final AstType typeB) throws TypingError {
-            // TODO(AP-22025) support optional types
-            if (typeA == typeB) {
+        private static void checkEqualityTypes(final ValueType typeA, final ValueType typeB) throws TypingError {
+            if (typeA.baseType().equals(typeB.baseType())) {
                 return;
             }
-            if (typeA.isNumeric() && typeB.isNumeric()) {
+            if (isNumeric(typeA) && isNumeric(typeB)) {
                 return;
             }
             throw new TypingError("Equality comparison is not applicable for " + typeA + " and " + typeB + ".");
+        }
+
+        // Small helpers
+
+        private static boolean isNumeric(final ValueType type) {
+            var baseType = type.baseType();
+            return INTEGER.equals(baseType) || FLOAT.equals(baseType);
+        }
+
+        private static boolean isAnyString(final ValueType typeA, final ValueType typeB) {
+            return STRING.equals(typeA.baseType()) || STRING.equals(typeB.baseType());
+        }
+
+        private static boolean isAllNumeric(final ValueType typeA, final ValueType typeB) {
+            return isNumeric(typeA) && isNumeric(typeB);
+        }
+
+        private static boolean isAllBoolean(final ValueType typeA, final ValueType typeB) {
+            return BOOLEAN.equals(typeA.baseType()) && BOOLEAN.equals(typeB.baseType());
         }
     }
 }

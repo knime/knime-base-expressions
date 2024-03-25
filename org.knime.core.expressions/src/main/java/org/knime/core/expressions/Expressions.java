@@ -114,7 +114,8 @@ public final class Expressions {
      * @throws MissingColumnError if the expression accesses a column that is not available
      * @throws TypingError if type inference failed because operations are used for incompatible types
      */
-    public static AstType inferTypes(final Ast expression, final Function<ColumnAccess, Optional<AstType>> columnToType)
+    public static ValueType inferTypes(final Ast expression,
+        final Function<ColumnAccess, Optional<ValueType>> columnToType)
         throws MissingColumnError, TypingError {
         return Typing.inferTypes(expression, columnToType);
     }
@@ -126,7 +127,7 @@ public final class Expressions {
      * @return the output type
      * @throws IllegalArgumentException if the expression is not typed
      */
-    public static AstType getInferredType(final Ast expression) {
+    public static ValueType getInferredType(final Ast expression) {
         return Typing.getType(expression);
     }
 
