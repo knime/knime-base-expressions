@@ -15,6 +15,8 @@ import ColumnOutputSelector, {
   type AllowedDropDownValue,
 } from "@/components/ColumnOutputSelector.vue";
 
+const MIN_WIDTH_FUNCTION_CATALOG = 280;
+
 const scriptingService = getScriptingService();
 const mainEditor = editor.useMainCodeEditorStore();
 
@@ -60,7 +62,7 @@ const functionCatalogData = getFunctionCatalogData();
       :title="`Expression (Labs)`"
       language="knime-expression"
       file-name="main.knexp"
-      :right-pane-minimum-width-in-pixel="280"
+      :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
     >
       <template #code-editor-controls>
         <ColumnOutputSelector

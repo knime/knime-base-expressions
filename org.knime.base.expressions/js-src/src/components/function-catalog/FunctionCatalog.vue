@@ -9,9 +9,10 @@ import FunctionDescription from "@/components/function-catalog/FunctionDescripti
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 import { filterCatalogData } from "@/components/function-catalog/filterCatalogData";
 import type { SelectableItem } from "@/components/function-catalog/catalogTypes";
+import CategoryDescription from "@/components/function-catalog/CategoryDescription.vue";
 
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
-const MIN_WIDTH_FOR_CATALOG_PANEL = 300;
+const FUNCTION_CATALOG_WIDTH = "250px";
 
 const props = defineProps<{
   functionCatalogData: FunctionCatalogData;
@@ -22,9 +23,16 @@ const catalogData = mapFunctionCatalogData(props.functionCatalogData);
 const categoryNames = Object.keys(catalogData);
 const categories = ref(
   Object.fromEntries(
-    categoryNames.map((category) => [
-      category,
-      { expanded: props.initiallyExpanded },
+    categoryNames.map((categoryName) => [
+      categoryName,
+      {
+        expanded: props.initiallyExpanded,
+        name: categoryName,
+        description:
+          props.functionCatalogData.categories.find(
+            (category) => category.name === categoryName,
+          )?.description ?? "No description for category available",
+      },
     ]),
   ),
 );
@@ -35,40 +43,15 @@ const isSlimMode = computed(
   () => catalogRootRef.width.value <= MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION,
 );
 
-const searchQuery = ref("");
-const filteredFunctionCatalog = computed(() =>
-  filterCatalogData(searchQuery.value, categories.value, catalogData),
-);
-
 const selectedEntry = ref<null | SelectableItem>(null);
-const focusedEntry = ref<null | SelectableItem>(null);
 
-const focusEntry = (item: SelectableItem | null) => {
-  focusedEntry.value = item;
-};
-
-const toggleSelectionOfEntry = (item: SelectableItem) => {
-  if (item.type === "category") {
-    selectedEntry.value = item;
-  } else if (item.type === "function") {
-    selectedEntry.value =
-      selectedEntry.value?.type === "function" &&
-      item.functionData.name === selectedEntry.value?.functionData.name
-        ? null
-        : item;
-  }
-  focusEntry(item);
+const selectEntry = (item: SelectableItem | null) => {
+  selectedEntry.value = item;
 };
 
 const toggleCategoryExpansion = (categoryName: string) => {
   categories.value[categoryName].expanded =
     !categories.value[categoryName].expanded;
-
-  focusEntry({
-    type: "category",
-    name: categoryName,
-  });
-
   if (
     selectedEntry.value?.type === "function" &&
     selectedEntry.value.functionData.category === categoryName &&
@@ -77,51 +60,38 @@ const toggleCategoryExpansion = (categoryName: string) => {
     selectedEntry.value = null;
   }
 };
-
 const isSelected = (item: SelectableItem): boolean => {
   if (item.type === "category" && selectedEntry.value?.type === "category") {
     return selectedEntry.value?.name === item.name;
   }
-
   if (item.type === "function" && selectedEntry.value?.type === "function") {
     return selectedEntry.value?.functionData.name === item.functionData.name;
   }
-
   return false;
 };
 
-const isFocused = (item: SelectableItem): boolean => {
-  if (item.type === "category" && focusedEntry.value?.type === "category") {
-    return focusedEntry.value?.name === item.name;
-  }
-
-  if (item.type === "function" && focusedEntry.value?.type === "function") {
-    return focusedEntry.value?.functionData.name === item.functionData.name;
-  }
-
-  return false;
-};
+const searchQuery = ref("");
+const filteredFunctionCatalog = computed(() => {
+  return filterCatalogData(searchQuery.value, categories.value, catalogData);
+});
 
 const moveSelectionToTop = () => {
-  focusEntry(filteredFunctionCatalog.value.orderOfItems[0]);
+  selectEntry(filteredFunctionCatalog.value.orderOfItems[0]);
 };
-
 const moveSelectionToEnd = () => {
-  focusEntry(
+  selectEntry(
     filteredFunctionCatalog.value.orderOfItems[
       filteredFunctionCatalog.value.orderOfItems.length - 1
     ],
   );
 };
-
 const moveSelectionUp = () => {
   const itemToSelect =
-    filteredFunctionCatalog.value.orderOfItems.findIndex(isFocused);
-
+    filteredFunctionCatalog.value.orderOfItems.findIndex(isSelected);
   if (itemToSelect === -1) {
     moveSelectionToEnd();
   } else {
-    focusEntry(
+    selectEntry(
       filteredFunctionCatalog.value.orderOfItems[
         (itemToSelect - 1 + filteredFunctionCatalog.value.orderOfItems.length) %
           filteredFunctionCatalog.value.orderOfItems.length
@@ -129,23 +99,20 @@ const moveSelectionUp = () => {
     );
   }
 };
-
 const moveSelectionDown = () => {
   const itemToSelect =
-    filteredFunctionCatalog.value.orderOfItems.findIndex(isFocused);
-
+    filteredFunctionCatalog.value.orderOfItems.findIndex(isSelected);
   if (itemToSelect === -1) {
     moveSelectionToTop();
   } else {
-    focusEntry(
+    selectEntry(
       filteredFunctionCatalog.value.orderOfItems[
         (itemToSelect + 1) % filteredFunctionCatalog.value.orderOfItems.length
       ],
     );
   }
 };
-
-const onKeyPress = (e: KeyboardEvent) => {
+const onKeyDown = (e: KeyboardEvent) => {
   switch (e.key) {
     case "End":
       moveSelectionToEnd();
@@ -161,41 +128,49 @@ const onKeyPress = (e: KeyboardEvent) => {
       break;
     case " ":
     case "Enter":
-      if (focusedEntry.value?.type === "category") {
-        toggleCategoryExpansion(focusedEntry.value.name);
-      } else if (focusedEntry.value?.type === "function") {
-        toggleSelectionOfEntry(focusedEntry.value);
+      if (selectedEntry.value?.type === "category") {
+        toggleCategoryExpansion(selectedEntry.value.name);
+      }
+      break;
+    case "ArrowRight":
+      if (
+        selectedEntry.value?.type === "category" &&
+        !categories.value[selectedEntry.value.name].expanded
+      ) {
+        toggleCategoryExpansion(selectedEntry.value.name);
+      }
+      break;
+    case "ArrowLeft":
+      if (
+        selectedEntry.value?.type === "category" &&
+        categories.value[selectedEntry.value.name].expanded
+      ) {
+        toggleCategoryExpansion(selectedEntry.value.name);
       }
       break;
   }
 };
-
 const grabFocus = () => {
-  if (focusedEntry.value === null) {
+  if (selectedEntry.value === null) {
     moveSelectionToTop();
   }
-};
-
-const handleFocusOut = () => {
-  focusEntry(null);
 };
 </script>
 
 <template>
-  <div
-    ref="catalogRoot"
-    class="function-catalog-container"
-    @focusout="handleFocusOut"
-    @focus="grabFocus"
-  >
+  <div ref="catalogRoot" class="function-catalog-container">
     <div
       class="function-catalog"
       :class="isSlimMode ? 'slim-mode' : ''"
-      :style="{ '--catalog-min-width': MIN_WIDTH_FOR_CATALOG_PANEL }"
+      :style="{ '--function-catalog-width': FUNCTION_CATALOG_WIDTH }"
     >
       <div class="sticky-search">
         <div class="search-input">
-          <SearchInput v-model="searchQuery" placeholder="Search the catalog" />
+          <SearchInput
+            v-model="searchQuery"
+            placeholder="Search the catalog"
+            @update:model-value="selectEntry(null)"
+          />
         </div>
       </div>
 
@@ -203,8 +178,9 @@ const handleFocusOut = () => {
         class="function-list"
         tabindex="0"
         role="button"
-        @keydown="onKeyPress"
+        @keydown="onKeyDown"
         @focus="grabFocus"
+        @click="grabFocus"
       >
         <div
           v-for="(
@@ -219,7 +195,7 @@ const handleFocusOut = () => {
             role="button"
             :class="{
               expanded: categories[categoryName].expanded,
-              'focused-item': isFocused({
+              selected: isSelected({
                 type: 'category',
                 name: categoryName,
               }),
@@ -227,12 +203,16 @@ const handleFocusOut = () => {
             }"
             tabindex="-1"
             @click="toggleCategoryExpansion(categoryName)"
-            @focus="focusEntry({ type: 'category', name: categoryName })"
+            @focus="selectEntry({ type: 'category', name: categoryName })"
           >
             <span
               class="category-icon"
               :class="{
                 expanded: categories[categoryName].expanded ? 'expanded' : '',
+                'selected-icon': isSelected({
+                  type: 'category',
+                  name: categoryName,
+                }),
                 empty: categoryData.length === 0,
               }"
             >
@@ -251,15 +231,11 @@ const handleFocusOut = () => {
               <div
                 class="function-header"
                 :class="{
-                  'focused-item':
-                    isFocused({ type: 'function', functionData }) &&
-                    !isSelected({ type: 'function', functionData }),
                   selected: isSelected({ type: 'function', functionData }),
                 }"
                 tabindex="-1"
-                @focus="focusEntry({ type: 'function', functionData })"
                 @click="
-                  toggleSelectionOfEntry({
+                  selectEntry({
                     type: 'function',
                     functionData,
                   })
@@ -273,15 +249,26 @@ const handleFocusOut = () => {
       </div>
     </div>
     <div class="info-panel" :class="isSlimMode ? 'slim-mode' : ''">
-      <div v-if="selectedEntry !== null && selectedEntry.type === 'function'">
-        <FunctionDescription :function-data="selectedEntry.functionData" />
+      <div v-if="selectedEntry !== null">
+        <div v-if="selectedEntry.type === 'function'">
+          <FunctionDescription :function-data="selectedEntry.functionData" />
+        </div>
+        <div v-else>
+          <CategoryDescription :category="categories[selectedEntry.name]" />
+        </div>
       </div>
-      <div v-else>Select a function to see its description.</div>
+      <div v-else>Select an entry to see its description.</div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.function-catalog-container {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+
 .sticky-search {
   position: sticky;
   top: 0;
@@ -290,22 +277,22 @@ const handleFocusOut = () => {
   padding-bottom: 10px;
 }
 
-.function-catalog-container {
-  display: flex;
-  flex-direction: row;
-  height: 100%;
-}
-
 .function-catalog {
-  --catalog-min-width: 300px;
+  --function-catalog-width: 250px;
 
-  flex: 0 0 var(--catalog-min-width) px;
+  width: var(--function-catalog-width);
   padding: 10px;
   overflow: hidden auto;
   background-color: white;
+  display: flex;
+  flex-direction: column;
 }
 
 .function-catalog.slim-mode {
+  flex: 1;
+}
+
+.function-list {
   flex: 1;
 }
 
@@ -341,7 +328,21 @@ const handleFocusOut = () => {
 .category-icon {
   width: 13px;
   margin-right: 7px;
+  stroke: var(--knime-masala);
   transition: transform 0.3s ease;
+  translate: 0 1px;
+}
+
+.category-icon svg {
+  stroke-width: 2px;
+}
+
+.category-icon.selected-icon svg {
+  stroke: white;
+}
+
+.function-list:not(:focus-within) .category-icon.selected-icon svg {
+  stroke: var(--knime-masala);
 }
 
 .category-icon.expanded {
@@ -386,31 +387,23 @@ const handleFocusOut = () => {
 .selected::before {
   content: "";
   position: absolute;
-  inset: 0 100vw 0 -100vw;
+  inset: -1px 100vw 0 -100vw;
   width: 300vw;
+  height: 105%;
   background-color: var(--theme-dropdown-background-color-selected);
   z-index: -1;
 }
 
-.focused-item {
-  position: relative;
+.function-list:not(:focus-within) .selected::before {
+  background: var(--theme-dropdown-background-color-hover);
+}
+
+.function-list:not(:focus-within) .selected {
   color: var(--theme-dropdown-foreground-color-hover);
-  background-color: transparent;
-  z-index: 0;
 }
 
-.focused-item::before {
-  content: "";
-  position: absolute;
-  inset: 0 100vw 0 -100vw;
-  width: 300vw;
-  height: 100%;
-  background-color: var(--theme-dropdown-background-color-hover);
-  z-index: -1;
-}
-
-.category-functions > div:hover,
-.category-header:hover {
+.category-functions:not(.selected) > div:hover,
+.category-header:not(.selected):hover {
   background: var(--theme-dropdown-background-color-hover);
   color: var(--theme-dropdown-foreground-color-hover);
   padding-left: 100px;
