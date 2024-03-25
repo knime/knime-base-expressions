@@ -65,6 +65,7 @@ import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.FloatConstant;
 import org.knime.core.expressions.Ast.FunctionCall;
 import org.knime.core.expressions.Ast.IntegerConstant;
+import org.knime.core.expressions.Ast.MissingConstant;
 import org.knime.core.expressions.Ast.StringConstant;
 import org.knime.core.expressions.Ast.UnaryOp;
 
@@ -75,8 +76,8 @@ import org.knime.core.expressions.Ast.UnaryOp;
  * @author Tobias Pietzsch
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConstant, StringConstant, ColumnAccess,
-    UnaryOp, BinaryOp, FunctionCall {
+public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerConstant, FloatConstant, StringConstant,
+    ColumnAccess, UnaryOp, BinaryOp, FunctionCall {
 
     /**
      * Additional data that is attached to the node. Note, that, the data is modifiable.
@@ -246,6 +247,26 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
     // ======================================================
     // CREATORS
     // ======================================================
+
+    /**
+     * Create a new {@link MissingConstant} with no data.
+     *
+     * @param value
+     * @return the node
+     */
+    static MissingConstant missingConstant() {
+        return missingConstant(new HashMap<>());
+    }
+
+    /**
+     * Create a new {@link MissingConstant} with the given data.
+     *
+     * @param data
+     * @return the node
+     */
+    static MissingConstant missingConstant(final Map<String, Object> data) {
+        return new MissingConstant(data);
+    }
 
     /**
      * Create a new {@link BooleanConstant} with the given value and no data.
@@ -522,6 +543,8 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
      */
     interface AstVisitor<O, E extends Exception> {
 
+        O visit(MissingConstant missingConstant) throws E;
+
         O visit(BooleanConstant node) throws E;
 
         O visit(IntegerConstant node) throws E;
@@ -547,6 +570,11 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
      * @param <E> type of the exception that can be thrown when visiting a node
      */
     class OptionalAstVisitor<O, E extends Exception> implements AstVisitor<Optional<O>, E> {
+
+        @Override
+        public Optional<O> visit(final MissingConstant node) throws E {
+            return Optional.empty();
+        }
 
         @Override
         public Optional<O> visit(final BooleanConstant node) throws E {
@@ -592,6 +620,25 @@ public sealed interface Ast permits BooleanConstant, IntegerConstant, FloatConst
     // ======================================================
     // TREE IMPLEMENTATION
     // ======================================================
+
+    /**
+     * {@link Ast} representing a constant missing value.
+     *
+     * @param data attached data
+     */
+    record MissingConstant(Map<String, Object> data) implements Ast {
+
+        @Override
+        public String toExpression() {
+            return "MISSING";
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+
+    }
 
     /**
      * {@link Ast} representing a constant BOOLEAN value.

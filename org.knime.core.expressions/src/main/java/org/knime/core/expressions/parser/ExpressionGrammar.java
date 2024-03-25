@@ -262,6 +262,10 @@ public interface ExpressionGrammar {
             return new Atom(Ast.columnAccess(new String(chars, 0, chars.length)));
         }
 
+        public Atom missing(final OptWs ws, @Regex("MISSING") final String literal) {
+            return new Atom(Ast.missingConstant());
+        }
+
         //  call:
         //      | a=NAME + '(' + b=arguments + ')' { "call", a[0][1], *b }
         //
@@ -392,7 +396,7 @@ public interface ExpressionGrammar {
             .className(GEN_CLASS_NAME).outDirForJava(Paths.get(srcDir)).logger(System.out::println).generateJavaFile();
     }
 
-    static void main(final String[] args) throws Exception {
+    public static void main(final String[] args) throws Exception {
         // this works if the main method is invoked from IntelliJ IDE
         final String srcDir = "src/main/java";
         //        System.out.println(Paths.get(srcDir).toAbsolutePath());

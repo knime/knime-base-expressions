@@ -54,6 +54,12 @@ import java.util.Objects;
  */
 public interface ValueType {
 
+    /**
+     * Type of "MISSING" values. Note that the {@link #baseType()} of {@link #MISSING} is itself and therefore, not
+     * optional.
+     */
+    ValueType MISSING = new MissingValueType();
+
     /** Type for "BOOLEAN" values "true" and "false" */
     ValueType BOOLEAN = NativeValueType.BOOLEAN;
 
@@ -130,7 +136,7 @@ public interface ValueType {
 
     /**
      * @return the complementary type that is not optional or the same type if this type is not optional. For the
-     *         returned type, {@link #isOptional()} will be <code>false</code>.
+     *         returned type, {@link #isOptional()} will be <code>false</code> (except for {@link #MISSING}).
      */
     ValueType baseType();
 
@@ -158,6 +164,42 @@ public interface ValueType {
         @Override
         public ValueType optionalType() {
             return new OptionalValueType(this);
+        }
+    }
+
+    /**
+     * Implementation of {@link ValueType} for "MISSING" values. Note that this implementation is special because the
+     * {@link #baseType()} and {@link #optionalType()} are the same.
+     */
+    final class MissingValueType implements ValueType {
+
+        private MissingValueType() {
+            // Singleton
+        }
+
+        @Override
+        public String name() {
+            return "MISSING";
+        }
+
+        @Override
+        public boolean isOptional() {
+            return true;
+        }
+
+        @Override
+        public ValueType baseType() {
+            return this;
+        }
+
+        @Override
+        public ValueType optionalType() {
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return name();
         }
     }
 

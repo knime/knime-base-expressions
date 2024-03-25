@@ -51,6 +51,7 @@ package org.knime.core.expressions;
 import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.STRING;
 
 import java.util.Optional;
@@ -63,6 +64,7 @@ import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.FloatConstant;
 import org.knime.core.expressions.Ast.FunctionCall;
 import org.knime.core.expressions.Ast.IntegerConstant;
+import org.knime.core.expressions.Ast.MissingConstant;
 import org.knime.core.expressions.Ast.StringConstant;
 import org.knime.core.expressions.Ast.UnaryOp;
 import org.knime.core.expressions.Ast.UnaryOperator;
@@ -113,6 +115,11 @@ final class Typing {
         }
 
         @Override
+        public ValueType visit(final MissingConstant missingConstant) throws ExpressionError {
+            return MISSING;
+        }
+
+        @Override
         public ValueType visit(final BooleanConstant node) throws ExpressionError {
             return BOOLEAN;
         }
@@ -143,7 +150,7 @@ final class Typing {
             var t1 = getType(node.arg1());
             var t2 = getType(node.arg2());
 
-            if (op == BinaryOperator.PLUS && isAnyString(t1, t2)) {
+            if (op == BinaryOperator.PLUS && isAnyString(t1, t2) && !isAnyMissing(t1, t2)) {
                 return STRING;
             } else if (op.isArithmetic() && isAllNumeric(t1, t2)) {
                 // Arithmetic operation
@@ -211,9 +218,15 @@ final class Typing {
         /** @throws TypingError if the given types cannot be compared with an equality operator */
         private static void checkEqualityTypes(final ValueType typeA, final ValueType typeB) throws TypingError {
             if (typeA.baseType().equals(typeB.baseType())) {
+                // Same type or one is the missing type extension of the other
+                return;
+            }
+            if (MISSING.equals(typeA) || MISSING.equals(typeB)) {
+                // Any type can be compared with MISSING
                 return;
             }
             if (isNumeric(typeA) && isNumeric(typeB)) {
+                // All numbers can be compared with each other
                 return;
             }
             throw new TypingError("Equality comparison is not applicable for " + typeA + " and " + typeB + ".");
@@ -236,6 +249,10 @@ final class Typing {
 
         private static boolean isAllBoolean(final ValueType typeA, final ValueType typeB) {
             return BOOLEAN.equals(typeA.baseType()) && BOOLEAN.equals(typeB.baseType());
+        }
+
+        private static boolean isAnyMissing(final ValueType t1, final ValueType t2) {
+            return MISSING.equals(t1) || MISSING.equals(t2);
         }
     }
 }

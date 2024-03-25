@@ -68,8 +68,10 @@ import static org.knime.core.expressions.AstTestUtils.BOOL;
 import static org.knime.core.expressions.AstTestUtils.COL;
 import static org.knime.core.expressions.AstTestUtils.FLOAT;
 import static org.knime.core.expressions.AstTestUtils.INT;
+import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.STR;
+import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.OPT_BOOLEAN;
 import static org.knime.core.expressions.ValueType.OPT_FLOAT;
 import static org.knime.core.expressions.ValueType.OPT_INTEGER;
@@ -110,6 +112,7 @@ final class TypingTest {
 
             // === Constants
 
+            CONSTANT_MISSING(MIS, MISSING), //
             CONSTANT_BOOLEAN(BOOL(true), BOOLEAN), //
             CONSTANT_INTEGER(INT(100), INTEGER), //
             CONSTANT_FLOAT(FLOAT(1.0), FLOAT), //
@@ -151,7 +154,7 @@ final class TypingTest {
             GREATER_THAN_EQ_OPT_INT(OP(COL("i?"), GREATER_THAN_EQUAL, INT(10)), BOOLEAN), //
             LESS_THAN_EQ_BOTH_OPT(OP(COL("i?"), LESS_THAN_EQUAL, COL("f?")), BOOLEAN), //
 
-            // Equality // TODO consider MISSING type
+            // Equality
             EQUALITY_BOTH_STRING(OP(STR("a"), EQUAL_TO, STR("b")), BOOLEAN), //
             EQUALITY_BOTH_INT(OP(INT(10), NOT_EQUAL_TO, INT(20)), BOOLEAN), //
             EQUALITY_INT_FLOAT(OP(INT(10), EQUAL_TO, FLOAT(10.1)), BOOLEAN), //
@@ -160,6 +163,10 @@ final class TypingTest {
             EQUALITY_INT_AND_OPT_FLOAT(OP(INT(10), EQUAL_TO, COL("f?")), BOOLEAN), //
             EQUALITY_BOTH_OPT_INT(OP(COL("i?"), NOT_EQUAL_TO, COL("i?")), BOOLEAN), //
             EQUALITY_STRING_AND_OPT_STRING(OP(STR("foo"), EQUAL_TO, COL("s?")), BOOLEAN), //
+            // missing
+            EQUALITY_INT_MISSING(OP(INT(10), EQUAL_TO, MIS), BOOLEAN), //
+            EQUALITY_MISSING_OPT_STRING(OP(MIS, EQUAL_TO, COL("s?")), BOOLEAN), //
+            EQUALITY_MISSING_MISSING(OP(MIS, EQUAL_TO, MIS), BOOLEAN), //
 
             // === Logical Operations
 
@@ -169,7 +176,7 @@ final class TypingTest {
             LOGICAL_NOT_BOOLEAN(OP(NOT, BOOL(false)), BOOLEAN), //
             LOGICAL_NOT_OPTIONAL_BOOLEAN(OP(NOT, COL("b?")), OPT_BOOLEAN), //
 
-            // String Concatenation // TODO consider MISSING type
+            // === String Concatenation
             STRING_CONCAT_TWO_STRINGS(OP(STR("Hello, "), PLUS, STR("World!")), STRING), //
             STRING_CONCAT_OPT_STRING(OP(STR("Hello, "), PLUS, COL("s?")), STRING), //
             STRING_CONCAT_TWO_OPT_STRING(OP(COL("s?"), PLUS, COL("s?")), STRING), //
@@ -209,20 +216,29 @@ final class TypingTest {
             ARITHMETICS_ON_BOOLEANS(OP(BOOL(true), PLUS, BOOL(false)), "+", "BOOLEAN"), //
             ARITHMETICS_ON_STRING_AND_BOOLEAN(OP(STR("foo"), DIVIDE, COL("b?")), "/", "STRING", "BOOLEAN?"), //
             ARITHMETICS_ON_INT_AND_BOOLEAN(OP(INT(5), PLUS, BOOL(false)), "+", "INTEGER", "BOOLEAN"), //
+            ARITHMETICS_ON_INT_MISSING(OP(INT(5), PLUS, MIS), "+", "INTEGER", "MISSING"), //
             FLOOR_DIVISION_ON_FLOAT(OP(FLOAT(10.1), FLOOR_DIVIDE, FLOAT(2)), "//", "FLOAT"), //
             FLOOR_DIVISION_ON_INT_AND_FLOAT(OP(INT(2), FLOOR_DIVIDE, FLOAT(2.0)), "//", "FLOAT", "INTEGER"), //
             NEGATE_STRING(OP(MINUS, STR("foo")), "-", "STRING"), //
+            NEGATE_MISSING(OP(MINUS, MIS), "-", "MISSING"), //
 
             // === Comparison Operations
             ORDERING_ON_INT_AND_BOOLEAN(OP(INT(100), GREATER_THAN, BOOL(false)), ">", "INTEGER", "BOOLEAN"), //
             ORDERING_ON_STRING(OP(STR("a"), LESS_THAN, STR("b")), "<", "STRING"), //
+            ORDERING_ON_INT_AND_MISSING(OP(INT(20), LESS_THAN, MIS), "<", "INTEGER", "MISSING"), //
             EQUALITY_ON_STRING_AND_BOOLEAN(OP(STR("a"), NOT_EQUAL_TO, BOOL(false)), "Equality", "STRING", "BOOLEAN"), //
             EQUALITY_ON_INT_AND_STRING(OP(INT(20), EQUAL_TO, STR("bar")), "Equality", "INTEGER", "STRING"), //
 
             // === Logical Operations
             LOGICAL_ON_INTEGER(OP(INT(10), CONDITIONAL_AND, INT(20)), "and", "INTEGER"), //
-            LOGICAL_ON_FLOAT_AND_BOOL(OP(BOOL(false), CONDITIONAL_OR, FLOAT(10.1)), "or", "FLOAT", "BOOLEAN"), //
+            LOGICAL_ON_BOOL_AND_FLOAT(OP(BOOL(false), CONDITIONAL_OR, FLOAT(10.1)), "or", "FLOAT", "BOOLEAN"), //
+            LOGICAL_ON_MISSING_AND_BOOL(OP(MIS, CONDITIONAL_AND, BOOL(false)), "and", "MISSING", "BOOLEAN"), //
             LOGICAL_NOT_ON_STRING(OP(NOT, STR("foo")), "not", "STRING"), //
+            LOGICAL_NOT_ON_MISSING(OP(NOT, MIS), "not", "MISSING"), //
+
+            // === String Concatenation
+            STRING_CONCAT_STRING_AND_MISSING(OP(STR("foo"), PLUS, MIS), "+", "STRING", "MISSING"), //
+            STRING_CONCAT_MISSING_AND_STRING(OP(MIS, PLUS, STR("foo")), "+", "STRING", "MISSING"), //
         ;
 
         private final Ast m_expression;
