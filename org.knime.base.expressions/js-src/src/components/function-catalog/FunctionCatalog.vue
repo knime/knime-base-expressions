@@ -171,16 +171,23 @@ const onKeyPress = (e: KeyboardEvent) => {
 };
 
 const grabFocus = () => {
-  moveSelectionToTop();
+  if (focusedEntry.value === null) {
+    moveSelectionToTop();
+  }
 };
 
-const handleBlur = () => {
+const handleFocusOut = () => {
   focusEntry(null);
 };
 </script>
 
 <template>
-  <div ref="catalogRoot" class="function-catalog-container" @blur="handleBlur">
+  <div
+    ref="catalogRoot"
+    class="function-catalog-container"
+    @focusout="handleFocusOut"
+    @focus="grabFocus"
+  >
     <div
       class="function-catalog"
       :class="isSlimMode ? 'slim-mode' : ''"
@@ -188,15 +195,17 @@ const handleBlur = () => {
     >
       <div class="sticky-search">
         <div class="search-input">
-          <SearchInput
-            v-model="searchQuery"
-            placeholder="Search the catalog"
-            tabindex="0"
-          />
+          <SearchInput v-model="searchQuery" placeholder="Search the catalog" />
         </div>
       </div>
 
-      <div class="function-list" @keydown="onKeyPress" @focus="grabFocus">
+      <div
+        class="function-list"
+        tabindex="0"
+        role="button"
+        @keydown="onKeyPress"
+        @focus="grabFocus"
+      >
         <div
           v-for="(
             categoryData, categoryName
@@ -207,7 +216,6 @@ const handleBlur = () => {
           <div
             v-if="categoryData.length > 0"
             class="category-header"
-            tabindex="0"
             role="button"
             :class="{
               expanded: categories[categoryName].expanded,
@@ -217,7 +225,9 @@ const handleBlur = () => {
               }),
               empty: categoryData.length === 0,
             }"
+            tabindex="-1"
             @click="toggleCategoryExpansion(categoryName)"
+            @focus="focusEntry({ type: 'category', name: categoryName })"
           >
             <span
               class="category-icon"
@@ -234,10 +244,11 @@ const handleBlur = () => {
 
           <div
             v-if="categories[categoryName].expanded"
+            role="button"
             class="category-functions"
           >
             <div v-for="functionData in categoryData" :key="functionData.name">
-              <span
+              <div
                 class="function-header"
                 :class="{
                   'focused-item':
@@ -245,6 +256,8 @@ const handleBlur = () => {
                     !isSelected({ type: 'function', functionData }),
                   selected: isSelected({ type: 'function', functionData }),
                 }"
+                tabindex="-1"
+                @focus="focusEntry({ type: 'function', functionData })"
                 @click="
                   toggleSelectionOfEntry({
                     type: 'function',
@@ -253,7 +266,7 @@ const handleBlur = () => {
                 "
               >
                 {{ functionData.displayName || functionData.name }}
-              </span>
+              </div>
             </div>
           </div>
         </div>
@@ -354,10 +367,13 @@ const handleBlur = () => {
   font-weight: normal;
   margin-left: 20px;
   cursor: pointer;
-  overflow: hidden;
-  word-wrap: anywhere;
   color: var(--knime-dove-gray);
+  word-wrap: anywhere;
   box-decoration-break: clone;
+}
+
+.function-header:focus {
+  outline: none;
 }
 
 .selected {
@@ -389,7 +405,7 @@ const handleBlur = () => {
   inset: 0 100vw 0 -100vw;
   width: 300vw;
   height: 100%;
-  background: var(--theme-dropdown-background-color-hover);
+  background-color: var(--theme-dropdown-background-color-hover);
   z-index: -1;
 }
 

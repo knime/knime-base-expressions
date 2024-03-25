@@ -19,7 +19,7 @@ export const getFunctionCatalogData = () => ({
   ],
   functions: [
     {
-      name: "concatenateStrings",
+      name: "concatenateStringsIsAVeryLongFunctionName",
       category: "String Manipulation",
       arguments: [
         { name: "string1", type: "string", description: "the first string" },
