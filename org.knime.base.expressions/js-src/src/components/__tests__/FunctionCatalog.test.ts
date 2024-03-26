@@ -1,10 +1,40 @@
 import { enableAutoUnmount, mount } from "@vue/test-utils";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FunctionCatalog from "../function-catalog/FunctionCatalog.vue";
 import type { FunctionData } from "../functionCatalogTypes";
+import { useElementBounding } from "@vueuse/core";
+import { ref } from "vue";
+
+// Beware: This constant is duplicated in the component and the test
+const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
+
+const mocks = vi.hoisted(() => {
+  return {
+    useElementBounding: vi.fn(),
+  };
+});
+
+vi.mock("@vueuse/core", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@vueuse/core")>();
+  return {
+    ...original,
+    useElementBounding: mocks.useElementBounding,
+    onKeyStroke: vi.fn(),
+  };
+});
 
 describe("FunctionCatalog", () => {
   enableAutoUnmount(afterEach);
+
+  beforeEach(() => {
+    vi.mocked(useElementBounding).mockReturnValue({
+      width: ref(MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION + 1),
+    } as ReturnType<typeof useElementBounding>);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   const function1: FunctionData = {
     name: "function1",
@@ -31,7 +61,10 @@ describe("FunctionCatalog", () => {
     returnType: "returnType2",
   };
   const functionCatalogData = {
-    categories: [{ name: "category1" }, { name: "category2" }],
+    categories: [
+      { name: "category1", description: "This is a description for category1" },
+      { name: "category2" },
+    ],
     functions: [function1, function2],
   };
 
@@ -49,6 +82,7 @@ describe("FunctionCatalog", () => {
     const wrapper = mount(FunctionCatalog, {
       props: { functionCatalogData, initiallyExpanded: true, ...args.props },
       slots: args.slots,
+      attachTo: document.body,
     });
 
     return {
@@ -84,6 +118,20 @@ describe("FunctionCatalog", () => {
     expect(description.exists()).toBeTruthy();
     expect(description.text()).contains("Description");
     expect(description.text()).contains("Arguments");
+
+    expect(description.classes()).not.contains("slim-mode");
+  });
+
+  it("does not render the description when the width is too small", () => {
+    vi.mocked(useElementBounding).mockReturnValue({
+      width: ref(MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION - 1),
+    } as ReturnType<typeof useElementBounding>);
+
+    const { wrapper } = doMount();
+
+    const description = wrapper.find(".info-panel");
+
+    expect(description.classes()).contains("slim-mode");
   });
 
   it("shows categories and can expand them", async () => {
@@ -116,6 +164,69 @@ describe("FunctionCatalog", () => {
         ).toBeTruthy();
       }),
     );
+  });
+
+  it("selects the first category by default when focussed", async () => {
+    const { wrapper } = doMount({
+      props: { functionCatalogData, initiallyExpanded: false },
+    });
+    const firstCategory = wrapper.findAll(".category-header")[0];
+
+    await firstCategory.trigger("focus");
+    expect(firstCategory.classes()).toContain("selected");
+
+    const description = wrapper.find(".info-panel");
+    expect(description.exists()).toBeTruthy();
+
+    expect(description.text()).toContain(
+      functionCatalogData.categories[0].description,
+    );
+  });
+
+  it("allows to expand/collapse categories with the right/left arrow buttons", async () => {
+    const { wrapper } = doMount({
+      props: { functionCatalogData, initiallyExpanded: false },
+    });
+    const firstCategory = wrapper.findAll(".category-header")[0];
+
+    await firstCategory.trigger("focus");
+    expect(firstCategory.classes()).not.toContain("expanded");
+
+    await firstCategory.trigger("keydown", { key: "ArrowRight" });
+    expect(firstCategory.classes()).toContain("expanded");
+    await firstCategory.trigger("keydown", { key: "ArrowRight" });
+    expect(firstCategory.classes()).toContain("expanded");
+
+    await firstCategory.trigger("keydown", { key: "ArrowLeft" });
+    expect(firstCategory.classes()).not.toContain("expanded");
+  });
+
+  it("allows to cycle through functions/categories with the up/down arrow buttons", async () => {
+    const { wrapper } = doMount();
+
+    const firstCategory = wrapper.findAll(".category-header")[0];
+    const functionInFirstCategory = wrapper.findAll(".function-header")[0];
+    const secondCategory = wrapper.findAll(".category-header")[1];
+    const functionInSecondCategory = wrapper.findAll(".function-header")[1];
+
+    const functionList = wrapper.find(".function-list");
+    await functionList.trigger("focus");
+
+    expect(functionInFirstCategory.classes()).not.toContain("selected");
+    await functionList.trigger("keydown", { key: "ArrowDown" });
+    expect(functionInFirstCategory.classes()).toContain("selected");
+
+    expect(secondCategory.classes()).not.toContain("selected");
+    await functionList.trigger("keydown", { key: "ArrowDown" });
+    expect(secondCategory.classes()).toContain("selected");
+
+    expect(functionInSecondCategory.classes()).not.toContain("selected");
+    await functionList.trigger("keydown", { key: "ArrowDown" });
+    expect(functionInSecondCategory.classes()).toContain("selected");
+
+    expect(firstCategory.classes()).not.toContain("selected");
+    await functionList.trigger("keydown", { key: "ArrowDown" });
+    expect(firstCategory.classes()).toContain("selected");
   });
 
   it("shows functions and can select them", async () => {
