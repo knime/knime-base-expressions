@@ -115,9 +115,24 @@ public final class Expressions {
      * @throws TypingError if type inference failed because operations are used for incompatible types
      */
     public static ValueType inferTypes(final Ast expression,
-        final Function<ColumnAccess, Optional<ValueType>> columnToType)
-        throws MissingColumnError, TypingError {
+        final Function<ColumnAccess, Optional<ValueType>> columnToType) throws MissingColumnError, TypingError {
         return Typing.inferTypes(expression, columnToType);
+    }
+
+    /**
+     * Create a {@link Computer} that evaluates the given expression. The resulting {@link Computer} does not cache the
+     * result but evaluates it on each access. The caller has to provide the input data for each used
+     * {@link ColumnAccess} via a {@link Computer} of the appropriate type.
+     *
+     * @param expression the expression. Must include type information inferred by {@link #inferTypes(Ast, Function)}.
+     * @param columnToComputer a function that returns the computer for column data accessed by the expression. The
+     *            function should return <code>Optional.empty()</code> if the column is not available.
+     * @return the output type of the full expression
+     * @throws MissingColumnError if the expression accesses a column that is not available
+     */
+    public static Computer evaluate(final Ast expression,
+        final Function<ColumnAccess, Optional<Computer>> columnToComputer) throws MissingColumnError {
+        return Evaluation.evaluate(expression, columnToComputer);
     }
 
     /**
