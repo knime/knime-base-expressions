@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   consoleHandler,
-  editor,
   getScriptingService,
   ScriptingEditor,
 } from "@knime/scripting-editor";
@@ -16,12 +15,14 @@ import ColumnOutputSelector, {
 } from "@/components/ColumnOutputSelector.vue";
 
 const MIN_WIDTH_FUNCTION_CATALOG = 280;
+import MultiEditorPane from "./MultiEditorPane.vue";
 
 const scriptingService = getScriptingService();
-const mainEditor = editor.useMainCodeEditorStore();
 
 const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
 const columnSectorState = ref<ColumnSelectorState>();
+
+const multiEditorComponentRef = ref<typeof MultiEditorPane | null>(null);
 
 const inputsAvailable = ref(false);
 onMounted(() => {
@@ -43,15 +44,30 @@ onMounted(() => {
       );
     }
   });
+
+  scriptingService.getInitialSettings().then((settings) => {
+    multiEditorComponentRef.value
+      ?.getEditorState()
+      .setInitialText(settings.script);
+  });
 });
 
-const runExpression = () => {
+const runExpressions = () => {
+  // TODO make this work with multiple editors
   scriptingService.sendToService("runExpression", [
-    mainEditor.value?.text.value,
+    multiEditorComponentRef.value?.getEditorState().text.value,
   ]);
 };
 
+getScriptingService().registerSettingsGetterForApply(() => {
+  return {
+    script: multiEditorComponentRef.value?.getEditorState().text.value,
+  };
+});
+
 const functionCatalogData = getFunctionCatalogData();
+
+const language = "knime-expression";
 
 // TODO(language-features) register knime expression language
 </script>
@@ -59,11 +75,20 @@ const functionCatalogData = getFunctionCatalogData();
 <template>
   <main>
     <ScriptingEditor
-      :title="`Expression (Labs)`"
-      language="knime-expression"
-      file-name="main.knexp"
+      title="Expression (Labs)"
       :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
+      :show-control-bar="true"
+      :language="language"
     >
+      <template #editor>
+        <MultiEditorPane
+          ref="multiEditorComponentRef"
+          title="Expression Editor"
+          file-name="_1.knexp"
+          :language="language"
+        />
+      </template>
+
       <template #code-editor-controls>
         <ColumnOutputSelector
           v-model="columnSectorState"
@@ -75,7 +100,7 @@ const functionCatalogData = getFunctionCatalogData();
           primary
           compact
           :disabled="!inputsAvailable"
-          @click="runExpression"
+          @click="runExpressions"
           ><PlayIcon /> Run</Button
         >
       </template>
