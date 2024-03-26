@@ -9,6 +9,9 @@ import monacoEditorPlugin, {
 } from "vite-plugin-monaco-editor";
 import svgLoader from "vite-svg-loader";
 
+// @ts-ignore
+import { svgoConfig } from "webapps-common/config/svgo.config";
+
 // Hack because default export of vite-plugin-monaco-editor is wrong (and does not fit types)
 // https://github.com/vdesjs/vite-plugin-monaco-editor/issues/21
 const monacoEditorPluginDefault = (monacoEditorPlugin as any).default as (
@@ -22,7 +25,7 @@ export default defineConfig({
     monacoEditorPluginDefault({
       languageWorkers: ["editorWorkerService"],
     }),
-    svgLoader(),
+    svgLoader({ svgoConfig }),
   ],
   resolve: {
     alias: {
