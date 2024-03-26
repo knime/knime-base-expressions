@@ -28,6 +28,5 @@ describe("App.vue", () => {
     });
     expect(scriptingComponent.exists()).toBeTruthy();
     expect(scriptingComponent.props("language")).toBe("knime-expression");
-    expect(scriptingComponent.props("fileName")).toBe("main.knexp");
   });
 });
