@@ -71,10 +71,15 @@ watch(
         :possible-values="allowedOperationModes"
         :disabled="props.allowedReplacementColumns.length === 0"
         class="switch-button"
+        data-key-focus-paintable
         @change="update"
       />
     </div>
-    <div v-if="outputMode === 'create'" class="output-selector-child right">
+    <div
+      v-if="outputMode === 'create'"
+      class="output-selector-child right"
+      data-key-focus-paintable
+    >
       <InputField
         id="input-field-to-add-new-column"
         v-model="newColumn"
@@ -84,7 +89,7 @@ watch(
         @input="update"
       />
     </div>
-    <div v-else class="output-selector-child right">
+    <div v-else class="output-selector-child right" data-key-focus-paintable="">
       <!-- eslint-disable vue/attribute-hyphenation typescript complains with ':aria-label' instead of ':ariaLabel'-->
       <Dropdown
         id="dropdown-box-to-select-column"
@@ -152,5 +157,10 @@ watch(
 /* Push the toggle button up against the input fields */
 .switch-button {
   margin: 0 10px 0 auto;
+}
+
+.output-selector-child.right.key-focus-painted:focus-within,
+.switch-button.key-focus-painted:focus-within {
+  box-shadow: 0 0 5px 5px var(--knime-cornflower);
 }
 </style>

@@ -75,6 +75,10 @@ const filteredFunctionCatalog = computed(() => {
   return filterCatalogData(searchQuery.value, categories.value, catalogData);
 });
 
+const isFilteredCatalogDataEmpty = computed(() => {
+  return filteredFunctionCatalog.value.orderOfItems.length === 0;
+});
+
 const moveSelectionToTop = () => {
   selectEntry(filteredFunctionCatalog.value.orderOfItems[0]);
 };
@@ -150,10 +154,17 @@ const onKeyDown = (e: KeyboardEvent) => {
       break;
   }
 };
+
+const functionListRef = ref<HTMLDivElement | null>(null);
 const grabFocus = () => {
   if (selectedEntry.value === null) {
     moveSelectionToTop();
   }
+
+  // This means that the focus is specifically on the function list,
+  // not on any of its children, which gives us the <tab> navigation
+  // behaviour we want.
+  functionListRef.value?.focus();
 };
 </script>
 
@@ -163,9 +174,10 @@ const grabFocus = () => {
       class="function-catalog"
       :class="isSlimMode ? 'slim-mode' : ''"
       :style="{ '--function-catalog-width': FUNCTION_CATALOG_WIDTH }"
+      tabindex="-1"
     >
       <div class="sticky-search">
-        <div class="search-input">
+        <div class="search-input" data-key-focus-paintable>
           <SearchInput
             v-model="searchQuery"
             placeholder="Search the catalog"
@@ -174,9 +186,11 @@ const grabFocus = () => {
         </div>
       </div>
 
+      <!-- Make this panel not be a tab stop if filtered catalogue is empty -->
       <div
+        ref="functionListRef"
         class="function-list"
-        tabindex="0"
+        :tabindex="isFilteredCatalogDataEmpty ? -1 : 0"
         role="button"
         @keydown="onKeyDown"
         @focus="grabFocus"
@@ -410,5 +424,9 @@ const grabFocus = () => {
   margin-left: -100px;
   padding-right: 100px;
   margin-right: -100px;
+}
+
+.search-input.key-focus-painted:focus-within {
+  box-shadow: 0 0 5px 5px var(--knime-cornflower);
 }
 </style>
