@@ -13,6 +13,7 @@ import ColumnOutputSelector, {
   type ColumnSelectorState,
   type AllowedDropDownValue,
 } from "@/components/ColumnOutputSelector.vue";
+import { onKeyStroke } from "@vueuse/core";
 
 const MIN_WIDTH_FUNCTION_CATALOG = 280;
 import MultiEditorPane from "./MultiEditorPane.vue";
@@ -71,6 +72,17 @@ const onFunctionInsertionTriggered = (payload: {
 }) => {
   multiEditorComponentRef.value?.insertText(payload.eventSource, payload.text);
 };
+
+// Shift+Enter while editor has focus runs expressions
+onKeyStroke("Enter", (evt: KeyboardEvent) => {
+  if (
+    evt.shiftKey &&
+    multiEditorComponentRef.value?.getEditorState().editor.value?.hasTextFocus()
+  ) {
+    evt.preventDefault();
+    runExpressions();
+  }
+});
 
 const functionCatalogData = getFunctionCatalogData();
 

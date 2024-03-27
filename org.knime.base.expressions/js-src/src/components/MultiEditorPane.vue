@@ -87,15 +87,20 @@ onKeyStroke("z", (e) => {
   margin-right: 20px;
   box-shadow: 0 0 5px 5px var(--knime-silver-sand);
   height: calc(100% - 20px);
+  position: relative;
 }
 
-.editor-container:focus-within {
-  box-shadow: 0 0 5px 5px var(--knime-cornflower);
+.editor-container:focus-within::after {
+  position: absolute;
+  content: "";
+  border: 2px solid var(--knime-cornflower);
+  pointer-events: none;
+  z-index: 1;
+  inset: -3px;
 }
 
-/* Editor gets an extra margin iff it's the first one of its type. */
-
-/* Basically gives us some nice margin collapsing. */
+/* Editor gets an extra margin iff it's the first one of its type.
+Basically gives us some nice margin collapsing. */
 .editor-container:first-child {
   margin-top: 20px;
 }

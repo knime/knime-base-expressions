@@ -120,6 +120,10 @@ const filteredFunctionCatalog = computed(() => {
   return filterCatalogData(searchQuery.value, categories.value, catalogData);
 });
 
+const isFilteredCatalogDataEmpty = computed(() => {
+  return filteredFunctionCatalog.value.orderOfItems.length === 0;
+});
+
 const moveSelectionToTop = () => {
   selectEntry(filteredFunctionCatalog.value.orderOfItems[0]);
 };
@@ -189,6 +193,8 @@ const onKeyDown = (e: KeyboardEvent) => {
       ) {
         toggleCategoryExpansion(selectedEntry.value.name);
       }
+
+      e.preventDefault(); // Stop accidental scrolling
       break;
     case "ArrowLeft":
       if (
@@ -197,13 +203,22 @@ const onKeyDown = (e: KeyboardEvent) => {
       ) {
         toggleCategoryExpansion(selectedEntry.value.name);
       }
+
+      e.preventDefault(); // Stop accidental scrolling
       break;
   }
 };
+
+const functionListRef = ref<HTMLDivElement | null>(null);
 const grabFocus = () => {
   if (selectedEntry.value === null) {
     moveSelectionToTop();
   }
+
+  // This means that the focus is specifically on the function list,
+  // not on any of its children, which gives us the <tab> navigation
+  // behaviour we want.
+  functionListRef.value?.focus();
 };
 </script>
 
@@ -213,6 +228,7 @@ const grabFocus = () => {
       class="function-catalog"
       :class="isSlimMode ? 'slim-mode' : ''"
       :style="{ '--function-catalog-width': FUNCTION_CATALOG_WIDTH }"
+      tabindex="-1"
     >
       <div class="sticky-search">
         <div class="search-input">
@@ -224,9 +240,11 @@ const grabFocus = () => {
         </div>
       </div>
 
+      <!-- Make this panel not be a tab stop if filtered catalogue is empty -->
       <div
+        ref="functionListRef"
         class="function-list"
-        tabindex="0"
+        :tabindex="isFilteredCatalogDataEmpty ? -1 : 0"
         role="button"
         @keydown="onKeyDown"
         @focus="grabFocus"

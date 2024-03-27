@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from "vue";
 import ValueSwitch from "../../webapps-common/ui/components/forms/ValueSwitch.vue";
 import Dropdown from "../../webapps-common/ui/components/forms/Dropdown.vue";
 import InputField from "webapps-common/ui/components/forms/InputField.vue";
+import { useShouldFocusBePainted } from "@knime/scripting-editor";
 
 type OutputMode = "create" | "replace";
 type Id = string | number;
@@ -49,6 +50,8 @@ onMounted(() => {
   update();
 });
 
+const paintFocus = useShouldFocusBePainted();
+
 // Since these props can change after the component is mounted, we need to watch
 // for changes to the allowedReplacementColumns prop and update the default
 // replacementColumn value accordingly!
@@ -71,6 +74,7 @@ watch(
         :possible-values="allowedOperationModes"
         :disabled="props.allowedReplacementColumns.length === 0"
         class="switch-button"
+        :class="{ 'focus-painted': paintFocus }"
         @change="update"
       />
     </div>
@@ -117,7 +121,6 @@ watch(
 
 .output-selector-child.right {
   grid-area: 1 / 2 / 2 / 3;
-  display: flex;
   overflow: visible;
 }
 
@@ -152,5 +155,24 @@ watch(
 /* Push the toggle button up against the input fields */
 .switch-button {
   margin: 0 10px 0 auto;
+  position: relative;
+}
+
+/* Create a selection highlight slightly bigger than the buttons themselves */
+.switch-button.focus-painted:focus-within::after {
+  --border-spacing: 4px;
+
+  content: "";
+  border: 2px solid var(--knime-cornflower);
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+  left: calc(-1 * var(--border-spacing));
+  top: calc(-1 * var(--border-spacing));
+  height: calc(100% + 2 * var(--border-spacing));
+  width: calc(100% + 2 * var(--border-spacing));
+
+  /* Canonical way to get largest possible pill-shaped border */
+  border-radius: 999vw;
 }
 </style>
