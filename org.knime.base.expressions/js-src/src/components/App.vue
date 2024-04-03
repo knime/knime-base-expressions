@@ -65,6 +65,13 @@ getScriptingService().registerSettingsGetterForApply(() => {
   };
 });
 
+const onFunctionInsertionTriggered = (payload: {
+  eventSource: string;
+  text: string;
+}) => {
+  multiEditorComponentRef.value?.insertText(payload.eventSource, payload.text);
+};
+
 const functionCatalogData = getFunctionCatalogData();
 
 const language = "knime-expression";
@@ -108,6 +115,7 @@ const language = "knime-expression";
         <FunctionCatalog
           :function-catalog-data="functionCatalogData"
           :initially-expanded="true"
+          @function-insertion-event="onFunctionInsertionTriggered"
         />
       </template>
     </ScriptingEditor>

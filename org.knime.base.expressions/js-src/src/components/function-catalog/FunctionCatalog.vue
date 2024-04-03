@@ -6,10 +6,18 @@ import NextIcon from "../../../webapps-common/ui/assets/img/icons/arrow-next.svg
 import { useElementBounding } from "@vueuse/core";
 import { mapFunctionCatalogData } from "@/components/function-catalog/mapFunctionCatalogData";
 import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
-import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
+import type {
+  FunctionCatalogData,
+  FunctionData,
+} from "@/components/functionCatalogTypes";
 import { filterCatalogData } from "@/components/function-catalog/filterCatalogData";
-import type { SelectableItem } from "@/components/function-catalog/catalogTypes";
+import type {
+  SelectableItem,
+  SelectableFunction,
+} from "@/components/function-catalog/catalogTypes";
 import CategoryDescription from "@/components/function-catalog/CategoryDescription.vue";
+import { createDragGhosts } from "webapps-common/ui/components/FileExplorer/dragGhostHelpers";
+import { EMPTY_DRAG_IMAGE } from "webapps-common/ui/components/FileExplorer/useItemDragging";
 
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
 const FUNCTION_CATALOG_WIDTH = "250px";
@@ -36,6 +44,40 @@ const categories = ref(
     ]),
   ),
 );
+
+const removeGhostsRef = ref<() => void>(() => {});
+
+// We only support dragging one function
+const onDragStart = (e: DragEvent, f: FunctionData) => {
+  const { removeGhosts } = createDragGhosts({
+    badgeCount: null, // don't show a badge at all
+    dragStartEvent: e,
+    selectedTargets: [
+      {
+        textContent: f.name,
+        targetEl: e.target as HTMLElement,
+      },
+    ],
+  });
+
+  removeGhostsRef.value = removeGhosts;
+
+  e.dataTransfer?.setData("text", `${f.name}(${Array(f.arguments.length).join(", ")})`);
+  e.dataTransfer?.setData("eventSource", "function-catalog");
+  e.dataTransfer?.setDragImage(EMPTY_DRAG_IMAGE, 0, 0);
+};
+
+const onDragEnd = () => {
+  removeGhostsRef.value();
+};
+
+const emit = defineEmits(["functionInsertionEvent"]);
+const triggerFunctionInsertionEvent = (evt: Event, f: FunctionData) => {
+  emit("functionInsertionEvent", {
+    text: `${f.name}(${Array(f.arguments.length).join(", ")})`,
+    eventSource: "function-catalog",
+  });
+};
 
 const catalogRoot = ref();
 const catalogRootRef = useElementBounding(catalogRoot);
@@ -130,6 +172,11 @@ const onKeyDown = (e: KeyboardEvent) => {
     case "Enter":
       if (selectedEntry.value?.type === "category") {
         toggleCategoryExpansion(selectedEntry.value.name);
+      } else {
+        triggerFunctionInsertionEvent(
+          e,
+          (selectedEntry.value as SelectableFunction)?.functionData,
+        );
       }
       break;
     case "ArrowRight":
@@ -234,11 +281,17 @@ const grabFocus = () => {
                   selected: isSelected({ type: 'function', functionData }),
                 }"
                 tabindex="-1"
+                :draggable="true"
                 @click="
                   selectEntry({
                     type: 'function',
                     functionData,
                   })
+                "
+                @dragstart="(event) => onDragStart(event, functionData)"
+                @dragend="onDragEnd"
+                @dblclick="
+                  (event) => triggerFunctionInsertionEvent(event, functionData)
                 "
               >
                 {{ functionData.displayName || functionData.name }}

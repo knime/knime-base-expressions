@@ -247,6 +247,38 @@ describe("FunctionCatalog", () => {
     }
   });
 
+  it("fires an event when functions are double-clicked or spacebar/enter is pressed", async () => {
+    const { wrapper } = doMount();
+    const functionList = wrapper.find(".function-list");
+    await functionList.trigger("focus");
+
+    const functionInFirstCategory = wrapper.findAll(".function-header")[0];
+
+    // We don't expect it to trigger on single click
+    await functionInFirstCategory.trigger("click");
+    expect(wrapper.emitted("functionInsertionEvent")).toBeUndefined();
+
+    // Should fire three events
+    await functionInFirstCategory.trigger("dblclick");
+    await functionList.trigger("keydown", { key: "Enter" });
+    await functionList.trigger("keydown", { key: " " });
+    expect(wrapper.emitted("functionInsertionEvent")?.length).toBe(3);
+    for (const e of wrapper.emitted("functionInsertionEvent")!) {
+      expect((e[0] as any).text).toContain(function1.name);
+    }
+
+    // Fire three more events
+    const functionInSecondCategory = wrapper.findAll(".function-header")[1];
+    await functionInSecondCategory.trigger("click"); // select the function...
+    await functionInSecondCategory.trigger("dblclick");
+    await functionList.trigger("keydown", { key: "Enter" });
+    await functionList.trigger("keydown", { key: " " });
+    expect(wrapper.emitted("functionInsertionEvent")?.length).toBe(3 + 3);
+    for (const e of wrapper.emitted("functionInsertionEvent")!.slice(3)) {
+      expect((e[0] as any).text).toContain(function2.name);
+    }
+  });
+
   const testCases = [
     { searchValue: "function1", expectedCount: 1, expectedText: "function1" },
     { searchValue: "category1", expectedCount: 1, expectedText: "function1" },
