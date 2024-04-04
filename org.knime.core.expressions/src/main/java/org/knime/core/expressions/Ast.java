@@ -432,7 +432,7 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
      * @return the node
      */
     static FunctionCall functionCall(final String name, final List<Ast> args) {
-        return functionCall(name, args);
+        return functionCall(name, args, new HashMap<>());
     }
 
     /**
