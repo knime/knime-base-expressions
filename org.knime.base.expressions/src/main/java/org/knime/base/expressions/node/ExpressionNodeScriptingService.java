@@ -55,6 +55,7 @@ import java.util.Set;
 import org.knime.base.expressions.node.ExpressionNodeModel.ColumnInsertionMode;
 import org.knime.base.expressions.node.ExpressionNodeModel.NewColumnPosition;
 import org.knime.core.data.container.filter.TableFilter;
+import org.knime.core.data.v2.RowRead;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableType.BooleanType;
@@ -117,19 +118,24 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                 throw new IllegalStateException("Input table not available");
             }
 
-            var numRows = (int) Math.min(DIALOG_PREVIEW_NUM_ROWS, inTable.size());
+            var numRows = (int)Math.min(DIALOG_PREVIEW_NUM_ROWS, inTable.size());
             var result = new String[numRows];
             try (var expressionResultTable = ExpressionNodeModel.applyExpression(inTable, expression,
                 new NewColumnPosition(ColumnInsertionMode.APPEND, "result"), () -> 1)) {
-                try (var cursor =
-                    expressionResultTable.cursor(TableFilter.filterRangeOfRows(0, numRows))) {
+                try (var cursor = expressionResultTable.cursor(TableFilter.filterRangeOfRows(0, numRows))) {
                     var resultIdx = expressionResultTable.getDataTableSpec().getNumColumns() - 1;
                     for (var i = 0; i < numRows && cursor.canForward(); i++) {
-                        result[i] = cursor.forward().getValue(resultIdx).materializeDataCell().toString();
+                        result[i] = getRowResult(cursor.forward(), resultIdx);
                     }
                 }
             }
             addConsoleOutputEvent(new ConsoleText(formatResult(result), false));
+        }
+
+        private static String getRowResult(final RowRead rowRead, final int resultIdx) {
+            return rowRead.isMissing(resultIdx) //
+                ? "MISSING" //
+                : rowRead.getValue(resultIdx).materializeDataCell().toString();
         }
 
         private static String formatResult(final String[] result) {
