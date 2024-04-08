@@ -15,6 +15,10 @@ import ColumnOutputSelector, {
 } from "@/components/ColumnOutputSelector.vue";
 import { onKeyStroke } from "@vueuse/core";
 
+import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
+
+registerKnimeExpressionLanguage();
+
 const MIN_WIDTH_FUNCTION_CATALOG = 280;
 import MultiEditorPane from "./MultiEditorPane.vue";
 

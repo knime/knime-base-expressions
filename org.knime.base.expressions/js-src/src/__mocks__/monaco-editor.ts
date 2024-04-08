@@ -6,6 +6,9 @@ export const languages = {
     Snippet: 0,
   },
   registerCompletionItemProvider: vi.fn(),
+  register: vi.fn(),
+  setMonarchTokensProvider: vi.fn(),
+  setLanguageConfiguration: vi.fn(),
 };
 export const editor = {
   getModel: vi.fn(() => ({
@@ -22,6 +25,8 @@ export const editor = {
     onDidPaste: vi.fn(),
     dispose: vi.fn(),
   })),
+  defineTheme: vi.fn(),
+  setTheme: vi.fn(),
 };
 export const Uri = {
   parse: vi.fn(),
