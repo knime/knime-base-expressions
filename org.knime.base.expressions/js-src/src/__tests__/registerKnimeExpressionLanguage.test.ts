@@ -48,4 +48,17 @@ describe("registerKnimeExpressionLanguage", () => {
       expect.anything(),
     );
   });
+
+  it("registers autocompletion", () => {
+    registerKnimeExpressionLanguage();
+
+    expect(
+      monaco.languages.registerCompletionItemProvider,
+    ).toHaveBeenCalledWith("knime-expression", expect.anything());
+  });
+
+  it("returns a disposal function", () => {
+    const out = registerKnimeExpressionLanguage();
+    expect(out).toEqual(dispose);
+  });
 });

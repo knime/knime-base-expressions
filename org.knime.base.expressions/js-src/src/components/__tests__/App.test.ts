@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "../App.vue";
 import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 
-vi.mock("@/registerKnimeExpressionLanguage");
+vi.mock("@/registerKnimeExpressionLanguage", () => ({
+  default: vi.fn(() => vi.fn()),
+}));
 
 describe("App.vue", () => {
   enableAutoUnmount(afterEach);

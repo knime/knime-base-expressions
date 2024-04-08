@@ -14,10 +14,13 @@ import ColumnOutputSelector, {
   type AllowedDropDownValue,
 } from "@/components/ColumnOutputSelector.vue";
 import { onKeyStroke } from "@vueuse/core";
+import * as monaco from "monaco-editor";
 
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 
-registerKnimeExpressionLanguage();
+// Register language - but bear in mind we'll have to re-register it once we have
+// column names, so that we can add autocompletion of columns.
+const language = "knime-expression";
 
 const MIN_WIDTH_FUNCTION_CATALOG = 280;
 import MultiEditorPane from "./MultiEditorPane.vue";
@@ -48,6 +51,26 @@ onMounted(() => {
         },
       );
     }
+  });
+
+  Promise.all([
+    scriptingService.getInputObjects(),
+    scriptingService.getFlowVariableInputs(),
+  ]).then((result) => {
+    registerKnimeExpressionLanguage({
+      columnNamesForCompletion: result[0]?.[0]?.subItems
+        ? result[0][0].subItems.map((c) => ({ name: c.name, type: c.type }))
+        : [],
+      flowVariableNamesForCompletion: result[1]?.subItems
+        ? result[1].subItems.map((c) => ({ name: c.name, type: c.type }))
+        : [],
+      extraCompletionItems: getFunctionCatalogData().functions.map((f) => ({
+        text: `${f.name}(${Array(f.arguments.length).join(", ")})`,
+        kind: monaco.languages.CompletionItemKind.Function,
+        extraDetailForMonaco: { documentation: { value: f.description } },
+      })),
+      languageName: language,
+    });
   });
 
   scriptingService.getInitialSettings().then((settings) => {
@@ -89,10 +112,6 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
 });
 
 const functionCatalogData = getFunctionCatalogData();
-
-const language = "knime-expression";
-
-// TODO(language-features) register knime expression language
 </script>
 
 <template>
