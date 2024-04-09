@@ -69,12 +69,15 @@ import static org.knime.core.expressions.Ast.UnaryOperator.NOT;
 import static org.knime.core.expressions.AstTestUtils.BOOL;
 import static org.knime.core.expressions.AstTestUtils.COL;
 import static org.knime.core.expressions.AstTestUtils.FLOAT;
+import static org.knime.core.expressions.AstTestUtils.FUN;
 import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.STR;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -91,6 +94,7 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
@@ -105,7 +109,7 @@ final class EvaluationTest {
     @EnumSource(ExecutionTest.class)
     void test(final ExecutionTest params) throws Exception {
         var ast = params.m_expression;
-        Expressions.inferTypes(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::type)));
+        Typing.inferTypes(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::type)), TEST_FUNCTIONS);
         var result = Evaluation.evaluate(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::computer)));
         assertNotNull(result, "should output result");
         params.m_resultChecker.accept(result);
@@ -314,6 +318,10 @@ final class EvaluationTest {
             STRING_CONCAT_STRING_AND_FLOAT(OP(FLOAT(0.0001), PLUS, STR(" is pretty small")), "1.0E-4 is pretty small"), //
             STRING_CONCAT_STRING_AND_TRUE(OP(STR("This is "), PLUS, BOOL(true)), "This is true"), //
             STRING_CONCAT_STRING_AND_FALSE(OP(BOOL(false), PLUS, STR(" it is")), "false it is"), //
+
+            // === Function calls
+
+            FN_PLUS_100(FUN("PLUS_100_FN", INT(10)), 110), //
         ;
 
         private final Ast m_expression;
@@ -435,6 +443,45 @@ final class EvaluationTest {
 
         ValueType type() {
             return m_type;
+        }
+    }
+
+    private static final Function<String, Optional<ExpressionFunction>> TEST_FUNCTIONS =
+        TestUtils.functionsMappingFromArray(TestFunctions.values());
+
+    private static enum TestFunctions implements ExpressionFunction {
+            PLUS_100_FN(List.of(ValueType.INTEGER), ValueType.INTEGER,
+                (c) -> IntegerComputer.of(() -> ((IntegerComputer)c.get(0)).compute() + 100, () -> false)), //
+        ;
+
+        private final Map<List<ValueType>, ValueType> m_argsToOutputs;
+
+        private final Function<List<Computer>, Computer> m_apply;
+
+        private TestFunctions(final List<ValueType> args, final ValueType output,
+            final Function<List<Computer>, Computer> apply) {
+            this(Map.of(args, output), apply);
+        }
+
+        private TestFunctions(final Map<List<ValueType>, ValueType> argsToOutput,
+            final Function<List<Computer>, Computer> apply) {
+            m_argsToOutputs = argsToOutput;
+            m_apply = apply;
+        }
+
+        @Override
+        public Optional<ValueType> returnType(final List<ValueType> argTypes) {
+            return Optional.ofNullable(m_argsToOutputs.get(argTypes));
+        }
+
+        @Override
+        public Computer apply(final List<Computer> args) {
+            return m_apply.apply(args);
+        }
+
+        @Override
+        public Description description() {
+            throw new IllegalStateException("Should not be called during function evaluation");
         }
     }
 }

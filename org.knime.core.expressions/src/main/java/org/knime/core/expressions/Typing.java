@@ -71,6 +71,7 @@ import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Expressions.ExpressionError;
 import org.knime.core.expressions.Expressions.MissingColumnError;
 import org.knime.core.expressions.Expressions.TypingError;
+import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
  * Algorithm to infer types of an {@link Ast}.
@@ -82,13 +83,15 @@ final class Typing {
 
     private static final String TYPE_DATA_KEY = "type";
 
+    private static final String FUNCTION_IMPL_DATA_KEY = "function_impl";
+
     private Typing() {
     }
 
-    static ValueType inferTypes(final Ast root, final Function<ColumnAccess, Optional<ValueType>> columnType)
-        throws TypingError, MissingColumnError { // NOSONAR: Sonar is wrong
+    static ValueType inferTypes(final Ast root, final Function<ColumnAccess, Optional<ValueType>> columnType,
+        final Function<String, Optional<ExpressionFunction>> functions) throws TypingError, MissingColumnError { // NOSONAR: Sonar is wrong
         try {
-            return Ast.putDataRecursive(root, TYPE_DATA_KEY, new TypingVisitor(columnType));
+            return Ast.putDataRecursive(root, TYPE_DATA_KEY, new TypingVisitor(columnType, functions));
         } catch (TypingError | MissingColumnError ex) {
             throw ex;
         } catch (ExpressionError ex) {
@@ -106,12 +109,25 @@ final class Typing {
         }
     }
 
+    static ExpressionFunction getFunctionImpl(final FunctionCall node) {
+        Object function = node.data(FUNCTION_IMPL_DATA_KEY);
+        if (function instanceof ExpressionFunction f) {
+            return f;
+        } else {
+            throw new IllegalArgumentException("The node " + node + " has no resolved function implementation.");
+        }
+    }
+
     private static final class TypingVisitor implements Ast.AstVisitor<ValueType, ExpressionError> {
 
         private final Function<ColumnAccess, Optional<ValueType>> m_columnType;
 
-        TypingVisitor(final Function<ColumnAccess, Optional<ValueType>> columnType) {
+        private final Function<String, Optional<ExpressionFunction>> m_functions;
+
+        TypingVisitor(final Function<ColumnAccess, Optional<ValueType>> columnType,
+            final Function<String, Optional<ExpressionFunction>> functions) {
             m_columnType = columnType;
+            m_functions = functions;
         }
 
         @Override
@@ -187,7 +203,21 @@ final class Typing {
 
         @Override
         public ValueType visit(final FunctionCall node) throws ExpressionError {
-            throw new IllegalStateException("functions are not yet implemented");
+            // TODO(AP-22027) improve the error
+            // - Is there a function with a similar name?
+            // - Does a keyword of a function match? Can we suggest the name of our function?
+            // - What are the arguments that would fit? Which argument is the culprit?
+
+            var resolvedFunction = m_functions.apply(node.name())
+                .orElseThrow(() -> new TypingError("No function with name " + node.name()));
+
+            // NB: We do not apply the typing on the args if the function name does not exist
+            var argTypes = node.args().stream().map(Typing::getType).toList();
+            var outputType = resolvedFunction.returnType(argTypes).orElseThrow(() -> new TypingError(
+                "The function " + node.name() + " is not applicable to the arguments " + argTypes));
+
+            node.putData(FUNCTION_IMPL_DATA_KEY, resolvedFunction);
+            return outputType;
         }
 
         private static ValueType arithmeticType(final BinaryOperator op, final ValueType typeA, final ValueType typeB)

@@ -53,6 +53,7 @@ import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.STRING;
 
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
@@ -178,7 +179,14 @@ final class Evaluation {
 
         @Override
         public Computer visit(final FunctionCall node) throws MissingColumnError {
-            throw new EvaluationImplementationError("Function evaluation not yet implemented");
+            // Create computers for the arguments
+            var argComputers = new ArrayList<Computer>(node.args().size());
+            for (var arg : node.args()) {
+                argComputers.add(arg.accept(this));
+            }
+
+            // Apply the function
+            return Typing.getFunctionImpl(node).apply(argComputers);
         }
     }
 

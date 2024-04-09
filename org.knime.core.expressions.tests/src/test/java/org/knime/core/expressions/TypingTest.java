@@ -67,20 +67,22 @@ import static org.knime.core.expressions.Ast.UnaryOperator.NOT;
 import static org.knime.core.expressions.AstTestUtils.BOOL;
 import static org.knime.core.expressions.AstTestUtils.COL;
 import static org.knime.core.expressions.AstTestUtils.FLOAT;
+import static org.knime.core.expressions.AstTestUtils.FUN;
 import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.STR;
+import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.FLOAT;
+import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.OPT_BOOLEAN;
 import static org.knime.core.expressions.ValueType.OPT_FLOAT;
 import static org.knime.core.expressions.ValueType.OPT_INTEGER;
 import static org.knime.core.expressions.ValueType.OPT_STRING;
-import static org.knime.core.expressions.ValueType.NativeValueType.BOOLEAN;
-import static org.knime.core.expressions.ValueType.NativeValueType.FLOAT;
-import static org.knime.core.expressions.ValueType.NativeValueType.INTEGER;
-import static org.knime.core.expressions.ValueType.NativeValueType.STRING;
+import static org.knime.core.expressions.ValueType.STRING;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -91,6 +93,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Expressions.MissingColumnError;
 import org.knime.core.expressions.Expressions.TypingError;
+import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
@@ -102,7 +105,7 @@ final class TypingTest {
     @EnumSource(TypingTestCase.class)
     void test(final TypingTestCase params) throws Exception {
         var ast = params.m_expression;
-        var outputType = Expressions.inferTypes(ast, TEST_COLUMN_TO_TYPE);
+        var outputType = Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS);
         assertEquals(params.m_expectedType, outputType, "should fit output type");
         assertEquals(params.m_expectedType, Expressions.getInferredType(ast), "should fit output type");
         assertChildrenHaveTypes(ast);
@@ -184,6 +187,12 @@ final class TypingTest {
             STRING_CONCAT_STRING_AND_OPT_FLOAT(OP(STR("bar"), PLUS, COL("f?")), STRING), //
             STRING_CONCAT_STRING_AND_BOOL(OP(STR("bar"), PLUS, BOOL(true)), STRING), //
 
+            // === Function calls
+            FUNCTION_CALL(FUN("INT_TO_FLOAT_FN", INT(1)), FLOAT), //
+            FUNCTION_CALL_NO_ARGS(FUN("FN_WITH_NO_ARGS"), MISSING), //
+            FUNCTION_CALL_WITH_TWO_SIGS_1(FUN("TWO_SIG_FN", INT(1)), FLOAT), //
+            FUNCTION_CALL_WITH_TWO_SIGS_2(FUN("TWO_SIG_FN", FLOAT(1), STR("bar")), INTEGER), //
+
             // === Complex Expressions
             NESTED_BINARY_OPS(OP(OP(INT(2), PLUS, COL("i?")), MULTIPLY, FLOAT(4.0)), OPT_FLOAT), //
         ;
@@ -202,8 +211,8 @@ final class TypingTest {
     @EnumSource(TypingErrorTestCase.class)
     void testError(final TypingErrorTestCase params) throws Exception {
         var ast = params.m_expression;
-        var typingError = assertThrows(TypingError.class, () -> Expressions.inferTypes(ast, TEST_COLUMN_TO_TYPE),
-            "should fail type inferrence");
+        var typingError = assertThrows(TypingError.class,
+            () -> Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS), "should fail type inferrence");
         var errorMessage = typingError.getMessage();
         for (var expectedSubstring : params.m_expectedErrorSubstrings) {
             assertTrue(errorMessage.contains(expectedSubstring),
@@ -239,6 +248,10 @@ final class TypingTest {
             // === String Concatenation
             STRING_CONCAT_STRING_AND_MISSING(OP(STR("foo"), PLUS, MIS), "+", "STRING", "MISSING"), //
             STRING_CONCAT_MISSING_AND_STRING(OP(MIS, PLUS, STR("foo")), "+", "STRING", "MISSING"), //
+
+            // === Function calls
+            FUNCTION_CALL_UNKNOWN_ID(FUN("not_a_fn", INT(1)), "not_a_fn"), //
+            FUNCTION_CALL_WRONG_ARG_TYPES(FUN("INT_TO_FLOAT_FN", FLOAT(1.0)), "INT_TO_FLOAT_FN", "FLOAT"), //
         ;
 
         private final Ast m_expression;
@@ -276,6 +289,40 @@ final class TypingTest {
         for (var child : astWithTypes.children()) {
             assertNotNull(Expressions.getInferredType(astWithTypes), "should have inferred type");
             assertChildrenHaveTypes(child);
+        }
+    }
+
+    private static final Function<String, Optional<ExpressionFunction>> TEST_FUNCTIONS =
+        TestUtils.functionsMappingFromArray(TestFunctions.values());
+
+    private static enum TestFunctions implements ExpressionFunction {
+            FN_WITH_NO_ARGS(List.of(), MISSING), //
+            INT_TO_FLOAT_FN(List.of(INTEGER), FLOAT), //
+            TWO_SIG_FN(Map.of(List.of(INTEGER), FLOAT, List.of(FLOAT, STRING), INTEGER));
+
+        private final Map<List<ValueType>, ValueType> m_argsToOutputs;
+
+        private TestFunctions(final List<ValueType> args, final ValueType output) {
+            this(Map.of(args, output));
+        }
+
+        private TestFunctions(final Map<List<ValueType>, ValueType> argsToOutput) {
+            m_argsToOutputs = argsToOutput;
+        }
+
+        @Override
+        public Optional<ValueType> returnType(final List<ValueType> argTypes) {
+            return Optional.ofNullable(m_argsToOutputs.get(argTypes));
+        }
+
+        @Override
+        public Computer apply(final List<Computer> args) {
+            throw new IllegalStateException("Should not be called during type inferrence");
+        }
+
+        @Override
+        public Description description() {
+            throw new IllegalStateException("Should not be called during type inferrence");
         }
     }
 }

@@ -53,6 +53,7 @@ import java.util.OptionalInt;
 import java.util.function.Function;
 
 import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.functions.BuiltInFunctions;
 import org.knime.core.expressions.parser.ExpressionGrammar;
 import org.knime.core.expressions.parser.ExpressionGrammar.Expr;
 import org.rekex.parser.ParseResult;
@@ -105,7 +106,8 @@ public final class Expressions {
     }
 
     /**
-     * Infer the type of the given expression. Adds the type as {@link Ast#data()} to each node of the syntax tree.
+     * Infer the type of the given expression and resolve function calls. Adds the type, and function as
+     * {@link Ast#data()} to each node of the syntax tree.
      *
      * @param expression the expression
      * @param columnToType a function that returns the type of a columns accessed by the expression. The function should
@@ -116,7 +118,7 @@ public final class Expressions {
      */
     public static ValueType inferTypes(final Ast expression,
         final Function<ColumnAccess, Optional<ValueType>> columnToType) throws MissingColumnError, TypingError {
-        return Typing.inferTypes(expression, columnToType);
+        return Typing.inferTypes(expression, columnToType, BuiltInFunctions.BUILT_IN_FUNCTIONS_GETTER);
     }
 
     /**
