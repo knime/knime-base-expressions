@@ -7,7 +7,6 @@ import {
 import Button from "webapps-common/ui/components/Button.vue";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import { onMounted, ref } from "vue";
-import { getFunctionCatalogData } from "@/components/mockFunctionCatalogData";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
   type ColumnSelectorState,
@@ -24,6 +23,7 @@ const language = "knime-expression";
 
 const MIN_WIDTH_FUNCTION_CATALOG = 280;
 import MultiEditorPane from "./MultiEditorPane.vue";
+import type { FunctionCatalogData } from "./functionCatalogTypes";
 
 const scriptingService = getScriptingService();
 
@@ -31,6 +31,8 @@ const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
 const columnSectorState = ref<ColumnSelectorState>();
 
 const multiEditorComponentRef = ref<typeof MultiEditorPane | null>(null);
+
+const functionCatalogData = ref<FunctionCatalogData>();
 
 const inputsAvailable = ref(false);
 onMounted(() => {
@@ -53,9 +55,18 @@ onMounted(() => {
     }
   });
 
+  const functionCatalogPromise: Promise<FunctionCatalogData> =
+    getScriptingService()
+      .sendToService("getFunctionCatalog")
+      .then((data) => {
+        functionCatalogData.value = data;
+        return data;
+      });
+
   Promise.all([
     scriptingService.getInputObjects(),
     scriptingService.getFlowVariableInputs(),
+    functionCatalogPromise,
   ]).then((result) => {
     registerKnimeExpressionLanguage({
       columnNamesForCompletion: result[0]?.[0]?.subItems
@@ -64,7 +75,7 @@ onMounted(() => {
       flowVariableNamesForCompletion: result[1]?.subItems
         ? result[1].subItems.map((c) => ({ name: c.name, type: c.type }))
         : [],
-      extraCompletionItems: getFunctionCatalogData().functions.map((f) => ({
+      extraCompletionItems: result[2].functions.map((f) => ({
         text: `${f.name}(${Array(f.arguments.length).join(", ")})`,
         kind: monaco.languages.CompletionItemKind.Function,
         extraDetailForMonaco: { documentation: { value: f.description } },
@@ -110,8 +121,6 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
     runExpressions();
   }
 });
-
-const functionCatalogData = getFunctionCatalogData();
 </script>
 
 <template>
@@ -147,11 +156,13 @@ const functionCatalogData = getFunctionCatalogData();
         >
       </template>
       <template #right-pane>
-        <FunctionCatalog
-          :function-catalog-data="functionCatalogData"
-          :initially-expanded="true"
-          @function-insertion-event="onFunctionInsertionTriggered"
-        />
+        <template v-if="functionCatalogData">
+          <FunctionCatalog
+            :function-catalog-data="functionCatalogData"
+            :initially-expanded="true"
+            @function-insertion-event="onFunctionInsertionTriggered"
+          />
+        </template>
       </template>
     </ScriptingEditor>
   </main>

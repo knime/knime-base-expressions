@@ -112,6 +112,10 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             return null;
         }
 
+        public FunctionCatalogData getFunctionCatalog() {
+            return FunctionCatalogData.BUILT_IN;
+        }
+
         public void runExpression(final String expression) {
             var inTable = (BufferedDataTable)getWorkflowControl().getInputData()[0];
             if (inTable == null) {
