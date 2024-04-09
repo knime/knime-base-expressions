@@ -45,11 +45,7 @@
  */
 package org.knime.core.expressions;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.knime.core.expressions.Ast.BinaryOperator.CONDITIONAL_AND;
 import static org.knime.core.expressions.Ast.BinaryOperator.CONDITIONAL_OR;
 import static org.knime.core.expressions.Ast.BinaryOperator.DIVIDE;
@@ -74,6 +70,7 @@ import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.STR;
+import static org.knime.core.expressions.TestUtils.computerResultChecker;
 
 import java.util.Arrays;
 import java.util.List;
@@ -330,72 +327,28 @@ final class EvaluationTest {
 
         private ExecutionTest(final Ast expression) {
             m_expression = expression;
-            m_resultChecker = checkMissing();
+            m_resultChecker = computerResultChecker(expression.toExpression());
         }
 
         private ExecutionTest(final Ast expression, final boolean expected) {
             m_expression = expression;
-            m_resultChecker = checkBoolean(expected);
+            m_resultChecker = computerResultChecker(expression.toExpression(), expected);
         }
 
         private ExecutionTest(final Ast expression, final long expected) {
             m_expression = expression;
-            m_resultChecker = checkInteger(expected);
+            m_resultChecker = computerResultChecker(expression.toExpression(), expected);
         }
 
         private ExecutionTest(final Ast expression, final double expected) {
             m_expression = expression;
-            m_resultChecker = checkFloat(expected);
+            m_resultChecker = computerResultChecker(expression.toExpression(), expected);
         }
 
         private ExecutionTest(final Ast expression, final String expected) {
             m_expression = expression;
-            m_resultChecker = checkString(expected);
+            m_resultChecker = computerResultChecker(expression.toExpression(), expected);
         }
-
-        static Consumer<Computer> checkMissing() {
-            return c -> {
-                assertInstanceOf(Computer.class, c, "should eval to Computer");
-                assertTrue(c.isMissing(), "should be missing");
-            };
-        }
-
-        Consumer<Computer> checkBoolean(final boolean expected) {
-            return c -> {
-                var expr = m_expression.toExpression();
-                assertInstanceOf(BooleanComputer.class, c, expr + " should eval to BOOLEAN");
-                assertFalse(c.isMissing(), expr + " should not be missing");
-                assertEquals(expected, ((BooleanComputer)c).compute(), expr + " should eval correctly");
-            };
-        }
-
-        Consumer<Computer> checkInteger(final long expected) {
-            return c -> {
-                var expr = m_expression.toExpression();
-                assertInstanceOf(IntegerComputer.class, c, expr + " should eval to INTEGER");
-                assertFalse(c.isMissing(), expr + " should not be missing");
-                assertEquals(expected, ((IntegerComputer)c).compute(), expr + " should eval correctly");
-            };
-        }
-
-        Consumer<Computer> checkFloat(final double expected) {
-            return c -> {
-                var expr = m_expression.toExpression();
-                assertInstanceOf(FloatComputer.class, c, expr + " should eval to FLOAT");
-                assertFalse(c.isMissing(), expr + " should not be missing");
-                assertEquals(expected, ((FloatComputer)c).compute(), expr + " should eval correctly");
-            };
-        }
-
-        Consumer<Computer> checkString(final String expected) {
-            return c -> {
-                var expr = m_expression.toExpression();
-                assertInstanceOf(StringComputer.class, c, expr + " should eval to STRING");
-                assertFalse(c.isMissing(), expr + " should not be missing");
-                assertEquals(expected, ((StringComputer)c).compute(), expr + " should eval correctly");
-            };
-        }
-
     }
 
     private static final Function<ColumnAccess, Optional<TestColumn>> FIND_TEST_COLUMN =

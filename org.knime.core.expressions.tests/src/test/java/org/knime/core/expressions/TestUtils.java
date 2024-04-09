@@ -48,10 +48,21 @@
  */
 package org.knime.core.expressions;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.knime.core.expressions.Computer.BooleanComputer;
+import org.knime.core.expressions.Computer.FloatComputer;
+import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
@@ -70,5 +81,68 @@ public final class TestUtils {
         functionsMappingFromArray(final ExpressionFunction[] functions) {
         var map = Arrays.stream(functions).collect(Collectors.toMap(ExpressionFunction::name, f -> f));
         return name -> Optional.ofNullable(map.get(name));
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @return a consumer that checks that the argument computer evaluates to MISSING
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc) {
+        return c -> {
+            assertInstanceOf(Computer.class, c, computerDesc + " should eval to Computer");
+            assertTrue(c.isMissing(), computerDesc + " should be missing");
+        };
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (BOOLEAN)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final boolean expected) {
+        return c -> {
+            assertInstanceOf(BooleanComputer.class, c, computerDesc + " should eval to BOOLEAN");
+            assertFalse(c.isMissing(), computerDesc + " should not be missing");
+            assertEquals(expected, ((BooleanComputer)c).compute(), computerDesc + " should eval correctly");
+        };
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (INTEGER)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final long expected) {
+        return c -> {
+            assertInstanceOf(IntegerComputer.class, c, computerDesc + " should eval to INTEGER");
+            assertFalse(c.isMissing(), computerDesc + " should not be missing");
+            assertEquals(expected, ((IntegerComputer)c).compute(), computerDesc + " should eval correctly");
+        };
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (FLOAT)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final double expected) {
+        return c -> {
+            assertInstanceOf(FloatComputer.class, c, computerDesc + " should eval to FLOAT");
+            assertFalse(c.isMissing(), computerDesc + " should not be missing");
+            assertEquals(expected, ((FloatComputer)c).compute(), computerDesc + " should eval correctly");
+        };
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (STRING)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final String expected) {
+        return c -> {
+            assertInstanceOf(StringComputer.class, c, computerDesc + " should eval to STRING");
+            assertFalse(c.isMissing(), computerDesc + " should not be missing");
+            assertEquals(expected, ((StringComputer)c).compute(), computerDesc + " should eval correctly");
+        };
     }
 }
