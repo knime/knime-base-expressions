@@ -62,7 +62,10 @@ const onDragStart = (e: DragEvent, f: FunctionData) => {
 
   removeGhostsRef.value = removeGhosts;
 
-  e.dataTransfer?.setData("text", `${f.name}(${Array(f.arguments.length).join(", ")})`);
+  e.dataTransfer?.setData(
+    "text",
+    `${f.name}(${Array(f.arguments.length).join(", ")})`,
+  );
   e.dataTransfer?.setData("eventSource", "function-catalog");
   e.dataTransfer?.setDragImage(EMPTY_DRAG_IMAGE, 0, 0);
 };
