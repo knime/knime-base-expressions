@@ -54,10 +54,6 @@ import java.util.function.Function;
 
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.functions.BuiltInFunctions;
-import org.knime.core.expressions.parser.ExpressionGrammar;
-import org.knime.core.expressions.parser.ExpressionGrammar.Expr;
-import org.rekex.parser.ParseResult;
-import org.rekex.parser.PegParser;
 
 /**
  * Utilities for working with expressions in the KNIME Expression Language.
@@ -77,13 +73,7 @@ public final class Expressions {
      * @throws SyntaxError if the input is not a syntactically valid expression
      */
     public static Ast parse(final String expression) throws SyntaxError {
-        final PegParser<Expr> parser = ExpressionGrammar.parser();
-        final ParseResult<Expr> result = parser.parse(expression);
-        if (result instanceof ParseResult.Full<Expr> full) {
-            return full.value().ast();
-        } else {
-            throw new SyntaxError("parse error:\n" + result);
-        }
+        return Parser.parse(expression);
     }
 
     // TODO(AP-22024) remove this method from the API
