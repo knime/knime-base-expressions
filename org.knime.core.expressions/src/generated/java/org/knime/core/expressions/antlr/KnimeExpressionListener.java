@@ -66,6 +66,18 @@ public interface KnimeExpressionListener extends ParseTreeListener {
 	 */
 	void exitFunctionCall(KnimeExpressionParser.FunctionCallContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code flowVarAccess}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterFlowVarAccess(KnimeExpressionParser.FlowVarAccessContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code flowVarAccess}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitFlowVarAccess(KnimeExpressionParser.FlowVarAccessContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code unaryOp}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
 	 * @param ctx the parse tree

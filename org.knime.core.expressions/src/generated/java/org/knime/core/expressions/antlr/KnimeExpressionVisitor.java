@@ -45,6 +45,13 @@ public interface KnimeExpressionVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFunctionCall(KnimeExpressionParser.FunctionCallContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code flowVarAccess}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFlowVarAccess(KnimeExpressionParser.FlowVarAccessContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code unaryOp}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
 	 * @param ctx the parse tree

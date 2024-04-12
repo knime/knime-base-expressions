@@ -77,6 +77,18 @@ public class KnimeExpressionBaseListener implements KnimeExpressionListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterFlowVarAccess(KnimeExpressionParser.FlowVarAccessContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFlowVarAccess(KnimeExpressionParser.FlowVarAccessContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterUnaryOp(KnimeExpressionParser.UnaryOpContext ctx) { }
 	/**
 	 * {@inheritDoc}

@@ -52,6 +52,7 @@ import static org.knime.core.expressions.Ast.binaryOp;
 import static org.knime.core.expressions.Ast.booleanConstant;
 import static org.knime.core.expressions.Ast.columnAccess;
 import static org.knime.core.expressions.Ast.floatConstant;
+import static org.knime.core.expressions.Ast.flowVarAccess;
 import static org.knime.core.expressions.Ast.functionCall;
 import static org.knime.core.expressions.Ast.integerConstant;
 import static org.knime.core.expressions.Ast.missingConstant;
@@ -78,6 +79,7 @@ import org.knime.core.expressions.antlr.KnimeExpressionLexer;
 import org.knime.core.expressions.antlr.KnimeExpressionParser;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.BinaryOpContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.ColAccessContext;
+import org.knime.core.expressions.antlr.KnimeExpressionParser.FlowVarAccessContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FullExprContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FunctionCallContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.ParenthesisedExprContext;
@@ -157,6 +159,12 @@ final class Parser {
         public Ast visitColAccess(final ColAccessContext ctx) {
             var col = ctx.shortName != null ? ctx.shortName.getText() : parseStringLiteral(ctx.longName.getText());
             return columnAccess(col);
+        }
+
+        @Override
+        public Ast visitFlowVarAccess(final FlowVarAccessContext ctx) {
+            var name = ctx.shortName != null ? ctx.shortName.getText() : parseStringLiteral(ctx.longName.getText());
+            return flowVarAccess(name);
         }
 
         @Override

@@ -106,6 +106,14 @@ public final class AstTestUtils {
     }
 
     /**
+     * @param name
+     * @return a {@link Ast.FlowVarAccess}
+     */
+    public static Ast.FlowVarAccess FLOW(final String name) { // NOSONAR - name useful for visual clarity
+        return Ast.flowVarAccess(name);
+    }
+
+    /**
      * @param leftArg
      * @param op
      * @param rightArg

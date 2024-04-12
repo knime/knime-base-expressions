@@ -7,7 +7,8 @@ fullExpr: expr EOF;
 
 // Any valid expression
 expr:
-	'$' (shortName = IDENTIFIER | '['+ longName = STRING ']')		# colAccess
+	'$$' (shortName = IDENTIFIER | '['+ longName = STRING ']')		# flowVarAccess
+	| '$' (shortName = IDENTIFIER | '['+ longName = STRING ']')		# colAccess
 	| name = IDENTIFIER '(' functionArgs? ')'						# functionCall
 	| <assoc = right> expr op = EXPONENTIATE expr					# binaryOp
 	| op = MINUS expr												# unaryOp

@@ -68,6 +68,7 @@ import static org.knime.core.expressions.Ast.BinaryOperator.REMAINDER;
 import static org.knime.core.expressions.AstTestUtils.BOOL;
 import static org.knime.core.expressions.AstTestUtils.COL;
 import static org.knime.core.expressions.AstTestUtils.FLOAT;
+import static org.knime.core.expressions.AstTestUtils.FLOW;
 import static org.knime.core.expressions.AstTestUtils.FUN;
 import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
@@ -101,6 +102,12 @@ final class ParserTest {
             COL_SHORTHAND_2("$col_name12_", COL("col_name12_")), //
             COL_LONG_1("$[\"col\"]", COL("col")), //
             COL_LONG_2("$[\"my 'very\\\" special column\"]", COL("my 'very\" special column")), //
+
+            // Flow Variable Access
+            FLOW_SHORTHAND_1("$$varname", FLOW("varname")), //
+            FLOW_SHORTHAND_2("$$flow_name12_", FLOW("flow_name12_")), //
+            FLOW_LONG_1("$$[\"flow\"]", FLOW("flow")), //
+            FLOW_LONG_2("$$[\"my 'very\\\" special variable\"]", FLOW("my 'very\" special variable")), //
 
             // BOOLEAN Literal
             BOOL_TRUE("true", BOOL(true)), //
@@ -245,11 +252,11 @@ final class ParserTest {
                         OP(COL("opt_in_status"), EQUAL_TO, BOOL(true)) //
                     ) //
                 )), //
-            COMPLEX_2("$discount_rate * $price > $price - $min_savings", //
+            COMPLEX_2("$$discount_rate * $price > $price - $$min_savings", //
                 OP( //
-                    OP(COL("discount_rate"), MULTIPLY, COL("price")), //
+                    OP(FLOW("discount_rate"), MULTIPLY, COL("price")), //
                     GREATER_THAN, //
-                    OP(COL("price"), MINUS, COL("min_savings")) //
+                    OP(COL("price"), MINUS, FLOW("min_savings")) //
                 ) //
             ), //
             COMPLEX_3("round(avg($age), 0) >= 30 and lower($department) = \"marketing\"", //
@@ -265,7 +272,7 @@ final class ParserTest {
             ), //
             COMPLEX_4( //
                 "$status = \"Active\" and $days_since_last_order <= 30 \n or \n " //
-                    + "$status = \"Inactive\" and $days_since_last_order > 30", //
+                    + "$status = \"Inactive\" and $days_since_last_order > $$['many days']", //
                 OP( //
                     OP( //
                         OP(COL("status"), EQUAL_TO, STR("Active")), //
@@ -276,7 +283,7 @@ final class ParserTest {
                     OP( //
                         OP(COL("status"), EQUAL_TO, STR("Inactive")), //
                         CONDITIONAL_AND, //
-                        OP(COL("days_since_last_order"), GREATER_THAN, INT(30)) //
+                        OP(COL("days_since_last_order"), GREATER_THAN, FLOW("many days")) //
                     ) //
                 ) //
             ), //
