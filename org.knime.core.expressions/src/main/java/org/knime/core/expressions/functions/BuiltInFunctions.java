@@ -75,10 +75,43 @@ public final class BuiltInFunctions {
     public static final List<ExpressionFunction> BUILT_IN_FUNCTIONS = List.of( //
         MathFunctions.MAX, //
         MathFunctions.MIN, //
+        MathFunctions.ARGMAX, //
+        MathFunctions.ARGMIN, //
         MathFunctions.ABS, //
-        MathFunctions.LN, //
         MathFunctions.SIN, //
         MathFunctions.COS, //
+        MathFunctions.TAN, //
+        MathFunctions.ASIN, //
+        MathFunctions.ACOS, //
+        MathFunctions.ATAN, //
+        MathFunctions.ATAN2, //
+        MathFunctions.SINH, //
+        MathFunctions.COSH, //
+        MathFunctions.TANH, //
+        MathFunctions.ASINH, //
+        MathFunctions.ACOSH, //
+        MathFunctions.ATANH, //
+        MathFunctions.LN, //
+        MathFunctions.LOG10, //
+        MathFunctions.LOG2, //
+        MathFunctions.LOG_BASE, //
+        MathFunctions.LOG1P, //
+        MathFunctions.EXP, //
+        MathFunctions.POW, //
+        MathFunctions.SQRT, //
+        MathFunctions.MOD, //
+        MathFunctions.DEGREES, //
+        MathFunctions.RADIANS, //
+        MathFunctions.FLOOR, //
+        MathFunctions.CEIL, //
+        MathFunctions.TRUNC, //
+        MathFunctions.ROUNDHALFDOWN, //
+        MathFunctions.ROUNDHALFUP, //
+        MathFunctions.ROUNDHALFEVEN, //
+        MathFunctions.SIGN, //
+        MathFunctions.AVERAGE, //
+        MathFunctions.MEDIAN, //
+        MathFunctions.BINOMIAL, //
         StringFunctions.COMPARE, //
         StringFunctions.CONTAINS //
     );

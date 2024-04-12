@@ -123,14 +123,25 @@ public final class TestUtils {
     /**
      * @param computerDesc a string about what the computer represents for assertion messages
      * @param expected the expected value (FLOAT)
+     * @param tolerance absolute tolerance for floating point values
      * @return a consumer that checks that the argument computer evaluates to the expected value
      */
-    public static Consumer<Computer> computerResultChecker(final String computerDesc, final double expected) {
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final double expected,
+        final double tolerance) {
         return c -> {
             assertInstanceOf(FloatComputer.class, c, computerDesc + " should eval to FLOAT");
             assertFalse(c.isMissing(), computerDesc + " should not be missing");
-            assertEquals(expected, ((FloatComputer)c).compute(), computerDesc + " should eval correctly");
+            assertEquals(expected, ((FloatComputer)c).compute(), tolerance, computerDesc + " should eval correctly");
         };
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (FLOAT)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final double expected) {
+        return computerResultChecker(computerDesc, expected, 0);
     }
 
     /**

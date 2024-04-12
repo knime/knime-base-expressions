@@ -297,6 +297,34 @@ public final class FunctionTestBuilder {
     }
 
     /**
+     * Add a test that checks that the function evaluates to the expected FLOAT value (with specified tolerance)
+     *
+     * @param name display name of the test
+     * @param args function arguments
+     * @param expected
+     * @param tolerance absolute tolerance for floating point values
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder implWithTolerance(final String name, final List<TestingArgument> args,
+        final double expected, final double tolerance) {
+        return impl(name, args, TestUtils.computerResultChecker(m_function.name(), expected, tolerance));
+    }
+
+    /**
+     * Add a test that checks that the function evaluates to the expected FLOAT value (with tolerance of 1e-10);
+     *
+     * @param name display name of the test
+     * @param args function arguments
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder implWithTolerance(final String name, final List<TestingArgument> args,
+        final double expected) {
+
+        return implWithTolerance(name, args, expected, 1e-10);
+    }
+
+    /**
      * Add a test that checks that the function evaluates to the expected STRING value;
      *
      * @param name display name of the test

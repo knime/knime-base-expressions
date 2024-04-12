@@ -155,6 +155,12 @@ public final class ExpressionFunctionBuilder {
             arg -> INTEGER.equals(arg.baseType()) || FLOAT.equals(arg.baseType()));
     }
 
+    /** @return an {@link ArgMatcher} that matches all integers (optional or not) */
+    public static ArgMatcher isIntegerOrOpt() {
+        return new ArgMatcherImpl("INTEGER?",
+            arg -> INTEGER.equals(arg.baseType()));
+    }
+
     /** @return an {@link ArgMatcher} that matches {@link ValueType#STRING} */
     public static ArgMatcher isString() {
         return hasType(STRING);
