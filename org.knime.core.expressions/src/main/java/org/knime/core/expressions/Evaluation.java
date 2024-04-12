@@ -67,6 +67,7 @@ import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.Ast.BooleanConstant;
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.FloatConstant;
+import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Ast.FunctionCall;
 import org.knime.core.expressions.Ast.IntegerConstant;
 import org.knime.core.expressions.Ast.MissingConstant;
@@ -116,6 +117,12 @@ final class Evaluation {
         @Override
         public Computer visit(final ColumnAccess node) throws MissingColumnError {
             return m_columnToComputer.apply(node).orElseThrow(() -> new MissingColumnError(node.name()));
+        }
+
+        @Override
+        public Computer visit(final FlowVarAccess node) throws MissingColumnError {
+            // TODO(AP-21865) implement flow variable access
+            throw new EvaluationImplementationError("flow variable access is not yet implemented");
         }
 
         @Override

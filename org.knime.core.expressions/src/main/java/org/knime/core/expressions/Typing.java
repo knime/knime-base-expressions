@@ -62,6 +62,7 @@ import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.Ast.BooleanConstant;
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.FloatConstant;
+import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Ast.FunctionCall;
 import org.knime.core.expressions.Ast.IntegerConstant;
 import org.knime.core.expressions.Ast.MissingConstant;
@@ -158,6 +159,12 @@ final class Typing {
         @Override
         public ValueType visit(final ColumnAccess node) throws ExpressionError {
             return m_columnType.apply(node).orElseThrow(() -> new MissingColumnError(node.name()));
+        }
+
+        @Override
+        public ValueType visit(final FlowVarAccess node) throws ExpressionError {
+            // TODO(AP-21865) implement flow variable access
+            throw new TypingError("flow variable access is not yet implemented");
         }
 
         @Override

@@ -63,6 +63,7 @@ import org.knime.core.expressions.Ast.BinaryOp;
 import org.knime.core.expressions.Ast.BooleanConstant;
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.FloatConstant;
+import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Ast.FunctionCall;
 import org.knime.core.expressions.Ast.IntegerConstant;
 import org.knime.core.expressions.Ast.MissingConstant;
@@ -77,7 +78,7 @@ import org.knime.core.expressions.Ast.UnaryOp;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerConstant, FloatConstant, StringConstant,
-    ColumnAccess, UnaryOp, BinaryOp, FunctionCall {
+    ColumnAccess, FlowVarAccess, UnaryOp, BinaryOp, FunctionCall {
 
     /**
      * Additional data that is attached to the node. Note, that, the data is modifiable.
@@ -374,6 +375,27 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
     }
 
     /**
+     * Create a new {@link FlowVarAccess} for the given name and with no data.
+     *
+     * @param name the name of the flow variable
+     * @return the node
+     */
+    static FlowVarAccess flowVarAccess(final String name) {
+        return flowVarAccess(name, new HashMap<>());
+    }
+
+    /**
+     * Create a new {@link FlowVarAccess} for the given name and data.
+     *
+     * @param name the name of the flow variable
+     * @param data
+     * @return the node
+     */
+    static FlowVarAccess flowVarAccess(final String name, final Map<String, Object> data) {
+        return new FlowVarAccess(name, data);
+    }
+
+    /**
      * Create a new {@link BinaryOp} on the given nodes and with no data.
      *
      * @param op the operator
@@ -555,6 +577,8 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
 
         O visit(ColumnAccess node) throws E;
 
+        O visit(FlowVarAccess node) throws E;
+
         O visit(BinaryOp node) throws E;
 
         O visit(UnaryOp node) throws E;
@@ -598,6 +622,11 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
 
         @Override
         public Optional<O> visit(final ColumnAccess node) throws E {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<O> visit(final FlowVarAccess node) throws E {
             return Optional.empty();
         }
 
@@ -736,6 +765,25 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
         @Override
         public String toExpression() {
             return "$[\"" + name + "\"]";
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+    }
+
+    /**
+     * {@link Ast} representing a flow variable access.
+     *
+     * @param name the name of the flow variable
+     * @param data attached data
+     */
+    record FlowVarAccess(String name, Map<String, Object> data) implements Ast {
+
+        @Override
+        public String toExpression() {
+            return "$$[\"" + name + "\"]";
         }
 
         @Override
