@@ -156,7 +156,7 @@ final class ParserTest {
             STRING_SQ_UNICODE_CANNOT_PRODUCE_OTHER_ESC_SEQ("'\\u005Cn'", STR("\\n")), //
 
             // MISSING literal
-            MISSING("MISSING", MIS),
+            MISSING("MISSING", MIS()),
 
             // Unary Operators
             OP_UNARY_MINUS_1("-10", OP(UnaryOperator.MINUS, INT(10))), //
@@ -237,10 +237,10 @@ final class ParserTest {
             // Combined examples
             COMPLEX_1("not ($email = MISSING) or ($phone_number != MISSING and $opt_in_status == true)", //
                 OP( //
-                    OP(UnaryOperator.NOT, OP(COL("email"), EQUAL_TO, MIS)), //
+                    OP(UnaryOperator.NOT, OP(COL("email"), EQUAL_TO, MIS())), //
                     CONDITIONAL_OR, //
                     OP( //
-                        OP(COL("phone_number"), NOT_EQUAL_TO, MIS), //
+                        OP(COL("phone_number"), NOT_EQUAL_TO, MIS()), //
                         CONDITIONAL_AND, //
                         OP(COL("opt_in_status"), EQUAL_TO, BOOL(true)) //
                     ) //

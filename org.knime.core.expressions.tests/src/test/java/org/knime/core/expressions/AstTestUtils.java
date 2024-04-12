@@ -60,8 +60,10 @@ public final class AstTestUtils {
     private AstTestUtils() {
     }
 
-    /** Singleton {@link Ast.MissingConstant} */
-    public static final Ast.MissingConstant MIS = Ast.missingConstant();
+    /** @return a {@link Ast.MissingConstant} */
+    public static final Ast.MissingConstant MIS() { // NOSONAR - name useful for visual clarity
+        return Ast.missingConstant();
+    }
 
     /**
      * @param value

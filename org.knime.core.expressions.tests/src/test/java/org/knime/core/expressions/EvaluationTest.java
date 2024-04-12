@@ -117,7 +117,7 @@ final class EvaluationTest {
             // === Constants
 
             // Missing
-            CONSTANT_MISSING(AstTestUtils.MIS), //
+            CONSTANT_MISSING(MIS()), //
             // Boolean
             CONSTANT_BOOLEAN_TRUE(BOOL(true), true), //
             CONSTANT_BOOLEAN_FALSE(BOOL(false), false), //
@@ -270,13 +270,13 @@ final class EvaluationTest {
             NOT_EQUAL_INTEGER_AND_FLOAT(OP(COL("INTEGER"), NOT_EQUAL_TO, FLOAT(99.99)), true), //
             NOT_EQUAL_STRINGS(OP(COL("STRING"), NOT_EQUAL_TO, STR("foo")), true), //
             // missing
-            EQUAL_TWO_MISSING(OP(MIS, EQUAL_TO, COL("INTEGER_MISSING")), true), //
-            EQUAL_TWO_EXPLICIT_MISSING(OP(MIS, EQUAL_TO, MIS), true), //
-            NOT_EQUAL_TWO_MISSING(OP(COL("INTEGER_MISSING"), NOT_EQUAL_TO, MIS), false), //
-            EQUAL_BOOL_AND_MISSING(OP(MIS, EQUAL_TO, COL("BOOLEAN")), false), //
-            EQUAL_INT_AND_MISSING(OP(COL("INTEGER"), EQUAL_TO, MIS), false), //
-            EQUAL_FLOAT_AND_MISSING(OP(MIS, EQUAL_TO, COL("FLOAT")), false), //
-            EQUAL_STRING_AND_MISSING(OP(MIS, EQUAL_TO, COL("STRING")), false), //
+            EQUAL_TWO_MISSING(OP(MIS(), EQUAL_TO, COL("INTEGER_MISSING")), true), //
+            EQUAL_TWO_EXPLICIT_MISSING(OP(MIS(), EQUAL_TO, MIS()), true), //
+            NOT_EQUAL_TWO_MISSING(OP(COL("INTEGER_MISSING"), NOT_EQUAL_TO, MIS()), false), //
+            EQUAL_BOOL_AND_MISSING(OP(MIS(), EQUAL_TO, COL("BOOLEAN")), false), //
+            EQUAL_INT_AND_MISSING(OP(COL("INTEGER"), EQUAL_TO, MIS()), false), //
+            EQUAL_FLOAT_AND_MISSING(OP(MIS(), EQUAL_TO, COL("FLOAT")), false), //
+            EQUAL_STRING_AND_MISSING(OP(MIS(), EQUAL_TO, COL("STRING")), false), //
 
             // === Logical Operations
 
