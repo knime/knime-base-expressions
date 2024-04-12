@@ -67,17 +67,26 @@ import com.google.common.base.Preconditions;
 @SuppressWarnings("restriction")
 final class ExpressionNodeScriptingInputOutputModelUtils {
 
+    private static final String COLUMN_ALIAS_TEMPLATE = "$[\"{{subItems.[0]}}\"]";
+
+    private static final String FLOWVAR_ALIAS_TEMPLATE = "$$[\"{{subItems.[0]}}\"]";
+
     private ExpressionNodeScriptingInputOutputModelUtils() {
         // utility class
     }
-
-    // TODO(language-features) add code aliases
 
     static InputOutputModel getFlowVariableInputs(final Collection<FlowVariable> flowVariables) {
         var subItems = flowVariables.stream() //
             .map(f -> new InputOutputModelSubItem(f.getName(), f.getVariableType().toString())) //
             .toArray(InputOutputModelSubItem[]::new);
-        return new InputOutputModel("Flow Variables", null, null, null, false, subItems);
+        return new InputOutputModel( //
+            "Flow Variables", //
+            null, //
+            FLOWVAR_ALIAS_TEMPLATE, //
+            null, // no required import
+            false, // no multiple selection
+            subItems //
+        );
     }
 
     static List<InputOutputModel> getInputObjects(final InputPortInfo[] inputPorts) {
@@ -85,9 +94,23 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
         final var spec = inputPorts[0].portSpec();
         if (spec != null) {
             Preconditions.checkArgument(spec instanceof DataTableSpec, "expected data table spec");
-            return List.of(InputOutputModel.createFromTableSpec("Input Table", (DataTableSpec)spec, null, null, null));
+            return List.of(InputOutputModel.createFromTableSpec( //
+                "Input Table", //
+                (DataTableSpec)spec, //
+                null, //
+                COLUMN_ALIAS_TEMPLATE, //
+                false, // no multiple selection
+                null // no required import
+            ));
         } else {
-            return List.of(new InputOutputModel("Input Table", null, null, null, false, null));
+            return List.of(new InputOutputModel( //
+                "Input Table", //
+                null, //
+                COLUMN_ALIAS_TEMPLATE, //
+                null, // no required import
+                false, // no multiple selection
+                null //
+            ));
         }
     }
 
