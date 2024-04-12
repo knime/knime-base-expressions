@@ -287,7 +287,8 @@ const registerKnimeExpressionLanguage = ({
             // not always!)
             const startDelimiterPosition =
               partialWordBeforeCursor.startColumn -
-              /(?:[^$]*(\${1,2}(?:\[["']?)?)?)/.exec(fourCharsBefore)![1].length;
+              /(?:[^$]*(\${1,2}(?:\[["']?)?)?)/.exec(fourCharsBefore)![1]
+                .length;
             const endDelimiterPosition =
               partialWordBeforeCursor.endColumn +
               /(?:['"]?\])?/.exec(twoCharsAfter)![0].length;
