@@ -49,6 +49,8 @@
 package org.knime.core.expressions.functions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -100,6 +102,11 @@ public final class FunctionTestBuilder {
 
         private void setOpen() {
             m_open = true;
+        }
+
+        private void resetAccessed() {
+            this.m_accessedValue = false;
+            this.m_accessedIsMissing = false;
         }
 
         private boolean isMissing() {
@@ -257,7 +264,10 @@ public final class FunctionTestBuilder {
      * @return <code>this</code> for chaining
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args) {
-        return impl(name, args, TestUtils.computerResultChecker(m_function.name()));
+        return impl(name, args, c -> {
+            assertInstanceOf(Computer.class, c, m_function.name() + " should eval to Computer");
+            assertTrue(c.isMissing(), m_function.name() + " should be missing");
+        });
     }
 
     /**
@@ -269,7 +279,12 @@ public final class FunctionTestBuilder {
      * @return <code>this</code> for chaining
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final boolean expected) {
-        return impl(name, args, TestUtils.computerResultChecker(m_function.name(), expected));
+        return impl(name, args, c -> {
+            assertInstanceOf(BooleanComputer.class, c, m_function.name() + " should eval to BOOLEAN");
+            assertFalse(c.isMissing(), m_function.name() + " should not be missing");
+            args.forEach(TestingArgument::resetAccessed);
+            assertEquals(expected, ((BooleanComputer)c).compute(), m_function.name() + " should eval correctly");
+        });
     }
 
     /**
@@ -281,7 +296,12 @@ public final class FunctionTestBuilder {
      * @return <code>this</code> for chaining
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final long expected) {
-        return impl(name, args, TestUtils.computerResultChecker(m_function.name(), expected));
+        return impl(name, args, c -> {
+            assertInstanceOf(IntegerComputer.class, c, m_function.name() + " should eval to INTEGER");
+            assertFalse(c.isMissing(), m_function.name() + " should not be missing");
+            args.forEach(TestingArgument::resetAccessed);
+            assertEquals(expected, ((IntegerComputer)c).compute(), m_function.name() + " should eval correctly");
+        });
     }
 
     /**
@@ -293,7 +313,12 @@ public final class FunctionTestBuilder {
      * @return <code>this</code> for chaining
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final double expected) {
-        return impl(name, args, TestUtils.computerResultChecker(m_function.name(), expected));
+        return impl(name, args, c -> {
+            assertInstanceOf(FloatComputer.class, c, m_function.name() + " should eval to FLOAT");
+            assertFalse(c.isMissing(), m_function.name() + " should not be missing");
+            args.forEach(TestingArgument::resetAccessed);
+            assertEquals(expected, ((FloatComputer)c).compute(), m_function.name() + " should eval correctly");
+        });
     }
 
     /**
@@ -333,7 +358,12 @@ public final class FunctionTestBuilder {
      * @return <code>this</code> for chaining
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final String expected) {
-        return impl(name, args, TestUtils.computerResultChecker(m_function.name(), expected));
+        return impl(name, args, c -> {
+            assertInstanceOf(StringComputer.class, c, m_function.name() + " should eval to STRING");
+            assertFalse(c.isMissing(), m_function.name() + " should not be missing");
+            args.forEach(TestingArgument::resetAccessed);
+            assertEquals(expected, ((StringComputer)c).compute(), m_function.name() + " should eval correctly");
+        });
     }
 
     /**
@@ -346,6 +376,7 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args,
         final Consumer<Computer> resultChecker) {
+
         m_implTests.add(DynamicTest.dynamicTest("impl - " + name, () -> {
             var result = m_function.apply(args.stream().map(TestingArgument::computer).toList());
             // NB: we open the args after calling apply to make sure that apply does not access the computers

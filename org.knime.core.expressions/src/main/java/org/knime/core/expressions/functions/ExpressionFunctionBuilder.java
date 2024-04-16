@@ -48,6 +48,7 @@
  */
 package org.knime.core.expressions.functions;
 
+import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.STRING;
@@ -155,10 +156,14 @@ public final class ExpressionFunctionBuilder {
             arg -> INTEGER.equals(arg.baseType()) || FLOAT.equals(arg.baseType()));
     }
 
-    /** @return an {@link ArgMatcher} that matches all integers (optional or not) */
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#INTEGER} */
+    public static ArgMatcher isInteger() {
+        return hasType(INTEGER);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#INTEGER} and {@link ValueType#OPT_INTEGER} */
     public static ArgMatcher isIntegerOrOpt() {
-        return new ArgMatcherImpl("INTEGER?",
-            arg -> INTEGER.equals(arg.baseType()));
+        return hasBaseType(INTEGER);
     }
 
     /** @return an {@link ArgMatcher} that matches {@link ValueType#STRING} */
@@ -169,6 +174,21 @@ public final class ExpressionFunctionBuilder {
     /** @return an {@link ArgMatcher} that matches {@link ValueType#STRING} and {@link ValueType#OPT_STRING} */
     public static ArgMatcher isStringOrOpt() {
         return hasBaseType(STRING);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#BOOLEAN} */
+    public static ArgMatcher isBoolean() {
+        return hasType(BOOLEAN);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#BOOLEAN} and {@link ValueType#OPT_BOOLEAN} */
+    public static ArgMatcher isBooleanOrOpt() {
+        return hasBaseType(BOOLEAN);
+    }
+
+    /** @return an {@link ArgMatcher} that matches any type (missing or otherwise) */
+    public static ArgMatcher isAnything() {
+        return new ArgMatcherImpl("ANY", arg -> true);
     }
 
     /**

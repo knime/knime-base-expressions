@@ -113,7 +113,44 @@ public final class BuiltInFunctions {
         MathFunctions.MEDIAN, //
         MathFunctions.BINOMIAL, //
         StringFunctions.COMPARE, //
-        StringFunctions.CONTAINS //
+        StringFunctions.CONTAINS, //
+        StringFunctions.STARTS_WITH, //
+        StringFunctions.ENDS_WITH, //
+        StringFunctions.LIKE, //
+        StringFunctions.REGEX_MATCH, //
+        StringFunctions.REGEX_EXTRACT, //
+        StringFunctions.REGEX_REPLACE, //
+        StringFunctions.REPLACE, //
+        StringFunctions.REPLACE_CHARS, //
+        StringFunctions.REPLACE_UMLAUTS, //
+        StringFunctions.REPLACE_DIACRITICS, //
+        StringFunctions.LOWER_CASE, //
+        StringFunctions.UPPER_CASE, //
+        StringFunctions.CAPITALIZE, //
+        StringFunctions.PAD_START, //
+        StringFunctions.PAD_END, //
+        StringFunctions.JOIN, //
+        StringFunctions.SUBSTR, //
+        StringFunctions.FIRST_CHARS, //
+        StringFunctions.LAST_CHARS, //
+        StringFunctions.REMOVE_CHARS, //
+        StringFunctions.STRIP, //
+        StringFunctions.STRIP_START, //
+        StringFunctions.STRIP_END, //
+        StringFunctions.REMOVE_DUPLICATE_SPACES, //
+        StringFunctions.REVERSE, //
+        StringFunctions.EMPTY_TO_MISSING, //
+        StringFunctions.MISSING_TO_EMPTY, //
+        StringFunctions.LENGTH, //
+        StringFunctions.COUNT, //
+        StringFunctions.COUNT_CHARS, //
+        StringFunctions.FIND, //
+        StringFunctions.FIND_CHARS, //
+        StringFunctions.CHECKSUM_MD5, //
+        StringFunctions.XML_ENCODE, //
+        StringFunctions.URL_ENCODE, //
+        StringFunctions.URL_DECODE, //
+        StringFunctions.TO_STRING //
     );
 
     private static final Map<String, ExpressionFunction> BUILT_IN_FUNCTIONS_MAP =
