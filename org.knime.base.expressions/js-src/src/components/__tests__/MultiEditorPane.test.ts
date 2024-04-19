@@ -12,8 +12,6 @@ vi.mock("@vueuse/core", async (importOriginal) => {
   };
 });
 
-vi.mock("@knime/scripting-editor");
-
 describe("MultiEditorPane", () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -43,15 +41,14 @@ describe("MultiEditorPane", () => {
 
   describe("renders", () => {
     it("displays code editor and passes props", () => {
+      const useCodeEditorSpy = vi.spyOn(editor, "useCodeEditor");
       doMount();
-      expect(editor.useCodeEditor).toHaveBeenCalledWith({
+      expect(useCodeEditorSpy).toHaveBeenCalledWith({
         container: expect.anything(),
         language: "someLanguage",
         fileName: "myFile.ts",
       });
-      expect(
-        vi.mocked(editor.useCodeEditor).mock.calls[0][0].container.value,
-      ).toBeDefined();
+      expect(useCodeEditorSpy.mock.calls[0][0].container.value).toBeDefined();
     });
 
     it("uses the provided title", () => {

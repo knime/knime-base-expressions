@@ -72,6 +72,7 @@ import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler
 import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -100,29 +101,30 @@ class ExpressionNodeModel extends NodeModel {
         m_settings = new ExpressionNodeSettings();
     }
 
-    @Override
-    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
-        String input = m_settings.getScript();
-
+    /** Utility function to get a mapper from column access to the value type for a table spec */
+    static Function<Ast.ColumnAccess, Optional<ValueType>> columnToTypesForTypeInference(final DataTableSpec spec) {
         // We use a NotInWorkflowWriteFileStoreHandler here because we only want to deduce the type,
         // we'll never write any data in configure.
         var fsHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
-        final Function<Ast.ColumnAccess, Optional<ValueType>> columnToAstType =
-            col -> Optional.ofNullable(inSpecs[0].getColumnSpec(col.name())) // column spec
-                .map(s -> ValueFactoryUtils.getValueFactory(s.getType(), fsHandler)) // value factory
-                .map(v -> v.getSpec()) // data spec
-                .map(s -> s.accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE));
+        return col -> Optional.ofNullable(spec.getColumnSpec(col.name())) // column spec
+            .map(s -> ValueFactoryUtils.getValueFactory(s.getType(), fsHandler)) // value factory
+            .map(v -> v.getSpec()) // data spec
+            .map(s -> s.accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE));
+    }
 
+    @Override
+    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
+        String input = m_settings.getScript();
         try {
             var ast = Expressions.parse(input);
-            var outputType = Expressions.inferTypes(ast, columnToAstType);
+            var outputType = Expressions.inferTypes(ast, columnToTypesForTypeInference(inSpecs[0]));
             var outputDataSpec = Exec.valueTypeToDataSpec(outputType);
             var outputColumnSpec =
                 ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), "Expression Result");
 
             return new DataTableSpec[]{new DataTableSpecCreator(inSpecs[0]).addColumns(outputColumnSpec).createSpec()};
-        } catch (Exception e) {
-            throw new InvalidSettingsException("Cannot parse expression", e);
+        } catch (final ExpressionCompileException e) {
+            throw new InvalidSettingsException(e.getMessage(), e);
         }
     }
 

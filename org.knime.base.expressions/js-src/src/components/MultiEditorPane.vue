@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { onKeyStroke } from "@vueuse/core";
+import { registerExpressionDiagnostics } from "../expressionDiagnostics";
 import { editor } from "@knime/scripting-editor";
+import { onKeyStroke } from "@vueuse/core";
 import { editor as MonacoEditor } from "monaco-editor";
+import { ref } from "vue";
 
 interface Props {
   language: string;
@@ -22,6 +23,8 @@ const editorState = editor.useCodeEditor({
   fileName: props.fileName,
   container: editorContainer,
 });
+
+registerExpressionDiagnostics(editorState);
 
 const getEditorState = () => editorState;
 const insertText = (eventSource: string, text: string) => {

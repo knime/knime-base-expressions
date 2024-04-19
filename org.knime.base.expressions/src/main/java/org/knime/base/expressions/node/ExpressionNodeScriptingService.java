@@ -50,12 +50,21 @@ package org.knime.base.expressions.node;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.knime.base.expressions.node.ExpressionNodeModel.ColumnInsertionMode;
 import org.knime.base.expressions.node.ExpressionNodeModel.NewColumnPosition;
+import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.container.filter.TableFilter;
 import org.knime.core.data.v2.RowRead;
+import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.ExpressionCompileError;
+import org.knime.core.expressions.Expressions;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.TextRange;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableType.BooleanType;
@@ -80,6 +89,12 @@ final class ExpressionNodeScriptingService extends ScriptingService {
     static final Set<VariableType<?>> SUPPORTED_FLOW_VARIABLE_TYPES =
         Set.of(BooleanType.INSTANCE, DoubleType.INSTANCE, IntType.INSTANCE, LongType.INSTANCE, StringType.INSTANCE);
 
+    /**
+     * Cached function for mapping column access to output types for checking the expression types. Use
+     * {@link #getColumnToTypeMapper()} to access this!
+     */
+    private Function<ColumnAccess, Optional<ValueType>> m_columnToType;
+
     ExpressionNodeScriptingService() {
         super(null, (flowVar) -> SUPPORTED_FLOW_VARIABLE_TYPES.contains(flowVar.getVariableType()));
     }
@@ -87,6 +102,19 @@ final class ExpressionNodeScriptingService extends ScriptingService {
     @Override
     public RpcService getJsonRpcService() {
         return new ExpressionNodeRpcService();
+    }
+
+    @Override
+    public void onDeactivate() {
+        m_columnToType = null;
+    }
+
+    public synchronized Function<ColumnAccess, Optional<ValueType>> getColumnToTypeMapper() {
+        if (m_columnToType == null) {
+            var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
+            m_columnToType = ExpressionNodeModel.columnToTypesForTypeInference(spec);
+        }
+        return m_columnToType;
     }
 
     public final class ExpressionNodeRpcService extends RpcService {
@@ -114,6 +142,16 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
         public FunctionCatalogData getFunctionCatalog() {
             return FunctionCatalogData.BUILT_IN;
+        }
+
+        public List<Diagnostic> getDiagnostics(final String expression) {
+            try {
+                var ast = Expressions.parse(expression);
+                Expressions.inferTypes(ast, getColumnToTypeMapper());
+                return List.of();
+            } catch (ExpressionCompileException ex) {
+                return Diagnostic.fromException(ex);
+            }
         }
 
         public void runExpression(final String expression) {
@@ -150,6 +188,20 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             }
             sb.append('\n');
             return sb.toString();
+        }
+
+        public record Diagnostic(String message, DiagnosticSeverity severity, TextRange location) {
+            static Diagnostic fromError(final ExpressionCompileError error) {
+                return new Diagnostic(error.createMessage(), DiagnosticSeverity.ERROR, error.location());
+            }
+
+            static List<Diagnostic> fromException(final ExpressionCompileException exception) {
+                return exception.getErrors().stream().map(Diagnostic::fromError).toList();
+            }
+        }
+
+        public enum DiagnosticSeverity {
+                ERROR, WARNING, INFORMATION, HINT;
         }
     }
 }
