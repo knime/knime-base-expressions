@@ -59,13 +59,19 @@ import static org.knime.core.expressions.Ast.missingConstant;
 import static org.knime.core.expressions.Ast.stringConstant;
 import static org.knime.core.expressions.Ast.unaryOp;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.Token;
@@ -73,7 +79,7 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.Ast.UnaryOperator;
-import org.knime.core.expressions.Expressions.SyntaxError;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.antlr.KnimeExpressionBaseVisitor;
 import org.knime.core.expressions.antlr.KnimeExpressionLexer;
 import org.knime.core.expressions.antlr.KnimeExpressionParser;
@@ -94,42 +100,111 @@ final class Parser {
 
     private static final Pattern ESC_SEQUENCE_PATTERN = Pattern.compile("\\\\([abfnrtv\"'\\\\\\n]|u([0-9A-Fa-f]{4}))");
 
+    private static final String LOCATION_DATA_KEY = "text_location";
+
     private Parser() {
     }
 
-    private static final ThrowingErrorListener ERROR_LISTENER = new ThrowingErrorListener();
-
     private static final ExpressionToAstVisitor EXPRESSION_TO_AST_VISITOR = new ExpressionToAstVisitor();
 
-    static Ast parse(final String expression) throws SyntaxError {
-        try {
-            var lexer = new KnimeExpressionLexer(CharStreams.fromString(expression));
-            var parser = new KnimeExpressionParser(new CommonTokenStream(lexer));
-            parser.removeErrorListeners();
-            parser.addErrorListener(ERROR_LISTENER);
-            return parser.fullExpr().accept(EXPRESSION_TO_AST_VISITOR);
-        } catch (RuntimeSyntaxError ex) { // NOSONAR: RuntimeSyntaxError is just a wrapper
-            throw ex.m_cause;
+    static Ast parse(final String expression) throws ExpressionCompileException {
+        return parseTreeToAst(parseToParseTree(expression));
+    }
+
+    /** @return the text location of the node or <code>null</code> if it is not set */
+    static TextRange getTextLocation(final Ast node) {
+        return (TextRange)node.data(LOCATION_DATA_KEY);
+    }
+
+    /**
+     * Parses the expression using the lexer and parser. Throws a ExpressionCompileException if errors occur with all
+     * errors.
+     */
+    private static FullExprContext parseToParseTree(final String expression) throws ExpressionCompileException {
+        var errorListener = new CollectingErrorListener(expression);
+        var lexer = new KnimeExpressionLexer(CharStreams.fromString(expression));
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(errorListener);
+        var parser = new KnimeExpressionParser(new CommonTokenStream(lexer));
+        parser.removeErrorListeners();
+        parser.addErrorListener(errorListener);
+
+        var fullExpr = parser.fullExpr(); // NOSONAR: This call parses the expression and fills the errors
+        if (!errorListener.m_errors.isEmpty()) {
+            throw new ExpressionCompileException(errorListener.m_errors);
         }
+        return fullExpr;
     }
 
     /** Can be set for the parser to handle errors */
-    private static final class ThrowingErrorListener extends BaseErrorListener {
+    private static final class CollectingErrorListener extends BaseErrorListener {
+
+        /** The index for the first character for each line */
+        private final int[] m_lineStarts;
+
+        private final int m_exprLength;
+
+        private List<ExpressionCompileError> m_errors;
+
+        public CollectingErrorListener(final String expression) {
+            m_errors = new ArrayList<>();
+            m_exprLength = expression.length() - 1;
+
+            var lines = expression.split("\n", -1); // limit=-1 to include trailing empty lines
+            // Initialize with length of previous lines - will sum up in-place next
+            m_lineStarts = IntStream.concat( //
+                IntStream.of(0), //
+                Arrays.stream(lines).mapToInt(l -> l.length() + 1) //
+            ).limit(lines.length).toArray();
+            Arrays.parallelPrefix(m_lineStarts, (x, y) -> x + y);
+        }
+
+        // NB: on the API only provides
+        private TextRange textRangeFromLineAndCharPos(final int line, final int charPosInLine) {
+            if (line < 0 || line >= m_lineStarts.length) {
+                // Cannot find the index for the position - mark everything
+                return new TextRange(0, m_exprLength);
+            }
+            var idx = m_lineStarts[line] + charPosInLine;
+            return new TextRange(idx, idx + 1);
+        }
+
         @Override
         public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
             final int charPositionInLine, final String msg, final RecognitionException e) {
-            throw new RuntimeSyntaxError(new Expressions.SyntaxError(msg));
+            m_errors.add(
+                ExpressionCompileError.syntaxError(msg, textRangeFromLineAndCharPos(line - 1, charPositionInLine)));
         }
     }
 
-    /** Wrapper for a {@link SyntaxError} that is a {@link RuntimeException} */
+    /**
+     * Converts the parse tree (from parseToParseTree) to an {@link Ast}.
+     *
+     * @throws ExpressionCompileException
+     */
+    private static Ast parseTreeToAst(final FullExprContext parseTree) throws ExpressionCompileException {
+        try {
+            return parseTree.accept(EXPRESSION_TO_AST_VISITOR);
+        } catch (RuntimeSyntaxError ex) { // NOSONAR: RuntimeSyntaxError is just a wrapper
+            throw ex.toExpressionCompileException();
+        }
+    }
+
+    /**
+     * Wrapper for an {@link ExpressionCompileError} that is a {@link RuntimeException} for the
+     * {@link ExpressionToAstVisitor}
+     */
     private static final class RuntimeSyntaxError extends RuntimeException {
         private static final long serialVersionUID = 1L;
 
-        final SyntaxError m_cause;
+        final ExpressionCompileError m_cause;
 
-        RuntimeSyntaxError(final SyntaxError cause) {
+        RuntimeSyntaxError(final ExpressionCompileError cause) {
             m_cause = cause;
+        }
+
+        ExpressionCompileException toExpressionCompileException() {
+            return new ExpressionCompileException(List.of(m_cause));
         }
     }
 
@@ -144,7 +219,7 @@ final class Parser {
         public Ast visitUnaryOp(final UnaryOpContext ctx) {
             var arg = ctx.getChild(1).accept(this);
             var op = mapUnaryOperator(ctx.op);
-            return unaryOp(op, arg);
+            return unaryOp(op, arg, createData(getLocation(ctx)));
         }
 
         @Override
@@ -152,19 +227,19 @@ final class Parser {
             var arg1 = ctx.getChild(0).accept(this);
             var arg2 = ctx.getChild(2).accept(this);
             var op = mapBinaryOperator(ctx.op);
-            return binaryOp(op, arg1, arg2);
+            return binaryOp(op, arg1, arg2, createData(getLocation(ctx)));
         }
 
         @Override
         public Ast visitColAccess(final ColAccessContext ctx) {
-            var col = ctx.shortName != null ? ctx.shortName.getText() : parseStringLiteral(ctx.longName.getText());
-            return columnAccess(col);
+            var col = ctx.shortName != null ? ctx.shortName.getText() : parseStringLiteral(ctx.longName);
+            return columnAccess(col, createData(getLocation(ctx)));
         }
 
         @Override
         public Ast visitFlowVarAccess(final FlowVarAccessContext ctx) {
-            var name = ctx.shortName != null ? ctx.shortName.getText() : parseStringLiteral(ctx.longName.getText());
-            return flowVarAccess(name);
+            var name = ctx.shortName != null ? ctx.shortName.getText() : parseStringLiteral(ctx.longName);
+            return flowVarAccess(name, createData(getLocation(ctx)));
         }
 
         @Override
@@ -175,7 +250,7 @@ final class Parser {
                 argsContext == null //
                     ? List.<Ast> of() //
                     : argsContext.expr().stream().map(a -> a.accept(this)).toList();
-            return functionCall(name, args);
+            return functionCall(name, args, createData(getLocation(ctx)));
         }
 
         @Override
@@ -186,39 +261,43 @@ final class Parser {
 
         @Override
         public Ast visitErrorNode(final ErrorNode node) {
-            throw syntaxError(node.getText());
+            throw syntaxError(node.getText(), getLocation(node.getSymbol()));
         }
 
         @Override
         public Ast visitTerminal(final TerminalNode node) {
             var symbol = node.getSymbol();
+            var data = createData(getLocation(symbol));
+
             return switch (symbol.getType()) {
                 case KnimeExpressionParser.BOOLEAN -> //
-                        booleanConstant(Boolean.parseBoolean(symbol.getText()));
+                        booleanConstant(Boolean.parseBoolean(symbol.getText()), data);
                 case KnimeExpressionParser.INTEGER -> //
-                        integerConstant(Long.parseLong(symbol.getText().replace("_", "")));
+                        integerConstant(Long.parseLong(symbol.getText().replace("_", "")), data);
                 case KnimeExpressionParser.FLOAT -> //
-                        floatConstant(Double.parseDouble(symbol.getText().replace("_", "")));
+                        floatConstant(Double.parseDouble(symbol.getText().replace("_", "")), data);
                 case KnimeExpressionParser.STRING -> //
-                        stringConstant(parseStringLiteral(symbol.getText()));
+                        stringConstant(parseStringLiteral(symbol), data);
                 case KnimeExpressionParser.MISSING -> //
-                        missingConstant();
-                default -> throw syntaxError("Unexpected terminal value: " + symbol.getText());
+                        missingConstant(data);
+                default -> throw syntaxError("Unexpected terminal value: " + symbol.getText(), getLocation(symbol));
             };
         }
 
         /** Parse the string from the text. Removes starting and ending quotes, replaces escape sequences. */
-        private static String parseStringLiteral(final String text) {
+        private static String parseStringLiteral(final Token symbol) {
+            var text = symbol.getText();
+
             // Crop of the double or single quotes
             var content = text.substring(1, text.length() - 1);
 
             // Replace escape sequences
-            return ESC_SEQUENCE_PATTERN.matcher(content)
-                .replaceAll(matchResult -> Matcher.quoteReplacement(escapeSequenceMapping(matchResult.group(1))));
+            return ESC_SEQUENCE_PATTERN.matcher(content).replaceAll(
+                matchResult -> Matcher.quoteReplacement(escapeSequenceMapping(matchResult.group(1), symbol)));
         }
 
         /** @return the value that an escape sequence should be resolved to */
-        private static String escapeSequenceMapping(final String escapeSequence) { // NOSONAR - not too complex
+        private static String escapeSequenceMapping(final String escapeSequence, final Token symbol) { // NOSONAR - not too complex
             return switch (escapeSequence.charAt(0)) {
                 case '\n' -> ""; // \<newline> -> <newline ignored>
                 case '\\' -> "\\"; // \\ -> \
@@ -230,7 +309,8 @@ final class Parser {
                 case 'r' -> "\r"; // \r -> <ASCII Carriage Return (CR)>
                 case 't' -> "\t"; // \t -> <ASCII Horizontal Tab (TAB)>
                 case 'u' -> "" + (char)Integer.parseInt(escapeSequence.substring(1), 16); // unicode sequence
-                default -> throw syntaxError("Invalid escape sequence: '\\" + escapeSequence + "'");
+                default -> throw syntaxError("Invalid escape sequence: '\\" + escapeSequence + "'",
+                    getLocation(symbol));
             };
         }
 
@@ -239,7 +319,7 @@ final class Parser {
             return switch (op.getType()) {
                 case KnimeExpressionParser.MINUS -> UnaryOperator.MINUS;
                 case KnimeExpressionParser.NOT -> UnaryOperator.NOT;
-                default -> throw syntaxError("Unexpected unary operator: " + op.getType());
+                default -> throw syntaxError("Unexpected unary operator: " + op.getType(), getLocation(op));
             };
         }
 
@@ -266,14 +346,30 @@ final class Parser {
                 case KnimeExpressionParser.OR -> BinaryOperator.CONDITIONAL_OR;
                 case KnimeExpressionParser.NULLISH_COALESCE -> BinaryOperator.NULLISH_COALESCE;
 
-                default -> throw syntaxError("Unexpected binary operator: " + op.getType());
+                default -> throw syntaxError("Unexpected binary operator: " + op.getType(), getLocation(op));
             };
         }
 
-        /** Create a {@link RuntimeSyntaxError} to throw (will result in a {@link SyntaxError}) */
-        private static RuntimeSyntaxError syntaxError(final String message) {
-            // TODO(AP-22027) include information about the location of the error
-            return new RuntimeSyntaxError(new SyntaxError(message));
+        /** Create a {@link RuntimeSyntaxError} to throw (will result in a {@link ExpressionCompileException}) */
+        private static RuntimeSyntaxError syntaxError(final String message, final TextRange location) {
+            return new RuntimeSyntaxError(ExpressionCompileError.syntaxError(message, location));
+        }
+
+        /** Create a data map containing location data to attach to the Ast */
+        private static Map<String, Object> createData(final TextRange location) {
+            var data = new HashMap<String, Object>();
+            data.put(LOCATION_DATA_KEY, location);
+            return data;
+        }
+
+        /** Get the location of a rule context */
+        private static TextRange getLocation(final ParserRuleContext ctx) {
+            return new TextRange(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex() + 1);
+        }
+
+        /** Get the location of a token */
+        private static TextRange getLocation(final Token token) {
+            return new TextRange(token.getStartIndex(), token.getStopIndex() + 1);
         }
     }
 }

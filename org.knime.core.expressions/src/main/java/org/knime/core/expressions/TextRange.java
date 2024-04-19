@@ -44,57 +44,17 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 15, 2024 (benjamin): created
+ *   Apr 16, 2024 (benjamin): created
  */
 package org.knime.core.expressions;
 
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.function.Function;
-
-import org.knime.core.expressions.Ast.ColumnAccess;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
-
 /**
- * Utilities for mapping column names to column indices in an Expression {@link Ast}.
+ * Zero-based range in an expression text. The end position is exclusive.
+ *
+ * @param start the absolute index of the fist character that is part of the range
+ * @param stop the absolute index of the first character that is not part of the range anymore
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-final class ColumnIdxResolve {
-
-    private static final String COLUMN_IDX_DATA_KEY = "colIdx";
-
-    private ColumnIdxResolve() {
-    }
-
-    /**
-     * Resolve column indices for the given Expression {@link Ast}. Adds the field "colIdx" to all
-     * {@link Ast.ColumnAccess} nodes.
-     *
-     * @param columnNameToIdx map a column name to the index. Should return {@link OptionalInt#empty()} for column names
-     *            that do not exist in the table.
-     */
-    static void resolveColumnIndices(final Ast root, final Function<String, OptionalInt> columnNameToIdx)
-        throws ExpressionCompileException {
-        Ast.putDataRecursive(root, COLUMN_IDX_DATA_KEY, new ColumnIdxVisitor(columnNameToIdx));
-    }
-
-    static int getColumnIdx(final ColumnAccess node) {
-        return (Integer)node.data(COLUMN_IDX_DATA_KEY);
-    }
-
-    private static final class ColumnIdxVisitor extends Ast.OptionalAstVisitor<Integer, ExpressionCompileException> {
-
-        private final Function<String, OptionalInt> m_colIdx;
-
-        public ColumnIdxVisitor(final Function<String, OptionalInt> colIdx) {
-            m_colIdx = colIdx;
-        }
-
-        @Override
-        public Optional<Integer> visit(final ColumnAccess node) throws ExpressionCompileException {
-            return Optional.of(m_colIdx.apply(node.name())
-                .orElseThrow(() -> new ExpressionCompileException(ExpressionCompileError.missingColumnError(node))));
-        }
-    }
+public record TextRange(int start, int stop) {
 }

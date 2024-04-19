@@ -44,57 +44,70 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 15, 2024 (benjamin): created
+ *   Apr 16, 2024 (benjamin): created
  */
 package org.knime.core.expressions;
 
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.function.Function;
-
 import org.knime.core.expressions.Ast.ColumnAccess;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
 
 /**
- * Utilities for mapping column names to column indices in an Expression {@link Ast}.
+ * Represents an error that happens before running an expression on data (e.g. while parsing or running type inference).
+ *
+ * @param message a descriptive message of the error
+ * @param type the type of the error
+ * @param location the text location in the expression (can be <code>null<code> if unknown)
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-final class ColumnIdxResolve {
+public record ExpressionCompileError(String message, CompileErrorType type, TextRange location) {
 
-    private static final String COLUMN_IDX_DATA_KEY = "colIdx";
-
-    private ColumnIdxResolve() {
-    }
-
-    /**
-     * Resolve column indices for the given Expression {@link Ast}. Adds the field "colIdx" to all
-     * {@link Ast.ColumnAccess} nodes.
-     *
-     * @param columnNameToIdx map a column name to the index. Should return {@link OptionalInt#empty()} for column names
-     *            that do not exist in the table.
-     */
-    static void resolveColumnIndices(final Ast root, final Function<String, OptionalInt> columnNameToIdx)
-        throws ExpressionCompileException {
-        Ast.putDataRecursive(root, COLUMN_IDX_DATA_KEY, new ColumnIdxVisitor(columnNameToIdx));
-    }
-
-    static int getColumnIdx(final ColumnAccess node) {
-        return (Integer)node.data(COLUMN_IDX_DATA_KEY);
-    }
-
-    private static final class ColumnIdxVisitor extends Ast.OptionalAstVisitor<Integer, ExpressionCompileException> {
-
-        private final Function<String, OptionalInt> m_colIdx;
-
-        public ColumnIdxVisitor(final Function<String, OptionalInt> colIdx) {
-            m_colIdx = colIdx;
+    /** @return a text containing the message, type, and location of the error */
+    public String createLongMessage() {
+        if (location != null) {
+            return type.m_title + " at position " + location.start() + ": " + message;
+        } else {
+            return createMessage();
         }
+    }
 
-        @Override
-        public Optional<Integer> visit(final ColumnAccess node) throws ExpressionCompileException {
-            return Optional.of(m_colIdx.apply(node.name())
-                .orElseThrow(() -> new ExpressionCompileException(ExpressionCompileError.missingColumnError(node))));
+    /** @return a text containing the message and type of the error */
+    public String createMessage() {
+        return type.m_title + ": " + message;
+    }
+
+    static ExpressionCompileError syntaxError(final String message, final TextRange location) {
+        return new ExpressionCompileError(message, CompileErrorType.SYNTAX, location);
+    }
+
+    static ExpressionCompileError typingError(final String message, final TextRange location) {
+        return new ExpressionCompileError(message, CompileErrorType.TYPING, location);
+    }
+
+    static ExpressionCompileError missingColumnError(final String columnName, final TextRange location) {
+        return new ExpressionCompileError("The column '" + columnName + "' is not available",
+            CompileErrorType.MISSING_COLUMN, location);
+    }
+
+    static ExpressionCompileError missingColumnError(final ColumnAccess node) {
+        return missingColumnError(node.name(), Parser.getTextLocation(node));
+    }
+
+    /** Types of compile errors */
+    public enum CompileErrorType {
+
+            /** Indicates that the expression could not be parsed because of an invalid syntax */
+            SYNTAX("Syntax Error"),
+
+            /** Indicates that operations or functions are used on value types that are not supported */
+            TYPING("Typing Error"),
+
+            /** Indicates that the expression tries to access a column that does not exist */
+            MISSING_COLUMN("Missing Column Error");
+
+        private final String m_title;
+
+        CompileErrorType(final String title) {
+            m_title = title;
         }
     }
 }

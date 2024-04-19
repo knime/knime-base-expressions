@@ -92,8 +92,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.knime.core.expressions.Ast.ColumnAccess;
-import org.knime.core.expressions.Expressions.MissingColumnError;
-import org.knime.core.expressions.Expressions.TypingError;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
@@ -224,7 +223,7 @@ final class TypingTest {
     @EnumSource(TypingErrorTestCase.class)
     void testError(final TypingErrorTestCase params) throws Exception {
         var ast = params.m_expression;
-        var typingError = assertThrows(TypingError.class,
+        var typingError = assertThrows(ExpressionCompileException.class,
             () -> Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS), "should fail type inferrence");
         var errorMessage = typingError.getMessage();
         for (var expectedSubstring : params.m_expectedErrorSubstrings) {
@@ -248,8 +247,8 @@ final class TypingTest {
             ORDERING_ON_INT_AND_BOOLEAN(OP(INT(100), GREATER_THAN, BOOL(false)), ">", "INTEGER", "BOOLEAN"), //
             ORDERING_ON_STRING(OP(STR("a"), LESS_THAN, STR("b")), "<", "STRING"), //
             ORDERING_ON_INT_AND_MISSING(OP(INT(20), LESS_THAN, MIS()), "<", "INTEGER", "MISSING"), //
-            EQUALITY_ON_STRING_AND_BOOLEAN(OP(STR("a"), NOT_EQUAL_TO, BOOL(false)), "Equality", "STRING", "BOOLEAN"), //
-            EQUALITY_ON_INT_AND_STRING(OP(INT(20), EQUAL_TO, STR("bar")), "Equality", "INTEGER", "STRING"), //
+            EQUALITY_ON_STRING_AND_BOOLEAN(OP(STR("a"), NOT_EQUAL_TO, BOOL(false)), "!=", "STRING", "BOOLEAN"), //
+            EQUALITY_ON_INT_AND_STRING(OP(INT(20), EQUAL_TO, STR("bar")), "==", "INTEGER", "STRING"), //
 
             // === Logical Operations
             LOGICAL_ON_INTEGER(OP(INT(10), CONDITIONAL_AND, INT(20)), "and", "INTEGER"), //
@@ -288,9 +287,13 @@ final class TypingTest {
     void testMissingColumn() throws Exception {
         var colName = "not_a_column";
         var ast = OP(INT(10), PLUS, COL(colName));
-        var typingError = assertThrows(MissingColumnError.class, () -> Expressions.inferTypes(ast, TEST_COLUMN_TO_TYPE),
-            "should fail type inferrence");
-        var errorMessage = typingError.getMessage();
+        var exception = assertThrows(ExpressionCompileException.class,
+            () -> Expressions.inferTypes(ast, TEST_COLUMN_TO_TYPE), "should fail type inferrence");
+        var errors = exception.getErrors();
+        assertEquals(1, errors.size(), "should be one error");
+        assertEquals(ExpressionCompileError.CompileErrorType.MISSING_COLUMN, errors.get(0).type(),
+            "should be missing column error type");
+        var errorMessage = errors.get(0).message();
         assertTrue(errorMessage.contains(colName),
             "error message should contain column name '" + colName + "', was '" + errorMessage + "'");
     }

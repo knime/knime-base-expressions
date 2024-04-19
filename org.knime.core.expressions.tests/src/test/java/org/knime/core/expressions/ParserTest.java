@@ -75,10 +75,11 @@ import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.STR;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.knime.core.expressions.Ast.UnaryOperator;
-import org.knime.core.expressions.Expressions.SyntaxError;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
 
 /**
  * Tests for parsing expressions in the KNIME Expression language.
@@ -90,9 +91,17 @@ final class ParserTest {
 
     @ParameterizedTest
     @EnumSource(ValidExpr.class)
-    void testValidExpressions(final ValidExpr exprTest) throws SyntaxError {
+    void testValidExpressions(final ValidExpr exprTest) throws ExpressionCompileException {
         var ast = Expressions.parse(exprTest.m_input);
+        clearDataFromAst(ast);
         assertEquals(exprTest.m_expectedAst, ast, "Wrong result for expr '" + exprTest.m_input + "'");
+    }
+
+    private static void clearDataFromAst(final Ast node) {
+        for (var c : node.children()) {
+            clearDataFromAst(c);
+        }
+        node.data().clear();
     }
 
     enum ValidExpr {
@@ -300,11 +309,11 @@ final class ParserTest {
         }
     }
 
-    // TODO(AP-22027) check for good error messages
+    // TODO(AP-22371) check for good error messages
     @ParameterizedTest
     @EnumSource(InvalidExpr.class)
     void testSyntaxErrors(final InvalidExpr exprTest) {
-        assertThrows(SyntaxError.class, () -> Expressions.parse(exprTest.m_input),
+        assertThrows(ExpressionCompileException.class, () -> Expressions.parse(exprTest.m_input),
             "Expected syntax error for expr '" + exprTest.m_input + "'");
     }
 
@@ -342,5 +351,65 @@ final class ParserTest {
         private InvalidExpr(final String input) {
             m_input = input;
         }
+    }
+
+    @Test
+    void testTextLocation() throws ExpressionCompileException {
+        // An expression with all the Ast node types
+        var expr = "10 + foo(MISSING + true, -10, 1.0, 'bar', $col, $$flow)";
+        //          0    ^    1    ^    2    ^    3    ^    4    ^    5    ^
+        var ast = Parser.parse(expr);
+
+        // foo(...)
+        var functionCall = ast.children().get(1);
+        assertTextLocation(5, 55, functionCall);
+
+        // MISSING + true
+        var binOp = functionCall.children().get(0);
+        assertTextLocation(9, 23, binOp);
+        // MISSING
+        assertTextLocation(9, 16, binOp.children().get(0));
+        // true
+        assertTextLocation(19, 23, binOp.children().get(1));
+
+        // -10
+        var unaryOp = functionCall.children().get(1);
+        assertTextLocation(25, 28, unaryOp);
+        // 10
+        assertTextLocation(26, 28, unaryOp.children().get(0));
+
+        // 1.0
+        assertTextLocation(30, 33, functionCall.children().get(2));
+        // 'bar'
+        assertTextLocation(35, 40, functionCall.children().get(3));
+        // $col
+        assertTextLocation(42, 46, functionCall.children().get(4));
+        // $$flow
+        assertTextLocation(48, 54, functionCall.children().get(5));
+    }
+
+    @Test
+    void testTextLocationWithNewlines() throws ExpressionCompileException {
+        var expr = "\n10\n+20\n\n - MISSING";
+        //          0      ^      1    ^    2
+        var ast = Parser.parse(expr);
+
+        assertTextLocation(1, 19, ast);
+
+        // 10 + 20
+        var plusOp = ast.children().get(0);
+        assertTextLocation(1, 7, plusOp);
+        // 10
+        assertTextLocation(1, 3, plusOp.children().get(0));
+        // 20
+        assertTextLocation(5, 7, plusOp.children().get(1));
+
+        // MISSING
+        assertTextLocation(12, 19, ast.children().get(1));
+    }
+
+    private static void assertTextLocation(final int expectedStart, final int expectedStop, final Ast node) {
+        assertEquals(new TextRange(expectedStart, expectedStop), Parser.getTextLocation(node),
+            "should have correct location");
     }
 }

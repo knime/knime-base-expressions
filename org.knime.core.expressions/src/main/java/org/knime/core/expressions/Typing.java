@@ -54,6 +54,8 @@ import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.STRING;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -69,9 +71,7 @@ import org.knime.core.expressions.Ast.MissingConstant;
 import org.knime.core.expressions.Ast.StringConstant;
 import org.knime.core.expressions.Ast.UnaryOp;
 import org.knime.core.expressions.Ast.UnaryOperator;
-import org.knime.core.expressions.Expressions.ExpressionError;
-import org.knime.core.expressions.Expressions.MissingColumnError;
-import org.knime.core.expressions.Expressions.TypingError;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
@@ -90,15 +90,12 @@ final class Typing {
     }
 
     static ValueType inferTypes(final Ast root, final Function<ColumnAccess, Optional<ValueType>> columnType,
-        final Function<String, Optional<ExpressionFunction>> functions) throws TypingError, MissingColumnError { // NOSONAR: Sonar is wrong
-        try {
-            return Ast.putDataRecursive(root, TYPE_DATA_KEY, new TypingVisitor(columnType, functions));
-        } catch (TypingError | MissingColumnError ex) {
-            throw ex;
-        } catch (ExpressionError ex) {
-            // Note this cannot happen because the visitor only throws the errors above
-            throw new IllegalStateException(ex);
+        final Function<String, Optional<ExpressionFunction>> functions) throws ExpressionCompileException {
+        var outputType = Ast.putDataRecursive(root, TYPE_DATA_KEY, new TypingVisitor(columnType, functions));
+        if (outputType instanceof ErrorValueType errorValueType) {
+            throw new ExpressionCompileException(errorValueType.m_errors);
         }
+        return outputType;
     }
 
     static ValueType getType(final Ast node) {
@@ -119,7 +116,7 @@ final class Typing {
         }
     }
 
-    private static final class TypingVisitor implements Ast.AstVisitor<ValueType, ExpressionError> {
+    private static final class TypingVisitor implements Ast.AstVisitor<ValueType, RuntimeException> {
 
         private final Function<ColumnAccess, Optional<ValueType>> m_columnType;
 
@@ -132,72 +129,72 @@ final class Typing {
         }
 
         @Override
-        public ValueType visit(final MissingConstant missingConstant) throws ExpressionError {
+        public ValueType visit(final MissingConstant missingConstant) {
             return MISSING;
         }
 
         @Override
-        public ValueType visit(final BooleanConstant node) throws ExpressionError {
+        public ValueType visit(final BooleanConstant node) {
             return BOOLEAN;
         }
 
         @Override
-        public ValueType visit(final IntegerConstant node) throws ExpressionError {
+        public ValueType visit(final IntegerConstant node) {
             return INTEGER;
         }
 
         @Override
-        public ValueType visit(final FloatConstant node) throws ExpressionError {
+        public ValueType visit(final FloatConstant node) {
             return FLOAT;
         }
 
         @Override
-        public ValueType visit(final StringConstant node) throws ExpressionError {
+        public ValueType visit(final StringConstant node) {
             return STRING;
         }
 
         @Override
-        public ValueType visit(final ColumnAccess node) throws ExpressionError {
-            return m_columnType.apply(node).orElseThrow(() -> new MissingColumnError(node.name()));
+        public ValueType visit(final ColumnAccess node) {
+            return m_columnType.apply(node).orElseGet(() -> ErrorValueType.missingColumn(node));
         }
 
         @Override
-        public ValueType visit(final FlowVarAccess node) throws ExpressionError {
+        public ValueType visit(final FlowVarAccess node) {
             // TODO(AP-21865) implement flow variable access
-            throw new TypingError("flow variable access is not yet implemented");
+            return ErrorValueType.typingError("flow variable access is not yet implemented", node);
         }
 
         @Override
-        public ValueType visit(final BinaryOp node) throws ExpressionError { // NOSONAR - this method is not too complex
+        public ValueType visit(final BinaryOp node) { // NOSONAR - this method is not too complex
             var op = node.op();
             var t1 = getType(node.arg1());
             var t2 = getType(node.arg2());
 
-            if (op == BinaryOperator.PLUS && isAnyString(t1, t2) && !isAnyMissing(t1, t2)) {
+            if (t1 instanceof ErrorValueType || t2 instanceof ErrorValueType) {
+                return ErrorValueType.combined(List.of(t1, t2));
+            } else if (op == BinaryOperator.PLUS && isAnyString(t1, t2) && !isAnyMissing(t1, t2)) {
                 return STRING;
             } else if (op.isArithmetic() && isAllNumeric(t1, t2)) {
                 // Arithmetic operation
-                return arithmeticType(op, t1, t2);
+                return arithmeticType(node, t1, t2);
             } else if (op.isOrderingComparison() && isAllNumeric(t1, t2)) {
                 // Ordering comparison
                 return BOOLEAN;
             } else if (op.isEqualityComparison()) {
                 // Equality comparison
-                checkEqualityTypes(t1, t2);
-                return BOOLEAN;
+                return equalityType(node, t1, t2);
             } else if (op.isLogical() && isAllBoolean(t1, t2)) {
                 // Logical operation
                 return BOOLEAN(t1.isOptional() || t2.isOptional());
-            } else if (op == BinaryOperator.NULLISH_COALESCE ) {
-                return coalesceNullishTypes(t1,t2);
+            } else if (op == BinaryOperator.NULLISH_COALESCE) {
+                return coalesceNullishTypes(node, t1, t2);
             } else {
-                throw new TypingError(
-                    "Operator '" + op.symbol() + "' is not applicable for " + t1.name() + " and " + t2.name() + ".");
+                return ErrorValueType.binaryOpNotApplicable(node, t1, t2);
             }
         }
 
         @Override
-        public ValueType visit(final UnaryOp node) throws ExpressionError {
+        public ValueType visit(final UnaryOp node) {
             var op = node.op();
             var type = getType(node.arg());
 
@@ -206,31 +203,32 @@ final class Typing {
             } else if (op == UnaryOperator.NOT && BOOLEAN.equals(type.baseType())) {
                 return type;
             } else {
-                throw new TypingError("Operator '" + op.symbol() + "' is not applicable for " + type.name() + ".");
+                return ErrorValueType.unaryOpNotApplicable(node, type);
             }
         }
 
         @Override
-        public ValueType visit(final FunctionCall node) throws ExpressionError {
-            // TODO(AP-22027) improve the error
-            // - Is there a function with a similar name?
-            // - Does a keyword of a function match? Can we suggest the name of our function?
-            // - What are the arguments that would fit? Which argument is the culprit?
-
-            var resolvedFunction = m_functions.apply(node.name())
-                .orElseThrow(() -> new TypingError("No function with name " + node.name()));
-
-            // NB: We do not apply the typing on the args if the function name does not exist
+        public ValueType visit(final FunctionCall node) {
             var argTypes = node.args().stream().map(Typing::getType).toList();
-            var outputType = resolvedFunction.returnType(argTypes).orElseThrow(() -> new TypingError(
-                "The function " + node.name() + " is not applicable to the arguments " + argTypes));
 
-            node.putData(FUNCTION_IMPL_DATA_KEY, resolvedFunction);
-            return outputType;
+            var resolvedFunction = m_functions.apply(node.name());
+            if (resolvedFunction.isEmpty()) {
+                // TODO(AP-22372) propose functions with similar names if there is none with this name
+                var errorTypes = new ArrayList<>(argTypes);
+                errorTypes.add(ErrorValueType.missingFunction(node));
+                return ErrorValueType.combined(errorTypes);
+            } else if (argTypes.stream().anyMatch(ErrorValueType.class::isInstance)) {
+                return ErrorValueType.combined(argTypes);
+            }
+            node.putData(FUNCTION_IMPL_DATA_KEY, resolvedFunction.get());
+
+            // TODO(AP-22303) show better error if the function is not applicable
+            return resolvedFunction.get().returnType(argTypes)
+                .orElseGet(() -> ErrorValueType.functionNotApplicable(node, argTypes));
         }
 
-        private static ValueType arithmeticType(final BinaryOperator op, final ValueType typeA, final ValueType typeB)
-            throws TypingError {
+        private static ValueType arithmeticType(final BinaryOp node, final ValueType typeA, final ValueType typeB) {
+            var op = node.op();
             var baseTypeA = typeA.baseType();
             var baseTypeB = typeB.baseType();
             var optional = typeA.isOptional() || typeB.isOptional();
@@ -243,8 +241,7 @@ final class Typing {
                 if (INTEGER.equals(baseTypeA) && INTEGER.equals(baseTypeB)) {
                     return INTEGER(optional);
                 }
-                throw new TypingError("Operator '" + op.symbol() + "' is not applicable for " + baseTypeA.name()
-                    + " and " + baseTypeB.name() + ".");
+                return ErrorValueType.binaryOpNotApplicable(node, typeA, typeB);
             } else if (INTEGER.equals(baseTypeA) && INTEGER.equals(baseTypeB)) {
                 // Both INTEGER
                 return INTEGER(optional);
@@ -254,44 +251,42 @@ final class Typing {
             }
         }
 
-        /** @throws TypingError if the given types cannot be compared with an equality operator */
-        private static void checkEqualityTypes(final ValueType typeA, final ValueType typeB) throws TypingError {
+        /** @throws ExpressionCompileException if the given types cannot be compared with an equality operator */
+        private static ValueType equalityType(final BinaryOp node, final ValueType typeA, final ValueType typeB) {
             if (typeA.baseType().equals(typeB.baseType())) {
                 // Same type or one is the missing type extension of the other
-                return;
+                return BOOLEAN;
             }
             if (MISSING.equals(typeA) || MISSING.equals(typeB)) {
                 // Any type can be compared with MISSING
-                return;
+                return BOOLEAN;
             }
             if (isNumeric(typeA) && isNumeric(typeB)) {
                 // All numbers can be compared with each other
-                return;
+                return BOOLEAN;
             }
-            throw new TypingError(
-                "Equality comparison is not applicable for " + typeA.name() + " and " + typeB.name() + ".");
+            return ErrorValueType.binaryOpNotApplicable(node, typeA, typeB);
         }
 
-        private static ValueType coalesceNullishTypes(final ValueType typeA, final ValueType typeB) throws TypingError {
-            if(MISSING.equals(typeA) && MISSING.equals(typeB)) {
-                throw new TypingError("Cannot infer return type. " +
-                        "At least one operand of the nullish operator must be not MISSING.");
+        private static ValueType coalesceNullishTypes(final BinaryOp node, final ValueType typeA,
+            final ValueType typeB) {
+            if (MISSING.equals(typeA) && MISSING.equals(typeB)) {
+                return ErrorValueType.nullishOpNotApplicable(node, typeA, typeB);
             }
-            if(MISSING.equals(typeA)) {
+            if (MISSING.equals(typeA)) {
                 return typeB;
             }
-            if(MISSING.equals(typeB)) {
+            if (MISSING.equals(typeB)) {
                 return typeA;
             }
             if ((typeA.baseType()).equals((typeB.baseType()))) {
-                if(typeA.isOptional() && typeB.isOptional()) {
+                if (typeA.isOptional() && typeB.isOptional()) {
                     return typeA;
                 }
                 // if at most one of the operands is not optional the result is not optional
                 return typeA.baseType();
             }
-            throw new TypingError("Types of nullish operator '??' " +
-                    "must be the same or at most one of them MISSING.");
+            return ErrorValueType.nullishOpNotApplicable(node, typeA, typeB);
         }
 
         // Small helpers
@@ -315,6 +310,77 @@ final class Typing {
 
         private static boolean isAnyMissing(final ValueType t1, final ValueType t2) {
             return MISSING.equals(t1) || MISSING.equals(t2);
+        }
+    }
+
+    /** Placeholder value type for collecting typing errors */
+    private static final class ErrorValueType implements ValueType {
+
+        private final List<ExpressionCompileError> m_errors;
+
+        static ErrorValueType missingColumn(final ColumnAccess node) {
+            return new ErrorValueType(List.of(ExpressionCompileError.missingColumnError(node)));
+        }
+
+        static ErrorValueType combined(final List<ValueType> children) {
+            return new ErrorValueType( //
+                children.stream() //
+                    .filter(ErrorValueType.class::isInstance) //
+                    .flatMap(e -> ((ErrorValueType)e).m_errors.stream()) //
+                    .toList() //
+            );
+        }
+
+        static ErrorValueType typingError(final String message, final Ast node) {
+            return new ErrorValueType(
+                List.of(ExpressionCompileError.typingError(message, Parser.getTextLocation(node))));
+        }
+
+        static ErrorValueType binaryOpNotApplicable(final BinaryOp node, final ValueType t1, final ValueType t2) {
+            return typingError(
+                "Operator '" + node.op().symbol() + "' is not applicable for " + t1.name() + " and " + t2.name() + ".",
+                node);
+        }
+
+        static ErrorValueType unaryOpNotApplicable(final UnaryOp node, final ValueType t) {
+            return typingError("Operator '" + node.op().symbol() + "' is not applicable for " + t.name() + ".", node);
+        }
+
+        static ErrorValueType missingFunction(final FunctionCall node) {
+            return typingError("No function with name " + node.name(), node);
+        }
+
+        static ErrorValueType functionNotApplicable(final FunctionCall node, final List<ValueType> args) {
+            return typingError("The function " + node.name() + " is not applicable to the arguments " + args, node);
+        }
+
+        static ErrorValueType nullishOpNotApplicable(final BinaryOp node, final ValueType t1, final ValueType t2) {
+            return typingError("Operator '??' is not applicable for " + t1.name() + " and " + t2.name()
+                + ". Types must be the same or at most one of the MISSING.", node);
+        }
+
+        private ErrorValueType(final List<ExpressionCompileError> errors) {
+            m_errors = errors;
+        }
+
+        @Override
+        public String name() {
+            return "ERROR";
+        }
+
+        @Override
+        public boolean isOptional() {
+            return false;
+        }
+
+        @Override
+        public ValueType baseType() {
+            return this;
+        }
+
+        @Override
+        public ValueType optionalType() {
+            return this;
         }
     }
 }

@@ -48,9 +48,11 @@
  */
 package org.knime.core.expressions;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.functions.BuiltInFunctions;
@@ -70,9 +72,9 @@ public final class Expressions {
      *
      * @param expression the expression in the KNIME Expression Language.
      * @return the {@link Ast abstract syntax tree}
-     * @throws SyntaxError if the input is not a syntactically valid expression
+     * @throws ExpressionCompileException if the input is not a syntactically valid expression
      */
-    public static Ast parse(final String expression) throws SyntaxError {
+    public static Ast parse(final String expression) throws ExpressionCompileException {
         return Parser.parse(expression);
     }
 
@@ -88,10 +90,10 @@ public final class Expressions {
      * @param expression the expression
      * @param columnNameToIdx a function that returns the index of a column accessed by the expression. The function
      *            should return <code>Optional.empty()</code> if the column is not available.
-     * @throws MissingColumnError if the expression accesses a column that is not available
+     * @throws ExpressionCompileException if the expression accesses a column that is not available
      */
     public static void resolveColumnIndices(final Ast expression, final Function<String, OptionalInt> columnNameToIdx)
-        throws MissingColumnError {
+        throws ExpressionCompileException {
         ColumnIdxResolve.resolveColumnIndices(expression, columnNameToIdx);
     }
 
@@ -103,11 +105,11 @@ public final class Expressions {
      * @param columnToType a function that returns the type of a columns accessed by the expression. The function should
      *            return <code>Optional.empty()</code> if the column is not available.
      * @return the output type of the full expression
-     * @throws MissingColumnError if the expression accesses a column that is not available
-     * @throws TypingError if type inference failed because operations are used for incompatible types
+     * @throws ExpressionCompileException if type inference failed because operations are used for incompatible types or
+     *             a column is not available
      */
     public static ValueType inferTypes(final Ast expression,
-        final Function<ColumnAccess, Optional<ValueType>> columnToType) throws MissingColumnError, TypingError {
+        final Function<ColumnAccess, Optional<ValueType>> columnToType) throws ExpressionCompileException {
         return Typing.inferTypes(expression, columnToType, BuiltInFunctions.BUILT_IN_FUNCTIONS_GETTER);
     }
 
@@ -120,10 +122,10 @@ public final class Expressions {
      * @param columnToComputer a function that returns the computer for column data accessed by the expression. The
      *            function should return <code>Optional.empty()</code> if the column is not available.
      * @return the output type of the full expression
-     * @throws MissingColumnError if the expression accesses a column that is not available
+     * @throws ExpressionCompileException if the expression accesses a column that is not available
      */
     public static Computer evaluate(final Ast expression,
-        final Function<ColumnAccess, Optional<Computer>> columnToComputer) throws MissingColumnError {
+        final Function<ColumnAccess, Optional<Computer>> columnToComputer) throws ExpressionCompileException {
         return Evaluation.evaluate(expression, columnToComputer);
     }
 
@@ -152,45 +154,43 @@ public final class Expressions {
     // EXCEPTIONS
 
     /** Base class for exceptions that happen when working with expressions. */
-    public abstract static sealed class ExpressionError extends Exception {
+    public abstract static sealed class ExpressionException extends Exception {
 
         private static final long serialVersionUID = 1L;
 
-        ExpressionError(final String message) {
+        ExpressionException(final String message) {
             super(message);
         }
     }
 
-    /** Exception thrown when an expression could not be parsed. */
-    public static final class SyntaxError extends ExpressionError {
+    /** Exception thrown when parsing or typing expressions. */
+    public static final class ExpressionCompileException extends ExpressionException {
 
         private static final long serialVersionUID = 1L;
 
-        SyntaxError(final String message) {
-            super(message);
+        private final List<ExpressionCompileError> m_errors;
+
+        ExpressionCompileException(final ExpressionCompileError error) {
+            this(List.of(error));
         }
-    }
 
-    /** Exception thrown when an expression refers a column that is not available. */
-    public static final class MissingColumnError extends ExpressionError {
-
-        private static final long serialVersionUID = 1L;
-
-        MissingColumnError(final String columnName) {
-            super("The column '" + columnName + "' is not available");
+        ExpressionCompileException(final List<ExpressionCompileError> errors) {
+            super(constructMessage(errors));
+            m_errors = errors;
         }
-    }
 
-    /**
-     * Exception thrown when type inference of an expression fails (e.g. the expression is invalid because operations
-     * are used on incompatible types).
-     */
-    public static final class TypingError extends ExpressionError {
+        /** @return the list of compile errors */
+        public List<ExpressionCompileError> getErrors() {
+            return m_errors;
+        }
 
-        private static final long serialVersionUID = 1L;
-
-        TypingError(final String message) {
-            super(message);
+        private static String constructMessage(final List<ExpressionCompileError> errors) {
+            if (errors.size() == 1) {
+                return errors.get(0).createLongMessage();
+            } else {
+                return "Multiple errors: "
+                    + errors.stream().map(ExpressionCompileError::createLongMessage).collect(Collectors.joining("; "));
+            }
         }
     }
 }

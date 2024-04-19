@@ -78,7 +78,7 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
-import org.knime.core.expressions.Expressions.MissingColumnError;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
 
 /**
  * Implementation of expression evaluation based on {@link Computer}.
@@ -94,7 +94,7 @@ final class Evaluation {
     private static final Computer MISSING_CONSTANT_COMPUTER = () -> true;
 
     static Computer evaluate(final Ast expression, final Function<ColumnAccess, Optional<Computer>> columnToComputer)
-        throws MissingColumnError {
+        throws ExpressionCompileException {
         return expression.accept(new ComputerFactory(columnToComputer));
     }
 
@@ -106,7 +106,7 @@ final class Evaluation {
         }
     }
 
-    private static final class ComputerFactory implements Ast.AstVisitor<Computer, MissingColumnError> {
+    private static final class ComputerFactory implements Ast.AstVisitor<Computer, ExpressionCompileException> {
 
         private final Function<ColumnAccess, Optional<Computer>> m_columnToComputer;
 
@@ -115,12 +115,13 @@ final class Evaluation {
         }
 
         @Override
-        public Computer visit(final ColumnAccess node) throws MissingColumnError {
-            return m_columnToComputer.apply(node).orElseThrow(() -> new MissingColumnError(node.name()));
+        public Computer visit(final ColumnAccess node) throws ExpressionCompileException {
+            return m_columnToComputer.apply(node)
+                .orElseThrow(() -> new ExpressionCompileException(ExpressionCompileError.missingColumnError(node)));
         }
 
         @Override
-        public Computer visit(final FlowVarAccess node) throws MissingColumnError {
+        public Computer visit(final FlowVarAccess node) throws ExpressionCompileException {
             // TODO(AP-21865) implement flow variable access
             throw new EvaluationImplementationError("flow variable access is not yet implemented");
         }
@@ -151,7 +152,7 @@ final class Evaluation {
         }
 
         @Override
-        public Computer visit(final UnaryOp node) throws MissingColumnError {
+        public Computer visit(final UnaryOp node) throws ExpressionCompileException {
             var arg = node.arg().accept(this);
 
             var outType = Typing.getType(node);
@@ -166,7 +167,7 @@ final class Evaluation {
         }
 
         @Override
-        public Computer visit(final BinaryOp node) throws MissingColumnError {
+        public Computer visit(final BinaryOp node) throws ExpressionCompileException {
             var arg1 = node.arg1().accept(this);
             var arg2 = node.arg2().accept(this);
 
@@ -188,7 +189,7 @@ final class Evaluation {
         }
 
         @Override
-        public Computer visit(final FunctionCall node) throws MissingColumnError {
+        public Computer visit(final FunctionCall node) throws ExpressionCompileException {
             // Create computers for the arguments
             var argComputers = new ArrayList<Computer>(node.args().size());
             for (var arg : node.args()) {
