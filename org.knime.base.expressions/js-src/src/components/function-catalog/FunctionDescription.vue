@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import MarkdownIt from "markdown-it";
 import type { FunctionData } from "@/components/functionCatalogTypes";
+import { computed } from "vue";
 
 // https://stackoverflow.com/questions/66514253/ignore-specified-html-blocks-in-markdown-it
 // html rendering is disabled by default
@@ -10,7 +11,9 @@ const props = defineProps<{
   functionData: FunctionData;
 }>();
 
-const markdownHTMLContent = markdown.render(props.functionData.description);
+const markdownHTMLContent = computed(() =>
+  markdown.render(props.functionData.description),
+);
 </script>
 
 <template>
