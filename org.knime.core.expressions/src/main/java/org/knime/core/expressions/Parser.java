@@ -264,6 +264,7 @@ final class Parser {
                 // Logical
                 case KnimeExpressionParser.AND -> BinaryOperator.CONDITIONAL_AND;
                 case KnimeExpressionParser.OR -> BinaryOperator.CONDITIONAL_OR;
+                case KnimeExpressionParser.NULLISH_COALESCE -> BinaryOperator.NULLISH_COALESCE;
 
                 default -> throw syntaxError("Unexpected binary operator: " + op.getType());
             };

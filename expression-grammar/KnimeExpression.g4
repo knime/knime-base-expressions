@@ -21,21 +21,21 @@ expr:
 		| GREATER_THAN_EQUAL
 		| EQUAL
 		| NOT_EQUAL
-	) expr					# binaryOp
-	| op = NOT expr			# unaryOp
-	| expr op = AND expr	# binaryOp
-	| expr op = OR expr		# binaryOp
-	| '(' inner = expr ')'	# parenthesisedExpr
-	| BOOLEAN				# atom
-	| INTEGER				# atom
-	| FLOAT					# atom
-	| STRING				# atom
-	| MISSING				# atom;
+	) expr								# binaryOp
+	| op = NOT expr						# unaryOp
+	| expr op = AND expr				# binaryOp
+	| expr op = OR expr					# binaryOp
+	| expr op = NULLISH_COALESCE expr	# binaryOp
+	| '(' inner = expr ')'				# parenthesisedExpr
+	| BOOLEAN							# atom
+	| INTEGER							# atom
+	| FLOAT								# atom
+	| STRING							# atom
+	| MISSING							# atom;
 
 functionArgs: expr (',' expr)* ','?;
 
 // LEXER RULES
-
 WHITESPACE: [ \r\n\t]+ -> skip;
 
 // BOOLEAN literal
@@ -87,6 +87,9 @@ NOT_EQUAL: '!=' | '<>';
 AND: 'and';
 OR: 'or';
 NOT: 'not';
+
+// Nullish coalescing
+NULLISH_COALESCE: '??';
 
 // Identifier
 IDENTIFIER: [a-zA-Z_] [a-zA-Z_0-9]*;

@@ -48,6 +48,7 @@ package org.knime.core.expressions;
 import static org.knime.core.expressions.Ast.OperatorType.ARITHMETIC;
 import static org.knime.core.expressions.Ast.OperatorType.EQUALITY;
 import static org.knime.core.expressions.Ast.OperatorType.LOGICAL;
+import static org.knime.core.expressions.Ast.OperatorType.MISC;
 import static org.knime.core.expressions.Ast.OperatorType.ORDERING;
 
 import java.util.ArrayDeque;
@@ -475,7 +476,7 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
 
     /** Categorization for operators. */
     enum OperatorType {
-            ARITHMETIC, EQUALITY, ORDERING, LOGICAL
+            ARITHMETIC, EQUALITY, ORDERING, LOGICAL, MISC
     }
 
     /** Available binary operators. Used by {@link BinaryOp}s. */
@@ -494,7 +495,8 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
             GREATER_THAN(">", ORDERING), //
             GREATER_THAN_EQUAL(">=", ORDERING), //
             CONDITIONAL_AND("and", LOGICAL), //
-            CONDITIONAL_OR("or", LOGICAL); //
+            CONDITIONAL_OR("or", LOGICAL), //
+            NULLISH_COALESCE("??", MISC); //
 
         private final String m_symbol;
 
@@ -527,6 +529,10 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
 
         public boolean isLogical() {
             return m_type == LOGICAL;
+        }
+
+        public boolean isMisc() {
+            return m_type == MISC;
         }
     }
 

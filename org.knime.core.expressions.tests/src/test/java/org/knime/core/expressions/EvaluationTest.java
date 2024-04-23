@@ -59,6 +59,7 @@ import static org.knime.core.expressions.Ast.BinaryOperator.LESS_THAN_EQUAL;
 import static org.knime.core.expressions.Ast.BinaryOperator.MINUS;
 import static org.knime.core.expressions.Ast.BinaryOperator.MULTIPLY;
 import static org.knime.core.expressions.Ast.BinaryOperator.NOT_EQUAL_TO;
+import static org.knime.core.expressions.Ast.BinaryOperator.NULLISH_COALESCE;
 import static org.knime.core.expressions.Ast.BinaryOperator.PLUS;
 import static org.knime.core.expressions.Ast.BinaryOperator.REMAINDER;
 import static org.knime.core.expressions.Ast.UnaryOperator.NOT;
@@ -142,6 +143,25 @@ final class EvaluationTest {
             COLUMN_FLOAT(COL("FLOAT"), 10.5), //
             COLUMN_STRING(COL("STRING"), "column value"), //
             COLUMN_MISSING(COL("INTEGER_MISSING")), //
+
+            // === Nullish Coalescing
+
+            // Integer
+            COALESCE_NO_MISSING_INTEGER(OP(INT(10),NULLISH_COALESCE,INT(-100)),10), //
+            COALESCE_FIRST_MISSING_INTEGER(OP(MIS(),NULLISH_COALESCE,INT(10)),10), //
+            COALESCE_SECOND_MISSING_INTEGER(OP(INT(10),NULLISH_COALESCE,MIS()),10), //
+            // Float
+            COALESCE_NO_MISSING_FLOAT(OP(FLOAT(10),NULLISH_COALESCE,FLOAT(-100)),10.), //
+            COALESCE_FIRST_MISSING_FLOAT(OP(MIS(),NULLISH_COALESCE,FLOAT(10)),10.), //
+            COALESCE_SECOND_MISSING_FLOAT(OP(FLOAT(10),NULLISH_COALESCE,MIS()),10.), //
+            // String
+            COALESCE_NO_MISSING_STRING(OP(STR("10"),NULLISH_COALESCE,STR("-100")),"10"), //
+            COALESCE_FIRST_MISSING_STRING(OP(MIS(),NULLISH_COALESCE,STR("10")),"10"), //
+            COALESCE_SECOND_MISSING_STRING(OP(STR("10"),NULLISH_COALESCE,MIS()),"10"), //
+            // Boolean
+            COALESCE_NO_MISSING_BOOLEAN(OP(BOOL(true),NULLISH_COALESCE,BOOL(false)),true), //
+            COALESCE_FIRST_MISSING_BOOLEAN(OP(MIS(),NULLISH_COALESCE,BOOL(false)),false), //
+            COALESCE_SECOND_MISSING_BOOLEAN(OP(BOOL(true),NULLISH_COALESCE,MIS()),true), //
 
             // === Arithmetic Operations
 

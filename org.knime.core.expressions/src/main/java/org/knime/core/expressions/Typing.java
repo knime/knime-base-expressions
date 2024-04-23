@@ -188,6 +188,8 @@ final class Typing {
             } else if (op.isLogical() && isAllBoolean(t1, t2)) {
                 // Logical operation
                 return BOOLEAN(t1.isOptional() || t2.isOptional());
+            } else if (op == BinaryOperator.NULLISH_COALESCE ) {
+                return coalesceNullishTypes(t1,t2);
             } else {
                 throw new TypingError(
                     "Operator '" + op.symbol() + "' is not applicable for " + t1.name() + " and " + t2.name() + ".");
@@ -268,6 +270,28 @@ final class Typing {
             }
             throw new TypingError(
                 "Equality comparison is not applicable for " + typeA.name() + " and " + typeB.name() + ".");
+        }
+
+        private static ValueType coalesceNullishTypes(final ValueType typeA, final ValueType typeB) throws TypingError {
+            if(MISSING.equals(typeA) && MISSING.equals(typeB)) {
+                throw new TypingError("Cannot infer return type. " +
+                        "At least one operand of the nullish operator must be not MISSING.");
+            }
+            if(MISSING.equals(typeA)) {
+                return typeB;
+            }
+            if(MISSING.equals(typeB)) {
+                return typeA;
+            }
+            if ((typeA.baseType()).equals((typeB.baseType()))) {
+                if(typeA.isOptional() && typeB.isOptional()) {
+                    return typeA;
+                }
+                // if at most one of the operands is not optional the result is not optional
+                return typeA.baseType();
+            }
+            throw new TypingError("Types of nullish operator '??' " +
+                    "must be the same or at most one of them MISSING.");
         }
 
         // Small helpers

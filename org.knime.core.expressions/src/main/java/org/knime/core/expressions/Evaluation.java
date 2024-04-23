@@ -170,6 +170,9 @@ final class Evaluation {
             var arg1 = node.arg1().accept(this);
             var arg2 = node.arg2().accept(this);
 
+            if(node.op() == BinaryOperator.NULLISH_COALESCE) {
+                return arg1.isMissing() ? arg2 : arg1;
+            }
             var outType = Typing.getType(node);
             if (BOOLEAN.equals(outType.baseType())) {
                 return Boolean.binary(node.op(), arg1, arg2);
