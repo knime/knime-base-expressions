@@ -49,7 +49,6 @@
 package org.knime.core.expressions.functions;
 
 import static org.knime.core.expressions.ValueType.BOOLEAN;
-import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.STRING;
 
@@ -147,13 +146,12 @@ public final class ExpressionFunctionBuilder {
 
     /** @return an {@link ArgMatcher} that matches all numeric non-optional types */
     public static ArgMatcher isNumeric() {
-        return new ArgMatcherImpl("INTEGER | FLOAT", arg -> INTEGER.equals(arg) || FLOAT.equals(arg));
+        return new ArgMatcherImpl("INTEGER | FLOAT", ValueType::isNumeric);
     }
 
     /** @return an {@link ArgMatcher} that matches all numeric types (optional or not) */
     public static ArgMatcher isNumericOrOpt() {
-        return new ArgMatcherImpl("INTEGER? | FLOAT?",
-            arg -> INTEGER.equals(arg.baseType()) || FLOAT.equals(arg.baseType()));
+        return new ArgMatcherImpl("INTEGER? | FLOAT?", ValueType::isNumericOrOpt);
     }
 
     /** @return an {@link ArgMatcher} that matches {@link ValueType#INTEGER} */
@@ -189,6 +187,15 @@ public final class ExpressionFunctionBuilder {
     /** @return an {@link ArgMatcher} that matches any type (missing or otherwise) */
     public static ArgMatcher isAnything() {
         return new ArgMatcherImpl("ANY", arg -> true);
+    }
+
+    /**
+     * @param types the types to match
+     * @return an {@link ArgMatcher} that matches any of the given types
+     */
+    public static ArgMatcher isOneOfBaseTypes(final ValueType... types) {
+        return new ArgMatcherImpl("ANY OF " + Arrays.toString(types),
+            arg -> Arrays.stream(types).anyMatch(validArg -> validArg.baseType().equals(arg.baseType())));
     }
 
     /**
@@ -291,7 +298,7 @@ public final class ExpressionFunctionBuilder {
                 }
 
                 // Compute the return type
-                return Optional.of(returnTypeMapping.apply(argTypes.toArray(ValueType[]::new)));
+                return Optional.ofNullable(returnTypeMapping.apply(argTypes.toArray(ValueType[]::new)));
             }, impl);
         }
 

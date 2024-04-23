@@ -48,6 +48,12 @@
  */
 package org.knime.core.expressions;
 
+import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.FLOAT;
+import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.MISSING;
+import static org.knime.core.expressions.ValueType.STRING;
+
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.LongSupplier;
@@ -180,5 +186,74 @@ public interface Computer {
                 }
             };
         }
+    }
+
+    /**
+     * Helper method to get the return type of the computer {@link ValueType}.
+     *
+     * @param computer
+     * @return a {@link ValueType}
+     */
+    static ValueType getReturnTypeFromComputer(final Computer computer) {
+        if (computer instanceof BooleanComputer) {
+            return BOOLEAN;
+        } else if (computer instanceof FloatComputer) {
+            return FLOAT;
+        } else if (computer instanceof IntegerComputer) {
+            return INTEGER;
+        } else if (computer instanceof StringComputer) {
+            return STRING;
+        } else {
+            return MISSING;
+        }
+    }
+
+    /**
+     * Helper method to create a Typed Computer from a Computer Supplier and the intended return type {@link ValueType}.
+     * This is helpful when the computer supplier needs to compute in order to supply the resulting computer
+     *
+     * @param computerSupplier a supplier for the computer that computes the result and therefore needs to be delayed
+     * @param returnType the intended return type of the computer
+     * @return a {@link Computer} of the {@link ValueType} of return type
+     */
+    static Computer createTypedResultComputer(final Supplier<Computer> computerSupplier, final ValueType returnType) {
+
+        BooleanSupplier isMissing = () -> computerSupplier.get().isMissing();
+
+        if (returnType == BOOLEAN) {
+            return BooleanComputer.of(() -> ((BooleanComputer)computerSupplier.get()).compute(), // NOSONAR  - method reference is not possible due to delayed computation
+                isMissing);
+        }
+        if (returnType == INTEGER) {
+            return IntegerComputer.of(() -> Math.round(toFloat(computerSupplier.get()).compute()), isMissing);
+        }
+        if (returnType == FLOAT) {
+            return FloatComputer.of(() -> toFloat(computerSupplier.get()).compute(), isMissing);
+        }
+        if (returnType == STRING) {
+            return StringComputer.of(() -> ((StringComputer)computerSupplier.get()).compute(), // NOSONAR - method reference is not possible due to delayed computation
+                isMissing);
+        }
+
+        throw new IllegalStateException("Type of Expression is unknown: " + returnType
+            + " not in FLOAT, INTEGER, BOOLEAN or STRING. This in an implementation error.");
+    }
+
+    /**
+     * Helper method to cast a computer to a {@link FloatComputer}, when it is an {@link IntegerComputer} or
+     * {@link FloatComputer}.
+     *
+     * @param computer the computer to cast to a {@link FloatComputer}
+     * @return the result of the computation
+     * @throws IllegalStateException if the computer is not a numeric computer
+     */
+    static FloatComputer toFloat(final Computer computer) {
+        if (computer instanceof FloatComputer c) {
+            return c;
+        } else if (computer instanceof IntegerComputer c) {
+            return FloatComputer.of(c::compute, c::isMissing);
+        }
+        throw new IllegalArgumentException(
+            "Cannot cast computer to FLOAT: " + computer + ". This in an implementation error.");
     }
 }

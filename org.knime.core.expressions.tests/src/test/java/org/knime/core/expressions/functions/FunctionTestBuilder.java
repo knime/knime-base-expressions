@@ -251,7 +251,7 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder illegalArgs(final String name, final List<ValueType> argTypes) {
         m_illegalArgsTests.add(DynamicTest.dynamicTest(name, () -> {
             var returnType = m_function.returnType(argTypes);
-            assertTrue(returnType.isEmpty(), "should not fit arguments");
+            assertTrue(returnType.isEmpty(), "should not fit arguments. return type is not empty: " + returnType);
         }));
         return this;
     }

@@ -48,6 +48,7 @@
  */
 package org.knime.core.expressions.functions;
 
+import static org.knime.core.expressions.Computer.toFloat;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.allBaseTypesMatch;
@@ -995,15 +996,6 @@ public final class MathFunctions {
     }
 
     // ======================= UTILITIES ==============================
-
-    private static FloatComputer toFloat(final Computer computer) {
-        if (computer instanceof FloatComputer c) {
-            return c;
-        } else if (computer instanceof IntegerComputer c) {
-            return FloatComputer.of(c::compute, c::isMissing);
-        }
-        throw FunctionUtils.calledWithIllegalArgs();
-    }
 
     private static IntegerComputer toInteger(final Computer computer) {
         if (computer instanceof IntegerComputer i) {

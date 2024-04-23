@@ -153,7 +153,10 @@ public final class BuiltInFunctions {
         StringFunctions.TO_STRING, //
         StringFunctions.PARSE_FLOAT, //
         StringFunctions.PARSE_INT, //
-        StringFunctions.PARSE_BOOL
+        StringFunctions.PARSE_BOOL,
+        ControlFlowFunctions.IF, //
+        ControlFlowFunctions.SWITCH //
+
     );
 
     private static final Map<String, ExpressionFunction> BUILT_IN_FUNCTIONS_MAP =

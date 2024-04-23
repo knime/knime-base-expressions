@@ -125,6 +125,37 @@ public interface ValueType {
     }
 
     /**
+     * Helper to check equality of two types, including optional types.
+     *
+     * @param type1 type 1
+     * @param type2 type 2
+     * @return <code>true</code> if the base-types are equal
+     */
+    static boolean hasSameBaseType(final ValueType type1, final ValueType type2) {
+        return type1.baseType().equals(type2.baseType());
+    }
+
+    /**
+     * Helper to check if the given type is numeric and not optional.
+     *
+     * @param type the type to check
+     * @return <code>true</code> if the type is a numeric type (either {@link #FLOAT} or {@link #INTEGER})
+     */
+    static boolean isNumeric(final ValueType type) {
+        return type.equals(FLOAT) || type.equals(INTEGER);
+    }
+
+    /**
+     * Helper to check if the given type is numeric (optional or not).
+     *
+     * @param type the type to check
+     * @return <code>true</code> if the base-type is a numeric type (either {@link #FLOAT} or {@link #INTEGER})
+     */
+    static boolean isNumericOrOpt(final ValueType type) {
+        return isNumeric(type.baseType());
+    }
+
+    /**
      * @return a unique but simple name of the type
      */
     String name();
