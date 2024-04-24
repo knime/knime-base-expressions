@@ -104,24 +104,38 @@ watch(
 
 <style>
 .output-selector-parent {
-  display: grid;
+  display: flex;
+  flex-flow: row wrap;
   padding-right: 20px;
+  max-width: 100%;
+  height: fit-content;
 }
 
 .output-selector-child {
   flex: 1;
   height: 100%;
   place-items: center center;
+  display: flex;
+  flex-flow: row wrap;
+  top: 0;
 }
 
 .output-selector-child.left {
-  grid-area: 1 / 1 / 2 / 2;
-  display: flex;
+  flex-wrap: wrap;
+  container-type: inline-size;
+}
+
+@container (width < 240px) {
+  .output-label {
+    display: none;
+  }
 }
 
 .output-selector-child.right {
-  grid-area: 1 / 2 / 2 / 3;
   overflow: visible;
+  top: 0;
+  align-items: flex-start;
+  max-width: 100%;
 }
 
 .input-wrapper.column-input {
@@ -133,7 +147,11 @@ watch(
 #input-field-to-add-new-column,
 .input-wrapper.column-input,
 .output-selector-child {
-  height: 34px;
+  height: 29px;
+}
+
+#dropdown-box-to-select-column {
+  max-width: 100%;
 }
 
 #input-field-to-add-new-column,
