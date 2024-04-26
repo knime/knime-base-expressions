@@ -1379,6 +1379,95 @@ public final class StringFunctions {
         return StringComputer.of(value, () -> false);
     }
 
+        public static final ExpressionFunction PARSE_FLOAT = functionBuilder() //
+        .name("parse_float") //
+        .description("Convert a string to a float if possible, otherwise return `MISSING`") //
+        .keywords() //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("s", "the string", isStringOrOpt()) //
+        ) //
+        .returnType("float representation of the string, or MISSING", "FLOAT?", //
+            args -> ValueType.FLOAT(anyOptional(args))) //
+        .impl(StringFunctions::parseFloatImpl) //
+        .build();
+
+    private static Computer parseFloatImpl(final List<Computer> args) {
+        return FloatComputer.of( //
+            () -> Float.parseFloat(toString(args.get(0)).compute()), //
+            () -> {
+                if (args.stream().anyMatch(Computer::isMissing)) {
+                    return true;
+                }
+
+                try {
+                    Float.parseFloat(toString(args.get(0)).compute());
+                } catch (NumberFormatException ex) {
+                    return true;
+                }
+
+                return false;
+            });
+    }
+
+    public static final ExpressionFunction PARSE_INT = functionBuilder() //
+        .name("parse_int") //
+        .description("Convert a string to an integer if possible, otherwise return `MISSING`") //
+        .keywords() //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("s", "the string", isStringOrOpt()) //
+        ) //
+        .returnType("integer representation of the string, or MISSING", "INTEGER?", //
+            args -> ValueType.INTEGER(anyOptional(args))) //
+        .impl(StringFunctions::parseIntImpl) //
+        .build();
+
+    private static Computer parseIntImpl(final List<Computer> args) {
+        return IntegerComputer.of( //
+            () -> Integer.parseInt(toString(args.get(0)).compute()), //
+            () -> {
+                if (args.stream().anyMatch(Computer::isMissing)) {
+                    return true;
+                }
+
+                try {
+                    Integer.parseInt(toString(args.get(0)).compute());
+                } catch (NumberFormatException ex) {
+                    return true;
+                }
+
+                return false;
+            });
+    }
+
+    public static final ExpressionFunction PARSE_BOOL = functionBuilder() //
+        .name("parse_bool") //
+        .description("Convert a string to a boolean if possible, otherwise return `MISSING`") //
+        .keywords() //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("s", "the string", isStringOrOpt()) //
+        ) //
+        .returnType("boolean representation of the string, or MISSING", "BOOLEAN?", //
+            args -> ValueType.BOOLEAN(anyOptional(args))) //
+        .impl(StringFunctions::parseBoolImpl) //
+        .build();
+
+    private static Computer parseBoolImpl(final List<Computer> args) {
+        return BooleanComputer.of( //
+            () -> toString(args.get(0)).compute().equalsIgnoreCase("true"), //
+            () -> {
+                if (args.stream().anyMatch(Computer::isMissing)) {
+                    return true;
+                }
+
+                var stringArg = toString(args.get(0)).compute();
+
+                return (!stringArg.equalsIgnoreCase("true") && !stringArg.equalsIgnoreCase("false"));
+            });
+    }
+
     // ======================= UTILITIES ==============================
 
     private static StringComputer toString(final Computer c) {

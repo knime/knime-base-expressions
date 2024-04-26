@@ -150,7 +150,10 @@ public final class BuiltInFunctions {
         StringFunctions.XML_ENCODE, //
         StringFunctions.URL_ENCODE, //
         StringFunctions.URL_DECODE, //
-        StringFunctions.TO_STRING //
+        StringFunctions.TO_STRING, //
+        StringFunctions.PARSE_FLOAT, //
+        StringFunctions.PARSE_INT, //
+        StringFunctions.PARSE_BOOL
     );
 
     private static final Map<String, ExpressionFunction> BUILT_IN_FUNCTIONS_MAP =

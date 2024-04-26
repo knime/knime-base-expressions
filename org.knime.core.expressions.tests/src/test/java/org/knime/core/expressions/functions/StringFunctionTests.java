@@ -53,6 +53,7 @@ import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.OPT_BOOLEAN;
+import static org.knime.core.expressions.ValueType.OPT_FLOAT;
 import static org.knime.core.expressions.ValueType.OPT_INTEGER;
 import static org.knime.core.expressions.ValueType.OPT_STRING;
 import static org.knime.core.expressions.ValueType.STRING;
@@ -651,6 +652,54 @@ final class StringFunctionTests {
             .impl("BOOLEAN", List.of(arg(true)), "true") //
             .impl("INTEGER", List.of(arg(1)), "1") //
             .impl("MISSING", List.of(misString()), "MISSING") //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> parseFloat() {
+        return new FunctionTestBuilder(StringFunctions.PARSE_FLOAT) //
+            .typing("STRING", List.of(STRING), FLOAT) //
+            .typing("STRING?", List.of(OPT_STRING), OPT_FLOAT) //
+            .illegalArgs("FLOAT", List.of(FLOAT)) //
+            .illegalArgs("INTEGER", List.of(FLOAT)) //
+            .illegalArgs("MISSING", List.of(MISSING)) //
+            .illegalArgs("2 STRINGs", List.of(STRING, STRING)) //
+            .impl("valid", List.of(arg("-1.24")), Float.parseFloat("-1.24")) //
+            .impl("valid int", List.of(arg("10")), Float.parseFloat("10.0")) //
+            .impl("invalid", List.of(arg("1.3a"))) //
+            .impl("MISSING", List.of(misString())) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> parseInt() {
+        return new FunctionTestBuilder(StringFunctions.PARSE_INT) //
+            .typing("STRING", List.of(STRING), INTEGER) //
+            .typing("STRING?", List.of(OPT_STRING), OPT_INTEGER) //
+            .illegalArgs("FLOAT", List.of(FLOAT)) //
+            .illegalArgs("INTEGER", List.of(FLOAT)) //
+            .illegalArgs("MISSING", List.of(MISSING)) //
+            .illegalArgs("2 STRINGs", List.of(STRING, STRING)) //
+            .impl("valid", List.of(arg("-10")), -10) //
+            .impl("invalid", List.of(arg("1.3"))) //
+            .impl("MISSING", List.of(misString())) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> parseBool() {
+        return new FunctionTestBuilder(StringFunctions.PARSE_BOOL) //
+            .typing("STRING", List.of(STRING), BOOLEAN) //
+            .typing("STRING?", List.of(OPT_STRING), OPT_BOOLEAN) //
+            .illegalArgs("FLOAT", List.of(FLOAT)) //
+            .illegalArgs("INTEGER", List.of(FLOAT)) //
+            .illegalArgs("MISSING", List.of(MISSING)) //
+            .illegalArgs("2 STRINGs", List.of(STRING, STRING)) //
+            .impl("true", List.of(arg("tRuE")), true) //
+            .impl("false", List.of(arg("falsE")), false) //
+            .impl("invalid 1", List.of(arg("falseE"))) //
+            .impl("invalid 2", List.of(arg("tru3"))) //
+            .impl("MISSING", List.of(misString())) //
             .tests();
     }
 }
