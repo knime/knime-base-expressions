@@ -369,7 +369,7 @@ public final class StringFunctions {
 			boolean ignoreCase = modifiers.contains("i");
 
 			var pattern = Pattern.compile(search, ignoreCase ? Pattern.CASE_INSENSITIVE : 0);
-			return pattern.matcher(str).replaceAll(Matcher.quoteReplacement(replacement));
+			return pattern.matcher(str).replaceAll(replacement);
 		};
 
 		BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);

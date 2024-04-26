@@ -211,6 +211,7 @@ final class StringFunctionTests {
             .impl("replace", List.of(arg("1234abcd"), arg("12345?"), arg("56")), "56abcd") //
             .impl("ignore case", List.of(arg("1234abcd"), arg("[ABC]{3}"), arg("yz"), arg("i")), "1234yzd") //
             .impl("multiple replacements", List.of(arg("quick quicker"), arg("quick(er)?"), arg("slow")), "slow slow") //
+            .impl("groups", List.of(arg("abc-123-456-xyz"), arg("([0-9]+)-([0-9]+)"), arg("$2-$1")), "abc-456-123-xyz")
             .impl("noop", List.of(arg("a"), arg("A"), arg("b")), "a") //
             .tests();
     }
