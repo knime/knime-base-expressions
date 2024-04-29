@@ -54,11 +54,6 @@ import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.STRING;
 
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import java.util.function.LongSupplier;
-import java.util.function.Supplier;
-
 /**
  * A supplier of computation results for expressions.
  *
@@ -70,13 +65,13 @@ public interface Computer {
     /**
      * @return <code>true</code> if the result is "MISSING"
      */
-    boolean isMissing();
+    boolean isMissing(WarningMessageListener wml);
 
     /** {@link Computer} for {@link ValueType#BOOLEAN} and {@link ValueType#OPT_BOOLEAN} */
     interface BooleanComputer extends Computer {
 
         /** @return the result of the expression evaluation */
-        boolean compute();
+        boolean compute(WarningMessageListener wml);
 
         /**
          * Helper method to create a {@link BooleanComputer}.
@@ -85,17 +80,17 @@ public interface Computer {
          * @param missing a supplier that returns if the result {@link #isMissing()}
          * @return a {@link BooleanComputer}
          */
-        static BooleanComputer of(final BooleanSupplier value, final BooleanSupplier missing) {
+        static BooleanComputer of(final ExpressionBooleanSupplier value, final ExpressionBooleanSupplier missing) {
             return new BooleanComputer() {
 
                 @Override
-                public boolean isMissing() {
-                    return missing.getAsBoolean();
+                public boolean isMissing(final WarningMessageListener wml) {
+                    return missing.getAsBoolean(wml);
                 }
 
                 @Override
-                public boolean compute() {
-                    return value.getAsBoolean();
+                public boolean compute(final WarningMessageListener wml) {
+                    return value.getAsBoolean(wml);
                 }
             };
         }
@@ -105,7 +100,7 @@ public interface Computer {
     interface IntegerComputer extends Computer {
 
         /** @return the result of the expression evaluation */
-        long compute();
+        long compute(WarningMessageListener wml);
 
         /**
          * Helper method to create an {@link IntegerComputer}.
@@ -114,17 +109,17 @@ public interface Computer {
          * @param missing a supplier that returns if the result {@link #isMissing()}
          * @return an {@link IntegerComputer}
          */
-        static IntegerComputer of(final LongSupplier value, final BooleanSupplier missing) {
+        static IntegerComputer of(final ExpressionLongSupplier value, final ExpressionBooleanSupplier missing) {
             return new IntegerComputer() {
 
                 @Override
-                public boolean isMissing() {
-                    return missing.getAsBoolean();
+                public boolean isMissing(final WarningMessageListener wml) {
+                    return missing.getAsBoolean(wml);
                 }
 
                 @Override
-                public long compute() {
-                    return value.getAsLong();
+                public long compute(final WarningMessageListener wml) {
+                    return value.getAsLong(wml);
                 }
             };
         }
@@ -134,7 +129,7 @@ public interface Computer {
     interface FloatComputer extends Computer {
 
         /** @return the result of the expression evaluation */
-        double compute();
+        double compute(WarningMessageListener wml);
 
         /**
          * Helper method to create a {@link FloatComputer}.
@@ -143,17 +138,17 @@ public interface Computer {
          * @param missing a supplier that returns if the result {@link #isMissing()}
          * @return a {@link FloatComputer}
          */
-        static FloatComputer of(final DoubleSupplier value, final BooleanSupplier missing) {
+        static FloatComputer of(final ExpressionDoubleSupplier value, final ExpressionBooleanSupplier missing) {
             return new FloatComputer() {
 
                 @Override
-                public boolean isMissing() {
-                    return missing.getAsBoolean();
+                public boolean isMissing(final WarningMessageListener wml) {
+                    return missing.getAsBoolean(wml);
                 }
 
                 @Override
-                public double compute() {
-                    return value.getAsDouble();
+                public double compute(final WarningMessageListener wml) {
+                    return value.getAsDouble(wml);
                 }
             };
         }
@@ -163,7 +158,7 @@ public interface Computer {
     interface StringComputer extends Computer {
 
         /** @return the result of the expression evaluation */
-        String compute();
+        String compute(WarningMessageListener wml);
 
         /**
          * Helper method to create a {@link StringComputer}.
@@ -172,17 +167,17 @@ public interface Computer {
          * @param missing a supplier that returns if the result {@link #isMissing()}
          * @return a {@link StringComputer}
          */
-        static StringComputer of(final Supplier<String> value, final BooleanSupplier missing) {
+        static StringComputer of(final ExpressionSupplier<String> value, final ExpressionBooleanSupplier missing) {
             return new StringComputer() {
 
                 @Override
-                public boolean isMissing() {
-                    return missing.getAsBoolean();
+                public boolean isMissing(final WarningMessageListener wml) {
+                    return missing.getAsBoolean(wml);
                 }
 
                 @Override
-                public String compute() {
-                    return value.get();
+                public String compute(final WarningMessageListener wml) {
+                    return value.get(wml);
                 }
             };
         }
@@ -216,22 +211,23 @@ public interface Computer {
      * @param returnType the intended return type of the computer
      * @return a {@link Computer} of the {@link ValueType} of return type
      */
-    static Computer createTypedResultComputer(final Supplier<Computer> computerSupplier, final ValueType returnType) {
+    static Computer createTypedResultComputer(final ExpressionSupplier<Computer> computerSupplier,
+        final ValueType returnType) {
 
-        BooleanSupplier isMissing = () -> computerSupplier.get().isMissing();
+        ExpressionBooleanSupplier isMissing = wml -> computerSupplier.get(wml).isMissing(wml);
 
         if (returnType == BOOLEAN) {
-            return BooleanComputer.of(() -> ((BooleanComputer)computerSupplier.get()).compute(), // NOSONAR  - method reference is not possible due to delayed computation
+            return BooleanComputer.of(wml -> ((BooleanComputer)computerSupplier.get(wml)).compute(wml), // NOSONAR  - method reference is not possible due to delayed computation
                 isMissing);
         }
         if (returnType == INTEGER) {
-            return IntegerComputer.of(() -> Math.round(toFloat(computerSupplier.get()).compute()), isMissing);
+            return IntegerComputer.of(wml -> Math.round(toFloat(computerSupplier.get(wml)).compute(wml)), isMissing);
         }
         if (returnType == FLOAT) {
-            return FloatComputer.of(() -> toFloat(computerSupplier.get()).compute(), isMissing);
+            return FloatComputer.of(wml -> toFloat(computerSupplier.get(wml)).compute(wml), isMissing);
         }
         if (returnType == STRING) {
-            return StringComputer.of(() -> ((StringComputer)computerSupplier.get()).compute(), // NOSONAR - method reference is not possible due to delayed computation
+            return StringComputer.of(wml -> ((StringComputer)computerSupplier.get(wml)).compute(wml), // NOSONAR - method reference is not possible due to delayed computation
                 isMissing);
         }
 

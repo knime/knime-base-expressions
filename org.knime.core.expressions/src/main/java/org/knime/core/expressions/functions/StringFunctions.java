@@ -50,6 +50,7 @@ package org.knime.core.expressions.functions;
 
 import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.STRING;
+import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.arg;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
@@ -72,9 +73,6 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 import java.util.OptionalInt;
-import java.util.function.BooleanSupplier;
-import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -84,7 +82,11 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.ExpressionBooleanSupplier;
+import org.knime.core.expressions.ExpressionLongSupplier;
+import org.knime.core.expressions.ExpressionSupplier;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.WarningMessageListener;
 
 /**
  * Implementation of built-in functions that manipulate strings.
@@ -120,8 +122,8 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
 
         return IntegerComputer.of( //
-            () -> c1.compute().compareTo(c2.compute()), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> c1.compute(wml).compareTo(c2.compute(wml)), //
+            anyMissing(args) //
         );
     }
 
@@ -145,22 +147,22 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
 
         // Modifiers
-        final BooleanSupplier ignoreCase;
+        final ExpressionBooleanSupplier ignoreCase;
         if (args.size() == 3) {
             // modifier present
             var modifier = (StringComputer)args.get(2);
-            ignoreCase = () -> modifier.compute().contains("i");
+            ignoreCase = wml -> modifier.compute(wml).contains("i");
         } else {
-            ignoreCase = () -> false;
+            ignoreCase = wml -> false;
         }
 
-        return BooleanComputer.of(() -> {
-            if (ignoreCase.getAsBoolean()) {
-                return c1.compute().toLowerCase(Locale.ROOT).contains(c2.compute().toLowerCase(Locale.ROOT));
+        return BooleanComputer.of(wml -> {
+            if (ignoreCase.getAsBoolean(wml)) {
+                return c1.compute(wml).toLowerCase(Locale.ROOT).contains(c2.compute(wml).toLowerCase(Locale.ROOT));
             } else {
-                return c1.compute().contains(c2.compute());
+                return c1.compute(wml).contains(c2.compute(wml));
             }
-        }, () -> args.stream().anyMatch(Computer::isMissing));
+        }, anyMissing(args));
     }
 
     public static final ExpressionFunction STARTS_WITH = functionBuilder() //
@@ -182,8 +184,8 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
 
         return BooleanComputer.of( //
-            () -> c1.compute().startsWith(c2.compute()), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> c1.compute(wml).startsWith(c2.compute(wml)), //
+            anyMissing(args) //
         );
     }
 
@@ -206,8 +208,8 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
 
         return BooleanComputer.of( //
-            () -> c1.compute().endsWith(c2.compute()), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> c1.compute(wml).endsWith(c2.compute(wml)), //
+            anyMissing(args) //
         );
     }
 
@@ -242,11 +244,11 @@ public final class StringFunctions {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
 
-        BooleanSupplier value = () -> {
-            String escapedPattern = c2.compute();
-            String toMatch = c1.compute();
+        ExpressionBooleanSupplier value = wml -> {
+            String escapedPattern = c2.compute(wml);
+            String toMatch = c1.compute(wml);
 
-            if (args.size() == 3 && toBoolean(args.get(2)).compute()) {
+            if (args.size() == 3 && toBoolean(args.get(2)).compute(wml)) {
                 escapedPattern = escapedPattern.toLowerCase(Locale.ROOT);
                 toMatch = toMatch.toLowerCase(Locale.ROOT);
             }
@@ -272,7 +274,7 @@ public final class StringFunctions {
 
         return BooleanComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -298,8 +300,8 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
 
         return BooleanComputer.of( //
-            () -> c1.compute().matches(c2.compute()), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> c1.compute(wml).matches(c2.compute(wml)), //
+            anyMissing(args) //
         );
     }
 
@@ -337,9 +339,10 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
         var c3 = toInteger(args.get(2));
 
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing) //
-            || extractGroupOrReturnNull(c1.compute(), c2.compute(), (int)c3.compute()) == null;
-        Supplier<String> value = () -> extractGroupOrReturnNull(c1.compute(), c2.compute(), (int)c3.compute());
+        ExpressionBooleanSupplier isMissing = wml -> anyMissing(args).getAsBoolean(wml) //
+            || extractGroupOrReturnNull(c1.compute(wml), c2.compute(wml), (int)c3.compute(wml)) == null;
+        ExpressionSupplier<String> value =
+            wml -> extractGroupOrReturnNull(c1.compute(wml), c2.compute(wml), (int)c3.compute(wml));
 
         return StringComputer.of(value, isMissing);
     }
@@ -360,19 +363,19 @@ public final class StringFunctions {
         .build();
 
     private static Computer regexReplaceImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
-            String search = toString(args.get(1)).compute();
-            String replacement = toString(args.get(2)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            String search = toString(args.get(1)).compute(wml);
+            String replacement = toString(args.get(2)).compute(wml);
 
-            String modifiers = extractModifiersOrDefault(args, 3);
+            String modifiers = extractModifiersOrDefault(args, 3, wml);
             boolean ignoreCase = modifiers.contains("i");
 
             var pattern = Pattern.compile(search, ignoreCase ? Pattern.CASE_INSENSITIVE : 0);
             return pattern.matcher(str).replaceAll(replacement);
         };
 
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
+        ExpressionBooleanSupplier isMissing = anyMissing(args);
 
         return StringComputer.of(value, isMissing);
     }
@@ -394,12 +397,12 @@ public final class StringFunctions {
         .build();
 
     private static Computer replaceImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
-            String search = toString(args.get(1)).compute();
-            String replacement = toString(args.get(2)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            String search = toString(args.get(1)).compute(wml);
+            String replacement = toString(args.get(2)).compute(wml);
 
-            String modifiers = extractModifiersOrDefault(args, 3);
+            String modifiers = extractModifiersOrDefault(args, 3, wml);
             boolean ignoreCase = modifiers.contains("i");
             boolean wholeWords = modifiers.contains("w");
 
@@ -411,7 +414,7 @@ public final class StringFunctions {
             return pattern.matcher(str).replaceAll(Matcher.quoteReplacement(replacement));
         };
 
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
+        ExpressionBooleanSupplier isMissing = anyMissing(args);
 
         return StringComputer.of(value, isMissing);
     }
@@ -437,12 +440,12 @@ public final class StringFunctions {
         .build();
 
     private static Computer replaceCharsImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
-            char[] oldChars = toString(args.get(1)).compute().toCharArray();
-            char[] newChars = toString(args.get(2)).compute().toCharArray();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            char[] oldChars = toString(args.get(1)).compute(wml).toCharArray();
+            char[] newChars = toString(args.get(2)).compute(wml).toCharArray();
 
-            String modifiers = extractModifiersOrDefault(args, 3);
+            String modifiers = extractModifiersOrDefault(args, 3, wml);
             boolean ignoreCase = modifiers.contains("i");
 
             for (int i = 0; i < oldChars.length; ++i) {
@@ -465,7 +468,7 @@ public final class StringFunctions {
             return str;
         };
 
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
+        ExpressionBooleanSupplier isMissing = anyMissing(args);
 
         return StringComputer.of(value, isMissing);
     }
@@ -488,9 +491,9 @@ public final class StringFunctions {
         var umlauts = "äüö";
         var umlautReplacements = "auo";
 
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
-            boolean noE = toBoolean(args.get(1)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            boolean noE = toBoolean(args.get(1)).compute(wml);
 
             for (int i = 0; i < umlauts.length(); i++) {
                 str = str.replace( //
@@ -504,7 +507,7 @@ public final class StringFunctions {
                 );
             }
 
-            if (args.size() < 3 || toBoolean(args.get(2)).compute()) {
+            if (args.size() < 3 || toBoolean(args.get(2)).compute(wml)) {
                 str = str //
                     .replace("ß", "ss") //
                     .replace("ẞ", "SS");
@@ -513,7 +516,7 @@ public final class StringFunctions {
             return str;
         };
 
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
+        ExpressionBooleanSupplier isMissing = anyMissing(args);
 
         return StringComputer.of(value, isMissing);
     }
@@ -531,14 +534,14 @@ public final class StringFunctions {
         .build();
 
     private static Computer replaceDiacriticsImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
             str = Normalizer.normalize(str, Normalizer.Form.NFKD);
             str = str.replaceAll("\\p{M}", "");
             return str;
         };
 
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
+        ExpressionBooleanSupplier isMissing = anyMissing(args);
 
         return StringComputer.of(value, isMissing);
     }
@@ -557,8 +560,8 @@ public final class StringFunctions {
 
     private static Computer lowerCaseImpl(final List<Computer> args) {
         return StringComputer.of( //
-            () -> toString(args.get(0)).compute().toLowerCase(Locale.ROOT), //
-            () -> args.stream().anyMatch(Computer::isMissing));
+            wml -> toString(args.get(0)).compute(wml).toLowerCase(Locale.ROOT), //
+            anyMissing(args));
     }
 
     public static final ExpressionFunction UPPER_CASE = functionBuilder() //
@@ -575,8 +578,8 @@ public final class StringFunctions {
 
     private static Computer upperCaseImpl(final List<Computer> args) {
         return StringComputer.of( //
-            () -> toString(args.get(0)).compute().toUpperCase(Locale.ROOT), //
-            () -> args.stream().anyMatch(Computer::isMissing));
+            wml -> toString(args.get(0)).compute(wml).toUpperCase(Locale.ROOT), //
+            anyMissing(args));
     }
 
     public static final ExpressionFunction CAPITALIZE = functionBuilder() //
@@ -592,8 +595,8 @@ public final class StringFunctions {
         .build();
 
     private static Computer titleCaseImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
             var output = new StringBuilder(str.length());
 
             var capitaliseNextChar = true;
@@ -613,7 +616,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -633,14 +636,14 @@ public final class StringFunctions {
         .build();
 
     private static Computer padEndImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
-            int targetLength = (int)toInteger(args.get(1)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            int targetLength = (int)toInteger(args.get(1)).compute(wml);
 
             // If they've given us more than one char to pad with,
             // just use the first one.
             String charToAppend = args.size() == 3 //
-                ? takeFirstChar(toString(args.get(2)).compute(), " ") //
+                ? takeFirstChar(toString(args.get(2)).compute(wml), " ") //
                 : " ";
 
             var output = new StringBuilder(str);
@@ -654,7 +657,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -676,11 +679,11 @@ public final class StringFunctions {
         .build();
 
     private static Computer padStartImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
-            int targetLength = (int)toInteger(args.get(1)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            int targetLength = (int)toInteger(args.get(1)).compute(wml);
             String charToPrepend = args.size() == 3 //
-                ? takeFirstChar(toString(args.get(2)).compute(), " ") //
+                ? takeFirstChar(toString(args.get(2)).compute(wml), " ") //
                 : " ";
 
             StringBuilder output = new StringBuilder(targetLength);
@@ -693,7 +696,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -713,11 +716,12 @@ public final class StringFunctions {
         .build();
 
     private static Computer joinImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String sep = toString(args.get(0)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String sep = toString(args.get(0)).compute(wml);
             String[] toJoin = args.stream() //
                 .skip(1) // skip over the first arg, which is the separator
-                .map(StringFunctions::toString).map(StringComputer::compute) //
+                .map(StringFunctions::toString) //
+                .map(sc -> sc.compute(wml)) //
                 .toArray(String[]::new);
 
             return String.join(sep, toJoin);
@@ -725,7 +729,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -746,11 +750,11 @@ public final class StringFunctions {
         .build();
 
     private static Computer substrImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
-            int start = (int)toInteger(args.get(1)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            int start = (int)toInteger(args.get(1)).compute(wml);
             int length = args.size() == 3 //
-                ? (int)toInteger(args.get(2)).compute() //
+                ? (int)toInteger(args.get(2)).compute(wml) //
                 : (str.length() - start + 1);
 
             // We do one-indexing in expressions editor
@@ -764,7 +768,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -783,9 +787,9 @@ public final class StringFunctions {
         .build();
 
     private static Computer firstCharsImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
-            int numChars = (int)toInteger(args.get(1)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            int numChars = (int)toInteger(args.get(1)).compute(wml);
 
             // Clamp indices rather than erroring
             return str.substring( //
@@ -796,7 +800,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -815,9 +819,9 @@ public final class StringFunctions {
         .build();
 
     private static Computer lastCharsImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
-            int numChars = (int)toInteger(args.get(1)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            int numChars = (int)toInteger(args.get(1)).compute(wml);
 
             // Clamp indices rather than erroring
             return str.substring( //
@@ -828,7 +832,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -848,10 +852,10 @@ public final class StringFunctions {
         .build();
 
     private static Computer removeCharsImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
-            String toRemove = toString(args.get(1)).compute();
-            String modifiers = extractModifiersOrDefault(args, 2);
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            String toRemove = toString(args.get(1)).compute(wml);
+            String modifiers = extractModifiersOrDefault(args, 2, wml);
 
             boolean ignoreCase = modifiers.contains("i");
 
@@ -870,7 +874,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -889,8 +893,8 @@ public final class StringFunctions {
 
     private static Computer stripImpl(final List<Computer> args) {
         return StringComputer.of( //
-            () -> toString(args.get(0)).compute().strip(), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> toString(args.get(0)).compute(wml).strip(), //
+            anyMissing(args) //
         );
     }
 
@@ -909,8 +913,8 @@ public final class StringFunctions {
 
     private static Computer stripstartImpl(final List<Computer> args) {
         return StringComputer.of( //
-            () -> toString(args.get(0)).compute().stripLeading(), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> toString(args.get(0)).compute(wml).stripLeading(), //
+            anyMissing(args) //
         );
     }
 
@@ -929,8 +933,8 @@ public final class StringFunctions {
 
     private static Computer stripEndImpl(final List<Computer> args) {
         return StringComputer.of( //
-            () -> toString(args.get(0)).compute().stripTrailing(), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> toString(args.get(0)).compute(wml).stripTrailing(), //
+            anyMissing(args) //
         );
     }
 
@@ -951,8 +955,8 @@ public final class StringFunctions {
 
     private static Computer removeDuplicateSpacesImpl(final List<Computer> args) {
         return StringComputer.of( //
-            () -> multiSpacePattern.matcher(toString(args.get(0)).compute()).replaceAll(" "), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> multiSpacePattern.matcher(toString(args.get(0)).compute(wml)).replaceAll(" "), //
+            anyMissing(args) //
         );
     }
 
@@ -971,8 +975,8 @@ public final class StringFunctions {
 
     private static Computer nullToEmptyImpl(final List<Computer> args) {
         return StringComputer.of( //
-            () -> args.get(0).isMissing() ? "" : toString(args.get(0)).compute(), //
-            () -> false //
+            wml -> args.get(0).isMissing(wml) ? "" : toString(args.get(0)).compute(wml), //
+            wml -> false //
         );
     }
 
@@ -991,8 +995,8 @@ public final class StringFunctions {
 
     private static Computer emptyToNull(final List<Computer> args) {
         return StringComputer.of( //
-            () -> toString(args.get(0)).compute(), //
-            () -> args.get(0).isMissing() || toString(args.get(0)).compute().isEmpty() //
+            wml -> toString(args.get(0)).compute(wml), //
+            wml -> args.get(0).isMissing(wml) || toString(args.get(0)).compute(wml).isEmpty() //
         );
     }
 
@@ -1011,8 +1015,8 @@ public final class StringFunctions {
 
     private static Computer reverseImpl(final List<Computer> args) {
         return StringComputer.of( //
-            () -> new StringBuilder(toString(args.get(0)).compute()).reverse().toString(), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> new StringBuilder(toString(args.get(0)).compute(wml)).reverse().toString(), //
+            anyMissing(args) //
         );
     }
 
@@ -1031,8 +1035,8 @@ public final class StringFunctions {
 
     private static Computer lengthImpl(final List<Computer> args) {
         return IntegerComputer.of( //
-            () -> toString(args.get(0)).compute().length(), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> toString(args.get(0)).compute(wml).length(), //
+            anyMissing(args) //
         );
     }
 
@@ -1053,10 +1057,10 @@ public final class StringFunctions {
         .build();
 
     private static Computer countImpl(final List<Computer> args) {
-        LongSupplier value = () -> {
-            String str = toString(args.get(0)).compute();
-            String search = toString(args.get(1)).compute();
-            String modifiers = extractModifiersOrDefault(args, 2);
+        ExpressionLongSupplier value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            String search = toString(args.get(1)).compute(wml);
+            String modifiers = extractModifiersOrDefault(args, 2, wml);
 
             boolean ignoreCase = modifiers.contains("i");
             boolean wholeWords = modifiers.contains("w");
@@ -1078,7 +1082,7 @@ public final class StringFunctions {
 
         return IntegerComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -1099,10 +1103,10 @@ public final class StringFunctions {
         .build();
 
     private static Computer countCharsImpl(final List<Computer> args) {
-        LongSupplier value = () -> {
-            String str = toString(args.get(0)).compute();
-            String searchChars = toString(args.get(1)).compute();
-            String modifiers = extractModifiersOrDefault(args, 2);
+        ExpressionLongSupplier value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            String searchChars = toString(args.get(1)).compute(wml);
+            String modifiers = extractModifiersOrDefault(args, 2, wml);
 
             boolean ignoreCase = modifiers.contains("i");
             boolean matchInvert = modifiers.contains("v");
@@ -1121,7 +1125,7 @@ public final class StringFunctions {
 
         return IntegerComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -1143,10 +1147,10 @@ public final class StringFunctions {
         .build();
 
     private static Computer findImpl(final List<Computer> args) {
-        LongSupplier indexSupplier = () -> {
-            String str = toString(args.get(0)).compute();
-            String search = toString(args.get(1)).compute();
-            String modifiers = extractModifiersOrDefault(args, 2);
+        ExpressionLongSupplier indexSupplier = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            String search = toString(args.get(1)).compute(wml);
+            String modifiers = extractModifiersOrDefault(args, 2, wml);
 
             boolean ignoreCase = modifiers.contains("i");
             boolean wholeWords = modifiers.contains("w");
@@ -1174,9 +1178,9 @@ public final class StringFunctions {
         };
 
         // If not found, return missing
-        BooleanSupplier isMissing = () -> //
-        args.stream().anyMatch(Computer::isMissing) //
-            || indexSupplier.getAsLong() == -1;
+        ExpressionBooleanSupplier isMissing = wml -> //
+        anyMissing(args).getAsBoolean(wml) //
+            || indexSupplier.getAsLong(wml) == -1;
 
         return IntegerComputer.of( //
             indexSupplier, //
@@ -1202,10 +1206,10 @@ public final class StringFunctions {
         .build();
 
     private static Computer findCharsImpl(final List<Computer> args) {
-        LongSupplier value = () -> {
-            String str = toString(args.get(0)).compute();
-            String search = toString(args.get(1)).compute();
-            String modifiers = extractModifiersOrDefault(args, 2);
+        ExpressionLongSupplier value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
+            String search = toString(args.get(1)).compute(wml);
+            String modifiers = extractModifiersOrDefault(args, 2, wml);
 
             boolean ignoreCase = modifiers.contains("i");
             boolean backwards = modifiers.contains("b");
@@ -1232,7 +1236,7 @@ public final class StringFunctions {
 
         return IntegerComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -1252,8 +1256,8 @@ public final class StringFunctions {
         .build();
 
     private static Computer checksumMd5Impl(final List<Computer> args) {
-        Supplier<String> value = () -> {
-            String str = toString(args.get(0)).compute();
+        ExpressionSupplier<String> value = wml -> {
+            String str = toString(args.get(0)).compute(wml);
 
             try {
                 var digest = MessageDigest.getInstance("MD5") //
@@ -1274,7 +1278,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -1292,7 +1296,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer xmlEncodeImpl(final List<Computer> args) {
-        Supplier<String> value = () -> toString(args.get(0)).compute() //
+        ExpressionSupplier<String> value = wml -> toString(args.get(0)).compute(wml) //
             .replace("&", "&amp;") //
             .replace("<", "&lt;") //
             .replace(">", "&gt;") //
@@ -1301,7 +1305,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -1320,8 +1324,8 @@ public final class StringFunctions {
 
     private static Computer urlEncodeImpl(final List<Computer> args) {
         return StringComputer.of( //
-            () -> URLEncoder.encode(toString(args.get(0)).compute(), StandardCharsets.UTF_8), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> URLEncoder.encode(toString(args.get(0)).compute(wml), StandardCharsets.UTF_8), //
+            anyMissing(args) //
         );
     }
 
@@ -1340,8 +1344,8 @@ public final class StringFunctions {
 
     private static Computer urlDecodeImpl(final List<Computer> args) {
         return StringComputer.of( //
-            () -> URLDecoder.decode(toString(args.get(0)).compute(), StandardCharsets.UTF_8), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> URLDecoder.decode(toString(args.get(0)).compute(wml), StandardCharsets.UTF_8), //
+            anyMissing(args) //
         );
     }
 
@@ -1358,28 +1362,28 @@ public final class StringFunctions {
         .build();
 
     private static Computer toStringImpl(final List<Computer> args) {
-        Supplier<String> value = () -> {
+        ExpressionSupplier<String> value = wml -> {
             var c = args.get(0);
 
-            if (c.isMissing()) {
+            if (c.isMissing(wml)) {
                 return "MISSING";
             } else if (c instanceof BooleanComputer bc) {
-                return String.valueOf(bc.compute());
+                return String.valueOf(bc.compute(wml));
             } else if (c instanceof FloatComputer fc) {
-                return String.valueOf(fc.compute());
+                return String.valueOf(fc.compute(wml));
             } else if (c instanceof IntegerComputer ic) {
-                return String.valueOf(ic.compute());
+                return String.valueOf(ic.compute(wml));
             } else if (c instanceof StringComputer sc) {
-                return sc.compute();
+                return sc.compute(wml);
             } else {
                 throw FunctionUtils.calledWithIllegalArgs();
             }
         };
 
-        return StringComputer.of(value, () -> false);
+        return StringComputer.of(value, wml -> false);
     }
 
-        public static final ExpressionFunction PARSE_FLOAT = functionBuilder() //
+    public static final ExpressionFunction PARSE_FLOAT = functionBuilder() //
         .name("parse_float") //
         .description("Convert a string to a float if possible, otherwise return `MISSING`") //
         .keywords() //
@@ -1394,14 +1398,14 @@ public final class StringFunctions {
 
     private static Computer parseFloatImpl(final List<Computer> args) {
         return FloatComputer.of( //
-            () -> Float.parseFloat(toString(args.get(0)).compute()), //
-            () -> {
-                if (args.stream().anyMatch(Computer::isMissing)) {
+            wml -> Float.parseFloat(toString(args.get(0)).compute(wml)), //
+            wml -> {
+                if (anyMissing(args).getAsBoolean(wml)) {
                     return true;
                 }
 
                 try {
-                    Float.parseFloat(toString(args.get(0)).compute());
+                    Float.parseFloat(toString(args.get(0)).compute(wml));
                 } catch (NumberFormatException ex) {
                     return true;
                 }
@@ -1425,14 +1429,14 @@ public final class StringFunctions {
 
     private static Computer parseIntImpl(final List<Computer> args) {
         return IntegerComputer.of( //
-            () -> Integer.parseInt(toString(args.get(0)).compute()), //
-            () -> {
-                if (args.stream().anyMatch(Computer::isMissing)) {
+            wml -> Integer.parseInt(toString(args.get(0)).compute(wml)), //
+            wml -> {
+                if (anyMissing(args).getAsBoolean(wml)) {
                     return true;
                 }
 
                 try {
-                    Integer.parseInt(toString(args.get(0)).compute());
+                    Integer.parseInt(toString(args.get(0)).compute(wml));
                 } catch (NumberFormatException ex) {
                     return true;
                 }
@@ -1456,13 +1460,13 @@ public final class StringFunctions {
 
     private static Computer parseBoolImpl(final List<Computer> args) {
         return BooleanComputer.of( //
-            () -> toString(args.get(0)).compute().equalsIgnoreCase("true"), //
-            () -> {
-                if (args.stream().anyMatch(Computer::isMissing)) {
+            wml -> toString(args.get(0)).compute(wml).equalsIgnoreCase("true"), //
+            wml -> {
+                if (anyMissing(args).getAsBoolean(wml)) {
                     return true;
                 }
 
-                var stringArg = toString(args.get(0)).compute();
+                var stringArg = toString(args.get(0)).compute(wml);
 
                 return (!stringArg.equalsIgnoreCase("true") && !stringArg.equalsIgnoreCase("false"));
             });
@@ -1508,9 +1512,10 @@ public final class StringFunctions {
         }
     }
 
-    private static String extractModifiersOrDefault(final List<Computer> args, final int index) {
+    private static String extractModifiersOrDefault(final List<Computer> args, final int index,
+        final WarningMessageListener wml) {
         if (args.size() > index) {
-            return toString(args.get(index)).compute();
+            return toString(args.get(index)).compute(wml);
         } else {
             return "";
         }

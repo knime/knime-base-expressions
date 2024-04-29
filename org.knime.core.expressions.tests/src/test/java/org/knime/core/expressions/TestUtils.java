@@ -70,6 +70,10 @@ import org.knime.core.expressions.functions.ExpressionFunction;
  */
 public final class TestUtils {
 
+    // Listener that just ignores any warnings
+    private static final WarningMessageListener DUMMY_WML = w -> {
+    };
+
     private TestUtils() {
     }
 
@@ -90,7 +94,7 @@ public final class TestUtils {
     public static Consumer<Computer> computerResultChecker(final String computerDesc) {
         return c -> {
             assertInstanceOf(Computer.class, c, computerDesc + " should eval to Computer");
-            assertTrue(c.isMissing(), computerDesc + " should be missing");
+            assertTrue(c.isMissing(DUMMY_WML), computerDesc + " should be missing");
         };
     }
 
@@ -102,8 +106,8 @@ public final class TestUtils {
     public static Consumer<Computer> computerResultChecker(final String computerDesc, final boolean expected) {
         return c -> {
             assertInstanceOf(BooleanComputer.class, c, computerDesc + " should eval to BOOLEAN");
-            assertFalse(c.isMissing(), computerDesc + " should not be missing");
-            assertEquals(expected, ((BooleanComputer)c).compute(), computerDesc + " should eval correctly");
+            assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
+            assertEquals(expected, ((BooleanComputer)c).compute(DUMMY_WML), computerDesc + " should eval correctly");
         };
     }
 
@@ -115,8 +119,8 @@ public final class TestUtils {
     public static Consumer<Computer> computerResultChecker(final String computerDesc, final long expected) {
         return c -> {
             assertInstanceOf(IntegerComputer.class, c, computerDesc + " should eval to INTEGER");
-            assertFalse(c.isMissing(), computerDesc + " should not be missing");
-            assertEquals(expected, ((IntegerComputer)c).compute(), computerDesc + " should eval correctly");
+            assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
+            assertEquals(expected, ((IntegerComputer)c).compute(DUMMY_WML), computerDesc + " should eval correctly");
         };
     }
 
@@ -130,8 +134,9 @@ public final class TestUtils {
         final double tolerance) {
         return c -> {
             assertInstanceOf(FloatComputer.class, c, computerDesc + " should eval to FLOAT");
-            assertFalse(c.isMissing(), computerDesc + " should not be missing");
-            assertEquals(expected, ((FloatComputer)c).compute(), tolerance, computerDesc + " should eval correctly");
+            assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
+            assertEquals(expected, ((FloatComputer)c).compute(DUMMY_WML), tolerance,
+                computerDesc + " should eval correctly");
         };
     }
 
@@ -152,8 +157,8 @@ public final class TestUtils {
     public static Consumer<Computer> computerResultChecker(final String computerDesc, final String expected) {
         return c -> {
             assertInstanceOf(StringComputer.class, c, computerDesc + " should eval to STRING");
-            assertFalse(c.isMissing(), computerDesc + " should not be missing");
-            assertEquals(expected, ((StringComputer)c).compute(), computerDesc + " should eval correctly");
+            assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
+            assertEquals(expected, ((StringComputer)c).compute(DUMMY_WML), computerDesc + " should eval correctly");
         };
     }
 }

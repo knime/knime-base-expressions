@@ -53,6 +53,7 @@ import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.STRING;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -61,6 +62,7 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.ExpressionBooleanSupplier;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.expressions.functions.ExpressionFunction.Argument;
 import org.knime.core.expressions.functions.ExpressionFunction.Description;
@@ -95,6 +97,28 @@ public final class ExpressionFunctionBuilder {
      */
     public static boolean anyOptional(final ValueType... types) {
         return Arrays.stream(types).anyMatch(ValueType::isOptional);
+    }
+
+    /**
+     * Factory for isMissing argument to computers. Returns an ExpressionBooleanSupplier that returns true iff at least
+     * one if the arguments is missing.
+     *
+     * @param values
+     * @return
+     */
+    public static ExpressionBooleanSupplier anyMissing(final Collection<Computer> values) {
+        return wml -> values.stream().anyMatch(c -> c.isMissing(wml));
+    }
+
+    /**
+     * Factory for isMissing argument to computers. Returns an ExpressionBooleanSupplier that returns true iff at least
+     * one if the arguments is missing.
+     *
+     * @param values
+     * @return
+     */
+    public static ExpressionBooleanSupplier anyMissing(final Computer... values) {
+        return wml -> Arrays.stream(values).anyMatch(c -> c.isMissing(wml));
     }
 
     /**

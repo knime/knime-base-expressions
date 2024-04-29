@@ -56,11 +56,7 @@ import static org.knime.core.expressions.ValueType.STRING;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
 import java.util.function.Function;
-import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 
 import org.knime.core.expressions.Ast.BinaryOp;
 import org.knime.core.expressions.Ast.BinaryOperator;
@@ -91,7 +87,7 @@ final class Evaluation {
     private Evaluation() {
     }
 
-    private static final Computer MISSING_CONSTANT_COMPUTER = () -> true;
+    private static final Computer MISSING_CONSTANT_COMPUTER = wml -> true;
 
     static Computer evaluate(final Ast expression, final Function<ColumnAccess, Optional<Computer>> columnToComputer,
         final Function<FlowVarAccess, Optional<Computer>> flowVariableToComputer) throws ExpressionCompileException {
@@ -137,22 +133,22 @@ final class Evaluation {
 
         @Override
         public Computer visit(final BooleanConstant node) {
-            return BooleanComputer.of(node::value, () -> false);
+            return BooleanComputer.of(wml -> node.value(), wml -> false);
         }
 
         @Override
         public IntegerComputer visit(final IntegerConstant node) {
-            return IntegerComputer.of(node::value, () -> false);
+            return IntegerComputer.of(wml -> node.value(), wml -> false);
         }
 
         @Override
         public Computer visit(final FloatConstant node) {
-            return FloatComputer.of(node::value, () -> false);
+            return FloatComputer.of(wml -> node.value(), wml -> false);
         }
 
         @Override
         public Computer visit(final StringConstant node) {
-            return StringComputer.of(node::value, () -> false);
+            return StringComputer.of(wml -> node.value(), wml -> false);
         }
 
         @Override
@@ -207,20 +203,32 @@ final class Evaluation {
         private static Computer missingFallbackOperatorImpl(final ValueType outputType, final Computer arg1,
             final Computer arg2) {
             // Deferred evaluation to avoid calling missing during setup
-            Supplier<Computer> outputComputer = () -> arg1.isMissing() ? arg2 : arg1;
+            ExpressionSupplier<Computer> outputComputer = wml -> arg1.isMissing(wml) ? arg2 : arg1;
 
             // Output is missing iff both inputs are missing
-            BooleanSupplier outputMissing = () -> arg1.isMissing() && arg2.isMissing();
+            ExpressionBooleanSupplier outputMissing = wml -> arg1.isMissing(wml) && arg2.isMissing(wml);
 
             // NOSONARs because it otherwise suggests a change that breaks deferred evaluation of get()
             if (BOOLEAN.equals(outputType.baseType())) {
-                return BooleanComputer.of(() -> ((BooleanComputer)outputComputer.get()).compute(), outputMissing); // NOSONAR
+                return BooleanComputer.of( //
+                    wml -> ((BooleanComputer)outputComputer.get(wml)).compute(wml), // NOSONAR
+                    outputMissing //
+                );
             } else if (STRING.equals(outputType.baseType())) {
-                return StringComputer.of(() -> ((StringComputer)outputComputer.get()).compute(), outputMissing); // NOSONAR
+                return StringComputer.of( //
+                    wml -> ((StringComputer)outputComputer.get(wml)).compute(wml), // NOSONAR
+                    outputMissing //
+                );
             } else if (INTEGER.equals(outputType.baseType())) {
-                return IntegerComputer.of(() -> ((IntegerComputer)outputComputer.get()).compute(), outputMissing); // NOSONAR
+                return IntegerComputer.of( //
+                    wml -> ((IntegerComputer)outputComputer.get(wml)).compute(wml), // NOSONAR
+                    outputMissing //
+                );
             } else if (FLOAT.equals(outputType.baseType())) {
-                return FloatComputer.of(() -> intOrFloatToFloat(outputComputer.get()).compute(), outputMissing); // NOSONAR
+                return FloatComputer.of( //
+                    wml -> intOrFloatToFloat(outputComputer.get(wml)).compute(wml), // NOSONAR
+                    outputMissing //
+                );
             } else {
                 throw new IllegalStateException(
                     "Implementation error: this shouldn't happen if our typing check is correct");
@@ -235,7 +243,7 @@ final class Evaluation {
         static BooleanComputer unary(final UnaryOperator op, final Computer arg) {
             if (op == UnaryOperator.NOT && arg instanceof BooleanComputer boolArg) {
                 var a = toKleenesLogicComputer(boolArg);
-                return fromKleenesLogicSupplier(() -> KleenesLogic.not(a.get()));
+                return fromKleenesLogicSupplier(wml -> KleenesLogic.not(a.get(wml)));
             } else {
                 throw unsupportedOutputForOpError(op, BOOLEAN);
             }
@@ -254,21 +262,21 @@ final class Evaluation {
 
         private static BooleanComputer comparison( // NOSONAR - this method is complex but still clear
             final BinaryOperator op, final Computer arg1, final Computer arg2) {
-            BooleanSupplier anyMissing = () -> arg1.isMissing() || arg2.isMissing();
-            BooleanSupplier bothMissing = () -> arg1.isMissing() && arg2.isMissing();
+            ExpressionBooleanSupplier anyMissing = wml -> arg1.isMissing(wml) || arg2.isMissing(wml);
+            ExpressionBooleanSupplier bothMissing = wml -> arg1.isMissing(wml) && arg2.isMissing(wml);
 
-            BooleanSupplier value;
+            ExpressionBooleanSupplier value;
             if (arg1 instanceof FloatComputer || arg2 instanceof FloatComputer) {
                 // One is FLOAT -> we do the comparison for FLOAT
                 var a1 = Float.cast(arg1);
                 var a2 = Float.cast(arg2);
                 value = switch (op) { // NOSONAR
-                    case LESS_THAN -> () -> !anyMissing.getAsBoolean() && a1.compute() < a2.compute();
-                    case LESS_THAN_EQUAL -> () -> bothMissing.getAsBoolean()
-                        || (!anyMissing.getAsBoolean() && a1.compute() <= a2.compute());
-                    case GREATER_THAN -> () -> !anyMissing.getAsBoolean() && a1.compute() > a2.compute();
-                    case GREATER_THAN_EQUAL -> () -> bothMissing.getAsBoolean()
-                        || (!anyMissing.getAsBoolean() && a1.compute() >= a2.compute());
+                    case LESS_THAN -> wml -> !anyMissing.getAsBoolean(wml) && a1.compute(wml) < a2.compute(wml);
+                    case LESS_THAN_EQUAL -> wml -> bothMissing.getAsBoolean(wml)
+                        || (!anyMissing.getAsBoolean(wml) && a1.compute(wml) <= a2.compute(wml));
+                    case GREATER_THAN -> wml -> !anyMissing.getAsBoolean(wml) && a1.compute(wml) > a2.compute(wml);
+                    case GREATER_THAN_EQUAL -> wml -> bothMissing.getAsBoolean(wml)
+                        || (!anyMissing.getAsBoolean(wml) && a1.compute(wml) >= a2.compute(wml));
                     default -> throw new EvaluationImplementationError(
                         "Binary operator " + op + " is not a comparison");
                 };
@@ -277,45 +285,46 @@ final class Evaluation {
                 var a1 = (IntegerComputer)arg1;
                 var a2 = (IntegerComputer)arg2;
                 value = switch (op) {
-                    case LESS_THAN -> () -> !anyMissing.getAsBoolean() && a1.compute() < a2.compute();
-                    case LESS_THAN_EQUAL -> () -> !anyMissing.getAsBoolean() && a1.compute() <= a2.compute();
-                    case GREATER_THAN -> () -> !anyMissing.getAsBoolean() && a1.compute() > a2.compute();
-                    case GREATER_THAN_EQUAL -> () -> !anyMissing.getAsBoolean() && a1.compute() >= a2.compute();
+                    case LESS_THAN -> wml -> !anyMissing.getAsBoolean(wml) && a1.compute(wml) < a2.compute(wml);
+                    case LESS_THAN_EQUAL -> wml -> !anyMissing.getAsBoolean(wml) && a1.compute(wml) <= a2.compute(wml);
+                    case GREATER_THAN -> wml -> !anyMissing.getAsBoolean(wml) && a1.compute(wml) > a2.compute(wml);
+                    case GREATER_THAN_EQUAL -> wml -> !anyMissing.getAsBoolean(wml)
+                        && a1.compute(wml) >= a2.compute(wml);
                     default -> throw new EvaluationImplementationError(
                         "Binary operator " + op + " is not a comparison");
                 };
             }
-            return BooleanComputer.of(value, () -> false);
+            return BooleanComputer.of(value, wml -> false);
         }
 
         private static BooleanComputer equality( // NOSONAR - this method is complex but still clear
             final BinaryOperator op, final Computer arg1, final Computer arg2) {
-            BooleanSupplier valuesEqual;
+            ExpressionBooleanSupplier valuesEqual;
             if (arg1 == MISSING_CONSTANT_COMPUTER || arg2 == MISSING_CONSTANT_COMPUTER) {
                 // One of the values guaranteed to be MISSING -> Only equal if both missing, values are irrelevant
-                valuesEqual = () -> false;
+                valuesEqual = wml -> false;
             } else if (arg1 instanceof BooleanComputer a1 && arg2 instanceof BooleanComputer a2) {
-                valuesEqual = () -> a1.compute() == a2.compute();
+                valuesEqual = wml -> a1.compute(wml) == a2.compute(wml);
             } else if (arg1 instanceof StringComputer a1 && arg2 instanceof StringComputer a2) {
-                valuesEqual = () -> Objects.equals(a1.compute(), a2.compute());
+                valuesEqual = wml -> Objects.equals(a1.compute(wml), a2.compute(wml));
             } else if (arg1 instanceof FloatComputer || arg2 instanceof FloatComputer) {
                 // NB: Cast Integer to float if necessary
                 var a1 = Float.cast(arg1);
                 var a2 = Float.cast(arg2);
-                valuesEqual = () -> a1.compute() == a2.compute(); // NOSONAR - we want the equality test here
+                valuesEqual = wml -> a1.compute(wml) == a2.compute(wml); // NOSONAR - we want the equality test here
             } else if (arg1 instanceof IntegerComputer a1 && arg2 instanceof IntegerComputer a2) {
-                valuesEqual = () -> a1.compute() == a2.compute();
+                valuesEqual = wml -> a1.compute(wml) == a2.compute(wml);
             } else {
                 throw new EvaluationImplementationError(
                     "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not equality comparable");
             }
 
-            BooleanSupplier equal = () -> (arg1.isMissing() && arg2.isMissing()) // both missing -> true
-                || (!arg1.isMissing() && !arg2.isMissing() && valuesEqual.getAsBoolean()); // any missing -> false
+            ExpressionBooleanSupplier equal = wml -> (arg1.isMissing(wml) && arg2.isMissing(wml)) // both missing -> true
+                || (!arg1.isMissing(wml) && !arg2.isMissing(wml) && valuesEqual.getAsBoolean(wml)); // any missing -> false
 
             return switch (op) {
-                case EQUAL_TO -> BooleanComputer.of(equal, () -> false);
-                case NOT_EQUAL_TO -> BooleanComputer.of(() -> !equal.getAsBoolean(), () -> false);
+                case EQUAL_TO -> BooleanComputer.of(equal, wml -> false);
+                case NOT_EQUAL_TO -> BooleanComputer.of(wml -> !equal.getAsBoolean(wml), wml -> false);
                 default -> throw new EvaluationImplementationError(
                     "Binary operator " + op + " is not a equality check");
             };
@@ -326,18 +335,18 @@ final class Evaluation {
             var a2 = toKleenesLogicComputer((BooleanComputer)arg2);
 
             return switch (op) {
-                case CONDITIONAL_AND -> fromKleenesLogicSupplier(() -> KleenesLogic.and(a1.get(), a2.get()));
-                case CONDITIONAL_OR -> fromKleenesLogicSupplier(() -> KleenesLogic.or(a1.get(), a2.get()));
+                case CONDITIONAL_AND -> fromKleenesLogicSupplier(wml -> KleenesLogic.and(a1.get(wml), a2.get(wml)));
+                case CONDITIONAL_OR -> fromKleenesLogicSupplier(wml -> KleenesLogic.or(a1.get(wml), a2.get(wml)));
                 default -> throw new EvaluationImplementationError("Binary operator " + op + " is not logical");
             };
 
         }
 
-        private static Supplier<KleenesLogic> toKleenesLogicComputer(final BooleanComputer c) {
-            return () -> {
-                if (c.isMissing()) {
+        private static ExpressionSupplier<KleenesLogic> toKleenesLogicComputer(final BooleanComputer c) {
+            return wml -> {
+                if (c.isMissing(wml)) {
                     return KleenesLogic.UNKNOWN;
-                } else if (c.compute()) {
+                } else if (c.compute(wml)) {
                     return KleenesLogic.TRUE;
                 } else {
                     return KleenesLogic.FALSE;
@@ -345,10 +354,10 @@ final class Evaluation {
             };
         }
 
-        private static BooleanComputer fromKleenesLogicSupplier(final Supplier<KleenesLogic> logicSupplier) {
+        private static BooleanComputer fromKleenesLogicSupplier(final ExpressionSupplier<KleenesLogic> logicSupplier) {
             return BooleanComputer.of( //
-                () -> logicSupplier.get() == KleenesLogic.TRUE, //
-                () -> logicSupplier.get() == KleenesLogic.UNKNOWN //
+                wml -> logicSupplier.get(wml) == KleenesLogic.TRUE, //
+                wml -> logicSupplier.get(wml) == KleenesLogic.UNKNOWN //
             );
         }
     }
@@ -356,8 +365,8 @@ final class Evaluation {
     private static class Integer {
 
         static IntegerComputer unary(final UnaryOperator op, final IntegerComputer arg) {
-            LongSupplier value = switch (op) {
-                case MINUS -> () -> -arg.compute();
+            ExpressionLongSupplier value = switch (op) {
+                case MINUS -> wml -> -arg.compute(wml);
                 default -> throw unsupportedOutputForOpError(op, INTEGER);
             };
             return IntegerComputer.of(value, arg::isMissing);
@@ -366,35 +375,36 @@ final class Evaluation {
         static IntegerComputer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
             var a1 = (IntegerComputer)arg1;
             var a2 = (IntegerComputer)arg2;
-            LongSupplier value = switch (op) {
-                case PLUS -> () -> a1.compute() + a2.compute();
-                case MINUS -> () -> a1.compute() - a2.compute();
-                case MULTIPLY -> () -> a1.compute() * a2.compute();
+            ExpressionLongSupplier value = switch (op) {
+                case PLUS -> wml -> a1.compute(wml) + a2.compute(wml);
+                case MINUS -> wml -> a1.compute(wml) - a2.compute(wml);
+                case MULTIPLY -> wml -> a1.compute(wml) * a2.compute(wml);
                 case FLOOR_DIVIDE -> safeFloorDivide(a1, a2);
-                case EXPONENTIAL -> () -> (long)Math.pow(a1.compute(), a2.compute());
+                case EXPONENTIAL -> (
+                    final WarningMessageListener wml) -> (long)Math.pow(a1.compute(wml), a2.compute(wml));
                 case REMAINDER -> safeRemainder(a1, a2);
                 default -> throw unsupportedOutputForOpError(op, INTEGER);
             };
-            return IntegerComputer.of(value, () -> a1.isMissing() || a2.isMissing());
+            return IntegerComputer.of(value, (final WarningMessageListener w) -> a1.isMissing(w) || a2.isMissing(w));
         }
 
-        static LongSupplier safeFloorDivide(final IntegerComputer a1, final IntegerComputer a2) {
-            return () -> {
-                var divisor = a2.compute();
+        static ExpressionLongSupplier safeFloorDivide(final IntegerComputer a1, final IntegerComputer a2) {
+            return wml -> {
+                var divisor = a2.compute(wml);
                 if (divisor == 0) {
                     return 0;
                 }
-                return a1.compute() / divisor;
+                return a1.compute(wml) / divisor;
             };
         }
 
-        static LongSupplier safeRemainder(final IntegerComputer a1, final IntegerComputer a2) {
-            return () -> {
-                var divisor = a2.compute();
+        static ExpressionLongSupplier safeRemainder(final IntegerComputer a1, final IntegerComputer a2) {
+            return wml -> {
+                var divisor = a2.compute(wml);
                 if (divisor == 0) {
                     return 0;
                 }
-                return a1.compute() % divisor;
+                return a1.compute(wml) % divisor;
             };
         }
     }
@@ -410,43 +420,43 @@ final class Evaluation {
         }
 
         static FloatComputer unary(final UnaryOperator op, final FloatComputer arg) {
-            DoubleSupplier value = switch (op) {
-                case MINUS -> () -> -arg.compute();
+            ExpressionDoubleSupplier value = switch (op) {
+                case MINUS -> wml -> -arg.compute(wml);
                 default -> throw unsupportedOutputForOpError(op, INTEGER);
             };
             return FloatComputer.of(value, arg::isMissing);
         }
 
         static FloatComputer binary(final BinaryOperator op, final FloatComputer arg1, final FloatComputer arg2) {
-            DoubleSupplier value = switch (op) {
-                case PLUS -> () -> arg1.compute() + arg2.compute();
-                case MINUS -> () -> arg1.compute() - arg2.compute();
-                case MULTIPLY -> () -> arg1.compute() * arg2.compute();
-                case DIVIDE -> () -> arg1.compute() / arg2.compute();
-                case EXPONENTIAL -> () -> Math.pow(arg1.compute(), arg2.compute());
-                case REMAINDER -> () -> arg1.compute() % arg2.compute();
+            ExpressionDoubleSupplier value = switch (op) {
+                case PLUS -> wml -> arg1.compute(wml) + arg2.compute(wml);
+                case MINUS -> wml -> arg1.compute(wml) - arg2.compute(wml);
+                case MULTIPLY -> wml -> arg1.compute(wml) * arg2.compute(wml);
+                case DIVIDE -> wml -> arg1.compute(wml) / arg2.compute(wml);
+                case EXPONENTIAL -> wml -> Math.pow(arg1.compute(wml), arg2.compute(wml));
+                case REMAINDER -> wml -> arg1.compute(wml) % arg2.compute(wml);
                 default -> throw unsupportedOutputForOpError(op, FLOAT);
             };
-            return FloatComputer.of(value, () -> arg1.isMissing() || arg2.isMissing());
+            return FloatComputer.of(value, wml -> arg1.isMissing(wml) || arg2.isMissing(wml));
         }
     }
 
     private static class Strings {
-        static Supplier<String> stringRepr(final Computer computer) {
-            Supplier<String> value;
+        static ExpressionSupplier<String> stringRepr(final Computer computer) {
+            ExpressionSupplier<String> value;
             if (computer instanceof BooleanComputer c) {
-                value = () -> c.compute() ? "true" : "false";
+                value = wml -> c.compute(wml) ? "true" : "false";
             } else if (computer instanceof IntegerComputer c) {
-                value = () -> Long.toString(c.compute());
+                value = wml -> Long.toString(c.compute(wml));
             } else if (computer instanceof FloatComputer c) {
-                value = () -> Double.toString(c.compute());
+                value = wml -> Double.toString(c.compute(wml));
             } else if (computer instanceof StringComputer c) {
                 value = c::compute;
             } else {
                 throw new EvaluationImplementationError(
                     "Argument of " + computer.getClass() + " cannot be cast to STRING");
             }
-            return () -> computer.isMissing() ? "MISSING" : value.get();
+            return wml -> computer.isMissing(wml) ? "MISSING" : value.get(wml);
         }
 
         static StringComputer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
@@ -455,7 +465,7 @@ final class Evaluation {
             }
             var a1 = Strings.stringRepr(arg1);
             var a2 = Strings.stringRepr(arg2);
-            return StringComputer.of(() -> a1.get() + a2.get(), () -> false);
+            return StringComputer.of(wml -> a1.get(wml) + a2.get(wml), wml -> false);
         }
     }
 

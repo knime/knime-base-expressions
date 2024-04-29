@@ -68,6 +68,7 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.WarningMessageListener;
 
 /**
  * Implementation of built-in functions that control the flow.
@@ -86,35 +87,36 @@ public final class ControlFlowFunctions {
     /** The "if*" function */
     public static final ExpressionFunction IF = functionBuilder() //
         .name("if") //
-        .description("""
-            **Conditional expression:**  \s
-            `if(conditionA, exprIfATrue, ...<condition,exprIfTrue>, exprIfAllFalse)`  \s
+        .description(
+            """
+                    **Conditional expression:**  \s
+                    `if(conditionA, exprIfATrue, ...<condition,exprIfTrue>, exprIfAllFalse)`  \s
 
-            The first expression after a fulfilled condition will be returned. \
-            If no condition evaluates to `true` the `else` case, i.e. `exprIfAllFalse` will be returned.   \
-            Conditions needs to be boolean expressions and all branch expressions must have the same type. \
-            If integer expressions are used, they will be casted to float expressions if necessary.  \s
+                    The first expression after a fulfilled condition will be returned. \
+                    If no condition evaluates to `true` the `else` case, i.e. `exprIfAllFalse` will be returned.   \
+                    Conditions needs to be boolean expressions and all branch expressions must have the same type. \
+                    If integer expressions are used, they will be casted to float expressions if necessary.  \s
 
-            Example:  \s
-            ```  \s
-            if(  \s
-            \t $customer_id < 100,  #conditionA  \s
-            \t $customer_name + " is an early customer", #exprIfATrue  \s
-            \t $customer_id < 1000, #condtionB  \s
-            \t $customer_name + " is a mid customer", #exprIfBTrueAFalse  \s
-            \t $customre_name + " is a late customer", #exprIfAllFalse  \s
-            )
-            ```
-              \s
-            The simplest case has no additional conditions (`if(condition, exprIfTrue, else)`) and this function becomes a classical *if-then-else*:  \s
-            ```
-            if(  \s
-            \t $customer_id < 100,  #condition  \s
-            \t $customer_name + " is an early customer", #exprIfTrue  \s
-            \t $customer_name + " is a late customer", #else  \s
-            )
-            ```
-            """ //
+                    Example:  \s
+                    ```  \s
+                    if(  \s
+                    \t $customer_id < 100,  #conditionA  \s
+                    \t $customer_name + " is an early customer", #exprIfATrue  \s
+                    \t $customer_id < 1000, #condtionB  \s
+                    \t $customer_name + " is a mid customer", #exprIfBTrueAFalse  \s
+                    \t $customre_name + " is a late customer", #exprIfAllFalse  \s
+                    )
+                    ```
+                      \s
+                    The simplest case has no additional conditions (`if(condition, exprIfTrue, else)`) and this function becomes a classical *if-then-else*:  \s
+                    ```
+                    if(  \s
+                    \t $customer_id < 100,  #condition  \s
+                    \t $customer_name + " is an early customer", #exprIfTrue  \s
+                    \t $customer_name + " is a late customer", #else  \s
+                    )
+                    ```
+                    """ //
         ) //
         .keywords("conditional") //
         .category(CATEGORY.name()) //
@@ -154,9 +156,9 @@ public final class ControlFlowFunctions {
         return ifReturnType(arguments.stream().map(Computer::getReturnTypeFromComputer).toArray(ValueType[]::new));
     }
 
-    private static Computer computeMatchingBranchIf(final List<Computer> arguments) {
+    private static Computer computeMatchingBranchIf(final List<Computer> arguments, final WarningMessageListener wml) {
         for (int i = 0; i < arguments.size() - 1; i += 2) {
-            if (((BooleanComputer)arguments.get(i)).compute()) {
+            if (((BooleanComputer)arguments.get(i)).compute(wml)) {
                 return arguments.get(i + 1);
             }
         }
@@ -164,37 +166,38 @@ public final class ControlFlowFunctions {
     }
 
     private static Computer ifImpl(final List<Computer> arguments) {
-        return Computer.createTypedResultComputer(() -> computeMatchingBranchIf(arguments), ifReturnType(arguments));
+        return Computer.createTypedResultComputer(wml -> computeMatchingBranchIf(arguments, wml),
+            ifReturnType(arguments));
     }
 
     /** The "switch" function: switch(value, A, exprInCaseA, B, exprInCaseB, ...) */
     public static final ExpressionFunction SWITCH = functionBuilder() //
         .name("switch") //
         .description("""
-            **Switch expression:**  \s
-            `switch(value, caseA, exprInCaseA, caseB, exprInCaseB, ..., optional defaultExpr)`  \s
+                **Switch expression:**  \s
+                `switch(value, caseA, exprInCaseA, caseB, exprInCaseB, ..., optional defaultExpr)`  \s
 
-            The switch expression allows you to execute different expressions based on the value of a given input. \
-            It compares the 'value' against each provided 'case' in order until a match is found. \
-            The 'value' and 'case' must have the same type (either string or boolean). \
-            If a match is found, the corresponding 'exprInCase' is executed and returned. \
-            If no match is found and a default expression is provided, the default case is returned. \
-            Otherwise, the function returns 'MISSING'. \
-            All eventually returning case expressions must have the same type. \
-            If integer expressions are used, they will be casted to float expressions if necessary.  \s
+                The switch expression allows you to execute different expressions based on the value of a given input. \
+                It compares the 'value' against each provided 'case' in order until a match is found. \
+                The 'value' and 'case' must have the same type (either string or boolean). \
+                If a match is found, the corresponding 'exprInCase' is executed and returned. \
+                If no match is found and a default expression is provided, the default case is returned. \
+                Otherwise, the function returns 'MISSING'. \
+                All eventually returning case expressions must have the same type. \
+                If integer expressions are used, they will be casted to float expressions if necessary.  \s
 
-            Example:  \s
-            ```  \s
-            switch($customer_name,  \s
-            \t "Elon", 0, #caseA, exprInCaseA  \s
-            \t "Mark", 1, #caseB, exprInCaseB  \s
-            \t "Jeff", 2, #caseC, exprInCaseC  \s
-            \t 100, #default  \s            
-            )
-            ```
-            """ //
+                Example:  \s
+                ```  \s
+                switch($customer_name,  \s
+                \t "Elon", 0, #caseA, exprInCaseA  \s
+                \t "Mark", 1, #caseB, exprInCaseB  \s
+                \t "Jeff", 2, #caseC, exprInCaseC  \s
+                \t 100, #default  \s
+                )
+                ```
+                """ //
 
-                ) //
+        ) //
         .keywords("conditional") //
         .category(CATEGORY.name()) //
         .args( //
@@ -258,48 +261,49 @@ public final class ControlFlowFunctions {
     private static Computer switchImpl(final List<Computer> arguments) {
         var returnType = switchReturnType(arguments);
         if (returnType == null) {
-            return () -> true;
+            return wml -> true;
         }
-        return Computer.createTypedResultComputer(() -> computeMatchingCaseSwitch(arguments),
+        return Computer.createTypedResultComputer(wml -> computeMatchingCaseSwitch(arguments, wml),
             returnType.baseType());
     }
 
-    private static Computer computeMatchingCaseSwitch(final List<Computer> arguments) { // NOSONAR
+    private static Computer computeMatchingCaseSwitch(final List<Computer> arguments,
+        final WarningMessageListener wml) { // NOSONAR
 
         Computer computerToSwitchOn = arguments.get(0);
         final boolean hasDefaultCase = arguments.size() % 2 == 0;
 
-        if (computerToSwitchOn.isMissing()) {
+        if (computerToSwitchOn.isMissing(wml)) {
             for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing()) {
+                if (arguments.get(i).isMissing(wml)) {
                     return arguments.get(i + 1);
                 }
             }
         } else if (computerToSwitchOn instanceof StringComputer stringComputer) {
-            String evaluatedSwitchValue = stringComputer.compute();
+            String evaluatedSwitchValue = stringComputer.compute(wml);
             for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing()) {
+                if (arguments.get(i).isMissing(wml)) {
                     continue;
                 }
                 if (arguments.get(i) instanceof StringComputer stringComputerToCompare
-                    && evaluatedSwitchValue.equals(stringComputerToCompare.compute())) {
+                    && evaluatedSwitchValue.equals(stringComputerToCompare.compute(wml))) {
                     return arguments.get(i + 1);
                 }
             }
         } else if (computerToSwitchOn instanceof IntegerComputer integerComputer) {
-            long evaluatedSwitchValue = integerComputer.compute();
+            long evaluatedSwitchValue = integerComputer.compute(wml);
             for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing()) {
+                if (arguments.get(i).isMissing(wml)) {
                     continue;
                 }
                 if (arguments.get(i) instanceof IntegerComputer integerComputerToCompare
-                    && integerComputerToCompare.compute() == evaluatedSwitchValue) {
+                    && integerComputerToCompare.compute(wml) == evaluatedSwitchValue) {
                     return arguments.get(i + 1);
                 }
             }
         }
 
-        return hasDefaultCase ? arguments.get(arguments.size() - 1) : () -> true;
+        return hasDefaultCase ? arguments.get(arguments.size() - 1) : w -> true;
     }
 
     private static ValueType calculateReturnTypeFromBranchExpressionValues(final List<ValueType> expressions) {

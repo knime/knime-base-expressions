@@ -240,6 +240,8 @@ final class MathFunctionTests {
             .implWithTolerance("FLOAT", List.of(arg(1.2)), Math.asin(1.2)) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .warns("< -1", List.of(arg(-2))) //
+            .warns("> 1", List.of(arg(1.001))) //
             .tests();
     }
 
@@ -259,6 +261,8 @@ final class MathFunctionTests {
             .impl("NaN", List.of(arg(1.5)), Float.NaN) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .warns("< -1", List.of(arg(-2))) //
+            .warns("> 1", List.of(arg(1.001))) //
             .tests();
     }
 
@@ -332,6 +336,7 @@ final class MathFunctionTests {
             .implWithTolerance("FLOAT", List.of(arg(1.2)), Math.cosh(1.2)) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .warns("< 1", List.of(arg(0.9))) //
             .tests();
     }
 
@@ -406,6 +411,8 @@ final class MathFunctionTests {
             .impl("NaN", List.of(arg(1.2)), Float.NaN) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .warns("< -1", List.of(arg(-2))) //
+            .warns("> 1", List.of(arg(1.001))) //
             .tests();
     }
 
@@ -425,6 +432,7 @@ final class MathFunctionTests {
             .impl("Negative infinity", List.of(arg(0)), Float.NEGATIVE_INFINITY) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .warns("<= 0", List.of(arg(0))) //
             .tests();
     }
 
@@ -444,6 +452,7 @@ final class MathFunctionTests {
             .impl("Negative infinity", List.of(arg(0)), Float.NEGATIVE_INFINITY) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .warns("<= 0", List.of(arg(0))) //
             .tests();
     }
 
@@ -463,6 +472,7 @@ final class MathFunctionTests {
             .impl("Negative infinity", List.of(arg(0)), Float.NEGATIVE_INFINITY) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .warns("<= 0", List.of(arg(0))) //
             .tests();
     }
 
@@ -486,6 +496,8 @@ final class MathFunctionTests {
             .impl("missing first FLOAT", List.of(misFloat(), arg(5.2))) //
             .impl("missing second INTEGER", List.of(arg(5), misInteger())) //
             .impl("missing second FLOAT", List.of(arg(5.2), misFloat())) //
+            .warns("num <= 0", List.of(arg(0), arg(2.5))) //
+            .warns("base <= 0", List.of(arg(5), arg(0))) //
             .tests();
     }
 
@@ -505,6 +517,7 @@ final class MathFunctionTests {
             .impl("Negative infinity", List.of(arg(-1)), Float.NEGATIVE_INFINITY) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .warns("arg <= -1", List.of(arg(-1))) //
             .tests();
     }
 
@@ -544,6 +557,7 @@ final class MathFunctionTests {
             .impl("missing first FLOAT", List.of(misFloat(), arg(5.2))) //
             .impl("missing second INTEGER", List.of(arg(5), misInteger())) //
             .impl("missing second FLOAT", List.of(arg(5.2), misFloat())) //
+            .warns("0^0", List.of(arg(0), arg(0))) //
             .tests();
     }
 
@@ -563,6 +577,7 @@ final class MathFunctionTests {
             .impl("Negative input", List.of(arg(-1)), Float.NaN) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .warns("num < 0", List.of(arg(-0.5))) //
             .tests();
     }
 
@@ -588,6 +603,8 @@ final class MathFunctionTests {
             .impl("missing first FLOAT", List.of(misFloat(), arg(5.2))) //
             .impl("missing second INTEGER", List.of(arg(5), misInteger())) //
             .impl("missing second FLOAT", List.of(arg(5.2), misFloat())) //
+            .warns("divisor = 0", List.of(arg(14), arg(0))) //
+            .warns("divisor = 0.0", List.of(arg(14.0), arg(0.0))) //
             .tests();
     }
 
@@ -866,6 +883,9 @@ final class MathFunctionTests {
             .impl("5c100 (r > n)", List.of(arg(5), arg(100)), 0) //
             .impl("(-8)c3 (n < 0)", List.of(arg(-8), arg(3)), 0) //
             .impl("missing INTEGER", List.of(misInteger(), arg(5))) //
+            .warns("n < 0", List.of(arg(-1), arg(2))) //
+            .warns("r < 0", List.of(arg(5), arg(-10))) //
+            .warns("n  r", List.of(arg(5), arg(6))) //
             .tests();
     }
 

@@ -69,6 +69,7 @@ import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.TestUtils;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.WarningMessageListener;
 
 /**
  * Builder for dynamic tests for an {@link ExpressionFunction}. Add tests via {@link #typing}, {@link #illegalArgs}, and
@@ -77,6 +78,9 @@ import org.knime.core.expressions.ValueType;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin Germany
  */
 public final class FunctionTestBuilder {
+
+    private final WarningMessageListener DUMMY_WML = w -> {
+    };
 
     // == Arguments for testing functions ==
 
@@ -120,6 +124,10 @@ public final class FunctionTestBuilder {
             }
         }
 
+        private boolean isMissing(final WarningMessageListener wml) {
+            return this.isMissing();
+        }
+
         private Object getValue() {
             if (!m_open) {
                 return fail("compute called during setup");
@@ -135,15 +143,15 @@ public final class FunctionTestBuilder {
 
         private Computer computer() {
             if (m_value instanceof Boolean) {
-                return BooleanComputer.of(() -> (Boolean)getValue(), this::isMissing);
+                return BooleanComputer.of(wml -> (Boolean)getValue(), this::isMissing);
             } else if (m_value instanceof Long) {
-                return IntegerComputer.of(() -> (Long)getValue(), this::isMissing);
+                return IntegerComputer.of(wml -> (Long)getValue(), this::isMissing);
             } else if (m_value instanceof Double) {
-                return FloatComputer.of(() -> (Double)getValue(), this::isMissing);
+                return FloatComputer.of(wml -> (Double)getValue(), this::isMissing);
             } else if (m_value instanceof String) {
-                return StringComputer.of(() -> (String)getValue(), this::isMissing);
+                return StringComputer.of(wml -> (String)getValue(), this::isMissing);
             } else {
-                return () -> isMissing();
+                return wml -> isMissing();
             }
         }
     }
@@ -215,12 +223,15 @@ public final class FunctionTestBuilder {
 
     private final List<DynamicTest> m_implTests;
 
+    private final List<DynamicTest> m_warningTests;
+
     /** @param function the function that should be tested */
     public FunctionTestBuilder(final ExpressionFunction function) {
         m_function = function;
         m_typingTests = new ArrayList<>();
         m_illegalArgsTests = new ArrayList<>();
         m_implTests = new ArrayList<>();
+        m_warningTests = new ArrayList<>();
     }
 
     /**
@@ -266,7 +277,7 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args) {
         return impl(name, args, c -> {
             assertInstanceOf(Computer.class, c, m_function.name() + " should eval to Computer");
-            assertTrue(c.isMissing(), m_function.name() + " should be missing");
+            assertTrue(c.isMissing(DUMMY_WML), m_function.name() + " should be missing");
         });
     }
 
@@ -281,9 +292,10 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final boolean expected) {
         return impl(name, args, c -> {
             assertInstanceOf(BooleanComputer.class, c, m_function.name() + " should eval to BOOLEAN");
-            assertFalse(c.isMissing(), m_function.name() + " should not be missing");
+            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
             args.forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((BooleanComputer)c).compute(), m_function.name() + " should eval correctly");
+            assertEquals(expected, ((BooleanComputer)c).compute(DUMMY_WML),
+                m_function.name() + " should eval correctly");
         });
     }
 
@@ -298,9 +310,10 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final long expected) {
         return impl(name, args, c -> {
             assertInstanceOf(IntegerComputer.class, c, m_function.name() + " should eval to INTEGER");
-            assertFalse(c.isMissing(), m_function.name() + " should not be missing");
+            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
             args.forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((IntegerComputer)c).compute(), m_function.name() + " should eval correctly");
+            assertEquals(expected, ((IntegerComputer)c).compute(DUMMY_WML),
+                m_function.name() + " should eval correctly");
         });
     }
 
@@ -315,9 +328,9 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final double expected) {
         return impl(name, args, c -> {
             assertInstanceOf(FloatComputer.class, c, m_function.name() + " should eval to FLOAT");
-            assertFalse(c.isMissing(), m_function.name() + " should not be missing");
+            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
             args.forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((FloatComputer)c).compute(), m_function.name() + " should eval correctly");
+            assertEquals(expected, ((FloatComputer)c).compute(DUMMY_WML), m_function.name() + " should eval correctly");
         });
     }
 
@@ -360,9 +373,10 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final String expected) {
         return impl(name, args, c -> {
             assertInstanceOf(StringComputer.class, c, m_function.name() + " should eval to STRING");
-            assertFalse(c.isMissing(), m_function.name() + " should not be missing");
+            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
             args.forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((StringComputer)c).compute(), m_function.name() + " should eval correctly");
+            assertEquals(expected, ((StringComputer)c).compute(DUMMY_WML),
+                m_function.name() + " should eval correctly");
         });
     }
 
@@ -386,6 +400,40 @@ public final class FunctionTestBuilder {
         return this;
     }
 
+    /**
+     * A test that checks that the given arguments produce a warning.
+     *
+     * @param name display name of the test
+     * @param args function arguments
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder warns(final String name, final List<TestingArgument> args) {
+        m_warningTests.add(DynamicTest.dynamicTest("warns - " + name, () -> {
+            var resultComputer = m_function.apply(args.stream().map(TestingArgument::computer).toList());
+
+            args.forEach(TestingArgument::setOpen);
+
+            var warnings = new ArrayList<String>();
+            WarningMessageListener wml = w -> warnings.add(w);
+
+            // Compute the computer
+            if (resultComputer instanceof IntegerComputer ic) {
+                ic.compute(wml);
+            } else if (resultComputer instanceof FloatComputer fc) {
+                fc.compute(wml);
+            } else if (resultComputer instanceof BooleanComputer bc) {
+                bc.compute(wml);
+            } else if (resultComputer instanceof StringComputer sc) {
+                sc.compute(wml);
+            }
+
+            assertFalse(warnings.isEmpty(), "expected warnings");
+        }));
+
+        return this;
+
+    }
+
     /** @return the dynamic tests */
     public List<DynamicNode> tests() {
         List<DynamicNode> tests = new ArrayList<>();
@@ -397,6 +445,9 @@ public final class FunctionTestBuilder {
         }
         if (!m_implTests.isEmpty()) {
             tests.add(DynamicContainer.dynamicContainer("impl", m_implTests));
+        }
+        if (!m_warningTests.isEmpty()) {
+            tests.add(DynamicContainer.dynamicContainer("warns", m_warningTests));
         }
         return tests;
     }

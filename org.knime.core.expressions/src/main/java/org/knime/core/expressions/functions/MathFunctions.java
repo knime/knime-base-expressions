@@ -52,6 +52,7 @@ import static org.knime.core.expressions.Computer.toFloat;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.allBaseTypesMatch;
+import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.arg;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
@@ -64,19 +65,20 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import java.util.function.LongSupplier;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.ExpressionBooleanSupplier;
+import org.knime.core.expressions.ExpressionDoubleSupplier;
+import org.knime.core.expressions.ExpressionLongSupplier;
 
 /**
  * Implementation of built-in functions that do math.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
 public final class MathFunctions {
 
@@ -105,14 +107,17 @@ public final class MathFunctions {
         .build();
 
     private static Computer maxImpl(final List<Computer> args) {
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
         if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
-            return IntegerComputer
-                .of(() -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute()).max().getAsLong(), isMissing);
+            return IntegerComputer.of( //
+                wml -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(wml)).max().getAsLong(), //
+                anyMissing(args) //
+            );
         } else {
             var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
-            return FloatComputer.of(() -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute()).max().getAsDouble(),
-                isMissing);
+            return FloatComputer.of( //
+                wml -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(wml)).max().getAsDouble(), //
+                anyMissing(args) //
+            );
         }
     }
 
@@ -133,14 +138,17 @@ public final class MathFunctions {
         .build();
 
     private static Computer minImpl(final List<Computer> args) {
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
         if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
-            return IntegerComputer
-                .of(() -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute()).min().getAsLong(), isMissing);
+            return IntegerComputer.of( //
+                wml -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(wml)).min().getAsLong(), //
+                anyMissing(args) //
+            );
         } else {
             var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
-            return FloatComputer.of(() -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute()).min().getAsDouble(),
-                isMissing);
+            return FloatComputer.of( //
+                wml -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(wml)).min().getAsDouble(), //
+                anyMissing(args) //
+            );
         }
     }
 
@@ -162,11 +170,11 @@ public final class MathFunctions {
         .build();
 
     private static Computer normalImpl(final List<Computer> args) {
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
-        return FloatComputer.of(() -> {
-            var value = toFloat(args.get(0)).compute();
-            var mean = toFloat(args.get(1)).compute();
-            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute() : 1.0;
+        ExpressionBooleanSupplier isMissing = wml -> args.stream().anyMatch(c -> c.isMissing(wml));
+        return FloatComputer.of(wml -> {
+            var value = toFloat(args.get(0)).compute(wml);
+            var mean = toFloat(args.get(1)).compute(wml);
+            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(wml) : 1.0;
             return Math.exp(-Math.pow(value - mean, 2) / (2 * Math.pow(standardDeviation, 2)))
                 / (standardDeviation * Math.sqrt(2 * Math.PI));
         }, isMissing);
@@ -198,11 +206,11 @@ public final class MathFunctions {
         .build();
 
     private static Computer errorFunctionImpl(final List<Computer> args) {
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
-        return FloatComputer.of(() -> {
-            var value = toFloat(args.get(0)).compute();
-            var mean = toFloat(args.get(1)).compute();
-            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute() : (1.0/Math.sqrt(2));
+        ExpressionBooleanSupplier isMissing = wml -> args.stream().anyMatch(c -> c.isMissing(wml));
+        return FloatComputer.of(wml -> {
+            var value = toFloat(args.get(0)).compute(wml);
+            var mean = toFloat(args.get(1)).compute(wml);
+            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(wml) : (1.0/Math.sqrt(2));
 
             double scaledValue = (value - mean) / (standardDeviation * Math.sqrt(2));
             return erf(scaledValue);
@@ -259,16 +267,16 @@ public final class MathFunctions {
         // are all the arguments integers?
         boolean allInts = args.stream().allMatch(IntegerComputer.class::isInstance);
 
-        LongSupplier value = () -> {
+        ExpressionLongSupplier value = wml -> {
             if (allInts) {
-                var computedArgs = args.stream().map(c -> toInteger(c).compute()).toArray(Long[]::new);
+                var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
 
                 // One indexing
                 return 1 + IntStream.range(0, computedArgs.length) //
                     .reduce((a, b) -> computedArgs[a] < computedArgs[b] ? b : a) //
                     .getAsInt();
             } else {
-                var computedArgs = args.stream().map(c -> toFloat(c).compute()).toArray(Double[]::new);
+                var computedArgs = args.stream().map(c -> toFloat(c).compute(wml)).toArray(Double[]::new);
 
                 // One indexing
                 return 1 + IntStream.range(0, computedArgs.length) //
@@ -279,7 +287,7 @@ public final class MathFunctions {
 
         return IntegerComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -307,16 +315,16 @@ public final class MathFunctions {
         // are all the arguments integers?
         boolean allInts = args.stream().allMatch(IntegerComputer.class::isInstance);
 
-        LongSupplier value = () -> {
+        ExpressionLongSupplier value = wml -> {
             if (allInts) {
-                var computedArgs = args.stream().map(c -> toInteger(c).compute()).toArray(Long[]::new);
+                var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
 
                 // One indexing
                 return 1 + IntStream.range(0, computedArgs.length) //
                     .reduce((a, b) -> computedArgs[a] > computedArgs[b] ? b : a) //
                     .getAsInt();
             } else {
-                var computedArgs = args.stream().map(c -> toFloat(c).compute()).toArray(Double[]::new);
+                var computedArgs = args.stream().map(c -> toFloat(c).compute(wml)).toArray(Double[]::new);
 
                 // One indexing
                 return 1 + IntStream.range(0, computedArgs.length) //
@@ -327,7 +335,7 @@ public final class MathFunctions {
 
         return IntegerComputer.of( //
             value, //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            anyMissing(args) //
         );
     }
 
@@ -344,9 +352,9 @@ public final class MathFunctions {
 
     private static Computer absImpl(final List<Computer> args) {
         if (args.get(0) instanceof IntegerComputer c) {
-            return IntegerComputer.of(() -> Math.abs(c.compute()), c::isMissing);
+            return IntegerComputer.of(wml -> Math.abs(c.compute(wml)), c::isMissing);
         } else if (args.get(0) instanceof FloatComputer c) {
-            return FloatComputer.of(() -> Math.abs(c.compute()), c::isMissing);
+            return FloatComputer.of(wml -> Math.abs(c.compute(wml)), c::isMissing);
         }
         throw FunctionUtils.calledWithIllegalArgs();
     }
@@ -364,7 +372,7 @@ public final class MathFunctions {
 
     private static Computer sinImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.sin(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> Math.sin(c.compute(wml)), c::isMissing);
     }
 
     /** The cosine of one number */
@@ -380,7 +388,7 @@ public final class MathFunctions {
 
     private static Computer cosImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.cos(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> Math.cos(c.compute(wml)), c::isMissing);
     }
 
     /** The tangent of one number */
@@ -396,7 +404,7 @@ public final class MathFunctions {
 
     private static Computer tanImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.tan(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> Math.tan(c.compute(wml)), c::isMissing);
     }
 
     /** The arcsine of one number */
@@ -412,7 +420,15 @@ public final class MathFunctions {
 
     private static Computer asinImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.asin(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> {
+            var cC = c.compute(wml);
+
+            if (Math.abs(cC) > 1) {
+                wml.addWarning("invalid argument to asin (|arg| > 1)");
+            }
+
+            return Math.asin(cC);
+        }, c::isMissing);
     }
 
     /** The arccosine of one number */
@@ -428,7 +444,15 @@ public final class MathFunctions {
 
     private static Computer acosImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.acos(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> {
+            var cC = c.compute(wml);
+
+            if (Math.abs(cC) > 1) {
+                wml.addWarning("invalid argument to acos (|arg| > 1)");
+            }
+
+            return Math.acos(cC);
+        }, c::isMissing);
     }
 
     /** The arctan of one number */
@@ -444,7 +468,7 @@ public final class MathFunctions {
 
     private static Computer atanImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.atan(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> Math.atan(c.compute(wml)), c::isMissing);
     }
 
     /** The arctan of two numbers */
@@ -462,11 +486,12 @@ public final class MathFunctions {
         .build();
 
     private static Computer atan2Impl(final List<Computer> args) {
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
-
         var y = toFloat(args.get(0));
         var x = toFloat(args.get(1));
-        return FloatComputer.of(() -> Math.atan2(y.compute(), x.compute()), isMissing);
+        return FloatComputer.of( //
+            wml -> Math.atan2(y.compute(wml), x.compute(wml)), //
+            anyMissing(args) //
+        );
     }
 
     /** Hyperbolic sine of one number */
@@ -482,7 +507,7 @@ public final class MathFunctions {
 
     private static Computer sinhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.sinh(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> Math.sinh(c.compute(wml)), c::isMissing);
     }
 
     /** Hyperbolic cosine of one number */
@@ -496,10 +521,17 @@ public final class MathFunctions {
         .impl(MathFunctions::coshImpl) //
         .build();
 
-    // TODO(AP-22272) warn if argument < 1
     private static Computer coshImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.cosh(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> {
+            var cC = c.compute(wml);
+
+            if (cC < 1) {
+                wml.addWarning("invalid argument to cosh (arg < 1)");
+            }
+
+            return Math.cosh(cC);
+        }, c::isMissing);
     }
 
     /** Hyperbolic tangent of one number */
@@ -515,7 +547,7 @@ public final class MathFunctions {
 
     private static Computer tanhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.tanh(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> Math.tanh(c.compute(wml)), c::isMissing);
     }
 
     /** Hyperbolic arcsine of one number */
@@ -532,8 +564,8 @@ public final class MathFunctions {
     private static Computer asinhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        DoubleSupplier value = () -> {
-            var cC = c.compute();
+        ExpressionDoubleSupplier value = wml -> {
+            var cC = c.compute(wml);
 
             return Math.log(cC + Math.sqrt(cC * cC + 1));
         };
@@ -555,8 +587,8 @@ public final class MathFunctions {
     private static Computer acoshImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        DoubleSupplier value = () -> {
-            var cC = c.compute();
+        ExpressionDoubleSupplier value = wml -> {
+            var cC = c.compute(wml);
 
             return Math.log(cC + Math.sqrt(cC * cC - 1));
         };
@@ -575,12 +607,16 @@ public final class MathFunctions {
         .impl(MathFunctions::atanhImpl) //
         .build();
 
-    // TODO(AP-22272) warn if |arg| > 1
     private static Computer atanhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        DoubleSupplier value = () -> {
-            var cC = c.compute();
+        ExpressionDoubleSupplier value = wml -> {
+            var cC = c.compute(wml);
+
+            if (Math.abs(cC) >= 1) {
+                wml.addWarning("invalid argument to atanh (|arg| >= 1)");
+            }
+
             return 0.5 * Math.log((cC + 1.0) / (1.0 - cC));
         };
 
@@ -598,10 +634,17 @@ public final class MathFunctions {
         .impl(MathFunctions::lnImpl) //
         .build();
 
-    // TODO(AP-22272) warn if arg <= 0 (goes for all following log functions except log1p)
     private static Computer lnImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.log(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> {
+            var cC = c.compute(wml);
+
+            if (cC <= 0) {
+                wml.addWarning("invalid argument to ln (arg <= 0)");
+            }
+
+            return Math.log(cC);
+        }, c::isMissing);
     }
 
     /** The base-10 logarithm of one number */
@@ -617,7 +660,15 @@ public final class MathFunctions {
 
     private static Computer log10Impl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.log10(c.compute()), c::isMissing);
+        return FloatComputer.of(wml -> {
+            var cC = c.compute(wml);
+
+            if (cC <= 0) {
+                wml.addWarning("invalid argument to log10 (arg <= 0)");
+            }
+
+            return Math.log10(cC);
+        }, c::isMissing);
     }
 
     /** The base-2 logarithm of one number */
@@ -633,7 +684,15 @@ public final class MathFunctions {
 
     private static Computer log2Impl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.log(c.compute()) / Math.log(2), c::isMissing);
+        return FloatComputer.of(wml -> {
+            var cC = c.compute(wml);
+
+            if (cC <= 0) {
+                wml.addWarning("invalid argument to log2 (arg <= 0)");
+            }
+
+            return Math.log(cC) / Math.log(2);
+        }, c::isMissing);
     }
 
     /** The base-n logarithm of one number */
@@ -654,16 +713,22 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         var b = toFloat(args.get(1));
 
-        DoubleSupplier value = () -> {
-            var bC = b.compute();
-            var cC = c.compute();
+        ExpressionDoubleSupplier value = wml -> {
+            var bC = b.compute(wml);
+            var cC = c.compute(wml);
+
+            if (bC <= 0) {
+                wml.addWarning("invalid argument to log (base <= 0)");
+            }
+
+            if (cC <= 0) {
+                wml.addWarning("invalid argument to log (number <= 0)");
+            }
 
             return (Math.abs(bC) < 2 * Double.MIN_VALUE) ? Float.NaN : (Math.log(cC) / Math.log(bC));
         };
 
-        BooleanSupplier isMissing = () -> c.isMissing() || b.isMissing();
-
-        return FloatComputer.of(value, isMissing);
+        return FloatComputer.of(value, anyMissing(args));
     }
 
     /** natural log of a number plus 1, i.e. ln(1+x) */
@@ -679,7 +744,18 @@ public final class MathFunctions {
 
     private static Computer log1pImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.log1p(c.compute()), c::isMissing);
+        return FloatComputer.of( //
+            wml -> {
+                var cC = c.compute(wml);
+
+                if (cC <= -1) {
+                    wml.addWarning("invalid argument to log1p (arg <= -1)");
+                }
+
+                return Math.log1p(cC);
+            }, //
+            c::isMissing //
+        );
     }
 
     /** exponent of a number */
@@ -695,7 +771,10 @@ public final class MathFunctions {
 
     private static Computer expImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.exp(c.compute()), c::isMissing);
+        return FloatComputer.of( //
+            wml -> Math.exp(c.compute(wml)), //
+            c::isMissing //
+        );
     }
 
     /** For two numbers, x to the power of y */
@@ -714,16 +793,38 @@ public final class MathFunctions {
         .build();
 
     private static Computer powImpl(final List<Computer> args) {
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
-
         if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
             var x = toInteger(args.get(0));
             var y = toInteger(args.get(1));
-            return IntegerComputer.of(() -> (long)Math.pow(x.compute(), y.compute()), isMissing);
+            return IntegerComputer.of( //
+                wml -> {
+                    var xC = x.compute(wml);
+                    var yC = y.compute(wml);
+
+                    if (xC == 0 && yC == 0) {
+                        wml.addWarning("invalid arguments to pow (pow(0,0) is undefined)");
+                        return 0;
+                    }
+
+                    return (long)Math.pow(xC, yC);
+                }, anyMissing(args) //
+            );
         } else {
             var x = toFloat(args.get(0));
             var y = toFloat(args.get(1));
-            return FloatComputer.of(() -> Math.pow(x.compute(), y.compute()), isMissing);
+            return FloatComputer.of( //
+                wml -> {
+                    var xC = x.compute(wml);
+                    var yC = y.compute(wml);
+
+                    if (isNearZero(xC) && isNearZero(yC)) {
+                        wml.addWarning("invalid arguments to pow (pow(0,0) is undefined)");
+                        return Float.NaN;
+                    }
+
+                    return Math.pow(xC, yC);
+                }, anyMissing(args) //
+            );
         }
     }
 
@@ -740,7 +841,17 @@ public final class MathFunctions {
 
     private static Computer sqrtImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.sqrt(c.compute()), c::isMissing);
+        return FloatComputer.of( //
+            wml -> {
+                var cC = c.compute(wml);
+
+                if (cC < 0) {
+                    wml.addWarning("invalid argument to sqrt (x < 0)");
+                }
+
+                return Math.sqrt(cC); //
+            }, c::isMissing //
+        );
     }
 
     /** One number modulo another */
@@ -758,21 +869,33 @@ public final class MathFunctions {
         .impl(MathFunctions::modImpl) //
         .build();
 
-    // TODO(AP-22272) warn when dividing by zero
     private static Computer modImpl(final List<Computer> args) {
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
-
         if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
-            return IntegerComputer.of(() -> {
-                var x = toInteger(args.get(0)).compute();
-                var y = toInteger(args.get(1)).compute();
+            return IntegerComputer.of(wml -> {
+                var x = toInteger(args.get(0)).compute(wml);
+                var y = toInteger(args.get(1)).compute(wml);
 
-                return y == 0 ? 0 : (x % y);
-            }, isMissing);
+                if (y == 0) {
+                    wml.addWarning("invalid arguments to mod (y = 0)");
+                    return 0;
+                }
+
+                return x % y;
+            }, anyMissing(args));
         } else {
-            var x = toFloat(args.get(0));
-            var y = toFloat(args.get(1));
-            return FloatComputer.of(() -> (x.compute() % y.compute()), isMissing);
+            return FloatComputer.of( //
+                wml -> {
+                    var x = toFloat(args.get(0)).compute(wml);
+                    var y = toFloat(args.get(1)).compute(wml);
+
+                    if (isNearZero(y)) {
+                        wml.addWarning("invalid arguments to mod (y == 0)");
+                        return Float.NaN;
+                    }
+
+                    return x % y;
+                }, anyMissing(args) //
+            );
         }
     }
 
@@ -789,7 +912,10 @@ public final class MathFunctions {
 
     private static Computer degreesImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.toDegrees(c.compute()), c::isMissing);
+        return FloatComputer.of( //
+            wml -> Math.toDegrees(c.compute(wml)), //
+            c::isMissing //
+        );
     }
 
     /** number from degrees to radians */
@@ -805,7 +931,10 @@ public final class MathFunctions {
 
     private static Computer radiansImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(() -> Math.toRadians(c.compute()), c::isMissing);
+        return FloatComputer.of( //
+            wml -> Math.toRadians(c.compute(wml)), //
+            c::isMissing //
+        );
     }
 
     /** floor of number */
@@ -821,7 +950,10 @@ public final class MathFunctions {
 
     private static Computer floorImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return IntegerComputer.of(() -> (long)Math.floor(c.compute()), c::isMissing);
+        return IntegerComputer.of( //
+            wml -> (long)Math.floor(c.compute(wml)), //
+            c::isMissing //
+        );
     }
 
     /** ceil of number */
@@ -837,7 +969,10 @@ public final class MathFunctions {
 
     private static Computer ceilImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return IntegerComputer.of(() -> (int)Math.ceil(c.compute()), c::isMissing);
+        return IntegerComputer.of( //
+            wml -> (int)Math.ceil(c.compute(wml)), //
+            c::isMissing //
+        );
     }
 
     /** truncate number, i.e. round towards zero */
@@ -854,7 +989,7 @@ public final class MathFunctions {
     private static Computer truncImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
-            () -> BigDecimal.valueOf(c.compute()).setScale(0, RoundingMode.DOWN).longValue(), //
+            wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.DOWN).longValue(), //
             c::isMissing //
         );
     }
@@ -876,19 +1011,18 @@ public final class MathFunctions {
 
     private static Computer roundHalfDownImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
 
         if (args.size() == 1) {
             // Return integer
             return IntegerComputer.of( //
-                () -> BigDecimal.valueOf(c.compute()).setScale(0, RoundingMode.HALF_DOWN).longValue(), //
-                isMissing //
+                wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.HALF_DOWN).longValue(), //
+                anyMissing(args) //
             );
         } else {
-            return FloatComputer.of(() -> {
-                int scale = (int)toInteger(args.get(1)).compute();
-                return BigDecimal.valueOf(c.compute()).setScale(scale, RoundingMode.HALF_DOWN).doubleValue();
-            }, isMissing);
+            return FloatComputer.of(wml -> {
+                int scale = (int)toInteger(args.get(1)).compute(wml);
+                return BigDecimal.valueOf(c.compute(wml)).setScale(scale, RoundingMode.HALF_DOWN).doubleValue();
+            }, anyMissing(args));
         }
     }
 
@@ -909,19 +1043,18 @@ public final class MathFunctions {
 
     private static Computer roundHalfUpImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
 
         if (args.size() == 1) {
             // Return integer
             return IntegerComputer.of( //
-                () -> BigDecimal.valueOf(c.compute()).setScale(0, RoundingMode.HALF_UP).longValue(), //
-                isMissing //
+                wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.HALF_UP).longValue(), //
+                anyMissing(args) //
             );
         } else {
-            return FloatComputer.of(() -> {
-                int scale = (int)toInteger(args.get(1)).compute();
-                return BigDecimal.valueOf(c.compute()).setScale(scale, RoundingMode.HALF_UP).doubleValue();
-            }, isMissing);
+            return FloatComputer.of(wml -> {
+                int scale = (int)toInteger(args.get(1)).compute(wml);
+                return BigDecimal.valueOf(c.compute(wml)).setScale(scale, RoundingMode.HALF_UP).doubleValue();
+            }, anyMissing(args));
         }
     }
 
@@ -942,19 +1075,18 @@ public final class MathFunctions {
 
     private static Computer roundevenImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
 
         if (args.size() == 1) {
             // Return integer
             return IntegerComputer.of( //
-                () -> BigDecimal.valueOf(c.compute()).setScale(0, RoundingMode.HALF_EVEN).longValue(), //
-                isMissing //
+                wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.HALF_EVEN).longValue(), //
+                anyMissing(args) //
             );
         } else {
-            return FloatComputer.of(() -> {
-                int scale = (int)toInteger(args.get(1)).compute();
-                return BigDecimal.valueOf(c.compute()).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
-            }, isMissing);
+            return FloatComputer.of(wml -> {
+                int scale = (int)toInteger(args.get(1)).compute(wml);
+                return BigDecimal.valueOf(c.compute(wml)).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
+            }, anyMissing(args));
         }
     }
 
@@ -971,7 +1103,7 @@ public final class MathFunctions {
 
     private static Computer signImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return IntegerComputer.of(() -> (int)Math.signum(c.compute()), c::isMissing);
+        return IntegerComputer.of(wml -> (int)Math.signum(c.compute(wml)), c::isMissing);
     }
 
     /** The mean of multiple numbers */
@@ -993,8 +1125,8 @@ public final class MathFunctions {
         var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
 
         return FloatComputer.of( //
-            () -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute()).average().getAsDouble(), //
-            () -> args.stream().anyMatch(Computer::isMissing) //
+            wml -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(wml)).average().getAsDouble(), //
+            anyMissing(args) //
         );
     }
 
@@ -1014,9 +1146,9 @@ public final class MathFunctions {
         .build();
 
     private static Computer medianImpl(final List<Computer> args) {
-        DoubleSupplier value = () -> {
+        ExpressionDoubleSupplier value = wml -> {
             // Because we use ::compute we need to do this inside the DoubleSupplier
-            var sortedFloatArgs = args.stream().map(c -> toFloat(c).compute()) //
+            var sortedFloatArgs = args.stream().map(c -> toFloat(c).compute(wml)) //
                 .sorted().toArray(Double[]::new);
 
             if (sortedFloatArgs.length % 2 == 0) {
@@ -1027,9 +1159,7 @@ public final class MathFunctions {
             }
         };
 
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
-
-        return FloatComputer.of(value, isMissing);
+        return FloatComputer.of(value, anyMissing(args));
     }
 
     /** Binomial coefficient nCr of two numbers */
@@ -1046,19 +1176,29 @@ public final class MathFunctions {
         .impl(MathFunctions::binomialImpl) //
         .build();
 
-    // TODO(AP-22272) warn on invalid input
     private static Computer binomialImpl(final List<Computer> args) {
-        LongSupplier value = () -> {
-            long n = toInteger(args.get(0)).compute();
-            long r = toInteger(args.get(1)).compute();
+        ExpressionLongSupplier value = wml -> {
+            long n = toInteger(args.get(0)).compute(wml);
+            long r = toInteger(args.get(1)).compute(wml);
 
             // 0c0 needs special handling
             if (n == 0 && r == 0) {
                 return 1;
             }
 
-            if (r > n || r < 0 || n < 0) {
-                return 0; // or raise error?
+            if (r > n) {
+                wml.addWarning("invalid arguments to binomial (r > n)");
+                return 0;
+            }
+
+            if (r < 0) {
+                wml.addWarning("invalid arguments to binomial (r < 0)");
+                return 0;
+            }
+
+            if (n < 0) {
+                wml.addWarning("invalid arguments to binomial (n < 0)");
+                return 0;
             }
 
             // nCr == nC(n-r), and our iterative algorithm is linear in r, so
@@ -1085,9 +1225,7 @@ public final class MathFunctions {
             return ret;
         };
 
-        BooleanSupplier isMissing = () -> args.stream().anyMatch(Computer::isMissing);
-
-        return IntegerComputer.of(value, isMissing);
+        return IntegerComputer.of(value, anyMissing(args));
     }
 
     // ======================= UTILITIES ==============================
@@ -1097,5 +1235,9 @@ public final class MathFunctions {
             return i;
         }
         throw FunctionUtils.calledWithIllegalArgs();
+    }
+
+    private static boolean isNearZero(final double d) {
+        return Math.abs(d) < 2 * Double.MIN_VALUE;
     }
 }

@@ -78,12 +78,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.DoubleSupplier;
 import java.util.function.Function;
-import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -393,31 +389,31 @@ final class EvaluationTest {
         flowVariableAccess -> Arrays.stream(TestFlowVariable.values())
             .filter(t -> t.name().equals(flowVariableAccess.name())).findFirst();
 
-    private static final BooleanSupplier THROWING_BOOL_SUPPLIER = () -> {
+    private static final ExpressionBooleanSupplier THROWING_BOOL_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final LongSupplier THROWING_LONG_SUPPLIER = () -> {
+    private static final ExpressionLongSupplier THROWING_LONG_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final DoubleSupplier THROWING_DOUBLE_SUPPLIER = () -> {
+    private static final ExpressionDoubleSupplier THROWING_DOUBLE_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final Supplier<String> THROWING_STRING_SUPPLIER = () -> {
+    private static final ExpressionSupplier<String> THROWING_STRING_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
     private static enum TestColumn {
-            BOOLEAN(ValueType.OPT_BOOLEAN, BooleanComputer.of(() -> true, () -> false)), //
-            INTEGER(ValueType.OPT_INTEGER, IntegerComputer.of(() -> 100, () -> false)), //
-            FLOAT(ValueType.OPT_FLOAT, FloatComputer.of(() -> 10.5, () -> false)), //
-            STRING(ValueType.OPT_STRING, StringComputer.of(() -> "column value", () -> false)), //
-            BOOLEAN_MISSING(ValueType.OPT_BOOLEAN, BooleanComputer.of(THROWING_BOOL_SUPPLIER, () -> true)), //
-            INTEGER_MISSING(ValueType.OPT_INTEGER, IntegerComputer.of(THROWING_LONG_SUPPLIER, () -> true)), //
-            FLOAT_MISSING(ValueType.OPT_FLOAT, FloatComputer.of(THROWING_DOUBLE_SUPPLIER, () -> true)), //
-            STRING_MISSING(ValueType.OPT_STRING, StringComputer.of(THROWING_STRING_SUPPLIER, () -> true)), //
+            BOOLEAN(ValueType.OPT_BOOLEAN, BooleanComputer.of(wml -> true, wml -> false)), //
+            INTEGER(ValueType.OPT_INTEGER, IntegerComputer.of(wml -> 100, wml -> false)), //
+            FLOAT(ValueType.OPT_FLOAT, FloatComputer.of(wml -> 10.5, wml -> false)), //
+            STRING(ValueType.OPT_STRING, StringComputer.of(wml -> "column value", wml -> false)), //
+            BOOLEAN_MISSING(ValueType.OPT_BOOLEAN, BooleanComputer.of(THROWING_BOOL_SUPPLIER, wml -> true)), //
+            INTEGER_MISSING(ValueType.OPT_INTEGER, IntegerComputer.of(THROWING_LONG_SUPPLIER, wml -> true)), //
+            FLOAT_MISSING(ValueType.OPT_FLOAT, FloatComputer.of(THROWING_DOUBLE_SUPPLIER, wml -> true)), //
+            STRING_MISSING(ValueType.OPT_STRING, StringComputer.of(THROWING_STRING_SUPPLIER, wml -> true)), //
         ;
 
         private final Computer m_computer;
@@ -439,14 +435,14 @@ final class EvaluationTest {
     }
 
     private static enum TestFlowVariable {
-            BOOLEAN(ValueType.OPT_BOOLEAN, BooleanComputer.of(() -> true, () -> false)), //
-            INTEGER(ValueType.OPT_INTEGER, IntegerComputer.of(() -> 100, () -> false)), //
-            FLOAT(ValueType.OPT_FLOAT, FloatComputer.of(() -> 10.5, () -> false)), //
-            STRING(ValueType.OPT_STRING, StringComputer.of(() -> "column value", () -> false)), //
-            BOOLEAN_MISSING(ValueType.OPT_BOOLEAN, BooleanComputer.of(THROWING_BOOL_SUPPLIER, () -> true)), //
-            INTEGER_MISSING(ValueType.OPT_INTEGER, IntegerComputer.of(THROWING_LONG_SUPPLIER, () -> true)), //
-            FLOAT_MISSING(ValueType.OPT_FLOAT, FloatComputer.of(THROWING_DOUBLE_SUPPLIER, () -> true)), //
-            STRING_MISSING(ValueType.OPT_STRING, StringComputer.of(THROWING_STRING_SUPPLIER, () -> true)), //
+            BOOLEAN(ValueType.OPT_BOOLEAN, BooleanComputer.of(wml -> true, wml -> false)), //
+            INTEGER(ValueType.OPT_INTEGER, IntegerComputer.of(wml -> 100, wml -> false)), //
+            FLOAT(ValueType.OPT_FLOAT, FloatComputer.of(wml -> 10.5, wml -> false)), //
+            STRING(ValueType.OPT_STRING, StringComputer.of(wml -> "column value", wml -> false)), //
+            BOOLEAN_MISSING(ValueType.OPT_BOOLEAN, BooleanComputer.of(THROWING_BOOL_SUPPLIER, wml -> true)), //
+            INTEGER_MISSING(ValueType.OPT_INTEGER, IntegerComputer.of(THROWING_LONG_SUPPLIER, wml -> true)), //
+            FLOAT_MISSING(ValueType.OPT_FLOAT, FloatComputer.of(THROWING_DOUBLE_SUPPLIER, wml -> true)), //
+            STRING_MISSING(ValueType.OPT_STRING, StringComputer.of(THROWING_STRING_SUPPLIER, wml -> true)), //
         ;
 
         private final Computer m_computer;
@@ -472,7 +468,7 @@ final class EvaluationTest {
 
     private static enum TestFunctions implements ExpressionFunction {
             PLUS_100_FN(List.of(ValueType.INTEGER), ValueType.INTEGER,
-                (c) -> IntegerComputer.of(() -> ((IntegerComputer)c.get(0)).compute() + 100, () -> false)), //
+                c -> IntegerComputer.of(wml -> ((IntegerComputer)c.get(0)).compute(wml) + 100, wml -> false)), //
         ;
 
         private final Map<List<ValueType>, ValueType> m_argsToOutputs;
