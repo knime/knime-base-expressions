@@ -496,7 +496,7 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
             GREATER_THAN_EQUAL(">=", ORDERING), //
             CONDITIONAL_AND("and", LOGICAL), //
             CONDITIONAL_OR("or", LOGICAL), //
-            NULLISH_COALESCE("??", MISC); //
+            MISSING_FALLBACK("??", MISC); //
 
         private final String m_symbol;
 

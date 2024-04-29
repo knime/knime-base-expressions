@@ -7,31 +7,31 @@ fullExpr: expr EOF;
 
 // Any valid expression
 expr:
-	'$$' (shortName = IDENTIFIER | '['+ longName = STRING ']')		# flowVarAccess
-	| '$' (shortName = IDENTIFIER | '['+ longName = STRING ']')		# colAccess
-	| name = IDENTIFIER '(' functionArgs? ')'						# functionCall
-	| <assoc = right> expr op = EXPONENTIATE expr					# binaryOp
-	| op = MINUS expr												# unaryOp
-	| expr op = (MULTIPLY | DIVIDE | MODULO | FLOOR_DIVIDE) expr	# binaryOp
-	| expr op = (PLUS | MINUS) expr									# binaryOp
-	| expr op = (
-		LESS_THAN
-		| LESS_THAN_EQUAL
-		| GREATER_THAN
-		| GREATER_THAN_EQUAL
-		| EQUAL
-		| NOT_EQUAL
-	) expr								# binaryOp
-	| op = NOT expr						# unaryOp
-	| expr op = AND expr				# binaryOp
-	| expr op = OR expr					# binaryOp
-	| expr op = NULLISH_COALESCE expr	# binaryOp
-	| '(' inner = expr ')'				# parenthesisedExpr
-	| BOOLEAN							# atom
-	| INTEGER							# atom
-	| FLOAT								# atom
-	| STRING							# atom
-	| MISSING							# atom;
+    '$$' (shortName = IDENTIFIER | '['+ longName = STRING ']')      # flowVarAccess
+    | '$' (shortName = IDENTIFIER | '['+ longName = STRING ']')     # colAccess
+    | name = IDENTIFIER '(' functionArgs? ')'                       # functionCall
+    | expr op = MISSING_FALLBACK expr                               # binaryOp
+    | <assoc = right> expr op = EXPONENTIATE expr                   # binaryOp
+    | op = MINUS expr                                               # unaryOp
+    | expr op = (MULTIPLY | DIVIDE | MODULO | FLOOR_DIVIDE) expr    # binaryOp
+    | expr op = (PLUS | MINUS) expr                                 # binaryOp
+    | expr op = (
+        LESS_THAN
+        | LESS_THAN_EQUAL
+        | GREATER_THAN
+        | GREATER_THAN_EQUAL
+        | EQUAL
+        | NOT_EQUAL
+    ) expr                              # binaryOp
+    | op = NOT expr                     # unaryOp
+    | expr op = AND expr                # binaryOp
+    | expr op = OR expr                 # binaryOp
+    | '(' inner = expr ')'              # parenthesisedExpr
+    | BOOLEAN                           # atom
+    | INTEGER                           # atom
+    | FLOAT                             # atom
+    | STRING                            # atom
+    | MISSING                           # atom;
 
 functionArgs: expr (',' expr)* ','?;
 
@@ -58,7 +58,7 @@ fragment FRACTION: '.' DIGIT_PART;
 STRING: '"' (ESC | ~["\\])* '"' | '\'' (ESC | ~['\\])* '\'';
 fragment ESC: '\\' (UNICODE_16 | [\n\\'"abfnrtv]);
 fragment UNICODE_16:
-	'u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT;
+    'u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT;
 fragment HEX_DIGIT: [0-9a-fA-F];
 
 // MISSING literal
@@ -88,8 +88,8 @@ AND: 'and';
 OR: 'or';
 NOT: 'not';
 
-// Nullish coalescing
-NULLISH_COALESCE: '??';
+// Missing fallback operator
+MISSING_FALLBACK: '??';
 
 // Identifier
 IDENTIFIER: [a-zA-Z_] [a-zA-Z_0-9]*;

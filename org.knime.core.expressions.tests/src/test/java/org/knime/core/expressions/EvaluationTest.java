@@ -57,9 +57,9 @@ import static org.knime.core.expressions.Ast.BinaryOperator.GREATER_THAN_EQUAL;
 import static org.knime.core.expressions.Ast.BinaryOperator.LESS_THAN;
 import static org.knime.core.expressions.Ast.BinaryOperator.LESS_THAN_EQUAL;
 import static org.knime.core.expressions.Ast.BinaryOperator.MINUS;
+import static org.knime.core.expressions.Ast.BinaryOperator.MISSING_FALLBACK;
 import static org.knime.core.expressions.Ast.BinaryOperator.MULTIPLY;
 import static org.knime.core.expressions.Ast.BinaryOperator.NOT_EQUAL_TO;
-import static org.knime.core.expressions.Ast.BinaryOperator.NULLISH_COALESCE;
 import static org.knime.core.expressions.Ast.BinaryOperator.PLUS;
 import static org.knime.core.expressions.Ast.BinaryOperator.REMAINDER;
 import static org.knime.core.expressions.Ast.UnaryOperator.NOT;
@@ -144,24 +144,27 @@ final class EvaluationTest {
             COLUMN_STRING(COL("STRING"), "column value"), //
             COLUMN_MISSING(COL("INTEGER_MISSING")), //
 
-            // === Nullish Coalescing
+            // === MISSING Fallback operator
 
             // Integer
-            COALESCE_NO_MISSING_INTEGER(OP(INT(10),NULLISH_COALESCE,INT(-100)),10), //
-            COALESCE_FIRST_MISSING_INTEGER(OP(MIS(),NULLISH_COALESCE,INT(10)),10), //
-            COALESCE_SECOND_MISSING_INTEGER(OP(INT(10),NULLISH_COALESCE,MIS()),10), //
+            FALLBACK_NO_MISSING_INTEGER(OP(INT(10), MISSING_FALLBACK, INT(-100)), 10), //
+            FALLBACK_FIRST_MISSING_INTEGER(OP(MIS(), MISSING_FALLBACK, INT(10)), 10), //
+            FALLBACK_SECOND_MISSING_INTEGER(OP(INT(10), MISSING_FALLBACK, MIS()), 10), //
             // Float
-            COALESCE_NO_MISSING_FLOAT(OP(FLOAT(10),NULLISH_COALESCE,FLOAT(-100)),10.), //
-            COALESCE_FIRST_MISSING_FLOAT(OP(MIS(),NULLISH_COALESCE,FLOAT(10)),10.), //
-            COALESCE_SECOND_MISSING_FLOAT(OP(FLOAT(10),NULLISH_COALESCE,MIS()),10.), //
+            FALLBACK_NO_MISSING_FLOAT(OP(FLOAT(10), MISSING_FALLBACK, FLOAT(-100)), 10.0), //
+            FALLBACK_FIRST_MISSING_FLOAT(OP(MIS(), MISSING_FALLBACK, FLOAT(10)), 10.0), //
+            FALLBACK_SECOND_MISSING_FLOAT(OP(FLOAT(10), MISSING_FALLBACK, MIS()), 10.0), //
             // String
-            COALESCE_NO_MISSING_STRING(OP(STR("10"),NULLISH_COALESCE,STR("-100")),"10"), //
-            COALESCE_FIRST_MISSING_STRING(OP(MIS(),NULLISH_COALESCE,STR("10")),"10"), //
-            COALESCE_SECOND_MISSING_STRING(OP(STR("10"),NULLISH_COALESCE,MIS()),"10"), //
+            FALLBACK_NO_MISSING_STRING(OP(STR("10"), MISSING_FALLBACK, STR("-100")), "10"), //
+            FALLBACK_FIRST_MISSING_STRING(OP(MIS(), MISSING_FALLBACK, STR("10")), "10"), //
+            FALLBACK_SECOND_MISSING_STRING(OP(STR("10"), MISSING_FALLBACK, MIS()), "10"), //
             // Boolean
-            COALESCE_NO_MISSING_BOOLEAN(OP(BOOL(true),NULLISH_COALESCE,BOOL(false)),true), //
-            COALESCE_FIRST_MISSING_BOOLEAN(OP(MIS(),NULLISH_COALESCE,BOOL(false)),false), //
-            COALESCE_SECOND_MISSING_BOOLEAN(OP(BOOL(true),NULLISH_COALESCE,MIS()),true), //
+            FALLBACK_NO_MISSING_BOOLEAN(OP(BOOL(true), MISSING_FALLBACK, BOOL(false)), true), //
+            FALLBACK_FIRST_MISSING_BOOLEAN(OP(MIS(), MISSING_FALLBACK, BOOL(false)), false), //
+            FALLBACK_SECOND_MISSING_BOOLEAN(OP(BOOL(true), MISSING_FALLBACK, MIS()), true), //
+            // Mixed float and integer
+            FALLBACK_NO_MISSING_INT_FLOAT(OP(INT(10), MISSING_FALLBACK, FLOAT(-100)), 10.0), //
+            FALLBACK_NO_MISSING_FLOAT_INT(OP(FLOAT(10), MISSING_FALLBACK, INT(-100)), 10.0), //
 
             // === Arithmetic Operations
 

@@ -58,9 +58,9 @@ import static org.knime.core.expressions.Ast.BinaryOperator.GREATER_THAN;
 import static org.knime.core.expressions.Ast.BinaryOperator.GREATER_THAN_EQUAL;
 import static org.knime.core.expressions.Ast.BinaryOperator.LESS_THAN;
 import static org.knime.core.expressions.Ast.BinaryOperator.LESS_THAN_EQUAL;
+import static org.knime.core.expressions.Ast.BinaryOperator.MISSING_FALLBACK;
 import static org.knime.core.expressions.Ast.BinaryOperator.MULTIPLY;
 import static org.knime.core.expressions.Ast.BinaryOperator.NOT_EQUAL_TO;
-import static org.knime.core.expressions.Ast.BinaryOperator.NULLISH_COALESCE;
 import static org.knime.core.expressions.Ast.BinaryOperator.PLUS;
 import static org.knime.core.expressions.Ast.BinaryOperator.REMAINDER;
 import static org.knime.core.expressions.Ast.UnaryOperator.MINUS;
@@ -149,17 +149,25 @@ final class TypingTest {
             DIVISION_OF_OPTIONAL_INTEGERS(OP(INT(10), DIVIDE, COL("i?")), OPT_FLOAT), //
             FLOOR_DIVISION_OPTIONAL(OP(INT(10), FLOOR_DIVIDE, COL("i?")), OPT_INTEGER), //
 
-            // === Nullish Coalescing
+            // === MISSING Fallback Operator
 
-            COALESCE_NO_MISSING_INTEGER(OP(INT(10),NULLISH_COALESCE,INT(-100)), INTEGER), //
-            COALESCE_NO_MISSING_FLOAT(OP(FLOAT(10),NULLISH_COALESCE,FLOAT(-100)), FLOAT), //
-            COALESCE_NO_MISSING_STRING(OP(STR("10"),NULLISH_COALESCE,STR("-100")), STRING), //
-            COALESCE_NO_MISSING_BOOLEAN(OP(BOOL(true),NULLISH_COALESCE,BOOL(false)), BOOLEAN), //
+            FALLBACK_NO_MISSING_INTEGER(OP(INT(10), MISSING_FALLBACK, INT(-100)), INTEGER), //
+            FALLBACK_NO_MISSING_FLOAT(OP(FLOAT(10), MISSING_FALLBACK, FLOAT(-100)), FLOAT), //
+            FALLBACK_INT_WITH_FLOAT(OP(INT(10), MISSING_FALLBACK, FLOAT(-100)), FLOAT), //
+            FALLBACK_FLOAT_WITH_INT(OP(FLOAT(10), MISSING_FALLBACK, INT(-100)), FLOAT), //
+            FALLBACK_INT_WITH_FLOAT_FIRST_OPT(OP(COL("i?"), MISSING_FALLBACK, FLOAT(-100)), FLOAT), //
+            FALLBACK_FLOAT_WITH_INT_FIRST_OPT(OP(COL("f?"), MISSING_FALLBACK, INT(-100)), FLOAT), //
+            FALLBACK_INT_WITH_FLOAT_SECOND_OPT(OP(INT(10), MISSING_FALLBACK, COL("f?")), FLOAT), //
+            FALLBACK_FLOAT_WITH_INT_SECOND_OPT(OP(FLOAT(10), MISSING_FALLBACK, COL("i?")), FLOAT), //
+            FALLBACK_NO_MISSING_STRING(OP(STR("10"), MISSING_FALLBACK, STR("-100")), STRING), //
+            FALLBACK_NO_MISSING_BOOLEAN(OP(BOOL(true), MISSING_FALLBACK, BOOL(false)), BOOLEAN), //
 
-            COALESCE_FIRST_MISSING(OP(MIS(),NULLISH_COALESCE,INT(10)),INTEGER), //
-            COALESCE_SECOND_MISSING(OP(INT(10),NULLISH_COALESCE,MIS()),INTEGER), //
-            COALESCE_SAME_MIXED_TYPES(OP(STR("s"),NULLISH_COALESCE,COL("s?")),STRING),
-            COALESCE_SAME_OPTIONAL_TYPES(OP(COL("s?"),NULLISH_COALESCE,COL("s?")),OPT_STRING),
+            FALLBACK_FIRST_MISSING(OP(MIS(), MISSING_FALLBACK, INT(10)), INTEGER), //
+            FALLBACK_SECOND_MISSING(OP(INT(10), MISSING_FALLBACK, MIS()), INTEGER), //
+            FALLBACK_SAME_MIXED_TYPES(OP(STR("s"), MISSING_FALLBACK, COL("s?")), STRING),
+            FALLBACK_SAME_OPTIONAL_TYPES(OP(COL("s?"), MISSING_FALLBACK, COL("s?")), OPT_STRING),
+            FALLBACK_INT_WITH_FLOAT_BOTH_OPT(OP(COL("i?"), MISSING_FALLBACK, (COL("f?"))), OPT_FLOAT), //
+            FALLBACK_FLOAT_WITH_INT_BOTH_OPT(OP(COL("f?"), MISSING_FALLBACK, (COL("i?"))), OPT_FLOAT), //
 
             // === Comparison Operations
 
@@ -257,12 +265,11 @@ final class TypingTest {
             LOGICAL_NOT_ON_STRING(OP(NOT, STR("foo")), "not", "STRING"), //
             LOGICAL_NOT_ON_MISSING(OP(NOT, MIS()), "not", "MISSING"), //
 
-            // === Nullish Coalescing
-            COALESCE_BOTH_MISSING(OP(MIS(),NULLISH_COALESCE,MIS()),"one","must","not","MISSING"),
-            COALESCE_NOT_SAME_TYPE(OP(INT(0),NULLISH_COALESCE,BOOL(false)),"must","same","or","MISSING"),
-            COALESCE_NOT_SAME_OPTIONAL_TYPES(OP(COL("f?"),NULLISH_COALESCE,COL("s?")),"must","same","or","MISSING"),
-            COALESCE_NOT_SAME_MIXED_TYPES(OP(INT(0),NULLISH_COALESCE,COL("s?")),"must","same","or","MISSING"),
-
+            // === MISSING Fallback Operator
+            FALLBACK_BOTH_MISSING(OP(MIS(), MISSING_FALLBACK, MIS()), "one", "must", "not", "MISSING"),
+            FALLBACK_NOT_SAME_TYPE(OP(INT(0), MISSING_FALLBACK, BOOL(false)), "must", "compatible"),
+            FALLBACK_NOT_SAME_OPTIONAL_TYPES(OP(COL("f?"), MISSING_FALLBACK, COL("s?")), "must", "compatible"),
+            FALLBACK_NOT_SAME_MIXED_TYPES(OP(INT(0), MISSING_FALLBACK, COL("s?")), "must", "compatible"),
 
             // === String Concatenation
             STRING_CONCAT_STRING_AND_MISSING(OP(STR("foo"), PLUS, MIS()), "+", "STRING", "MISSING"), //

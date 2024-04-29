@@ -186,8 +186,8 @@ final class Typing {
             } else if (op.isLogical() && isAllBoolean(t1, t2)) {
                 // Logical operation
                 return BOOLEAN(t1.isOptional() || t2.isOptional());
-            } else if (op == BinaryOperator.NULLISH_COALESCE) {
-                return coalesceNullishTypes(node, t1, t2);
+            } else if (op == BinaryOperator.MISSING_FALLBACK) {
+                return missingFallbackTypes(node, t1, t2);
             } else {
                 return ErrorValueType.binaryOpNotApplicable(node, t1, t2);
             }
@@ -268,25 +268,30 @@ final class Typing {
             return ErrorValueType.binaryOpNotApplicable(node, typeA, typeB);
         }
 
-        private static ValueType coalesceNullishTypes(final BinaryOp node, final ValueType typeA,
-            final ValueType typeB) {
+        private static ValueType missingFallbackTypes(final BinaryOp node, final ValueType typeA,
+            final ValueType typeB) { // NOSONAR: not too complex
+
             if (MISSING.equals(typeA) && MISSING.equals(typeB)) {
                 return ErrorValueType.nullishOpNotApplicable(node, typeA, typeB);
-            }
-            if (MISSING.equals(typeA)) {
+            } else if (MISSING.equals(typeA)) {
                 return typeB;
-            }
-            if (MISSING.equals(typeB)) {
+            } else if (MISSING.equals(typeB)) {
                 return typeA;
+            } else if ((typeA.baseType()).equals((typeB.baseType()))) {
+
+                // result is optional iff both operands are optional
+                return (typeA.isOptional() && typeB.isOptional()) //
+                    ? typeA //
+                    : typeA.baseType();
+            } else if (isAllNumeric(typeA, typeB)) {
+
+                // Handle the special case where we have integers and floats
+                return (typeA.isOptional() && typeB.isOptional()) //
+                    ? ValueType.OPT_FLOAT //
+                    : ValueType.FLOAT;
+            } else {
+                return ErrorValueType.nullishOpNotApplicable(node, typeA, typeB);
             }
-            if ((typeA.baseType()).equals((typeB.baseType()))) {
-                if (typeA.isOptional() && typeB.isOptional()) {
-                    return typeA;
-                }
-                // if at most one of the operands is not optional the result is not optional
-                return typeA.baseType();
-            }
-            return ErrorValueType.nullishOpNotApplicable(node, typeA, typeB);
         }
 
         // Small helpers
@@ -356,7 +361,7 @@ final class Typing {
 
         static ErrorValueType nullishOpNotApplicable(final BinaryOp node, final ValueType t1, final ValueType t2) {
             return typingError("Operator '??' is not applicable for " + t1.name() + " and " + t2.name()
-                + ". Types must be the same or at most one of the MISSING.", node);
+                + ". Types must be compatible, and at most one can be MISSING.", node);
         }
 
         private ErrorValueType(final List<ExpressionCompileError> errors) {

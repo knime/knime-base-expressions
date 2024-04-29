@@ -171,11 +171,11 @@ final class Evaluation {
             var arg1 = node.arg1().accept(this);
             var arg2 = node.arg2().accept(this);
 
-            if(node.op() == BinaryOperator.NULLISH_COALESCE) {
-                return arg1.isMissing() ? arg2 : arg1;
-            }
             var outType = Typing.getType(node);
-            if (BOOLEAN.equals(outType.baseType())) {
+
+            if (node.op() == BinaryOperator.MISSING_FALLBACK) {
+                return ComputerFactory.missingFallbackOperatorImpl(outType, arg1, arg2);
+            } else if (BOOLEAN.equals(outType.baseType())) {
                 return Boolean.binary(node.op(), arg1, arg2);
             } else if (INTEGER.equals(outType.baseType())) {
                 return Integer.binary(node.op(), arg1, arg2);
@@ -198,6 +198,29 @@ final class Evaluation {
 
             // Apply the function
             return Typing.getFunctionImpl(node).apply(argComputers);
+        }
+
+        private static Computer missingFallbackOperatorImpl(final ValueType outputType, final Computer arg1,
+            final Computer arg2) {
+            // Deferred evaluation to avoid calling missing during setup
+            Supplier<Computer> outputComputer = () -> arg1.isMissing() ? arg2 : arg1;
+
+            // Output is missing iff both inputs are missing
+            BooleanSupplier outputMissing = () -> arg1.isMissing() && arg2.isMissing();
+
+            // NOSONARs because it otherwise suggests a change that breaks deferred evaluation of get()
+            if (BOOLEAN.equals(outputType.baseType())) {
+                return BooleanComputer.of(() -> ((BooleanComputer)outputComputer.get()).compute(), outputMissing); // NOSONAR
+            } else if (STRING.equals(outputType.baseType())) {
+                return StringComputer.of(() -> ((StringComputer)outputComputer.get()).compute(), outputMissing); // NOSONAR
+            } else if (INTEGER.equals(outputType.baseType())) {
+                return IntegerComputer.of(() -> ((IntegerComputer)outputComputer.get()).compute(), outputMissing); // NOSONAR
+            } else if (FLOAT.equals(outputType.baseType())) {
+                return FloatComputer.of(() -> intOrFloatToFloat(outputComputer.get()).compute(), outputMissing); // NOSONAR
+            } else {
+                throw new IllegalStateException(
+                    "Implementation error: this shouldn't happen if our typing check is correct");
+            }
         }
     }
 
@@ -435,5 +458,15 @@ final class Evaluation {
     private static EvaluationImplementationError unsupportedOutputForOpError(final Object operator,
         final ValueType outputType) {
         return new EvaluationImplementationError("Output of operator " + operator + " cannot be " + outputType.name());
+    }
+
+    private static FloatComputer intOrFloatToFloat(final Computer c) {
+        if (c instanceof FloatComputer fc) {
+            return fc;
+        } else if (c instanceof IntegerComputer ic) {
+            return FloatComputer.of(ic::compute, ic::isMissing);
+        } else {
+            throw new IllegalArgumentException("should be int or float computer");
+        }
     }
 }

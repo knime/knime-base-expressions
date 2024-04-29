@@ -21,7 +21,7 @@ public class KnimeExpressionParser extends Parser {
 		BOOLEAN=9, INTEGER=10, FLOAT=11, STRING=12, MISSING=13, PLUS=14, MINUS=15, 
 		MULTIPLY=16, DIVIDE=17, FLOOR_DIVIDE=18, EXPONENTIATE=19, MODULO=20, LESS_THAN=21, 
 		LESS_THAN_EQUAL=22, GREATER_THAN=23, GREATER_THAN_EQUAL=24, EQUAL=25, 
-		NOT_EQUAL=26, AND=27, OR=28, NOT=29, NULLISH_COALESCE=30, IDENTIFIER=31;
+		NOT_EQUAL=26, AND=27, OR=28, NOT=29, MISSING_FALLBACK=30, IDENTIFIER=31;
 	public static final int
 		RULE_fullExpr = 0, RULE_expr = 1, RULE_functionArgs = 2;
 	private static String[] makeRuleNames() {
@@ -46,7 +46,7 @@ public class KnimeExpressionParser extends Parser {
 			"INTEGER", "FLOAT", "STRING", "MISSING", "PLUS", "MINUS", "MULTIPLY", 
 			"DIVIDE", "FLOOR_DIVIDE", "EXPONENTIATE", "MODULO", "LESS_THAN", "LESS_THAN_EQUAL", 
 			"GREATER_THAN", "GREATER_THAN_EQUAL", "EQUAL", "NOT_EQUAL", "AND", "OR", 
-			"NOT", "NULLISH_COALESCE", "IDENTIFIER"
+			"NOT", "MISSING_FALLBACK", "IDENTIFIER"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -190,6 +190,7 @@ public class KnimeExpressionParser extends Parser {
 		public ExprContext expr(int i) {
 			return getRuleContext(ExprContext.class,i);
 		}
+		public TerminalNode MISSING_FALLBACK() { return getToken(KnimeExpressionParser.MISSING_FALLBACK, 0); }
 		public TerminalNode EXPONENTIATE() { return getToken(KnimeExpressionParser.EXPONENTIATE, 0); }
 		public TerminalNode MULTIPLY() { return getToken(KnimeExpressionParser.MULTIPLY, 0); }
 		public TerminalNode DIVIDE() { return getToken(KnimeExpressionParser.DIVIDE, 0); }
@@ -205,7 +206,6 @@ public class KnimeExpressionParser extends Parser {
 		public TerminalNode NOT_EQUAL() { return getToken(KnimeExpressionParser.NOT_EQUAL, 0); }
 		public TerminalNode AND() { return getToken(KnimeExpressionParser.AND, 0); }
 		public TerminalNode OR() { return getToken(KnimeExpressionParser.OR, 0); }
-		public TerminalNode NULLISH_COALESCE() { return getToken(KnimeExpressionParser.NULLISH_COALESCE, 0); }
 		public BinaryOpContext(ExprContext ctx) { copyFrom(ctx); }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
@@ -468,7 +468,7 @@ public class KnimeExpressionParser extends Parser {
 				setState(38);
 				((UnaryOpContext)_localctx).op = match(MINUS);
 				setState(39);
-				expr(14);
+				expr(13);
 				}
 				break;
 			case NOT:
@@ -479,7 +479,7 @@ public class KnimeExpressionParser extends Parser {
 				setState(40);
 				((UnaryOpContext)_localctx).op = match(NOT);
 				setState(41);
-				expr(10);
+				expr(9);
 				}
 				break;
 			case T__4:
@@ -562,9 +562,9 @@ public class KnimeExpressionParser extends Parser {
 						setState(53);
 						if (!(precpred(_ctx, 15))) throw new FailedPredicateException(this, "precpred(_ctx, 15)");
 						setState(54);
-						((BinaryOpContext)_localctx).op = match(EXPONENTIATE);
+						((BinaryOpContext)_localctx).op = match(MISSING_FALLBACK);
 						setState(55);
-						expr(15);
+						expr(16);
 						}
 						break;
 					case 2:
@@ -572,18 +572,9 @@ public class KnimeExpressionParser extends Parser {
 						_localctx = new BinaryOpContext(new ExprContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expr);
 						setState(56);
-						if (!(precpred(_ctx, 13))) throw new FailedPredicateException(this, "precpred(_ctx, 13)");
+						if (!(precpred(_ctx, 14))) throw new FailedPredicateException(this, "precpred(_ctx, 14)");
 						setState(57);
-						((BinaryOpContext)_localctx).op = _input.LT(1);
-						_la = _input.LA(1);
-						if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 1507328L) != 0)) ) {
-							((BinaryOpContext)_localctx).op = (Token)_errHandler.recoverInline(this);
-						}
-						else {
-							if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
-							_errHandler.reportMatch(this);
-							consume();
-						}
+						((BinaryOpContext)_localctx).op = match(EXPONENTIATE);
 						setState(58);
 						expr(14);
 						}
@@ -597,7 +588,7 @@ public class KnimeExpressionParser extends Parser {
 						setState(60);
 						((BinaryOpContext)_localctx).op = _input.LT(1);
 						_la = _input.LA(1);
-						if ( !(_la==PLUS || _la==MINUS) ) {
+						if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 1507328L) != 0)) ) {
 							((BinaryOpContext)_localctx).op = (Token)_errHandler.recoverInline(this);
 						}
 						else {
@@ -618,7 +609,7 @@ public class KnimeExpressionParser extends Parser {
 						setState(63);
 						((BinaryOpContext)_localctx).op = _input.LT(1);
 						_la = _input.LA(1);
-						if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 132120576L) != 0)) ) {
+						if ( !(_la==PLUS || _la==MINUS) ) {
 							((BinaryOpContext)_localctx).op = (Token)_errHandler.recoverInline(this);
 						}
 						else {
@@ -635,11 +626,20 @@ public class KnimeExpressionParser extends Parser {
 						_localctx = new BinaryOpContext(new ExprContext(_parentctx, _parentState));
 						pushNewRecursionContext(_localctx, _startState, RULE_expr);
 						setState(65);
-						if (!(precpred(_ctx, 9))) throw new FailedPredicateException(this, "precpred(_ctx, 9)");
+						if (!(precpred(_ctx, 10))) throw new FailedPredicateException(this, "precpred(_ctx, 10)");
 						setState(66);
-						((BinaryOpContext)_localctx).op = match(AND);
+						((BinaryOpContext)_localctx).op = _input.LT(1);
+						_la = _input.LA(1);
+						if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 132120576L) != 0)) ) {
+							((BinaryOpContext)_localctx).op = (Token)_errHandler.recoverInline(this);
+						}
+						else {
+							if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+							_errHandler.reportMatch(this);
+							consume();
+						}
 						setState(67);
-						expr(10);
+						expr(11);
 						}
 						break;
 					case 6:
@@ -649,7 +649,7 @@ public class KnimeExpressionParser extends Parser {
 						setState(68);
 						if (!(precpred(_ctx, 8))) throw new FailedPredicateException(this, "precpred(_ctx, 8)");
 						setState(69);
-						((BinaryOpContext)_localctx).op = match(OR);
+						((BinaryOpContext)_localctx).op = match(AND);
 						setState(70);
 						expr(9);
 						}
@@ -661,7 +661,7 @@ public class KnimeExpressionParser extends Parser {
 						setState(71);
 						if (!(precpred(_ctx, 7))) throw new FailedPredicateException(this, "precpred(_ctx, 7)");
 						setState(72);
-						((BinaryOpContext)_localctx).op = match(NULLISH_COALESCE);
+						((BinaryOpContext)_localctx).op = match(OR);
 						setState(73);
 						expr(8);
 						}
@@ -776,13 +776,13 @@ public class KnimeExpressionParser extends Parser {
 		case 0:
 			return precpred(_ctx, 15);
 		case 1:
-			return precpred(_ctx, 13);
+			return precpred(_ctx, 14);
 		case 2:
 			return precpred(_ctx, 12);
 		case 3:
 			return precpred(_ctx, 11);
 		case 4:
-			return precpred(_ctx, 9);
+			return precpred(_ctx, 10);
 		case 5:
 			return precpred(_ctx, 8);
 		case 6:
@@ -827,8 +827,8 @@ public class KnimeExpressionParser extends Parser {
 		"\u0000\u0000\u001f4\u0001\u0000\u0000\u0000 !\u0005\u001f\u0000\u0000"+
 		"!#\u0005\u0005\u0000\u0000\"$\u0003\u0004\u0002\u0000#\"\u0001\u0000\u0000"+
 		"\u0000#$\u0001\u0000\u0000\u0000$%\u0001\u0000\u0000\u0000%4\u0005\u0006"+
-		"\u0000\u0000&\'\u0005\u000f\u0000\u0000\'4\u0003\u0002\u0001\u000e()\u0005"+
-		"\u001d\u0000\u0000)4\u0003\u0002\u0001\n*+\u0005\u0005\u0000\u0000+,\u0003"+
+		"\u0000\u0000&\'\u0005\u000f\u0000\u0000\'4\u0003\u0002\u0001\r()\u0005"+
+		"\u001d\u0000\u0000)4\u0003\u0002\u0001\t*+\u0005\u0005\u0000\u0000+,\u0003"+
 		"\u0002\u0001\u0000,-\u0005\u0006\u0000\u0000-4\u0001\u0000\u0000\u0000"+
 		".4\u0005\t\u0000\u0000/4\u0005\n\u0000\u000004\u0005\u000b\u0000\u0000"+
 		"14\u0005\f\u0000\u000024\u0005\r\u0000\u00003\t\u0001\u0000\u0000\u0000"+
@@ -836,13 +836,13 @@ public class KnimeExpressionParser extends Parser {
 		"\u0000\u00003(\u0001\u0000\u0000\u00003*\u0001\u0000\u0000\u00003.\u0001"+
 		"\u0000\u0000\u00003/\u0001\u0000\u0000\u000030\u0001\u0000\u0000\u0000"+
 		"31\u0001\u0000\u0000\u000032\u0001\u0000\u0000\u00004L\u0001\u0000\u0000"+
-		"\u000056\n\u000f\u0000\u000067\u0005\u0013\u0000\u00007K\u0003\u0002\u0001"+
-		"\u000f89\n\r\u0000\u00009:\u0007\u0000\u0000\u0000:K\u0003\u0002\u0001"+
-		"\u000e;<\n\f\u0000\u0000<=\u0007\u0001\u0000\u0000=K\u0003\u0002\u0001"+
-		"\r>?\n\u000b\u0000\u0000?@\u0007\u0002\u0000\u0000@K\u0003\u0002\u0001"+
-		"\fAB\n\t\u0000\u0000BC\u0005\u001b\u0000\u0000CK\u0003\u0002\u0001\nD"+
-		"E\n\b\u0000\u0000EF\u0005\u001c\u0000\u0000FK\u0003\u0002\u0001\tGH\n"+
-		"\u0007\u0000\u0000HI\u0005\u001e\u0000\u0000IK\u0003\u0002\u0001\bJ5\u0001"+
+		"\u000056\n\u000f\u0000\u000067\u0005\u001e\u0000\u00007K\u0003\u0002\u0001"+
+		"\u001089\n\u000e\u0000\u00009:\u0005\u0013\u0000\u0000:K\u0003\u0002\u0001"+
+		"\u000e;<\n\f\u0000\u0000<=\u0007\u0000\u0000\u0000=K\u0003\u0002\u0001"+
+		"\r>?\n\u000b\u0000\u0000?@\u0007\u0001\u0000\u0000@K\u0003\u0002\u0001"+
+		"\fAB\n\n\u0000\u0000BC\u0007\u0002\u0000\u0000CK\u0003\u0002\u0001\u000b"+
+		"DE\n\b\u0000\u0000EF\u0005\u001b\u0000\u0000FK\u0003\u0002\u0001\tGH\n"+
+		"\u0007\u0000\u0000HI\u0005\u001c\u0000\u0000IK\u0003\u0002\u0001\bJ5\u0001"+
 		"\u0000\u0000\u0000J8\u0001\u0000\u0000\u0000J;\u0001\u0000\u0000\u0000"+
 		"J>\u0001\u0000\u0000\u0000JA\u0001\u0000\u0000\u0000JD\u0001\u0000\u0000"+
 		"\u0000JG\u0001\u0000\u0000\u0000KN\u0001\u0000\u0000\u0000LJ\u0001\u0000"+
