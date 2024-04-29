@@ -49,6 +49,7 @@
 package org.knime.base.expressions.node;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -68,6 +69,7 @@ import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
@@ -178,13 +180,17 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         public void runExpression(final String expression) {
             // Apply the expression on the input table using a ColumnarVirtualTable
 
+            List<String> warnings = new ArrayList<>();
+            WarningMessageListener wml = warning -> warnings.add(warning);
+
             var inputTable = getInputTable();
             var numRows = (int)Math.min(DIALOG_PREVIEW_NUM_ROWS, inputTable.getBufferedTable().size());
             var expressionResult = ExpressionRunnerUtils.applyExpression( //
                 inputTable.getVirtualTable().slice(0, numRows), //
                 expression, //
                 "result", // column name is irrelevant
-                m_exprContext);
+                m_exprContext, //
+                wml);
 
             var result = new String[numRows];
             try (var expressionResultTable =
@@ -196,7 +202,12 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                     }
                 }
             }
+
             addConsoleOutputEvent(new ConsoleText(formatResult(result), false));
+
+            for (var warning : warnings) {
+                addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));
+            }
         }
 
         private static String getRowResult(final RowRead rowRead, final int resultIdx) {
@@ -227,6 +238,11 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
         public enum DiagnosticSeverity {
                 ERROR, WARNING, INFORMATION, HINT;
+        }
+
+        private static String formatWarning(final String warningText) {
+            // TODO: is this actually how we want to do it?
+            return "⚠️  \u001b[47m\u001b[30m%s\u001b[0m%n".formatted(warningText);
         }
     }
 }

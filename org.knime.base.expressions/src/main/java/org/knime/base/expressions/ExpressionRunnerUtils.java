@@ -62,6 +62,7 @@ import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializ
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.container.DataContainerSettings;
+import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -183,9 +184,10 @@ public final class ExpressionRunnerUtils {
      * @param exprContext
      */
     public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final String expression,
-        final String outputColumnName, final ExpressionEvaluationContext exprContext) {
+        final String outputColumnName, final ExpressionEvaluationContext exprContext,
+        final WarningMessageListener wml) {
         var expressionMapperFactory =
-            new ExpressionMapperFactory(expression, input.getSchema(), outputColumnName, exprContext);
+            new ExpressionMapperFactory(expression, input.getSchema(), outputColumnName, exprContext, wml);
         return input.selectColumns(0)
             .append(input.map(expressionMapperFactory, expressionMapperFactory.getInputColumnIndices()));
     }
@@ -195,11 +197,12 @@ public final class ExpressionRunnerUtils {
         final String expression, //
         final String outputColumnName, //
         final ExecutionContext exec, //
-        final ExpressionEvaluationContext exprContext //
+        final ExpressionEvaluationContext exprContext, //
+        final WarningMessageListener wml //
     ) throws CanceledExecutionException, VirtualTableIncompatibleException {
         var numRows = refTable.getBufferedTable().size();
         var expressionResultVirtual =
-            applyExpression(refTable.getVirtualTable(), expression, outputColumnName, exprContext);
+            applyExpression(refTable.getVirtualTable(), expression, outputColumnName, exprContext, wml);
         return ColumnarVirtualTableMaterializer.materializer() //
             .sources(refTable.getSources()) //
             .materializeRowKey(false) //

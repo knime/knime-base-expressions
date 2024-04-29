@@ -71,6 +71,7 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -150,12 +151,25 @@ class ExpressionNodeModel extends NodeModel {
         var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(m_settings.getColumnInsertionMode(),
             m_settings.getActiveOutputColumn());
 
+        var messageBuilder = createMessageBuilder();
+        WarningMessageListener wml = messageBuilder::addTextIssue;
+
         var inTable = inData[0];
         var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec);
         var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, m_settings.getScript(),
-            newColumnPosition.columnName(), exec, m_exprContext);
+            newColumnPosition.columnName(), exec, m_exprContext, wml);
         var output = ExpressionRunnerUtils.constructOutputTable(inRefTable.getVirtualTable(),
             expressionResult.getVirtualTable(), newColumnPosition);
+
+        var issueCount = messageBuilder.getIssueCount();
+        if (issueCount > 0) {
+            var message = messageBuilder //
+                .withSummary(
+                    issueCount + " warning" + (issueCount == 1 ? "" : "s") + " occured while evaluating expression") //
+                .build() //
+                .orElse(null);
+            setWarning(message);
+        }
 
         @SuppressWarnings("resource") // #close clears the table but we still want to keep the data for the output
         var outputExtensionTable = new VirtualTableExtensionTable(new ReferenceTable[]{inRefTable, expressionResult},
@@ -224,19 +238,20 @@ class ExpressionNodeModel extends NodeModel {
             var variableType = variable.getVariableType();
 
             if (variableType == VariableType.BooleanType.INSTANCE) {
-                return Computer.BooleanComputer.of(() -> variable.getValue(VariableType.BooleanType.INSTANCE),
-                    () -> false);
+                return Computer.BooleanComputer.of(wml -> variable.getValue(VariableType.BooleanType.INSTANCE),
+                    wml -> false);
             } else if (variableType == VariableType.DoubleType.INSTANCE) {
-                return Computer.FloatComputer.of(() -> variable.getValue(VariableType.DoubleType.INSTANCE),
-                    () -> false);
+                return Computer.FloatComputer.of(wml -> variable.getValue(VariableType.DoubleType.INSTANCE),
+                    wml -> false);
             } else if (variableType == VariableType.LongType.INSTANCE) {
-                return Computer.IntegerComputer.of(() -> variable.getValue(VariableType.LongType.INSTANCE),
-                    () -> false);
+                return Computer.IntegerComputer.of(wml -> variable.getValue(VariableType.LongType.INSTANCE),
+                    wml -> false);
             } else if (variableType == VariableType.IntType.INSTANCE) {
-                return Computer.IntegerComputer.of(() -> variable.getValue(VariableType.IntType.INSTANCE), () -> false);
+                return Computer.IntegerComputer.of(wml -> variable.getValue(VariableType.IntType.INSTANCE),
+                    wml -> false);
             } else if (variableType == VariableType.StringType.INSTANCE) {
-                return Computer.StringComputer.of(() -> variable.getValue(VariableType.StringType.INSTANCE),
-                    () -> false);
+                return Computer.StringComputer.of(wml -> variable.getValue(VariableType.StringType.INSTANCE),
+                    wml -> false);
             } else {
                 throw new IllegalArgumentException("Unsupported variable type: " + variableType);
             }

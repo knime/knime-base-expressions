@@ -74,6 +74,7 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.WriteAccess;
@@ -99,7 +100,6 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
         Optional<Computer> flowVariableToComputer(Ast.FlowVarAccess flowVarAccess);
     }
 
-
     private final MapperFactory m_mapperFactory;
 
     private final int[] m_columnIndices;
@@ -107,7 +107,8 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
     private final String m_outputColumnName;
 
     public ExpressionMapperFactory(final String expression, final ColumnarValueSchema inputTableSchema,
-        final String outputColumnName, final ExpressionEvaluationContext exprContext) {
+        final String outputColumnName, final ExpressionEvaluationContext exprContext,
+        final WarningMessageListener wml) {
         m_outputColumnName = outputColumnName;
 
         try {
@@ -134,7 +135,7 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
                 };
 
             m_mapperFactory =
-                Exec.createMapperFactory(ast, columnIndexToComputerFactory, exprContext::flowVariableToComputer);
+                Exec.createMapperFactory(ast, columnIndexToComputerFactory, exprContext::flowVariableToComputer, wml);
 
         } catch (ExpressionCompileException ex) {
             throw new IllegalArgumentException(ex);
