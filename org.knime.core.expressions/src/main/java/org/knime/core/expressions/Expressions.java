@@ -55,6 +55,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.functions.BuiltInFunctions;
 
 /**
@@ -102,15 +103,19 @@ public final class Expressions {
      * {@link Ast#data()} to each node of the syntax tree.
      *
      * @param expression the expression
-     * @param columnToType a function that returns the type of a columns accessed by the expression. The function should
+     * @param columnToType a function that returns the type of a column accessed by the expression. The function should
      *            return <code>Optional.empty()</code> if the column is not available.
+     * @param flowVariableToType a function that returns the type of a flow variable accessed by the expression. The
+     *            function should return <code>Optional.empty()</code> if the flow variable is not available.
      * @return the output type of the full expression
      * @throws ExpressionCompileException if type inference failed because operations are used for incompatible types or
      *             a column is not available
      */
     public static ValueType inferTypes(final Ast expression,
-        final Function<ColumnAccess, Optional<ValueType>> columnToType) throws ExpressionCompileException {
-        return Typing.inferTypes(expression, columnToType, BuiltInFunctions.BUILT_IN_FUNCTIONS_GETTER);
+        final Function<ColumnAccess, Optional<ValueType>> columnToType,
+        final Function<FlowVarAccess, Optional<ValueType>> flowVariableToType) throws ExpressionCompileException {
+        return Typing.inferTypes(expression, columnToType, BuiltInFunctions.BUILT_IN_FUNCTIONS_GETTER,
+            flowVariableToType);
     }
 
     /**
@@ -121,12 +126,15 @@ public final class Expressions {
      * @param expression the expression. Must include type information inferred by {@link #inferTypes(Ast, Function)}.
      * @param columnToComputer a function that returns the computer for column data accessed by the expression. The
      *            function should return <code>Optional.empty()</code> if the column is not available.
+     * @param flowVariableToComputer a function that returns the computer for flow variable accessed by the expression.
+     *            The function should return <code>Optional.empty()</code> if the flow variable is not available.
      * @return the output type of the full expression
      * @throws ExpressionCompileException if the expression accesses a column that is not available
      */
     public static Computer evaluate(final Ast expression,
-        final Function<ColumnAccess, Optional<Computer>> columnToComputer) throws ExpressionCompileException {
-        return Evaluation.evaluate(expression, columnToComputer);
+        final Function<ColumnAccess, Optional<Computer>> columnToComputer,
+        final Function<FlowVarAccess, Optional<Computer>> flowVariableToComputer) throws ExpressionCompileException {
+        return Evaluation.evaluate(expression, columnToComputer, flowVariableToComputer);
     }
 
     /**

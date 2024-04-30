@@ -68,6 +68,7 @@ import static org.knime.core.expressions.Ast.UnaryOperator.NOT;
 import static org.knime.core.expressions.AstTestUtils.BOOL;
 import static org.knime.core.expressions.AstTestUtils.COL;
 import static org.knime.core.expressions.AstTestUtils.FLOAT;
+import static org.knime.core.expressions.AstTestUtils.FLOW;
 import static org.knime.core.expressions.AstTestUtils.FUN;
 import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
@@ -105,7 +106,7 @@ final class TypingTest {
     @EnumSource(TypingTestCase.class)
     void test(final TypingTestCase params) throws Exception {
         var ast = params.m_expression;
-        var outputType = Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS);
+        var outputType = Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS, TEST_FLOWVARIABLE_TO_TYPE);
         assertEquals(params.m_expectedType, outputType, "should fit output type");
         assertEquals(params.m_expectedType, Expressions.getInferredType(ast), "should fit output type");
         assertChildrenHaveTypes(ast);
@@ -125,6 +126,11 @@ final class TypingTest {
 
             INTEGER_COLUMN(COL("i"), INTEGER), //
             OPTIONAL_STRING_COLUMN(COL("s?"), OPT_STRING), //
+
+            // === Flow variable access
+
+            INTEGER_FLOW_VARIABLE(FLOW("i"), INTEGER), //
+            OPTIONAL_STRING_FLOW_VARIABLE(FLOW("s?"), OPT_STRING), //
 
             // === Arithmetic Operations
 
@@ -232,7 +238,8 @@ final class TypingTest {
     void testError(final TypingErrorTestCase params) throws Exception {
         var ast = params.m_expression;
         var typingError = assertThrows(ExpressionCompileException.class,
-            () -> Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS), "should fail type inferrence");
+            () -> Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS, TEST_FLOWVARIABLE_TO_TYPE),
+            "should fail type inferrence");
         var errorMessage = typingError.getMessage();
         for (var expectedSubstring : params.m_expectedErrorSubstrings) {
             assertTrue(errorMessage.contains(expectedSubstring),
@@ -295,7 +302,8 @@ final class TypingTest {
         var colName = "not_a_column";
         var ast = OP(INT(10), PLUS, COL(colName));
         var exception = assertThrows(ExpressionCompileException.class,
-            () -> Expressions.inferTypes(ast, TEST_COLUMN_TO_TYPE), "should fail type inferrence");
+            () -> Expressions.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FLOWVARIABLE_TO_TYPE),
+            "should fail type inferrence");
         var errors = exception.getErrors();
         assertEquals(1, errors.size(), "should be one error");
         assertEquals(ExpressionCompileError.CompileErrorType.MISSING_COLUMN, errors.get(0).type(),
@@ -305,7 +313,7 @@ final class TypingTest {
             "error message should contain column name '" + colName + "', was '" + errorMessage + "'");
     }
 
-    private static final Map<String, ValueType> TEST_COLUMN_TYPES = Map.of( //
+    private static final Map<String, ValueType> TEST_TYPES = Map.of( //
         "b", BOOLEAN, "b?", OPT_BOOLEAN, //
         "i", INTEGER, "i?", OPT_INTEGER, //
         "f", FLOAT, "f?", OPT_FLOAT, //
@@ -313,7 +321,10 @@ final class TypingTest {
     );
 
     private static final Function<ColumnAccess, Optional<ValueType>> TEST_COLUMN_TO_TYPE =
-        c -> Optional.ofNullable(TEST_COLUMN_TYPES.get(c.name()));
+        c -> Optional.ofNullable(TEST_TYPES.get(c.name()));
+
+    private static final Function<Ast.FlowVarAccess, Optional<ValueType>> TEST_FLOWVARIABLE_TO_TYPE =
+        c -> Optional.ofNullable(TEST_TYPES.get(c.name()));
 
     private static void assertChildrenHaveTypes(final Ast astWithTypes) {
         for (var child : astWithTypes.children()) {

@@ -93,9 +93,9 @@ final class Evaluation {
 
     private static final Computer MISSING_CONSTANT_COMPUTER = () -> true;
 
-    static Computer evaluate(final Ast expression, final Function<ColumnAccess, Optional<Computer>> columnToComputer)
-        throws ExpressionCompileException {
-        return expression.accept(new ComputerFactory(columnToComputer));
+    static Computer evaluate(final Ast expression, final Function<ColumnAccess, Optional<Computer>> columnToComputer,
+        final Function<FlowVarAccess, Optional<Computer>> flowVariableToComputer) throws ExpressionCompileException {
+        return expression.accept(new ComputerFactory(columnToComputer, flowVariableToComputer));
     }
 
     private static final class EvaluationImplementationError extends RuntimeException {
@@ -110,8 +110,12 @@ final class Evaluation {
 
         private final Function<ColumnAccess, Optional<Computer>> m_columnToComputer;
 
-        public ComputerFactory(final Function<ColumnAccess, Optional<Computer>> columnToComputer) {
+        private final Function<FlowVarAccess, Optional<Computer>> m_flowVariableToComputer;
+
+        public ComputerFactory(final Function<ColumnAccess, Optional<Computer>> columnToComputer,
+            final Function<FlowVarAccess, Optional<Computer>> flowVariableToComputer) {
             m_columnToComputer = columnToComputer;
+            m_flowVariableToComputer = flowVariableToComputer;
         }
 
         @Override
@@ -122,8 +126,8 @@ final class Evaluation {
 
         @Override
         public Computer visit(final FlowVarAccess node) throws ExpressionCompileException {
-            // TODO(AP-21865) implement flow variable access
-            throw new EvaluationImplementationError("flow variable access is not yet implemented");
+            return m_flowVariableToComputer.apply(node).orElseThrow(
+                () -> new ExpressionCompileException(ExpressionCompileError.missingControlFlowVariableError(node)));
         }
 
         @Override

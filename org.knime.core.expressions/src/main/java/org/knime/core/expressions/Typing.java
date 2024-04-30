@@ -90,8 +90,10 @@ final class Typing {
     }
 
     static ValueType inferTypes(final Ast root, final Function<ColumnAccess, Optional<ValueType>> columnType,
-        final Function<String, Optional<ExpressionFunction>> functions) throws ExpressionCompileException {
-        var outputType = Ast.putDataRecursive(root, TYPE_DATA_KEY, new TypingVisitor(columnType, functions));
+        final Function<String, Optional<ExpressionFunction>> functions,
+        final Function<FlowVarAccess, Optional<ValueType>> flowVariableTypeGetter) throws ExpressionCompileException {
+        var outputType =
+            Ast.putDataRecursive(root, TYPE_DATA_KEY, new TypingVisitor(columnType, functions, flowVariableTypeGetter));
         if (outputType instanceof ErrorValueType errorValueType) {
             throw new ExpressionCompileException(errorValueType.m_errors);
         }
@@ -120,12 +122,16 @@ final class Typing {
 
         private final Function<ColumnAccess, Optional<ValueType>> m_columnType;
 
+        private final Function<FlowVarAccess, Optional<ValueType>> m_flowVariableType;
+
         private final Function<String, Optional<ExpressionFunction>> m_functions;
 
         TypingVisitor(final Function<ColumnAccess, Optional<ValueType>> columnType,
-            final Function<String, Optional<ExpressionFunction>> functions) {
+            final Function<String, Optional<ExpressionFunction>> functions,
+            final Function<FlowVarAccess, Optional<ValueType>> getTypeOfFlowVariables) {
             m_columnType = columnType;
             m_functions = functions;
+            m_flowVariableType = getTypeOfFlowVariables;
         }
 
         @Override
@@ -160,8 +166,7 @@ final class Typing {
 
         @Override
         public ValueType visit(final FlowVarAccess node) {
-            // TODO(AP-21865) implement flow variable access
-            return ErrorValueType.typingError("flow variable access is not yet implemented", node);
+            return m_flowVariableType.apply(node).orElseGet(() -> ErrorValueType.missingFlowVariable(node));
         }
 
         @Override
@@ -325,6 +330,10 @@ final class Typing {
 
         static ErrorValueType missingColumn(final ColumnAccess node) {
             return new ErrorValueType(List.of(ExpressionCompileError.missingColumnError(node)));
+        }
+
+        static ErrorValueType missingFlowVariable(final FlowVarAccess node) {
+            return new ErrorValueType(List.of(ExpressionCompileError.missingControlFlowVariableError(node)));
         }
 
         static ErrorValueType combined(final List<ValueType> children) {

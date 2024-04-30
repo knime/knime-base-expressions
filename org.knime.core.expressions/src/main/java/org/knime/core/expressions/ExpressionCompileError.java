@@ -49,6 +49,7 @@
 package org.knime.core.expressions;
 
 import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.Ast.FlowVarAccess;
 
 /**
  * Represents an error that happens before running an expression on data (e.g. while parsing or running type inference).
@@ -88,8 +89,17 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
             CompileErrorType.MISSING_COLUMN, location);
     }
 
+    static ExpressionCompileError missingFlowVariableError(final String flowVariableName, final TextRange location) {
+        return new ExpressionCompileError("The flowVariable '" + flowVariableName + "' is not available",
+            CompileErrorType.MISSING_FLOW_VARIABLE, location);
+    }
+
     static ExpressionCompileError missingColumnError(final ColumnAccess node) {
         return missingColumnError(node.name(), Parser.getTextLocation(node));
+    }
+
+    static ExpressionCompileError missingControlFlowVariableError(final FlowVarAccess node) {
+        return missingFlowVariableError(node.name(), Parser.getTextLocation(node));
     }
 
     /** Types of compile errors */
@@ -102,7 +112,10 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
             TYPING("Typing error"),
 
             /** Indicates that the expression tries to access a column that does not exist */
-            MISSING_COLUMN("Missing column error");
+            MISSING_COLUMN("Missing column error"),
+
+            /** Indicates that the expression tries to access a column that does not exist */
+            MISSING_FLOW_VARIABLE("Missing flow variable error");
 
         private final String m_title;
 

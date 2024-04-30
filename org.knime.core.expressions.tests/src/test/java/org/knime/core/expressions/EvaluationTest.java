@@ -66,6 +66,7 @@ import static org.knime.core.expressions.Ast.UnaryOperator.NOT;
 import static org.knime.core.expressions.AstTestUtils.BOOL;
 import static org.knime.core.expressions.AstTestUtils.COL;
 import static org.knime.core.expressions.AstTestUtils.FLOAT;
+import static org.knime.core.expressions.AstTestUtils.FLOW;
 import static org.knime.core.expressions.AstTestUtils.FUN;
 import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
@@ -107,8 +108,10 @@ final class EvaluationTest {
     @EnumSource(ExecutionTest.class)
     void test(final ExecutionTest params) throws Exception {
         var ast = params.m_expression;
-        Typing.inferTypes(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::type)), TEST_FUNCTIONS);
-        var result = Evaluation.evaluate(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::computer)));
+        Typing.inferTypes(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::type)), TEST_FUNCTIONS,
+            FIND_TEST_FLOW_VARIABLE.andThen(c -> c.map(TestFlowVariable::type)));
+        var result = Evaluation.evaluate(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::computer)),
+            FIND_TEST_FLOW_VARIABLE.andThen(c -> c.map(TestFlowVariable::computer)));
         assertNotNull(result, "should output result");
         params.m_resultChecker.accept(result);
     }
@@ -138,11 +141,20 @@ final class EvaluationTest {
             CONSTANT_STRING_WITH_SPECIAL_CHARS(STR("Hello 世界"), "Hello 世界"), //
 
             // === Column Access
+
             COLUMN_BOOLEAN(COL("BOOLEAN"), true), //
             COLUMN_INTEGER(COL("INTEGER"), 100), //
             COLUMN_FLOAT(COL("FLOAT"), 10.5), //
             COLUMN_STRING(COL("STRING"), "column value"), //
             COLUMN_MISSING(COL("INTEGER_MISSING")), //
+
+            // === FlowVariable Access
+
+            FLOW_VARIABLE_BOOLEAN(FLOW("BOOLEAN"), true), //
+            FLOW_VARIABLE_INTEGER(FLOW("INTEGER"), 100), //
+            FLOW_VARIABLE_FLOAT(FLOW("FLOAT"), 10.5), //
+            FLOW_VARIABLE_STRING(FLOW("STRING"), "column value"), //
+            FLOW_VARIABLE_MISSING(FLOW("INTEGER_MISSING")), //
 
             // === MISSING Fallback operator
 
@@ -377,6 +389,10 @@ final class EvaluationTest {
     private static final Function<ColumnAccess, Optional<TestColumn>> FIND_TEST_COLUMN =
         colAccess -> Arrays.stream(TestColumn.values()).filter(t -> t.name().equals(colAccess.name())).findFirst();
 
+    private static final Function<Ast.FlowVarAccess, Optional<TestFlowVariable>> FIND_TEST_FLOW_VARIABLE =
+        flowVariableAccess -> Arrays.stream(TestFlowVariable.values())
+            .filter(t -> t.name().equals(flowVariableAccess.name())).findFirst();
+
     private static final BooleanSupplier THROWING_BOOL_SUPPLIER = () -> {
         throw new AssertionError("should not call compute on missing values");
     };
@@ -409,6 +425,35 @@ final class EvaluationTest {
         private final ValueType m_type;
 
         private TestColumn(final ValueType type, final Computer computer) {
+            m_type = type;
+            m_computer = computer;
+        }
+
+        Computer computer() {
+            return m_computer;
+        }
+
+        ValueType type() {
+            return m_type;
+        }
+    }
+
+    private static enum TestFlowVariable {
+            BOOLEAN(ValueType.OPT_BOOLEAN, BooleanComputer.of(() -> true, () -> false)), //
+            INTEGER(ValueType.OPT_INTEGER, IntegerComputer.of(() -> 100, () -> false)), //
+            FLOAT(ValueType.OPT_FLOAT, FloatComputer.of(() -> 10.5, () -> false)), //
+            STRING(ValueType.OPT_STRING, StringComputer.of(() -> "column value", () -> false)), //
+            BOOLEAN_MISSING(ValueType.OPT_BOOLEAN, BooleanComputer.of(THROWING_BOOL_SUPPLIER, () -> true)), //
+            INTEGER_MISSING(ValueType.OPT_INTEGER, IntegerComputer.of(THROWING_LONG_SUPPLIER, () -> true)), //
+            FLOAT_MISSING(ValueType.OPT_FLOAT, FloatComputer.of(THROWING_DOUBLE_SUPPLIER, () -> true)), //
+            STRING_MISSING(ValueType.OPT_STRING, StringComputer.of(THROWING_STRING_SUPPLIER, () -> true)), //
+        ;
+
+        private final Computer m_computer;
+
+        private final ValueType m_type;
+
+        private TestFlowVariable(final ValueType type, final Computer computer) {
             m_type = type;
             m_computer = computer;
         }
