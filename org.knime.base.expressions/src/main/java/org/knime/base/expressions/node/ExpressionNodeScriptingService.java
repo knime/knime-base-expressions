@@ -49,12 +49,14 @@
 package org.knime.base.expressions.node;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
+import org.knime.base.expressions.node.ExpressionNodeModel.NodeExpressionEvaluationContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
@@ -70,11 +72,6 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
-import org.knime.core.node.workflow.VariableType.BooleanType;
-import org.knime.core.node.workflow.VariableType.DoubleType;
-import org.knime.core.node.workflow.VariableType.IntType;
-import org.knime.core.node.workflow.VariableType.LongType;
-import org.knime.core.node.workflow.VariableType.StringType;
 import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.ScriptingService;
 
@@ -88,9 +85,6 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
     private static final int DIALOG_PREVIEW_NUM_ROWS = 10;
 
-    static final Set<VariableType<?>> SUPPORTED_FLOW_VARIABLE_TYPES =
-        Set.of(BooleanType.INSTANCE, DoubleType.INSTANCE, IntType.INSTANCE, LongType.INSTANCE, StringType.INSTANCE);
-
     /**
      * Cached function for mapping column access to output types for checking the expression types. Use
      * {@link #getColumnToTypeMapper()} to access this!
@@ -102,8 +96,14 @@ final class ExpressionNodeScriptingService extends ScriptingService {
      */
     private ReferenceTable m_inputTable;
 
+    private NodeExpressionEvaluationContext m_exprContext = new NodeExpressionEvaluationContext(
+        types -> getWorkflowControl().getFlowObjectStack().getAvailableFlowVariables(types));
+
     ExpressionNodeScriptingService() {
-        super(null, (flowVar) -> SUPPORTED_FLOW_VARIABLE_TYPES.contains(flowVar.getVariableType()));
+        super(null,
+            flowVar -> new HashSet<VariableType<?>>(
+                new HashSet<>(Arrays.asList(ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES)))
+                    .contains(flowVar.getVariableType()));
     }
 
     @Override
@@ -168,7 +168,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         public List<Diagnostic> getDiagnostics(final String expression) {
             try {
                 var ast = Expressions.parse(expression);
-                Expressions.inferTypes(ast, getColumnToTypeMapper());
+                Expressions.inferTypes(ast, getColumnToTypeMapper(), m_exprContext::flowVariableToType);
                 return List.of();
             } catch (ExpressionCompileException ex) {
                 return Diagnostic.fromException(ex);
@@ -177,13 +177,14 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
         public void runExpression(final String expression) {
             // Apply the expression on the input table using a ColumnarVirtualTable
+
             var inputTable = getInputTable();
             var numRows = (int)Math.min(DIALOG_PREVIEW_NUM_ROWS, inputTable.getBufferedTable().size());
             var expressionResult = ExpressionRunnerUtils.applyExpression( //
                 inputTable.getVirtualTable().slice(0, numRows), //
                 expression, //
-                "result" // column name is irrelevant
-            );
+                "result", // column name is irrelevant
+                m_exprContext);
 
             var result = new String[numRows];
             try (var expressionResultTable =

@@ -93,6 +93,13 @@ import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 @SuppressWarnings("restriction") // Expressions API is not yet public
 public final class ExpressionMapperFactory implements ColumnarMapperFactory {
 
+    public interface ExpressionEvaluationContext {
+        Optional<ValueType> flowVariableToType(Ast.FlowVarAccess flowVarAccess);
+
+        Optional<Computer> flowVariableToComputer(Ast.FlowVarAccess flowVarAccess);
+    }
+
+
     private final MapperFactory m_mapperFactory;
 
     private final int[] m_columnIndices;
@@ -100,7 +107,7 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
     private final String m_outputColumnName;
 
     public ExpressionMapperFactory(final String expression, final ColumnarValueSchema inputTableSchema,
-        final String outputColumnName) {
+        final String outputColumnName, final ExpressionEvaluationContext exprContext) {
         m_outputColumnName = outputColumnName;
 
         try {
@@ -113,7 +120,7 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
                     .map(s -> s.accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE)).findFirst();
             var ast = Expressions.parse(expression);
             Expressions.resolveColumnIndices(ast, colNameToIdx);
-            Expressions.inferTypes(ast, colNameToType);
+            Expressions.inferTypes(ast, colNameToType, exprContext::flowVariableToType);
 
             final var columns = Exec.RequiredColumns.of(ast);
             m_columnIndices = columns.columnIndices();
@@ -126,7 +133,8 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
                     return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
                 };
 
-            m_mapperFactory = Exec.createMapperFactory(ast, columnIndexToComputerFactory);
+            m_mapperFactory =
+                Exec.createMapperFactory(ast, columnIndexToComputerFactory, exprContext::flowVariableToComputer);
 
         } catch (ExpressionCompileException ex) {
             throw new IllegalArgumentException(ex);

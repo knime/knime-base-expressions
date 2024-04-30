@@ -50,11 +50,13 @@ package org.knime.base.expressions.node;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionMapperFactory;
+import org.knime.base.expressions.ExpressionMapperFactory.ExpressionEvaluationContext;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
@@ -63,6 +65,8 @@ import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Ast.FlowVarAccess;
+import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ValueType;
@@ -75,6 +79,8 @@ import org.knime.core.node.Node;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.VariableType;
 import org.knime.core.table.virtual.expression.Exec;
 
 /**
@@ -104,12 +110,20 @@ class ExpressionNodeModel extends NodeModel {
             .map(s -> s.accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE));
     }
 
+    static final VariableType<?>[] SUPPORTED_FLOW_VARIABLE_TYPES =
+        new VariableType<?>[]{VariableType.BooleanType.INSTANCE, VariableType.DoubleType.INSTANCE,
+            VariableType.LongType.INSTANCE, VariableType.IntType.INSTANCE, VariableType.StringType.INSTANCE};
+
+    private ExpressionEvaluationContext m_exprContext =
+        new NodeExpressionEvaluationContext(this::getAvailableInputFlowVariables);
+
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
         String input = m_settings.getScript();
         try {
             var ast = Expressions.parse(input);
-            var outputType = Expressions.inferTypes(ast, columnToTypesForTypeInference(inSpecs[0]));
+            var outputType = Expressions.inferTypes(ast, columnToTypesForTypeInference(inSpecs[0]),
+                m_exprContext::flowVariableToType);
             var outputDataSpec = Exec.valueTypeToDataSpec(outputType);
             var outputColumnSpec =
                 ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), "Expression Result");
@@ -130,7 +144,7 @@ class ExpressionNodeModel extends NodeModel {
         var inTable = inData[0];
         var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec);
         var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, m_settings.getScript(),
-            newColumnPosition.columnName(), exec);
+            newColumnPosition.columnName(), exec, m_exprContext);
         var output = ExpressionRunnerUtils.constructOutputTable(inRefTable.getVirtualTable(),
             expressionResult.getVirtualTable(), newColumnPosition);
 
@@ -171,4 +185,69 @@ class ExpressionNodeModel extends NodeModel {
     protected void reset() {
         // nothing to do
     }
+
+    static class NodeExpressionEvaluationContext implements ExpressionEvaluationContext {
+
+        private final Function<VariableType<?>[], Map<String, FlowVariable>> m_getFlowVariable;
+
+        public NodeExpressionEvaluationContext(
+            final Function<VariableType<?>[], Map<String, FlowVariable>> getFlowVariable) {
+            m_getFlowVariable = getFlowVariable;
+        }
+
+        @Override
+        public Optional<ValueType> flowVariableToType(final FlowVarAccess flowVariableAccess) {
+            return Optional
+                .ofNullable(m_getFlowVariable.apply(SUPPORTED_FLOW_VARIABLE_TYPES).get(flowVariableAccess.name())) //
+                .map(FlowVariable::getVariableType) //
+                .map(NodeExpressionEvaluationContext::mapVariableToValueType); //
+        }
+
+        @Override
+        public Optional<Computer> flowVariableToComputer(final FlowVarAccess flowVariableAccess) {
+            return Optional
+                .ofNullable(m_getFlowVariable.apply(SUPPORTED_FLOW_VARIABLE_TYPES).get(flowVariableAccess.name()))
+                .map(NodeExpressionEvaluationContext::computerForFlowVariable);
+
+        }
+
+        private static Computer computerForFlowVariable(final FlowVariable variable) {
+            var variableType = variable.getVariableType();
+
+            if (variableType == VariableType.BooleanType.INSTANCE) {
+                return Computer.BooleanComputer.of(() -> variable.getValue(VariableType.BooleanType.INSTANCE),
+                    () -> false);
+            } else if (variableType == VariableType.DoubleType.INSTANCE) {
+                return Computer.FloatComputer.of(() -> variable.getValue(VariableType.DoubleType.INSTANCE),
+                    () -> false);
+            } else if (variableType == VariableType.LongType.INSTANCE) {
+                return Computer.IntegerComputer.of(() -> variable.getValue(VariableType.LongType.INSTANCE),
+                    () -> false);
+            } else if (variableType == VariableType.IntType.INSTANCE) {
+                return Computer.IntegerComputer.of(() -> variable.getValue(VariableType.IntType.INSTANCE), () -> false);
+            } else if (variableType == VariableType.StringType.INSTANCE) {
+                return Computer.StringComputer.of(() -> variable.getValue(VariableType.StringType.INSTANCE),
+                    () -> false);
+            } else {
+                throw new IllegalArgumentException("Unsupported variable type: " + variableType);
+            }
+        }
+
+        private static ValueType mapVariableToValueType(final VariableType<?> variableType) {
+            if (variableType == VariableType.DoubleType.INSTANCE) {
+                return ValueType.FLOAT;
+            } else if (variableType == VariableType.BooleanType.INSTANCE) {
+                return ValueType.BOOLEAN;
+            } else if (variableType == VariableType.LongType.INSTANCE) {
+                return ValueType.INTEGER;
+            } else if (variableType == VariableType.IntType.INSTANCE) {
+                return ValueType.INTEGER;
+            } else if (variableType == VariableType.StringType.INSTANCE) {
+                return ValueType.STRING;
+            } else {
+                throw new IllegalArgumentException("Unsupported variable type: " + variableType);
+            }
+        }
+    }
+
 }

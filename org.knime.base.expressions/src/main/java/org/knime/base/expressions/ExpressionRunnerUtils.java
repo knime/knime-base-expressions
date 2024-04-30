@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import org.knime.base.expressions.ExpressionMapperFactory.ExpressionEvaluationContext;
 import org.knime.core.data.columnar.ColumnarTableBackend;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
@@ -178,10 +179,13 @@ public final class ExpressionRunnerUtils {
     /**
      * Virtually apply the expression to the given input table. The output table will contain the RowIDs of the input
      * table and the expression result.
+     *
+     * @param exprContext
      */
     public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final String expression,
-        final String outputColumnName) {
-        var expressionMapperFactory = new ExpressionMapperFactory(expression, input.getSchema(), outputColumnName);
+        final String outputColumnName, final ExpressionEvaluationContext exprContext) {
+        var expressionMapperFactory =
+            new ExpressionMapperFactory(expression, input.getSchema(), outputColumnName, exprContext);
         return input.selectColumns(0)
             .append(input.map(expressionMapperFactory, expressionMapperFactory.getInputColumnIndices()));
     }
@@ -190,10 +194,12 @@ public final class ExpressionRunnerUtils {
         final ReferenceTable refTable, //
         final String expression, //
         final String outputColumnName, //
-        final ExecutionContext exec //
+        final ExecutionContext exec, //
+        final ExpressionEvaluationContext exprContext //
     ) throws CanceledExecutionException, VirtualTableIncompatibleException {
         var numRows = refTable.getBufferedTable().size();
-        var expressionResultVirtual = applyExpression(refTable.getVirtualTable(), expression, outputColumnName);
+        var expressionResultVirtual =
+            applyExpression(refTable.getVirtualTable(), expression, outputColumnName, exprContext);
         return ColumnarVirtualTableMaterializer.materializer() //
             .sources(refTable.getSources()) //
             .materializeRowKey(false) //
