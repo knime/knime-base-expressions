@@ -4,6 +4,7 @@ import {
 } from "@knime/scripting-editor";
 import { editor as MonacoEditor, MarkerSeverity, Range } from "monaco-editor";
 import { watch } from "vue";
+import { useStore } from "./store";
 
 type Diagnostic = {
   message: string;
@@ -22,6 +23,8 @@ const DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY = {
   HINT: MarkerSeverity.Hint,
 };
 
+const store = useStore();
+
 export const registerExpressionDiagnostics = (
   editorState: UseCodeEditorReturn,
 ) => {
@@ -29,6 +32,12 @@ export const registerExpressionDiagnostics = (
     getScriptingService()
       .sendToService("getDiagnostics", [newText])
       .then((diagnostics: Diagnostic[]) => {
+        // Update the store
+        store.expressionValid = !diagnostics.some(
+          (d) => d.severity === "ERROR",
+        );
+
+        // Mark the diagnostics in the editor
         const markers = diagnostics.map((d) => ({
           ...Range.fromPositions(
             editorState.editorModel.getPositionAt(d.location.start),

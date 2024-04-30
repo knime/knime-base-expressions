@@ -24,8 +24,10 @@ const language = "knime-expression";
 const MIN_WIDTH_FUNCTION_CATALOG = 280;
 import MultiEditorPane from "./MultiEditorPane.vue";
 import type { FunctionCatalogData } from "./functionCatalogTypes";
+import { useStore } from "@/store";
 
 const scriptingService = getScriptingService();
+const store = useStore();
 
 const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
 const columnSectorState = ref<ColumnSelectorState>();
@@ -93,9 +95,11 @@ onMounted(() => {
 
 const runExpressions = () => {
   // TODO make this work with multiple editors
-  scriptingService.sendToService("runExpression", [
-    multiEditorComponentRef.value?.getEditorState().text.value,
-  ]);
+  if (store.expressionValid) {
+    scriptingService.sendToService("runExpression", [
+      multiEditorComponentRef.value?.getEditorState().text.value,
+    ]);
+  }
 };
 
 getScriptingService().registerSettingsGetterForApply(() => {
@@ -150,7 +154,7 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
         <Button
           primary
           compact
-          :disabled="!inputsAvailable"
+          :disabled="!inputsAvailable || !store.expressionValid"
           @click="runExpressions"
           ><PlayIcon /> Run</Button
         >
