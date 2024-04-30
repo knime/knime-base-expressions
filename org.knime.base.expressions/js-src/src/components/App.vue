@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import {
-  consoleHandler,
-  getScriptingService,
-  ScriptingEditor,
-} from "@knime/scripting-editor";
+import { consoleHandler, ScriptingEditor } from "@knime/scripting-editor";
+import { getExpressionScriptingService } from "@/expressionScriptingService";
 import Button from "webapps-common/ui/components/Button.vue";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import { onMounted, ref } from "vue";
@@ -28,11 +25,17 @@ const language = "knime-expression";
 
 const MIN_WIDTH_FUNCTION_CATALOG = 280;
 
-const scriptingService = getScriptingService();
+const scriptingService = getExpressionScriptingService();
 const store = useStore();
 
 const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
-const columnSectorState = ref<ColumnSelectorState>();
+
+// These should be immediately overridden by the scripting service
+const columnSectorState = ref<ColumnSelectorState>({
+  outputMode: "APPEND",
+  createColumn: "",
+  replaceColumn: "",
+});
 
 const multiEditorComponentRef = ref<MultiEditorPaneExposes | null>(null);
 
@@ -59,13 +62,12 @@ onMounted(() => {
     }
   });
 
-  const functionCatalogPromise: Promise<FunctionCatalogData> =
-    getScriptingService()
-      .sendToService("getFunctionCatalog")
-      .then((data) => {
-        functionCatalogData.value = data;
-        return data;
-      });
+  const functionCatalogPromise: Promise<FunctionCatalogData> = scriptingService
+    .sendToService("getFunctionCatalog")
+    .then((data) => {
+      functionCatalogData.value = data;
+      return data;
+    });
 
   Promise.all([
     scriptingService.getInputObjects(),
@@ -92,6 +94,12 @@ onMounted(() => {
     multiEditorComponentRef.value
       ?.getEditorState()
       .setInitialText(settings.script);
+
+    columnSectorState.value = {
+      outputMode: settings.columnOutputMode,
+      createColumn: settings.createdColumn,
+      replaceColumn: settings.replacedColumn,
+    };
   });
 });
 
@@ -104,9 +112,12 @@ const runExpressions = () => {
   }
 };
 
-getScriptingService().registerSettingsGetterForApply(() => {
+scriptingService.registerSettingsGetterForApply(() => {
   return {
     script: multiEditorComponentRef.value?.getEditorState().text.value ?? "",
+    columnOutputMode: columnSectorState.value?.outputMode,
+    createdColumn: columnSectorState.value?.createColumn,
+    replacedColumn: columnSectorState.value?.replaceColumn,
   };
 });
 
@@ -156,7 +167,6 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
       <template #code-editor-controls>
         <ColumnOutputSelector
           v-model="columnSectorState"
-          default-output-mode="create"
           :allowed-replacement-columns="allowedReplacementColumns"
         />
 

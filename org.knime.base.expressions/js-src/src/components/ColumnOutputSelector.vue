@@ -1,54 +1,79 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { watch, computed } from "vue";
 import ValueSwitch from "../../webapps-common/ui/components/forms/ValueSwitch.vue";
 import Dropdown from "../../webapps-common/ui/components/forms/Dropdown.vue";
 import InputField from "webapps-common/ui/components/forms/InputField.vue";
 import { useShouldFocusBePainted } from "@knime/scripting-editor";
-
-type OutputMode = "create" | "replace";
-type Id = string | number;
+import { type OutputInsertionMode } from "@/expressionScriptingService";
 
 export type ColumnSelectorState = {
-  outputMode: OutputMode;
-  column: Id;
+  outputMode: OutputInsertionMode;
+  createColumn: string;
+  replaceColumn: string;
 };
 
 export type AllowedDropDownValue = {
-  id: Id;
+  id: string;
   text: string;
 };
 
-const props = defineProps<{
-  defaultOutputMode: OutputMode;
+type PropType = {
   allowedReplacementColumns: AllowedDropDownValue[];
-}>();
-
-const outputMode = ref<OutputMode>(props.defaultOutputMode);
-const newColumn = ref("Output column");
-
-// Set default like so to avoid explicit use of undefined.
-const replacementColumn = ref<Id | undefined>(
-  props.allowedReplacementColumns[0]?.id,
-);
-
-const allowedOperationModes = [
-  { id: "create", text: "Append" },
-  { id: "replace", text: "Replace" },
-];
-
-const emit = defineEmits(["update:modelValue"]);
-
-const update = () => {
-  emit("update:modelValue", {
-    outputMode: outputMode.value,
-    column:
-      outputMode.value === "create" ? newColumn.value : replacementColumn.value,
-  });
+  modelValue?: ColumnSelectorState;
 };
 
-onMounted(() => {
-  update();
+const props = withDefaults(defineProps<PropType>(), {
+  modelValue: () =>
+    ({
+      outputMode: "APPEND",
+      replaceColumn: "",
+      createColumn: "New column",
+    }) satisfies ColumnSelectorState,
 });
+
+const emit = defineEmits<{ "update:modelValue": [ColumnSelectorState] }>();
+
+const localModelValue = computed({
+  get: () => props.modelValue,
+  set: (newModelValue: ColumnSelectorState) => {
+    emit("update:modelValue", newModelValue);
+  },
+});
+
+const outputMode = computed({
+  get: () => localModelValue.value.outputMode,
+  set: (newValue: OutputInsertionMode) => {
+    localModelValue.value = {
+      ...localModelValue.value,
+      outputMode: newValue,
+    };
+  },
+});
+
+const newColumn = computed({
+  get: () => localModelValue.value.createColumn,
+  set: (newValue: string) => {
+    localModelValue.value = {
+      ...localModelValue.value,
+      createColumn: newValue,
+    };
+  },
+});
+
+const replacementColumn = computed({
+  get: () => localModelValue.value.replaceColumn,
+  set: (newValue: string) => {
+    localModelValue.value = {
+      ...localModelValue.value,
+      replaceColumn: newValue,
+    };
+  },
+});
+
+const allowedOperationModes = [
+  { id: "APPEND", text: "Append" },
+  { id: "REPLACE_EXISTING", text: "Replace" },
+];
 
 const paintFocus = useShouldFocusBePainted();
 
@@ -62,6 +87,14 @@ watch(
       newValue.find((value) => value.id === replacementColumn.value)?.id ??
       newValue[0]?.id;
   },
+  { deep: true },
+);
+
+// If the v-model changes via props, we also have to update
+watch(
+  () => props.modelValue,
+  (newValue) => (localModelValue.value = newValue),
+  { deep: true },
 );
 </script>
 
@@ -75,17 +108,15 @@ watch(
         :disabled="props.allowedReplacementColumns.length === 0"
         class="switch-button"
         :class="{ 'focus-painted': paintFocus }"
-        @change="update"
       />
     </div>
-    <div v-if="outputMode === 'create'" class="output-selector-child right">
+    <div v-if="outputMode === 'APPEND'" class="output-selector-child right">
       <InputField
         id="input-field-to-add-new-column"
         v-model="newColumn"
         type="text"
         class="column-input"
         placeholder="New column..."
-        @input="update"
       />
     </div>
     <div v-else class="output-selector-child right">
@@ -96,7 +127,6 @@ watch(
         ariaLabel="column selection"
         :possible-values="allowedReplacementColumns"
         class="column-input"
-        @update:model-value="update"
       />
     </div>
   </div>

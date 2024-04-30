@@ -1,5 +1,18 @@
 import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
 import { getScriptingService } from "@knime/scripting-editor";
+import {
+  getExpressionScriptingService,
+  type ExpressionNodeSettings,
+} from "@/expressionScriptingService";
+
+const log = (message: any, ...args: any[]) => {
+  if (typeof consola === "undefined") {
+    // eslint-disable-next-line no-console
+    console.log(message, ...args);
+  } else {
+    consola.log(message, ...args);
+  }
+};
 
 if (import.meta.env.MODE === "development.browser") {
   const FUNCTION_CATALOG = {
@@ -132,15 +145,34 @@ if (import.meta.env.MODE === "development.browser") {
       },
     ],
   };
+
   const scriptingService = createScriptingServiceMock({
     sendToServiceMockResponses: {
-      runExpression: (options) => {
+      runExpression: (options: any[] | undefined) => {
         consola.log("runExpression", options);
         return Promise.resolve();
       },
       getFunctionCatalog: () => Promise.resolve(FUNCTION_CATALOG),
+      getDiagnostics: () => Promise.resolve([]),
     },
   });
 
   Object.assign(getScriptingService(), scriptingService);
+  Object.assign(getExpressionScriptingService(), scriptingService, {
+    getInitialSettings: () => {
+      const ret = Promise.resolve({
+        script: "mocked default script",
+        columnOutputMode: "APPEND",
+        createdColumn: "mocked output col",
+        replacedColumn: INPUT_OBJECTS[0].subItems[1].name,
+      } satisfies ExpressionNodeSettings);
+
+      log("Called expressionScriptingService.getInitialSettings ->", ret);
+
+      return ret;
+    },
+    registerSettingsGetterForApply: () => {
+      log("Called expressionScriptingService.registerSettingsGetterForApply");
+    },
+  });
 }

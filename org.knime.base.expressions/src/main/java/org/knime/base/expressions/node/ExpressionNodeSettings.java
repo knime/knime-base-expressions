@@ -48,12 +48,13 @@
  */
 package org.knime.base.expressions.node;
 
+import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
+import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.scripting.editor.ScriptingNodeSettings;
-import org.knime.scripting.editor.ScriptingNodeSettingsService;
 
 /**
  * Settings of the Expression node.
@@ -63,14 +64,37 @@ import org.knime.scripting.editor.ScriptingNodeSettingsService;
 @SuppressWarnings("restriction") // SettingsType is not yet public API
 final class ExpressionNodeSettings extends ScriptingNodeSettings {
 
-    private static final String DEFAULT_SCRIPT = "myexpression";
+    public static final String DEFAULT_SCRIPT = "myexpression";
+
+    public static final String DEFAULT_CREATED_COLUMN = "New Column";
+
+    public static final String DEFAULT_REPLACED_COLUMN = "";
+
+    public static final ColumnInsertionMode DEFAULT_OUTPUT_MODE = ColumnInsertionMode.APPEND;
+
+    public static final String CFG_KEY_CREATED_COLUMN = "createdColumn";
+
+    public static final String CFG_KEY_REPLACED_COLUMN = "replacedColumn";
+
+    public static final String CFG_KEY_OUTPUT_MODE = "columnOutputMode";
+
+    private ColumnInsertionMode m_outputMode;
+
+    private String m_createdColumn;
+
+    private String m_replacedColumn;
 
     ExpressionNodeSettings() {
-        this(DEFAULT_SCRIPT);
+        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, DEFAULT_REPLACED_COLUMN);
     }
 
-    ExpressionNodeSettings(final String script) {
+    ExpressionNodeSettings(final String script, final ColumnInsertionMode outputMode, final String createdColumn,
+        final String replacedColumn) {
         super(script, SettingsType.MODEL);
+
+        this.m_outputMode = outputMode;
+        this.m_createdColumn = createdColumn;
+        this.m_replacedColumn = replacedColumn;
     }
 
     static void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -78,7 +102,41 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
         new ExpressionNodeSettings().loadViewSettings(settings);
     }
 
+    @Override
+    public void loadModelSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+        super.loadModelSettings(settings);
+
+        m_outputMode = ColumnInsertionMode.valueOf(settings.getString(CFG_KEY_OUTPUT_MODE));
+        m_createdColumn = settings.getString(CFG_KEY_CREATED_COLUMN);
+        m_replacedColumn = settings.getString(CFG_KEY_REPLACED_COLUMN);
+    }
+
+    public ColumnInsertionMode getColumnInsertionMode() {
+        return m_outputMode;
+    }
+
+    public String getCreatedColumn() {
+        return m_createdColumn;
+    }
+
+    public String getReplacedColumn() {
+        return m_replacedColumn;
+    }
+
+    public String getActiveOutputColumn() {
+        return m_outputMode == ColumnInsertionMode.APPEND ? m_createdColumn : m_replacedColumn;
+    }
+
+    @Override
+    public void saveModelSettingsTo(final NodeSettingsWO settings) {
+        super.saveModelSettingsTo(settings);
+
+        settings.addString(CFG_KEY_OUTPUT_MODE, m_outputMode.name());
+        settings.addString(CFG_KEY_CREATED_COLUMN, m_createdColumn);
+        settings.addString(CFG_KEY_REPLACED_COLUMN, m_replacedColumn);
+    }
+
     static NodeSettingsService createNodeSettingsService() {
-        return new ScriptingNodeSettingsService(SettingsType.MODEL);
+        return new ExpressionNodeSettingsService();
     }
 }

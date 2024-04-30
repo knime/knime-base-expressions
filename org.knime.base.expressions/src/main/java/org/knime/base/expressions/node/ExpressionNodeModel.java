@@ -58,6 +58,7 @@ import java.util.function.Function;
 import org.knime.base.expressions.ExpressionMapperFactory;
 import org.knime.base.expressions.ExpressionMapperFactory.ExpressionEvaluationContext;
 import org.knime.base.expressions.ExpressionRunnerUtils;
+import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
@@ -120,15 +121,23 @@ class ExpressionNodeModel extends NodeModel {
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
         String input = m_settings.getScript();
+
         try {
             var ast = Expressions.parse(input);
             var outputType = Expressions.inferTypes(ast, columnToTypesForTypeInference(inSpecs[0]),
                 m_exprContext::flowVariableToType);
             var outputDataSpec = Exec.valueTypeToDataSpec(outputType);
-            var outputColumnSpec =
-                ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), "Expression Result");
+            var outputColumnSpec = ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(),
+                m_settings.getActiveOutputColumn());
 
-            return new DataTableSpec[]{new DataTableSpecCreator(inSpecs[0]).addColumns(outputColumnSpec).createSpec()};
+            if (m_settings.getColumnInsertionMode() == ColumnInsertionMode.REPLACE_EXISTING) {
+                return new DataTableSpec[]{new DataTableSpecCreator(inSpecs[0])
+                    .replaceColumn(inSpecs[0].findColumnIndex(m_settings.getActiveOutputColumn()), outputColumnSpec)
+                    .createSpec()};
+            } else {
+                return new DataTableSpec[]{
+                    new DataTableSpecCreator(inSpecs[0]).addColumns(outputColumnSpec).createSpec()};
+            }
         } catch (final ExpressionCompileException e) {
             throw new InvalidSettingsException(e.getMessage(), e);
         }
@@ -138,8 +147,8 @@ class ExpressionNodeModel extends NodeModel {
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws Exception {
         // TODO repace by settings
-        var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(
-            ExpressionRunnerUtils.ColumnInsertionMode.APPEND, "Expression Result");
+        var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(m_settings.getColumnInsertionMode(),
+            m_settings.getActiveOutputColumn());
 
         var inTable = inData[0];
         var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec);

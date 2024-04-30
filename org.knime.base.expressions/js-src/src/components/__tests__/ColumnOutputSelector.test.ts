@@ -1,12 +1,12 @@
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import ColumnOutputSelector from "../ColumnOutputSelector.vue";
+import ColumnOutputSelector, {
+  type ColumnSelectorState,
+} from "../ColumnOutputSelector.vue";
+import type { OutputInsertionMode } from "@/expressionScriptingService";
 
 describe("ColumnOutputSelector", () => {
   enableAutoUnmount(afterEach);
-
-  const textFieldId = "input-field-to-add-new-column";
-  const dropdownMenuId = "dropdown-box-to-select-column";
 
   const columnsToReplace = [
     { id: "a", text: "A" },
@@ -15,11 +15,15 @@ describe("ColumnOutputSelector", () => {
     { id: "d", text: "D" },
   ];
 
-  const doMount = (defaultOutputMode: "create" | "replace" = "create") => {
+  const doMount = (outputMode: OutputInsertionMode = "APPEND") => {
     const wrapper = mount(ColumnOutputSelector, {
       props: {
         allowedReplacementColumns: columnsToReplace,
-        defaultOutputMode,
+        modelValue: {
+          outputMode,
+          createColumn: "test column",
+          replaceColumn: "a",
+        },
       },
       attachTo: "body", // needed for label clicking to work
     });
@@ -31,21 +35,21 @@ describe("ColumnOutputSelector", () => {
     vi.restoreAllMocks();
   });
 
-  it("checks that the default selected behaviour type is respected", () => {
-    const wrapperCreate = doMount("create");
+  it("checks that the v-model input value is respected", () => {
+    const wrapperCreate = doMount("APPEND");
     expect(
       wrapperCreate.findComponent({ name: "ValueSwitch" }).props().modelValue,
-    ).equals("create");
+    ).equals("APPEND");
     wrapperCreate.unmount();
 
-    const wrapperReplace = doMount("replace");
+    const wrapperReplace = doMount("REPLACE_EXISTING");
     expect(
       wrapperReplace.findComponent({ name: "ValueSwitch" }).props().modelValue,
-    ).equals("replace");
+    ).equals("REPLACE_EXISTING");
     wrapperReplace.unmount();
   });
 
-  it("checks that clicking the ValueSwitch displays the right input field", async () => {
+  it("checks that clicking the ValueSwitch fires the right event", async () => {
     const wrapper = doMount();
 
     const leftButton = wrapper.find(
@@ -56,38 +60,32 @@ describe("ColumnOutputSelector", () => {
     );
 
     await leftButton.trigger("click");
-    expect(wrapper.find(`#${textFieldId}`).exists()).toBeTruthy();
-    expect(wrapper.find(`#${dropdownMenuId}`).exists()).toBeFalsy();
+    expect(wrapper.props().modelValue?.outputMode).equals("APPEND");
 
     await rightButton.trigger("click");
-    expect(wrapper.find(`#${textFieldId}`).exists()).toBeFalsy();
-    expect(wrapper.find(`#${dropdownMenuId}`).exists()).toBeTruthy();
+    expect(wrapper.emitted("update:modelValue")).toHaveLength(1);
+    expect(
+      (wrapper.emitted("update:modelValue")?.[0][0] as ColumnSelectorState)
+        ?.outputMode,
+    ).equals("REPLACE_EXISTING");
+    expect(
+      (wrapper.emitted("update:modelValue")?.[0][0] as ColumnSelectorState)
+        ?.replaceColumn,
+    ).equals("a");
 
     await leftButton.trigger("click");
-    expect(wrapper.find(`#${textFieldId}`).exists()).toBeTruthy();
-    expect(wrapper.find(`#${dropdownMenuId}`).exists()).toBeFalsy();
+    expect(wrapper.emitted("update:modelValue")).toHaveLength(2);
+    expect(
+      (wrapper.emitted("update:modelValue")?.[1][0] as ColumnSelectorState)
+        ?.outputMode,
+    ).equals("APPEND");
+    expect(
+      (wrapper.emitted("update:modelValue")?.[1][0] as ColumnSelectorState)
+        ?.createColumn,
+    ).equals("test column");
 
-    // Might as well check that nothing goes wrong when clicking the same button twice
+    // Check that nothing fires when clicking the same button twice
     await leftButton.trigger("click");
-    expect(wrapper.find(`#${textFieldId}`).exists()).toBeTruthy();
-    expect(wrapper.find(`#${dropdownMenuId}`).exists()).toBeFalsy();
-  });
-
-  it("checks that the dropdown menu drops down on click (then collapses on a second click)", async () => {
-    const wrapper = doMount("replace");
-
-    expect(wrapper.find(`#${dropdownMenuId} > ul`).isVisible()).toBeFalsy();
-    await wrapper.find(`#button-${dropdownMenuId}`).trigger("click");
-    expect(wrapper.find(`#${dropdownMenuId} > ul`).isVisible()).toBeTruthy();
-    await wrapper.find(`#button-${dropdownMenuId}`).trigger("click");
-    expect(wrapper.find(`#${dropdownMenuId} > ul`).isVisible()).toBeFalsy();
-  });
-
-  it("makes sure all the options we passed in end up in the dropdown", () => {
-    const wrapper = doMount("replace");
-
-    wrapper.findAll(`#${dropdownMenuId} > ul > li`).forEach((e, i) => {
-      expect(e.text()).equals(columnsToReplace[i].text);
-    });
+    expect(wrapper.emitted("update:modelValue")).toHaveLength(2);
   });
 });
