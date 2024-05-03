@@ -54,9 +54,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.knime.base.expressions.node.ExpressionNodeModel.ColumnInsertionMode;
-import org.knime.base.expressions.node.ExpressionNodeModel.NewColumnPosition;
+import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
+import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.container.filter.TableFilter;
 import org.knime.core.data.v2.RowRead;
 import org.knime.core.expressions.Ast.ColumnAccess;
@@ -66,6 +67,8 @@ import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.workflow.NativeNodeContainer;
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableType.BooleanType;
 import org.knime.core.node.workflow.VariableType.DoubleType;
@@ -76,7 +79,6 @@ import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
- *
  * {@link ScriptingService} implementation for the Expression node.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
@@ -95,6 +97,11 @@ final class ExpressionNodeScriptingService extends ScriptingService {
      */
     private Function<ColumnAccess, Optional<ValueType>> m_columnToType;
 
+    /**
+     * Cached input table for executing the expression.
+     */
+    private ReferenceTable m_inputTable;
+
     ExpressionNodeScriptingService() {
         super(null, (flowVar) -> SUPPORTED_FLOW_VARIABLE_TYPES.contains(flowVar.getVariableType()));
     }
@@ -107,14 +114,28 @@ final class ExpressionNodeScriptingService extends ScriptingService {
     @Override
     public void onDeactivate() {
         m_columnToType = null;
+        m_inputTable = null;
     }
 
-    public synchronized Function<ColumnAccess, Optional<ValueType>> getColumnToTypeMapper() {
+    synchronized Function<ColumnAccess, Optional<ValueType>> getColumnToTypeMapper() {
         if (m_columnToType == null) {
             var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
             m_columnToType = ExpressionNodeModel.columnToTypesForTypeInference(spec);
         }
         return m_columnToType;
+    }
+
+    synchronized ReferenceTable getInputTable() {
+        if (m_inputTable == null) {
+            var inTable = (BufferedDataTable)getWorkflowControl().getInputData()[0];
+            if (inTable == null) {
+                throw new IllegalStateException("Input table not available");
+            }
+
+            var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
+            m_inputTable = ExpressionRunnerUtils.createReferenceTable(inTable, nodeContainer.createExecutionContext());
+        }
+        return m_inputTable;
     }
 
     public final class ExpressionNodeRpcService extends RpcService {
@@ -155,15 +176,18 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         }
 
         public void runExpression(final String expression) {
-            var inTable = (BufferedDataTable)getWorkflowControl().getInputData()[0];
-            if (inTable == null) {
-                throw new IllegalStateException("Input table not available");
-            }
+            // Apply the expression on the input table using a ColumnarVirtualTable
+            var inputTable = getInputTable();
+            var numRows = (int)Math.min(DIALOG_PREVIEW_NUM_ROWS, inputTable.getBufferedTable().size());
+            var expressionResult = ExpressionRunnerUtils.applyExpression( //
+                inputTable.getVirtualTable().slice(0, numRows), //
+                expression, //
+                "result" // column name is irrelevant
+            );
 
-            var numRows = (int)Math.min(DIALOG_PREVIEW_NUM_ROWS, inTable.size());
             var result = new String[numRows];
-            try (var expressionResultTable = ExpressionNodeModel.applyExpression(inTable, expression,
-                new NewColumnPosition(ColumnInsertionMode.APPEND, "result"), () -> 1)) {
+            try (var expressionResultTable =
+                new VirtualTableExtensionTable(new ReferenceTable[]{inputTable}, expressionResult, numRows, 0)) {
                 try (var cursor = expressionResultTable.cursor(TableFilter.filterRangeOfRows(0, numRows))) {
                     var resultIdx = expressionResultTable.getDataTableSpec().getNumColumns() - 1;
                     for (var i = 0; i < numRows && cursor.canForward(); i++) {

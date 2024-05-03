@@ -50,24 +50,16 @@ package org.knime.base.expressions.node;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.IntSupplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
+import org.knime.base.expressions.ExpressionMapperFactory;
+import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
-import org.knime.core.data.columnar.ColumnarTableBackend;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
-import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
-import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
-import org.knime.core.data.columnar.table.virtual.ExpressionMapperFactory;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
-import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.expressions.Ast;
@@ -79,10 +71,10 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.Node;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.table.virtual.expression.Exec;
 
 /**
@@ -131,97 +123,21 @@ class ExpressionNodeModel extends NodeModel {
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws Exception {
+        // TODO repace by settings
+        var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(
+            ExpressionRunnerUtils.ColumnInsertionMode.APPEND, "Expression Result");
 
-        var dataRepo = NodeContext.getContext().getWorkflowManager().getWorkflowDataRepository();
+        var inTable = inData[0];
+        var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec);
+        var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, m_settings.getScript(),
+            newColumnPosition.columnName(), exec);
+        var output = ExpressionRunnerUtils.constructOutputTable(inRefTable.getVirtualTable(),
+            expressionResult.getVirtualTable(), newColumnPosition);
 
-        try (var expressionResultTable = applyExpression(inData[0], m_settings.getScript(),
-            new NewColumnPosition(ColumnInsertionMode.APPEND, "Expression Result"), dataRepo::generateNewID)) {
-            return new BufferedDataTable[]{expressionResultTable.create(exec)};
-        }
-    }
-
-    /**
-     * What should happen with new columns, whether they're appended at the end or replace an existing column.
-     *
-     * @since 5.3
-     */
-    enum ColumnInsertionMode {
-            APPEND, REPLACE_EXISTING
-    }
-
-    /**
-     * Specifies where and with which name a new column should be added to a table
-     *
-     * @param mode The {@link ColumnInsertionMode}
-     * @param columnName The name of the new column (also of the column to replace if that mode is selected)
-     *
-     * @since 5.3
-     */
-    record NewColumnPosition(ColumnInsertionMode mode, String columnName) {
-    }
-
-    /**
-     * TODO: move this function to {@link ColumnarTableBackend} and make it public API by adding it in the
-     * InternalTableAPI and ExecutionContext.
-     *
-     * Creates a table by executing the provided expression on the given table, adding or replacing a new column with
-     * the expression result.
-     *
-     * WARNING: this only works with the columnar backend at the moment!
-     *
-     * @param table The table to apply the expression on
-     * @param expression The expression to evaluate
-     * @param columnPosition Where to put the column with the expression results
-     * @param tableIDSupplier provides IDs for created ContainerTables
-     * @return The table with a newly computed column added at the specified position
-     * @since 5.3
-     * @noreference This method is not intended to be referenced by clients.
-     */
-    static VirtualTableExtensionTable applyExpression(final BufferedDataTable table, final String expression,
-        final NewColumnPosition columnPosition, final IntSupplier tableIDSupplier) {
-        ReferenceTable refTable;
-        try {
-            refTable = ReferenceTables.createReferenceTable(UUID.randomUUID(), table);
-        } catch (VirtualTableIncompatibleException ex) {
-            throw new IllegalStateException(
-                "The provided table cannot be used as reference table. Please use the columnar backend.", ex);
-        }
-        var inColViTa = refTable.getVirtualTable();
-
-        ColumnarVirtualTable outColViTa = inColViTa.map(expression, columnPosition.columnName());
-        if (columnPosition.mode() == ColumnInsertionMode.APPEND) {
-            outColViTa = inColViTa.append(outColViTa);
-        } else {
-            // TODO: Should we add a "replace" method to "ColumnarVirtualTable"?
-            // FIXME: untested
-            var matchingColumnIndices = table.getDataTableSpec().columnsToIndices(columnPosition.columnName());
-            if (matchingColumnIndices.length == 0) {
-                throw new IllegalStateException(
-                    "Cannot replace column with name '" + columnPosition.columnName() + "', no such column available.");
-            }
-            int replacedColIdx = matchingColumnIndices[0];
-            // +1 for RowID
-            List<Integer> allColumnIndices =
-                IntStream.range(0, table.getDataTableSpec().getNumColumns() + 1).boxed().collect(Collectors.toList());
-
-            // keep all but replaced, append new column at the end
-            List<Integer> columnIndicesWithoutOldColumn = new ArrayList<>(allColumnIndices);
-            columnIndicesWithoutOldColumn.remove(replacedColIdx + 1); // +1 to skip RowID
-
-            outColViTa = inColViTa.selectColumns(columnIndicesWithoutOldColumn.stream().mapToInt(i -> i).toArray())
-                .append(outColViTa);
-
-            // move appended (=last) column to the position of the column to replace
-            // +1 to skip RowID
-            List<Integer> columnIndicesWithNewColumnAtPositionOfOld = new ArrayList<>(allColumnIndices);
-            columnIndicesWithNewColumnAtPositionOfOld.add(replacedColIdx + 1, allColumnIndices.size());
-
-            outColViTa =
-                outColViTa.selectColumns(columnIndicesWithNewColumnAtPositionOfOld.stream().mapToInt(i -> i).toArray());
-        }
-
-        return new VirtualTableExtensionTable(new ReferenceTable[]{refTable}, outColViTa, table.size(),
-            tableIDSupplier.getAsInt());
+        @SuppressWarnings("resource") // #close clears the table but we still want to keep the data for the output
+        var outputExtensionTable = new VirtualTableExtensionTable(new ReferenceTable[]{inRefTable, expressionResult},
+            output, inTable.size(), Node.invokeGetDataRepository(exec).generateNewID());
+        return new BufferedDataTable[]{outputExtensionTable.create(exec)};
     }
 
     @Override
