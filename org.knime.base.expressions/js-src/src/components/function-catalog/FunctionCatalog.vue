@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, reactive, type ComponentPublicInstance } from "vue";
 import SearchInput from "../../../webapps-common/ui/components/forms/SearchInput.vue";
 import NextIcon from "../../../webapps-common/ui/assets/img/icons/arrow-next.svg";
-
 import { useElementBounding } from "@vueuse/core";
 import { mapFunctionCatalogData } from "@/components/function-catalog/mapFunctionCatalogData";
 import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
@@ -47,7 +46,6 @@ const categories = ref(
 
 const removeGhostsRef = ref<() => void>(() => {});
 
-// We only support dragging one function
 const onDragStart = (e: DragEvent, f: FunctionData) => {
   const { removeGhosts } = createDragGhosts({
     badgeCount: null, // don't show a badge at all
@@ -90,8 +88,41 @@ const isSlimMode = computed(
 
 const selectedEntry = ref<null | SelectableItem>(null);
 
+const functionAndCategoryElementRefs = reactive<{ [key: string]: HTMLElement }>(
+  {},
+);
+
+const createElementName = (type: "function" | "category", name: string) =>
+  `ref-${type}-${name}`;
+
+// You can pass a function to v-bind:ref and let it store the element in a
+// custom way. We'll use this to keep track of all of our function and category
+// headers by storing them by their type+name in
+// `functionAndCategoryElementRefs`
+const createElementReference = (
+  type: "function" | "category",
+  name: string,
+) => {
+  return (el: Element | ComponentPublicInstance | null) => {
+    functionAndCategoryElementRefs[createElementName(type, name)] =
+      el as HTMLElement;
+  };
+};
+
 const selectEntry = (item: SelectableItem | null) => {
   selectedEntry.value = item;
+
+  if (item?.type) {
+    const refName = createElementName(
+      item.type,
+      item.type === "category" ? item.name : item.functionData.name,
+    );
+
+    functionAndCategoryElementRefs[refName].scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }
 };
 
 const toggleCategoryExpansion = (categoryName: string) => {
@@ -171,9 +202,11 @@ const onKeyDown = (e: KeyboardEvent) => {
       break;
     case "ArrowDown":
       moveSelectionDown();
+      e.preventDefault();
       break;
     case "ArrowUp":
       moveSelectionUp();
+      e.preventDefault();
       break;
     case " ":
     case "Enter":
@@ -255,6 +288,7 @@ const grabFocus = () => {
             categoryData, categoryName
           ) in filteredFunctionCatalog.filteredCatalogData"
           :key="categoryName"
+          :ref="createElementReference('category', categoryName)"
           class="category-container"
         >
           <div
@@ -297,6 +331,7 @@ const grabFocus = () => {
           >
             <div v-for="functionData in categoryData" :key="functionData.name">
               <div
+                :ref="createElementReference('function', functionData.name)"
                 class="function-header"
                 :class="{
                   selected: isSelected({ type: 'function', functionData }),
@@ -344,9 +379,6 @@ const grabFocus = () => {
 }
 
 .sticky-search {
-  position: sticky;
-  top: 0;
-  z-index: 999;
   background-color: white;
   padding-bottom: 10px;
 }
@@ -356,7 +388,6 @@ const grabFocus = () => {
 
   width: var(--function-catalog-width);
   padding: 10px;
-  overflow: hidden auto;
   background-color: white;
   display: flex;
   flex-direction: column;
@@ -367,6 +398,8 @@ const grabFocus = () => {
 }
 
 .function-list {
+  overflow: hidden auto;
+  padding-top: 5px;
   flex: 1;
 }
 

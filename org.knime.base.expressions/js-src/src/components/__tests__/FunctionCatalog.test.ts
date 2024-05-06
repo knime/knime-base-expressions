@@ -30,6 +30,9 @@ describe("FunctionCatalog", () => {
     vi.mocked(useElementBounding).mockReturnValue({
       width: ref(MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION + 1),
     } as ReturnType<typeof useElementBounding>);
+
+    const scrollIntoViewMock = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
   });
 
   afterEach(() => {
@@ -305,4 +308,18 @@ describe("FunctionCatalog", () => {
       expect(filteredCategoryFunctions.at(0)!.text()).toContain(expectedText);
     },
   );
+
+  it("scrolls selected elements into view", async () => {
+    const scrollIntoViewMock = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+
+    const { wrapper } = doMount();
+
+    const categoryFunctions = wrapper.findAll(".function-header");
+
+    for (const [i, categoryFunction] of categoryFunctions.entries()) {
+      await categoryFunction.trigger("click");
+      expect(scrollIntoViewMock).toHaveBeenCalledTimes(i + 1);
+    }
+  });
 });
