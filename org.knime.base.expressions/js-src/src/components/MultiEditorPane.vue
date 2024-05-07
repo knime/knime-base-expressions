@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { registerExpressionDiagnostics } from "../expressionDiagnostics";
-import { editor } from "@knime/scripting-editor";
+import { editor, type UseCodeEditorReturn } from "@knime/scripting-editor";
 import { onKeyStroke } from "@vueuse/core";
-import { editor as MonacoEditor } from "monaco-editor";
 import { ref } from "vue";
+
+export type MultiEditorPaneExposes = {
+  getEditorState: () => UseCodeEditorReturn;
+};
 
 interface Props {
   language: string;
@@ -27,19 +30,7 @@ const editorState = editor.useCodeEditor({
 registerExpressionDiagnostics(editorState);
 
 const getEditorState = () => editorState;
-const insertText = (eventSource: string, text: string) => {
-  const editor = editorState.editor.value;
-
-  // Replaces anything highlighted if there is anything highlighted. Otherwise just insert at cursor
-  const insertionOperation = {
-    range: editor?.getSelection(),
-    text,
-    forceMoveMarkers: true,
-  } as MonacoEditor.ISingleEditOperation;
-
-  editor?.executeEdits(eventSource, [insertionOperation]);
-};
-defineExpose({ getEditorState, insertText });
+defineExpose<MultiEditorPaneExposes>({ getEditorState });
 
 onKeyStroke("Escape", () => {
   if (editorState.editor.value?.hasTextFocus()) {

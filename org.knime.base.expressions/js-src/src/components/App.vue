@@ -14,6 +14,11 @@ import ColumnOutputSelector, {
 } from "@/components/ColumnOutputSelector.vue";
 import { onKeyStroke } from "@vueuse/core";
 import * as monaco from "monaco-editor";
+import MultiEditorPane, {
+  type MultiEditorPaneExposes,
+} from "./MultiEditorPane.vue";
+import type { FunctionCatalogData } from "./functionCatalogTypes";
+import { useStore } from "@/store";
 
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 
@@ -22,9 +27,6 @@ import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage"
 const language = "knime-expression";
 
 const MIN_WIDTH_FUNCTION_CATALOG = 280;
-import MultiEditorPane from "./MultiEditorPane.vue";
-import type { FunctionCatalogData } from "./functionCatalogTypes";
-import { useStore } from "@/store";
 
 const scriptingService = getScriptingService();
 const store = useStore();
@@ -32,7 +34,7 @@ const store = useStore();
 const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
 const columnSectorState = ref<ColumnSelectorState>();
 
-const multiEditorComponentRef = ref<typeof MultiEditorPane | null>(null);
+const multiEditorComponentRef = ref<MultiEditorPaneExposes | null>(null);
 
 const functionCatalogData = ref<FunctionCatalogData>();
 
@@ -104,7 +106,7 @@ const runExpressions = () => {
 
 getScriptingService().registerSettingsGetterForApply(() => {
   return {
-    script: multiEditorComponentRef.value?.getEditorState().text.value,
+    script: multiEditorComponentRef.value?.getEditorState().text.value ?? "",
   };
 });
 
@@ -112,7 +114,13 @@ const onFunctionInsertionTriggered = (payload: {
   eventSource: string;
   text: string;
 }) => {
-  multiEditorComponentRef.value?.insertText(payload.eventSource, payload.text);
+  multiEditorComponentRef.value?.getEditorState().insertText(payload.text);
+};
+
+const onInputOutputItemInsertionTriggered = (codeToInsert: string) => {
+  // Note that we're ignoring requiredImport, because the expression editor
+  // doesn't need imports.
+  multiEditorComponentRef.value?.getEditorState().insertText(codeToInsert);
 };
 
 // Shift+Enter while editor has focus runs expressions
@@ -134,6 +142,7 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
       :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
       :show-control-bar="true"
       :language="language"
+      @input-output-item-insertion="onInputOutputItemInsertionTriggered"
     >
       <template #editor>
         <MultiEditorPane
