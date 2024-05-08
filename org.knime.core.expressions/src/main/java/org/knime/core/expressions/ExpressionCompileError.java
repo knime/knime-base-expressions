@@ -64,7 +64,7 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
     /** @return a text containing the message, type, and location of the error */
     public String createLongMessage() {
         if (location != null) {
-            return type.m_title + " at position " + location.start() + ": " + message;
+            return type.m_title + " in expression at position " + location.start() + ": " + message;
         } else {
             return createMessage();
         }
@@ -96,13 +96,13 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
     public enum CompileErrorType {
 
             /** Indicates that the expression could not be parsed because of an invalid syntax */
-            SYNTAX("Syntax Error"),
+            SYNTAX("Syntax error"),
 
             /** Indicates that operations or functions are used on value types that are not supported */
-            TYPING("Typing Error"),
+            TYPING("Typing error"),
 
             /** Indicates that the expression tries to access a column that does not exist */
-            MISSING_COLUMN("Missing Column Error");
+            MISSING_COLUMN("Missing column error");
 
         private final String m_title;
 
