@@ -52,7 +52,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.knime.core.data.columnar.ColumnarTableBackend;
@@ -119,23 +118,27 @@ public final class ExpressionRunnerUtils {
             }
             int replacedColIdx = matchingColumnIndices[0];
             // +1 for RowID
-            List<Integer> allColumnIndices =
-                IntStream.range(0, inputSpec.getNumColumns() + 1).boxed().collect(Collectors.toList());
+            List<Integer> allColumnIndices = rangeList(inputSpec.getNumColumns() + 1);
 
             // keep all but replaced, append new column at the end
-            List<Integer> columnIndicesWithoutOldColumn = new ArrayList<>(allColumnIndices);
+            List<Integer> columnIndicesWithoutOldColumn = rangeList(allColumnIndices.size());
             columnIndicesWithoutOldColumn.remove(replacedColIdx + 1); // +1 to skip RowID
             var tableWithAppendedResult =
                 inputTable.selectColumns(columnIndicesWithoutOldColumn.stream().mapToInt(i -> i).toArray())
                     .append(expressionResult);
 
             // move appended (=last) column to the position of the column to replace
+            // init with column indices of input (without the removed column)
+            List<Integer> columnIndicesWithNewColumnAtPositionOfOld = rangeList(allColumnIndices.size() - 1);
             // +1 to skip RowID
-            List<Integer> columnIndicesWithNewColumnAtPositionOfOld = new ArrayList<>(allColumnIndices);
-            columnIndicesWithNewColumnAtPositionOfOld.add(replacedColIdx + 1, allColumnIndices.size());
+            columnIndicesWithNewColumnAtPositionOfOld.add(replacedColIdx + 1, columnIndicesWithoutOldColumn.size());
             return tableWithAppendedResult
                 .selectColumns(columnIndicesWithNewColumnAtPositionOfOld.stream().mapToInt(i -> i).toArray());
         }
+    }
+
+    private static List<Integer> rangeList(final int endExclusive) {
+        return new ArrayList<>(IntStream.range(0, endExclusive).boxed().toList());
     }
 
     /**
