@@ -7,15 +7,22 @@ export type CatalogData = Record<string, FunctionData[]>;
 export const mapFunctionCatalogData = (
   data: FunctionCatalogData,
 ): CatalogData =>
-  data.functions.reduce((acc, curr) => {
+  data.functions.reduce((catalog, func) => {
+    const ellipseOrNot = func.arguments.length > 2 ? ", ..." : "";
+    const firstTwoArgs = func.arguments
+      .slice(0, 2)
+      .map((value) => {
+        return value.vararg ? `${value.name}...` : value.name;
+      })
+      .join(", ");
     const functionData = {
-      ...curr,
-      displayName: `${curr.name} (${curr.arguments.map((arg) => arg.name).join(", ")})`,
+      ...func,
+      displayName: `${func.name}(${firstTwoArgs}${ellipseOrNot})`,
     };
-    if (acc[curr.category]) {
-      acc[curr.category].push(functionData);
+    if (catalog[functionData.category]) {
+      catalog[functionData.category].push(functionData);
     } else {
-      acc[curr.category] = [functionData];
+      catalog[functionData.category] = [functionData];
     }
-    return acc;
+    return catalog;
   }, {} as CatalogData);

@@ -22,12 +22,22 @@ const markdownHTMLContent = computed(() =>
     <h5 class="function-subtitle">Arguments:</h5>
     <ul class="function-arg-list has-left-indent">
       <li v-for="arg in functionData.arguments" :key="arg.name">
-        {{ arg.name }}: {{ arg.description }}
+        <span style="font-weight: bold; padding-left: -20px">{{
+          arg.name
+        }}</span
+        >:
+        {{ arg.description }}
       </li>
     </ul>
-    <h5 class="function-subtitle">Returns:</h5>
-    <div class="has-left-indent">
-      {{ functionData.returnType }}
+    <div style="margin-top: 10px">
+      <h5 class="function-subtitle" style="display: inline">Returns:</h5>
+      <span class="return-type">{{ functionData.returnType }}</span>
+    </div>
+    <div
+      v-if="functionData.returnDescription"
+      class="markdown-function-desc has-left-indent"
+    >
+      {{ functionData.returnDescription }}
     </div>
     <h5 class="function-subtitle">Description:</h5>
     <!-- eslint-disable vue/no-v-html -->
@@ -59,18 +69,18 @@ const markdownHTMLContent = computed(() =>
 }
 
 .markdown-function-desc {
-  padding-top: 0;
-  overflow: hidden;
+  padding-top: 5px;
+  overflow: auto;
   margin: 0 auto;
-  padding-left: 20px;
+  padding-left: 0;
 }
 </style>
 
 <style scoped>
 .function-header {
   font-size: x-large;
-  margin: 0 auto;
-  text-align: center;
+  margin: 0 auto auto 0;
+  text-align: left;
 }
 
 .function-subtitle {
@@ -82,7 +92,11 @@ const markdownHTMLContent = computed(() =>
 .has-left-indent {
   border-left: 5px solid var(--knime-silver-sand-semi);
   padding-left: 25px;
-  margin-left: 5px;
+}
+
+.return-type {
+  font-size: small;
+  margin-left: 1em;
 }
 
 .function-description-panel {
@@ -91,5 +105,6 @@ const markdownHTMLContent = computed(() =>
 
 .function-description-panel ul {
   margin: 0 auto;
+  list-style-type: none;
 }
 </style>
