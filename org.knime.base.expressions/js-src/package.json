@@ -22,7 +22,7 @@
     "audit": "npm audit --omit dev",
     "test:unit": "vitest",
     "coverage": "vitest run --coverage",
-    "prepare": "cd ../.. && husky install ./org.knime.base.expressions/js-src/.husky",
+    "prepare": "cd ../.. && husky ./org.knime.base.expressions/js-src/.husky",
     "sbom": "npx @cyclonedx/cyclonedx-npm --output-file bom.json --ignore-npm-errors --omit dev"
   },
   "dependencies": {
