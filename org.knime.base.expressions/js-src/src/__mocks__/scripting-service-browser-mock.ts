@@ -1,4 +1,8 @@
-import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
+import {
+  createScriptingServiceMock,
+  DEFAULT_FLOW_VARIABLE_INPUTS,
+  DEFAULT_INPUT_OBJECTS,
+} from "@knime/scripting-editor/scripting-service-browser-mock";
 import { getScriptingService } from "@knime/scripting-editor";
 import {
   getExpressionScriptingService,
@@ -15,6 +19,19 @@ const log = (message: any, ...args: any[]) => {
 };
 
 if (import.meta.env.MODE === "development.browser") {
+  const INPUT_OBJECTS = [
+    {
+      ...DEFAULT_INPUT_OBJECTS[0],
+      multiSelection: false,
+      subItemCodeAliasTemplate: '$["{{subItems.[0]}}"]',
+    },
+  ];
+  const FLOW_VARIABLES = {
+    ...DEFAULT_FLOW_VARIABLE_INPUTS,
+    multiSelection: false,
+    subItemCodeAliasTemplate: '$$["{{subItems.[0]}}"]',
+  };
+
   const FUNCTION_CATALOG = {
     categories: [
       {
@@ -155,6 +172,8 @@ if (import.meta.env.MODE === "development.browser") {
       getFunctionCatalog: () => Promise.resolve(FUNCTION_CATALOG),
       getDiagnostics: () => Promise.resolve([]),
     },
+    inputObjects: INPUT_OBJECTS,
+    flowVariableInputs: FLOW_VARIABLES,
   });
 
   Object.assign(getScriptingService(), scriptingService);
