@@ -62,8 +62,8 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.ExpressionBooleanSupplier;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.expressions.functions.ExpressionFunction.Argument;
 import org.knime.core.expressions.functions.ExpressionFunction.Description;
 import org.knime.core.expressions.functions.ExpressionFunctionBuilder.Arg.ArgKind;
@@ -100,24 +100,24 @@ public final class ExpressionFunctionBuilder {
     }
 
     /**
-     * Factory for isMissing argument to computers. Returns an ExpressionBooleanSupplier that returns true iff at least
+     * Factory for isMissing argument to computers. Returns an Predicate<WarningMessageListener> that returns true iff at least
      * one if the arguments is missing.
      *
      * @param values
      * @return
      */
-    public static ExpressionBooleanSupplier anyMissing(final Collection<Computer> values) {
+    public static Predicate<WarningMessageListener> anyMissing(final Collection<Computer> values) {
         return wml -> values.stream().anyMatch(c -> c.isMissing(wml));
     }
 
     /**
-     * Factory for isMissing argument to computers. Returns an ExpressionBooleanSupplier that returns true iff at least
+     * Factory for isMissing argument to computers. Returns an Predicate<WarningMessageListener> that returns true iff at least
      * one if the arguments is missing.
      *
      * @param values
      * @return
      */
-    public static ExpressionBooleanSupplier anyMissing(final Computer... values) {
+    public static Predicate<WarningMessageListener> anyMissing(final Computer... values) {
         return wml -> Arrays.stream(values).anyMatch(c -> c.isMissing(wml));
     }
 

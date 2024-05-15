@@ -80,6 +80,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToLongFunction;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -389,19 +392,19 @@ final class EvaluationTest {
         flowVariableAccess -> Arrays.stream(TestFlowVariable.values())
             .filter(t -> t.name().equals(flowVariableAccess.name())).findFirst();
 
-    private static final ExpressionBooleanSupplier THROWING_BOOL_SUPPLIER = wml -> {
+    private static final Predicate<WarningMessageListener> THROWING_BOOL_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final ExpressionLongSupplier THROWING_LONG_SUPPLIER = wml -> {
+    private static final ToLongFunction<WarningMessageListener> THROWING_LONG_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final ExpressionDoubleSupplier THROWING_DOUBLE_SUPPLIER = wml -> {
+    private static final ToDoubleFunction<WarningMessageListener> THROWING_DOUBLE_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final ExpressionSupplier<String> THROWING_STRING_SUPPLIER = wml -> {
+    private static final Function<WarningMessageListener, String> THROWING_STRING_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 

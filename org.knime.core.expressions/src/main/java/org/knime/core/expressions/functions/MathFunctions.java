@@ -65,14 +65,15 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToLongFunction;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
-import org.knime.core.expressions.ExpressionBooleanSupplier;
-import org.knime.core.expressions.ExpressionDoubleSupplier;
-import org.knime.core.expressions.ExpressionLongSupplier;
+import org.knime.core.expressions.WarningMessageListener;
 
 /**
  * Implementation of built-in functions that do math.
@@ -170,7 +171,7 @@ public final class MathFunctions {
         .build();
 
     private static Computer normalImpl(final List<Computer> args) {
-        ExpressionBooleanSupplier isMissing = wml -> args.stream().anyMatch(c -> c.isMissing(wml));
+        Predicate<WarningMessageListener> isMissing = wml -> args.stream().anyMatch(c -> c.isMissing(wml));
         return FloatComputer.of(wml -> {
             var value = toFloat(args.get(0)).compute(wml);
             var mean = toFloat(args.get(1)).compute(wml);
@@ -206,7 +207,7 @@ public final class MathFunctions {
         .build();
 
     private static Computer errorFunctionImpl(final List<Computer> args) {
-        ExpressionBooleanSupplier isMissing = wml -> args.stream().anyMatch(c -> c.isMissing(wml));
+        Predicate<WarningMessageListener> isMissing = wml -> args.stream().anyMatch(c -> c.isMissing(wml));
         return FloatComputer.of(wml -> {
             var value = toFloat(args.get(0)).compute(wml);
             var mean = toFloat(args.get(1)).compute(wml);
@@ -267,7 +268,7 @@ public final class MathFunctions {
         // are all the arguments integers?
         boolean allInts = args.stream().allMatch(IntegerComputer.class::isInstance);
 
-        ExpressionLongSupplier value = wml -> {
+        ToLongFunction<WarningMessageListener> value = wml -> {
             if (allInts) {
                 var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
 
@@ -315,7 +316,7 @@ public final class MathFunctions {
         // are all the arguments integers?
         boolean allInts = args.stream().allMatch(IntegerComputer.class::isInstance);
 
-        ExpressionLongSupplier value = wml -> {
+        ToLongFunction<WarningMessageListener> value = wml -> {
             if (allInts) {
                 var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
 
@@ -564,7 +565,7 @@ public final class MathFunctions {
     private static Computer asinhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        ExpressionDoubleSupplier value = wml -> {
+        ToDoubleFunction<WarningMessageListener> value = wml -> {
             var cC = c.compute(wml);
 
             return Math.log(cC + Math.sqrt(cC * cC + 1));
@@ -587,7 +588,7 @@ public final class MathFunctions {
     private static Computer acoshImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        ExpressionDoubleSupplier value = wml -> {
+        ToDoubleFunction<WarningMessageListener> value = wml -> {
             var cC = c.compute(wml);
 
             return Math.log(cC + Math.sqrt(cC * cC - 1));
@@ -610,7 +611,7 @@ public final class MathFunctions {
     private static Computer atanhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        ExpressionDoubleSupplier value = wml -> {
+        ToDoubleFunction<WarningMessageListener> value = wml -> {
             var cC = c.compute(wml);
 
             if (Math.abs(cC) >= 1) {
@@ -713,7 +714,7 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         var b = toFloat(args.get(1));
 
-        ExpressionDoubleSupplier value = wml -> {
+        ToDoubleFunction<WarningMessageListener> value = wml -> {
             var bC = b.compute(wml);
             var cC = c.compute(wml);
 
@@ -1146,7 +1147,7 @@ public final class MathFunctions {
         .build();
 
     private static Computer medianImpl(final List<Computer> args) {
-        ExpressionDoubleSupplier value = wml -> {
+        ToDoubleFunction<WarningMessageListener> value = wml -> {
             // Because we use ::compute we need to do this inside the DoubleSupplier
             var sortedFloatArgs = args.stream().map(c -> toFloat(c).compute(wml)) //
                 .sorted().toArray(Double[]::new);
@@ -1177,7 +1178,7 @@ public final class MathFunctions {
         .build();
 
     private static Computer binomialImpl(final List<Computer> args) {
-        ExpressionLongSupplier value = wml -> {
+        ToLongFunction<WarningMessageListener> value = wml -> {
             long n = toInteger(args.get(0)).compute(wml);
             long r = toInteger(args.get(1)).compute(wml);
 

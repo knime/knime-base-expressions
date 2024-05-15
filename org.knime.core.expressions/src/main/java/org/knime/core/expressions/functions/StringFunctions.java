@@ -73,6 +73,9 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 import java.util.OptionalInt;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -82,9 +85,6 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
-import org.knime.core.expressions.ExpressionBooleanSupplier;
-import org.knime.core.expressions.ExpressionLongSupplier;
-import org.knime.core.expressions.ExpressionSupplier;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.expressions.WarningMessageListener;
 
@@ -147,7 +147,7 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
 
         // Modifiers
-        final ExpressionBooleanSupplier ignoreCase;
+        final Predicate<WarningMessageListener> ignoreCase;
         if (args.size() == 3) {
             // modifier present
             var modifier = (StringComputer)args.get(2);
@@ -157,7 +157,7 @@ public final class StringFunctions {
         }
 
         return BooleanComputer.of(wml -> {
-            if (ignoreCase.getAsBoolean(wml)) {
+            if (ignoreCase.test(wml)) {
                 return c1.compute(wml).toLowerCase(Locale.ROOT).contains(c2.compute(wml).toLowerCase(Locale.ROOT));
             } else {
                 return c1.compute(wml).contains(c2.compute(wml));
@@ -244,7 +244,7 @@ public final class StringFunctions {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
 
-        ExpressionBooleanSupplier value = wml -> {
+        Predicate<WarningMessageListener> value = wml -> {
             String escapedPattern = c2.compute(wml);
             String toMatch = c1.compute(wml);
 
@@ -339,9 +339,9 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
         var c3 = toInteger(args.get(2));
 
-        ExpressionBooleanSupplier isMissing = wml -> anyMissing(args).getAsBoolean(wml) //
+        Predicate<WarningMessageListener> isMissing = wml -> anyMissing(args).test(wml) //
             || extractGroupOrReturnNull(c1.compute(wml), c2.compute(wml), (int)c3.compute(wml)) == null;
-        ExpressionSupplier<String> value =
+        Function<WarningMessageListener, String> value =
             wml -> extractGroupOrReturnNull(c1.compute(wml), c2.compute(wml), (int)c3.compute(wml));
 
         return StringComputer.of(value, isMissing);
@@ -363,7 +363,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer regexReplaceImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             String search = toString(args.get(1)).compute(wml);
             String replacement = toString(args.get(2)).compute(wml);
@@ -375,7 +375,7 @@ public final class StringFunctions {
             return pattern.matcher(str).replaceAll(replacement);
         };
 
-        ExpressionBooleanSupplier isMissing = anyMissing(args);
+        Predicate<WarningMessageListener> isMissing = anyMissing(args);
 
         return StringComputer.of(value, isMissing);
     }
@@ -397,7 +397,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer replaceImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             String search = toString(args.get(1)).compute(wml);
             String replacement = toString(args.get(2)).compute(wml);
@@ -414,7 +414,7 @@ public final class StringFunctions {
             return pattern.matcher(str).replaceAll(Matcher.quoteReplacement(replacement));
         };
 
-        ExpressionBooleanSupplier isMissing = anyMissing(args);
+        Predicate<WarningMessageListener> isMissing = anyMissing(args);
 
         return StringComputer.of(value, isMissing);
     }
@@ -440,7 +440,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer replaceCharsImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             char[] oldChars = toString(args.get(1)).compute(wml).toCharArray();
             char[] newChars = toString(args.get(2)).compute(wml).toCharArray();
@@ -468,7 +468,7 @@ public final class StringFunctions {
             return str;
         };
 
-        ExpressionBooleanSupplier isMissing = anyMissing(args);
+        Predicate<WarningMessageListener> isMissing = anyMissing(args);
 
         return StringComputer.of(value, isMissing);
     }
@@ -491,7 +491,7 @@ public final class StringFunctions {
         var umlauts = "äüö";
         var umlautReplacements = "auo";
 
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             boolean noE = toBoolean(args.get(1)).compute(wml);
 
@@ -516,7 +516,7 @@ public final class StringFunctions {
             return str;
         };
 
-        ExpressionBooleanSupplier isMissing = anyMissing(args);
+        Predicate<WarningMessageListener> isMissing = anyMissing(args);
 
         return StringComputer.of(value, isMissing);
     }
@@ -534,14 +534,14 @@ public final class StringFunctions {
         .build();
 
     private static Computer replaceDiacriticsImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             str = Normalizer.normalize(str, Normalizer.Form.NFKD);
             str = str.replaceAll("\\p{M}", "");
             return str;
         };
 
-        ExpressionBooleanSupplier isMissing = anyMissing(args);
+        Predicate<WarningMessageListener> isMissing = anyMissing(args);
 
         return StringComputer.of(value, isMissing);
     }
@@ -595,7 +595,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer titleCaseImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             var output = new StringBuilder(str.length());
 
@@ -636,7 +636,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer padEndImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             int targetLength = (int)toInteger(args.get(1)).compute(wml);
 
@@ -679,7 +679,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer padStartImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             int targetLength = (int)toInteger(args.get(1)).compute(wml);
             String charToPrepend = args.size() == 3 //
@@ -716,7 +716,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer joinImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String sep = toString(args.get(0)).compute(wml);
             String[] toJoin = args.stream() //
                 .skip(1) // skip over the first arg, which is the separator
@@ -750,7 +750,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer substrImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             int start = (int)toInteger(args.get(1)).compute(wml);
             int length = args.size() == 3 //
@@ -787,7 +787,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer firstCharsImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             int numChars = (int)toInteger(args.get(1)).compute(wml);
 
@@ -819,7 +819,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer lastCharsImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             int numChars = (int)toInteger(args.get(1)).compute(wml);
 
@@ -852,7 +852,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer removeCharsImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             String toRemove = toString(args.get(1)).compute(wml);
             String modifiers = extractModifiersOrDefault(args, 2, wml);
@@ -1057,7 +1057,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer countImpl(final List<Computer> args) {
-        ExpressionLongSupplier value = wml -> {
+        ToLongFunction<WarningMessageListener> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             String search = toString(args.get(1)).compute(wml);
             String modifiers = extractModifiersOrDefault(args, 2, wml);
@@ -1103,7 +1103,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer countCharsImpl(final List<Computer> args) {
-        ExpressionLongSupplier value = wml -> {
+        ToLongFunction<WarningMessageListener> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             String searchChars = toString(args.get(1)).compute(wml);
             String modifiers = extractModifiersOrDefault(args, 2, wml);
@@ -1147,7 +1147,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer findImpl(final List<Computer> args) {
-        ExpressionLongSupplier indexSupplier = wml -> {
+        ToLongFunction<WarningMessageListener> indexSupplier = wml -> {
             String str = toString(args.get(0)).compute(wml);
             String search = toString(args.get(1)).compute(wml);
             String modifiers = extractModifiersOrDefault(args, 2, wml);
@@ -1178,9 +1178,9 @@ public final class StringFunctions {
         };
 
         // If not found, return missing
-        ExpressionBooleanSupplier isMissing = wml -> //
-        anyMissing(args).getAsBoolean(wml) //
-            || indexSupplier.getAsLong(wml) == -1;
+        Predicate<WarningMessageListener> isMissing = wml -> //
+        anyMissing(args).test(wml) //
+            || indexSupplier.applyAsLong(wml) == -1;
 
         return IntegerComputer.of( //
             indexSupplier, //
@@ -1206,7 +1206,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer findCharsImpl(final List<Computer> args) {
-        ExpressionLongSupplier value = wml -> {
+        ToLongFunction<WarningMessageListener> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
             String search = toString(args.get(1)).compute(wml);
             String modifiers = extractModifiersOrDefault(args, 2, wml);
@@ -1256,7 +1256,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer checksumMd5Impl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             String str = toString(args.get(0)).compute(wml);
 
             try {
@@ -1296,7 +1296,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer xmlEncodeImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> toString(args.get(0)).compute(wml) //
+        Function<WarningMessageListener, String> value = wml -> toString(args.get(0)).compute(wml) //
             .replace("&", "&amp;") //
             .replace("<", "&lt;") //
             .replace(">", "&gt;") //
@@ -1362,7 +1362,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer toStringImpl(final List<Computer> args) {
-        ExpressionSupplier<String> value = wml -> {
+        Function<WarningMessageListener, String> value = wml -> {
             var c = args.get(0);
 
             if (c.isMissing(wml)) {
@@ -1400,7 +1400,7 @@ public final class StringFunctions {
         return FloatComputer.of( //
             wml -> Float.parseFloat(toString(args.get(0)).compute(wml)), //
             wml -> {
-                if (anyMissing(args).getAsBoolean(wml)) {
+                if (anyMissing(args).test(wml)) {
                     return true;
                 }
 
@@ -1431,7 +1431,7 @@ public final class StringFunctions {
         return IntegerComputer.of( //
             wml -> Integer.parseInt(toString(args.get(0)).compute(wml)), //
             wml -> {
-                if (anyMissing(args).getAsBoolean(wml)) {
+                if (anyMissing(args).test(wml)) {
                     return true;
                 }
 
@@ -1462,7 +1462,7 @@ public final class StringFunctions {
         return BooleanComputer.of( //
             wml -> toString(args.get(0)).compute(wml).equalsIgnoreCase("true"), //
             wml -> {
-                if (anyMissing(args).getAsBoolean(wml)) {
+                if (anyMissing(args).test(wml)) {
                     return true;
                 }
 
