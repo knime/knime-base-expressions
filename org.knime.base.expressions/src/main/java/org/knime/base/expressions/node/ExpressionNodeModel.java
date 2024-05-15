@@ -147,7 +147,6 @@ class ExpressionNodeModel extends NodeModel {
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws Exception {
-        // TODO repace by settings
         var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(m_settings.getColumnInsertionMode(),
             m_settings.getActiveOutputColumn());
 
