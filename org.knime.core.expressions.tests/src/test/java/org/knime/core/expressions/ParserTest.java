@@ -106,6 +106,10 @@ final class ParserTest {
 
     enum ValidExpr {
 
+            // Comments
+            COMMENT_AT_START("# some comment\n1\n#some other comment", INT(1)),
+            COMMENT_AT_END("1 # some comment", INT(1)),
+
             // Column access
             COL_SHORTHAND_1("$colname", COL("colname")), //
             COL_SHORTHAND_2("$col_name12_", COL("col_name12_")), //

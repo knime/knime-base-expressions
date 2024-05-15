@@ -35,6 +35,9 @@ expr:
 
 functionArgs: expr (',' expr)* ','?;
 
+// Single-line comment
+LINE_COMMENT: '#' ~[\r\n]* -> skip;
+
 // LEXER RULES
 WHITESPACE: [ \r\n\t]+ -> skip;
 
