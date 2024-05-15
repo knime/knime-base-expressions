@@ -66,6 +66,22 @@ onMounted(() => {
     .sendToService("getFunctionCatalog")
     .then((data) => {
       functionCatalogData.value = data;
+
+      // Generate a list of function descriptions to put them into the AI assistant
+      // with the format <fn_name>(<arg1_type>, <arg2_type>, ...) - <description>
+      const listOfDescriptions = functionCatalogData.value!.functions.map((curr) => {
+        const displayName =`${curr.name}(${curr.arguments.map((arg) => arg.name).join(", ")})`
+        const args = curr.arguments.map((arg) => `- ${arg.name}: ${arg.description}`).join("\n")
+        return `# Function \`${displayName}\`
+## Arguments
+${args}
+## Returns
+${curr.returnDescription}
+## Description
+${curr.description}`;
+      });
+      console.log(listOfDescriptions.join("\n\n"))
+
       return data;
     });
 
