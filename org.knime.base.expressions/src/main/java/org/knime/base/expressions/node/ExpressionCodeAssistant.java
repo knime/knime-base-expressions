@@ -91,7 +91,7 @@ final class ExpressionCodeAssistant {
                 0, //
                 toFlowVariableList(flowVariables) //
             ), //
-            new Outputs(0, 0, 0, true));
+            new Outputs(0, 0, 0, false));
 
         return HubConnection.INSTANCE.sendRequest("/code_generation/knime_expression", request);
     }
