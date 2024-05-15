@@ -159,8 +159,13 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
         @Override
         protected String getCodeSuggestion(final String userPrompt, final String currentCode) throws IOException {
-            // TODO(code-assistant) implement
-            return null;
+            // NB: The AI button is disabled if the input is not available
+            return ExpressionCodeAssistant.generateCode( //
+                userPrompt, //
+                currentCode, //
+                getWorkflowControl().getInputSpec(), //
+                getFlowVariables() //
+            );
         }
 
         public FunctionCatalogData getFunctionCatalog() {
