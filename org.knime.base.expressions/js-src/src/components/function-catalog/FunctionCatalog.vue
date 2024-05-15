@@ -218,6 +218,8 @@ const onKeyDown = (e: KeyboardEvent) => {
           (selectedEntry.value as SelectableFunction)?.functionData,
         );
       }
+
+      e.preventDefault(); // Stop accidental scrolling
       break;
     case "ArrowRight":
       if (
@@ -288,11 +290,11 @@ const grabFocus = () => {
             categoryData, categoryName
           ) in filteredFunctionCatalog.filteredCatalogData"
           :key="categoryName"
-          :ref="createElementReference('category', categoryName)"
           class="category-container"
         >
           <div
             v-if="categoryData.length > 0"
+            :ref="createElementReference('category', categoryName)"
             class="category-header"
             role="button"
             :class="{

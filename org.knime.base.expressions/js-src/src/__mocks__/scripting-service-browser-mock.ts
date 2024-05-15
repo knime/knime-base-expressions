@@ -50,6 +50,10 @@ if (import.meta.env.MODE === "development.browser") {
         name: "Date and Time",
         description: "Functions for working with dates and times",
       },
+      {
+        name: "Very big category",
+        description: "You have to scroll down to see everything",
+      },
     ],
     functions: [
       {
@@ -160,6 +164,14 @@ if (import.meta.env.MODE === "development.browser") {
         ],
         returnType: "string",
       },
+      // eslint-disable-next-line no-magic-numbers
+      ...[...Array(20).keys()].map((i) => ({
+        name: `function${i}`,
+        category: "Very big category",
+        arguments: [],
+        description: "Doesn't do anything",
+        returnType: "int",
+      })),
     ],
   };
 
