@@ -221,7 +221,6 @@ public final class ControlFlowFunctions {
             return null;
         }
 
-        ArrayList<ValueType> caseExpressions = new ArrayList<>();
         ValueType switchValue = arguments[0];
         if (switchValue.baseType() != STRING && switchValue.baseType() != INTEGER) {
             return null;

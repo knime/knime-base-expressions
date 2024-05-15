@@ -123,7 +123,8 @@ public final class Expressions {
      * result but evaluates it on each access. The caller has to provide the input data for each used
      * {@link ColumnAccess} via a {@link Computer} of the appropriate type.
      *
-     * @param expression the expression. Must include type information inferred by {@link #inferTypes(Ast, Function)}.
+     * @param expression the expression. Must include type information inferred by
+     *            {@link #inferTypes(Ast, Function, Function)}.
      * @param columnToComputer a function that returns the computer for column data accessed by the expression. The
      *            function should return <code>Optional.empty()</code> if the column is not available.
      * @param flowVariableToComputer a function that returns the computer for flow variable accessed by the expression.
@@ -140,7 +141,7 @@ public final class Expressions {
     /**
      * Get the inferred output type of the given expression.
      *
-     * @param expression the expression with present type information from {@link #inferTypes(Ast, Function)}
+     * @param expression the expression with present type information from {@link #inferTypes(Ast, Function, Function)}
      * @return the output type
      * @throws IllegalArgumentException if the expression is not typed
      */

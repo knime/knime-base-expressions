@@ -68,6 +68,7 @@ import java.util.function.ToLongFunction;
 public interface Computer {
 
     /**
+     * @param wml a {@link WarningMessageListener} to report warnings
      * @return <code>true</code> if the result is "MISSING"
      */
     boolean isMissing(WarningMessageListener wml);
@@ -75,14 +76,17 @@ public interface Computer {
     /** {@link Computer} for {@link ValueType#BOOLEAN} and {@link ValueType#OPT_BOOLEAN} */
     interface BooleanComputer extends Computer {
 
-        /** @return the result of the expression evaluation */
+        /**
+         * @param wml a {@link WarningMessageListener} to report warnings
+         * @return the result of the expression evaluation
+         */
         boolean compute(WarningMessageListener wml);
 
         /**
          * Helper method to create a {@link BooleanComputer}.
          *
-         * @param value a supplier for the {@link #compute()} result
-         * @param missing a supplier that returns if the result {@link #isMissing()}
+         * @param value a supplier for the {@link #compute(WarningMessageListener)} result
+         * @param missing a supplier that returns if the result {@link #isMissing(WarningMessageListener)}
          * @return a {@link BooleanComputer}
          */
         static BooleanComputer of(final Predicate<WarningMessageListener> value,
@@ -105,14 +109,17 @@ public interface Computer {
     /** {@link Computer} for {@link ValueType#INTEGER} and {@link ValueType#OPT_INTEGER} */
     interface IntegerComputer extends Computer {
 
-        /** @return the result of the expression evaluation */
+        /**
+         * @param wml a {@link WarningMessageListener} to report warnings
+         * @return the result of the expression evaluation
+         */
         long compute(WarningMessageListener wml);
 
         /**
          * Helper method to create an {@link IntegerComputer}.
          *
-         * @param value a supplier for the {@link #compute()} result
-         * @param missing a supplier that returns if the result {@link #isMissing()}
+         * @param value a supplier for the {@link #compute(WarningMessageListener)} result
+         * @param missing a supplier that returns if the result {@link #isMissing(WarningMessageListener)}
          * @return an {@link IntegerComputer}
          */
         static IntegerComputer of(final ToLongFunction<WarningMessageListener> value,
@@ -135,14 +142,17 @@ public interface Computer {
     /** {@link Computer} for {@link ValueType#FLOAT} and {@link ValueType#OPT_FLOAT} */
     interface FloatComputer extends Computer {
 
-        /** @return the result of the expression evaluation */
+        /**
+         * @param wml a {@link WarningMessageListener} to report warnings
+         * @return the result of the expression evaluation
+         */
         double compute(WarningMessageListener wml);
 
         /**
          * Helper method to create a {@link FloatComputer}.
          *
-         * @param value a supplier for the {@link #compute()} result
-         * @param missing a supplier that returns if the result {@link #isMissing()}
+         * @param value a supplier for the {@link #compute(WarningMessageListener)} result
+         * @param missing a supplier that returns if the result {@link #isMissing(WarningMessageListener)}
          * @return a {@link FloatComputer}
          */
         static FloatComputer of(final ToDoubleFunction<WarningMessageListener> value,
@@ -165,14 +175,17 @@ public interface Computer {
     /** {@link Computer} for {@link ValueType#STRING} and {@link ValueType#OPT_STRING} */
     interface StringComputer extends Computer {
 
-        /** @return the result of the expression evaluation */
+        /**
+         * @param wml a {@link WarningMessageListener} to report warnings
+         * @return the result of the expression evaluation
+         */
         String compute(WarningMessageListener wml);
 
         /**
          * Helper method to create a {@link StringComputer}.
          *
-         * @param value a supplier for the {@link #compute()} result
-         * @param missing a supplier that returns if the result {@link #isMissing()}
+         * @param value a supplier for the {@link #compute(WarningMessageListener)} result
+         * @param missing a supplier that returns if the result {@link #isMissing(WarningMessageListener)}
          * @return a {@link StringComputer}
          */
         static StringComputer of(final Function<WarningMessageListener, String> value,
