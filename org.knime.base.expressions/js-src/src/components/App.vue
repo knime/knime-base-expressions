@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { consoleHandler, ScriptingEditor } from "@knime/scripting-editor";
+import {
+  consoleHandler,
+  ScriptingEditor,
+  setActiveEditorStoreForAi,
+} from "@knime/scripting-editor";
 import { getExpressionScriptingService } from "@/expressionScriptingService";
 import Button from "webapps-common/ui/components/Button.vue";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
@@ -101,6 +105,8 @@ onMounted(() => {
       replaceColumn: settings.replacedColumn,
     };
   });
+
+  setActiveEditorStoreForAi(multiEditorComponentRef.value?.getEditorState());
 });
 
 const runExpressions = () => {
