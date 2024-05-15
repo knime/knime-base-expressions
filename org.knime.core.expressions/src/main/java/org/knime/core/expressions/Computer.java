@@ -230,7 +230,7 @@ public interface Computer {
      * This is helpful when the computer supplier needs to compute in order to supply the resulting computer
      *
      * @param computerSupplier a supplier for the computer that computes the result and therefore needs to be delayed
-     * @param returnType the intended return type of the computer
+     * @param returnType the intended return type of the computer; will be cast to the baseType if necessary
      * @return a {@link Computer} of the {@link ValueType} of return type
      */
     static Computer createTypedResultComputer(final Function<WarningMessageListener, Computer> computerSupplier,
@@ -238,17 +238,17 @@ public interface Computer {
 
         Predicate<WarningMessageListener> isMissing = wml -> computerSupplier.apply(wml).isMissing(wml);
 
-        if (returnType == BOOLEAN) {
+        if (returnType.baseType() == BOOLEAN) {
             return BooleanComputer.of(wml -> ((BooleanComputer)computerSupplier.apply(wml)).compute(wml), // NOSONAR  - method reference is not possible due to delayed computation
                 isMissing);
         }
-        if (returnType == INTEGER) {
+        if (returnType.baseType()  == INTEGER) {
             return IntegerComputer.of(wml -> Math.round(toFloat(computerSupplier.apply(wml)).compute(wml)), isMissing);
         }
-        if (returnType == FLOAT) {
+        if (returnType.baseType()  == FLOAT) {
             return FloatComputer.of(wml -> toFloat(computerSupplier.apply(wml)).compute(wml), isMissing);
         }
-        if (returnType == STRING) {
+        if (returnType.baseType()  == STRING) {
             return StringComputer.of(wml -> ((StringComputer)computerSupplier.apply(wml)).compute(wml), // NOSONAR - method reference is not possible due to delayed computation
                 isMissing);
         }

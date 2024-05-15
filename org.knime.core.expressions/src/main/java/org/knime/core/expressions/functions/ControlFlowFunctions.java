@@ -222,7 +222,7 @@ public final class ControlFlowFunctions {
         }
 
         ValueType switchValue = arguments[0];
-        if (switchValue.baseType() != STRING && switchValue.baseType() != INTEGER) {
+        if (switchValue.baseType() != STRING && switchValue.baseType() != INTEGER && switchValue != MISSING) {
             return null;
         }
         for (int i = 1; i < arguments.length - 1; i += 2) {
@@ -306,12 +306,17 @@ public final class ControlFlowFunctions {
     }
 
     private static ValueType calculateReturnTypeFromBranchExpressionValues(final List<ValueType> expressions) {
+        if (expressions.stream().allMatch(type -> type == MISSING)) {
+            // TODO(AP-22303) better message about what arguments are supported
+            return null;
+        }
+
         if (!expressions.stream().allMatch(isCompatibleTo(expressions.get(0)))) {
             // TODO(AP-22303) better message about what arguments are supported
             return null;
         }
 
-        ValueType commonReturnBaseType = expressions.get(0).baseType();
+        ValueType commonReturnBaseType = expressions.stream().filter(type -> type != MISSING).findFirst().orElse(MISSING);
         if (expressions.stream().anyMatch(type -> type.baseType() == FLOAT)) {
             commonReturnBaseType = ValueType.FLOAT;
         }
@@ -325,7 +330,9 @@ public final class ControlFlowFunctions {
 
     private static Predicate<ValueType> isCompatibleTo(final ValueType typeToCompare) {
         return typeToCheck -> ValueType.hasSameBaseType(typeToCompare, typeToCheck)
-            || (ValueType.isNumericOrOpt(typeToCompare) && ValueType.isNumericOrOpt(typeToCheck));
+            || (ValueType.isNumericOrOpt(typeToCompare) && ValueType.isNumericOrOpt(typeToCheck))
+            || typeToCheck == MISSING
+            || typeToCompare == MISSING;
     }
 
 }

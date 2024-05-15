@@ -52,6 +52,7 @@ import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
+import static org.knime.core.expressions.ValueType.OPT_BOOLEAN;
 import static org.knime.core.expressions.ValueType.OPT_FLOAT;
 import static org.knime.core.expressions.ValueType.OPT_INTEGER;
 import static org.knime.core.expressions.ValueType.OPT_STRING;
@@ -86,11 +87,13 @@ final class ControlFlowFunctionTests {
             .typing("float/optional integer mix", List.of(BOOLEAN, FLOAT, OPT_INTEGER), OPT_FLOAT) //
             .typing("string", List.of(BOOLEAN, STRING, STRING), STRING)
             .typing("boolean", List.of(BOOLEAN, BOOLEAN, BOOLEAN), BOOLEAN)
+            .typing("MISSING else case", List.of(BOOLEAN, STRING, MISSING), OPT_STRING) //
             .illegalArgs("incompatible return expressions string/float", List.of(BOOLEAN, STRING, FLOAT))//
             .illegalArgs("incompatible return expressions string/integer", List.of(BOOLEAN, STRING, INTEGER))//
             .illegalArgs("incompatible return expressions integer/boolean", List.of(BOOLEAN, INTEGER, BOOLEAN))//
             .illegalArgs("too few arguments", List.of(BOOLEAN, STRING))//
             .illegalArgs("even number of arguments/ missing else case", List.of(BOOLEAN, STRING, STRING, STRING))//
+            .illegalArgs("conditions must not be optional", List.of(OPT_BOOLEAN, FLOAT, FLOAT))//
             .impl("integer", List.of(arg(true), arg(2), arg(-1)), 2) //
             .impl("float", List.of(arg(true), arg(1.4), arg(1.5)), 1.4) //
             .impl("missing integer true case", List.of(arg(false), arg(1), misInteger())) //
@@ -113,6 +116,7 @@ final class ControlFlowFunctionTests {
                 List.of(arg(true), arg("true branch"), arg(true), arg("false branch"), arg(true), arg("fake branch"),
                     arg(true), arg("some name branch"), arg("else branch")),
                 "true branch") //
+            .impl("MISSING else case",List.of(arg(true),arg("true branch"), mis()), "true branch") //
             .tests();
     }
 
@@ -130,6 +134,7 @@ final class ControlFlowFunctionTests {
             .typing("string", List.of(INTEGER, INTEGER, STRING), OPT_STRING) //
             .typing("optinal string case", List.of(OPT_STRING, STRING, INTEGER, OPT_STRING, INTEGER, INTEGER), INTEGER) //
             .typing("missing string case", List.of(OPT_STRING, STRING, INTEGER, MISSING, INTEGER, INTEGER), INTEGER) //
+            .typing("MISSING case expression", List.of(OPT_STRING, STRING, MISSING, INTEGER), OPT_INTEGER) //
             .illegalArgs("incompatible return expressions", List.of(INTEGER, INTEGER, FLOAT, STRING))//
             .illegalArgs("two few Arguments", List.of(STRING, INTEGER)) //
             .illegalArgs("no float as case/value", List.of(FLOAT, FLOAT, STRING, STRING)) //
@@ -155,6 +160,7 @@ final class ControlFlowFunctionTests {
             .impl("optional string case #2", List.of(arg("b"), misString(), arg(1), arg("b"), arg(2), arg(3)), 2) //
             .impl("missing string case #1", List.of(misString(), arg("a"), arg(1), mis(), arg(2), arg(3)), 2) //
             .impl("missing string case #2", List.of(arg("b"), arg("a"), arg(1), mis(), arg(2), arg(3)), 3) //
+            .impl("MISSING case expression", List.of(misString(), arg("a"), arg("column is a"), mis())) //
             .tests();
     }
 }
