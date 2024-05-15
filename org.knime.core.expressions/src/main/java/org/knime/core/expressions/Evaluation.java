@@ -48,6 +48,7 @@
  */
 package org.knime.core.expressions;
 
+import static org.knime.core.expressions.Computer.toFloat;
 import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
@@ -161,7 +162,7 @@ final class Evaluation {
             } else if (INTEGER.equals(outType.baseType())) {
                 return Integer.unary(node.op(), (IntegerComputer)arg);
             } else if (FLOAT.equals(outType.baseType())) {
-                return Float.unary(node.op(), Float.cast(arg));
+                return Float.unary(node.op(), toFloat(arg));
             }
             throw new EvaluationImplementationError("Unknown output type " + outType.name() + " for unary operation");
         }
@@ -180,7 +181,7 @@ final class Evaluation {
             } else if (INTEGER.equals(outType.baseType())) {
                 return Integer.binary(node.op(), arg1, arg2);
             } else if (FLOAT.equals(outType.baseType())) {
-                return Float.binary(node.op(), Float.cast(arg1), Float.cast(arg2));
+                return Float.binary(node.op(), toFloat(arg1), toFloat(arg2));
             } else if (STRING.equals(outType.baseType())) {
                 return Strings.binary(node.op(), arg1, arg2);
             }
@@ -226,7 +227,7 @@ final class Evaluation {
                 );
             } else if (FLOAT.equals(outputType.baseType())) {
                 return FloatComputer.of( //
-                    wml -> intOrFloatToFloat(outputComputer.get(wml)).compute(wml), // NOSONAR
+                    wml -> toFloat(outputComputer.get(wml)).compute(wml), // NOSONAR
                     outputMissing //
                 );
             } else {
@@ -268,8 +269,8 @@ final class Evaluation {
             ExpressionBooleanSupplier value;
             if (arg1 instanceof FloatComputer || arg2 instanceof FloatComputer) {
                 // One is FLOAT -> we do the comparison for FLOAT
-                var a1 = Float.cast(arg1);
-                var a2 = Float.cast(arg2);
+                var a1 = toFloat(arg1);
+                var a2 = toFloat(arg2);
                 value = switch (op) { // NOSONAR
                     case LESS_THAN -> wml -> !anyMissing.getAsBoolean(wml) && a1.compute(wml) < a2.compute(wml);
                     case LESS_THAN_EQUAL -> wml -> bothMissing.getAsBoolean(wml)
@@ -309,8 +310,8 @@ final class Evaluation {
                 valuesEqual = wml -> Objects.equals(a1.compute(wml), a2.compute(wml));
             } else if (arg1 instanceof FloatComputer || arg2 instanceof FloatComputer) {
                 // NB: Cast Integer to float if necessary
-                var a1 = Float.cast(arg1);
-                var a2 = Float.cast(arg2);
+                var a1 = toFloat(arg1);
+                var a2 = toFloat(arg2);
                 valuesEqual = wml -> a1.compute(wml) == a2.compute(wml); // NOSONAR - we want the equality test here
             } else if (arg1 instanceof IntegerComputer a1 && arg2 instanceof IntegerComputer a2) {
                 valuesEqual = wml -> a1.compute(wml) == a2.compute(wml);
@@ -319,8 +320,10 @@ final class Evaluation {
                     "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not equality comparable");
             }
 
-            ExpressionBooleanSupplier equal = wml -> (arg1.isMissing(wml) && arg2.isMissing(wml)) // both missing -> true
-                || (!arg1.isMissing(wml) && !arg2.isMissing(wml) && valuesEqual.getAsBoolean(wml)); // any missing -> false
+            ExpressionBooleanSupplier equal = wml -> //
+            /**/ (arg1.isMissing(wml) && arg2.isMissing(wml)) // both missing -> true
+                || (!arg1.isMissing(wml) && !arg2.isMissing(wml) // any missing -> false
+                    && valuesEqual.getAsBoolean(wml)); //
 
             return switch (op) {
                 case EQUAL_TO -> BooleanComputer.of(equal, wml -> false);
@@ -411,14 +414,6 @@ final class Evaluation {
 
     private static class Float {
 
-        static FloatComputer cast(final Computer computer) {
-            if (computer instanceof IntegerComputer intComputer) {
-                return FloatComputer.of(intComputer::compute, intComputer::isMissing);
-            } else {
-                return (FloatComputer)computer;
-            }
-        }
-
         static FloatComputer unary(final UnaryOperator op, final FloatComputer arg) {
             ExpressionDoubleSupplier value = switch (op) {
                 case MINUS -> wml -> -arg.compute(wml);
@@ -472,15 +467,5 @@ final class Evaluation {
     private static EvaluationImplementationError unsupportedOutputForOpError(final Object operator,
         final ValueType outputType) {
         return new EvaluationImplementationError("Output of operator " + operator + " cannot be " + outputType.name());
-    }
-
-    private static FloatComputer intOrFloatToFloat(final Computer c) {
-        if (c instanceof FloatComputer fc) {
-            return fc;
-        } else if (c instanceof IntegerComputer ic) {
-            return FloatComputer.of(ic::compute, ic::isMissing);
-        } else {
-            throw new IllegalArgumentException("should be int or float computer");
-        }
     }
 }
