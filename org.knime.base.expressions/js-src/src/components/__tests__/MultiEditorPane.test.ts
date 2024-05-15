@@ -64,14 +64,6 @@ describe("MultiEditorPane", () => {
     expect(onKeyStroke).toHaveBeenCalledWith("Escape", expect.anything());
   });
 
-  it("doesn't display the title bar if we tell it not to", () => {
-    const { wrapper } = doMount({
-      props: { showTitleBar: false },
-    });
-    const heading = wrapper.find(".editor-title-bar");
-    expect(heading.exists()).toBeFalsy();
-  });
-
   it("checks that you can get the editor state", () => {
     const { wrapper } = doMount();
 

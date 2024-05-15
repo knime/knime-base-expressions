@@ -52,12 +52,8 @@ describe("ColumnOutputSelector", () => {
   it("checks that clicking the ValueSwitch fires the right event", async () => {
     const wrapper = doMount();
 
-    const leftButton = wrapper.find(
-      ".value-switch .radio-group-label:first-child",
-    );
-    const rightButton = wrapper.find(
-      ".value-switch .radio-group-label:last-child",
-    );
+    const leftButton = wrapper.find(".value-switch label:first-child");
+    const rightButton = wrapper.find(".value-switch label:last-child");
 
     await leftButton.trigger("click");
     expect(wrapper.props().modelValue?.outputMode).equals("APPEND");

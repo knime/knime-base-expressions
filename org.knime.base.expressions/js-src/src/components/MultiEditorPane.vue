@@ -12,12 +12,9 @@ interface Props {
   language: string;
   fileName: string;
   title: string;
-  showTitleBar?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  showTitleBar: true,
-});
+const props = defineProps<Props>();
 
 // Main editor
 const editorContainer = ref<HTMLDivElement>();
@@ -53,35 +50,40 @@ onKeyStroke("z", (e) => {
 
 <template>
   <div class="editor-container">
-    <div v-if="showTitleBar" class="editor-title-bar">
+    <span class="editor-title-bar">
       {{ props.title }}
-    </div>
-    <div
-      ref="editorContainer"
-      :class="['code-editor', { 'has-title-bar': showTitleBar }]"
-    />
+    </span>
+    <div ref="editorContainer" class="code-editor" />
+    <span class="editor-control-bar">
+      <slot name="multi-editor-controls" />
+    </span>
   </div>
 </template>
 
 <style scoped>
 .code-editor {
-  height: calc(max(100%, var(--min-editor-height)));
-}
-
-.code-editor.has-title-bar {
-  height: calc(max(100% - var(--title-bar-height), var(--min-editor-height)));
+  flex-grow: 1;
+  flex-shrink: 1;
+  display: flex;
+  min-height: 70px;
 }
 
 .editor-container {
-  --title-bar-height: 40px;
+  --title-bar-height: 30px;
   --min-editor-height: 70px;
 
   margin-bottom: 20px;
   margin-left: 20px;
   margin-right: 20px;
   box-shadow: 0 0 5px 5px var(--knime-silver-sand);
-  height: calc(100% - 20px);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+
+  /* Max height should be parent height */
+  max-height: 100%;
+  min-height: 200px;
 }
 
 .editor-container:focus-within::after {
@@ -102,8 +104,20 @@ Basically gives us some nice margin collapsing. */
 .editor-title-bar {
   height: var(--title-bar-height);
   padding-left: 20px;
+  background-color: var(--knime-porcelain);
+  flex-shrink: 0;
+  align-content: center;
+}
+
+.editor-control-bar {
   display: flex;
   align-items: center;
-  background-color: var(--knime-porcelain);
+  flex-direction: row;
+  justify-content: flex-end;
+  margin: 0;
+  background-color: var(--knime-gray-light-semi);
+  border-top: 1px solid var(--knime-silver-sand);
+  height: fit-content;
+  flex-grow: 1;
 }
 </style>

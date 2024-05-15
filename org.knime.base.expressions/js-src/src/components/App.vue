@@ -169,22 +169,17 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
           title="Expression Editor"
           file-name="_1.knexp"
           :language="language"
-        />
-      </template>
-
-      <template #code-editor-controls>
-        <ColumnOutputSelector
-          v-model="columnSectorState"
-          :allowed-replacement-columns="allowedReplacementColumns"
-        />
-
-        <Button
-          primary
-          compact
-          :disabled="!inputsAvailable || !store.expressionValid"
-          @click="runExpressions"
-          ><PlayIcon /> Run</Button
         >
+          <!-- Controls displayed once per editor -->
+          <template #multi-editor-controls>
+            <div class="editor-controls">
+              <ColumnOutputSelector
+                v-model="columnSectorState"
+                :allowed-replacement-columns="allowedReplacementColumns"
+              />
+            </div>
+          </template>
+        </MultiEditorPane>
       </template>
       <template #right-pane>
         <template v-if="functionCatalogData">
@@ -195,10 +190,32 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
           />
         </template>
       </template>
+      <!-- Controls for the very bottom bar -->
+      <template #code-editor-controls>
+        <Button
+          primary
+          compact
+          :disabled="!inputsAvailable || !store.expressionValid"
+          @click="runExpressions"
+        >
+          <PlayIcon /> Run
+        </Button>
+      </template>
     </ScriptingEditor>
   </main>
 </template>
 
-<style>
+<style lang="postcss">
 @import url("webapps-common/ui/css");
+
+.editor-controls {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 1px 10px;
+  height: fit-content;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 </style>

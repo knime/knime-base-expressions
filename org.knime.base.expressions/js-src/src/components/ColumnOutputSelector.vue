@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch, computed } from "vue";
-import ValueSwitch from "../../webapps-common/ui/components/forms/ValueSwitch.vue";
-import Dropdown from "../../webapps-common/ui/components/forms/Dropdown.vue";
+import ValueSwitch from "webapps-common/ui/components/forms/ValueSwitch.vue";
+import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
 import InputField from "webapps-common/ui/components/forms/InputField.vue";
 import { useShouldFocusBePainted } from "@knime/scripting-editor";
 import { type OutputInsertionMode } from "@/expressionScriptingService";
@@ -99,17 +99,15 @@ watch(
 </script>
 
 <template>
-  <div class="output-selector-parent">
-    <div class="output-selector-child left">
-      <span class="output-label">Output column</span>
-      <ValueSwitch
-        v-model="outputMode"
-        :possible-values="allowedOperationModes"
-        :disabled="props.allowedReplacementColumns.length === 0"
-        class="switch-button"
-        :class="{ 'focus-painted': paintFocus }"
-      />
-    </div>
+  <span class="output-selector-container">
+    <span class="output-label">Output column</span>
+    <ValueSwitch
+      v-model="outputMode"
+      :possible-values="allowedOperationModes"
+      :disabled="props.allowedReplacementColumns.length === 0"
+      class="switch-button"
+      :class="{ 'focus-painted': paintFocus }"
+    />
     <div v-if="outputMode === 'APPEND'" class="output-selector-child right">
       <InputField
         id="input-field-to-add-new-column"
@@ -127,27 +125,36 @@ watch(
         ariaLabel="column selection"
         :possible-values="allowedReplacementColumns"
         class="column-input"
+        direction="up"
       />
     </div>
-  </div>
+  </span>
 </template>
 
-<style>
-.output-selector-parent {
+<style scoped lang="postcss">
+.output-selector-container {
   display: flex;
   flex-flow: row wrap;
-  padding-right: 20px;
-  max-width: 100%;
   height: fit-content;
+  flex-grow: 1;
+  gap: 10px;
+  align-items: center;
+  container-type: inline-size;
+  justify-content: center;
+  padding: 2px 0;
 }
 
 .output-selector-child {
-  flex: 1;
+  flex-grow: 1;
   height: 100%;
-  place-items: center center;
   display: flex;
-  flex-flow: row wrap;
   top: 0;
+  gap: 10px;
+  width: 150px;
+}
+
+.column-input {
+  width: 100%;
 }
 
 .output-selector-child.left {
@@ -155,7 +162,7 @@ watch(
   container-type: inline-size;
 }
 
-@container (width < 240px) {
+@container (width < 390px) {
   .output-label {
     display: none;
   }
@@ -166,27 +173,17 @@ watch(
   top: 0;
   align-items: flex-start;
   max-width: 100%;
+  min-width: 100px;
+  height: 35px;
 }
 
-.input-wrapper.column-input {
-  width: 100%;
-  overflow: visible;
-}
-
-#dropdown-box-to-select-column div,
-#input-field-to-add-new-column,
-.input-wrapper.column-input,
-.output-selector-child {
-  height: 29px;
-}
-
-#dropdown-box-to-select-column {
-  max-width: 100%;
-}
-
-#input-field-to-add-new-column,
-#dropdown-box-to-select-column {
-  position: absolute;
+/* Stop the dropdown being taller than the bar. This takes some forcing, since it REALLY doesn't want to be smaller than about 40px */
+.column-input,
+:deep(.dropdown),
+:deep(#dropdown-box-to-select-column),
+:deep(#button-dropdown-box-to-select-column) {
+  height: 100%;
+  max-width: 400px;
 }
 
 .output-label {
@@ -194,15 +191,7 @@ watch(
   font-weight: bold;
 }
 
-#input-field-to-add-new-column,
-#dropdown-box-to-select-column,
-.output-selector-child {
-  width: 240px;
-}
-
-/* Push the toggle button up against the input fields */
 .switch-button {
-  margin: 0 10px 0 auto;
   position: relative;
 }
 
