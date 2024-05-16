@@ -29,6 +29,18 @@ public class KnimeExpressionBaseListener implements KnimeExpressionListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterAtom(KnimeExpressionParser.AtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAtom(KnimeExpressionParser.AtomContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterParenthesisedExpr(KnimeExpressionParser.ParenthesisedExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -65,6 +77,18 @@ public class KnimeExpressionBaseListener implements KnimeExpressionListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterAggregationCall(KnimeExpressionParser.AggregationCallContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAggregationCall(KnimeExpressionParser.AggregationCallContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterFunctionCall(KnimeExpressionParser.FunctionCallContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -89,6 +113,18 @@ public class KnimeExpressionBaseListener implements KnimeExpressionListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterAtomExpr(KnimeExpressionParser.AtomExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAtomExpr(KnimeExpressionParser.AtomExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterUnaryOp(KnimeExpressionParser.UnaryOpContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -101,18 +137,6 @@ public class KnimeExpressionBaseListener implements KnimeExpressionListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterAtom(KnimeExpressionParser.AtomContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitAtom(KnimeExpressionParser.AtomContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterFunctionArgs(KnimeExpressionParser.FunctionArgsContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -120,6 +144,54 @@ public class KnimeExpressionBaseListener implements KnimeExpressionListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitFunctionArgs(KnimeExpressionParser.FunctionArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAggregationArgs(KnimeExpressionParser.AggregationArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAggregationArgs(KnimeExpressionParser.AggregationArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterPositionalAggregationArgs(KnimeExpressionParser.PositionalAggregationArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPositionalAggregationArgs(KnimeExpressionParser.PositionalAggregationArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterNamedAggregationArgs(KnimeExpressionParser.NamedAggregationArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitNamedAggregationArgs(KnimeExpressionParser.NamedAggregationArgsContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterNamedAggregationArg(KnimeExpressionParser.NamedAggregationArgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitNamedAggregationArg(KnimeExpressionParser.NamedAggregationArgContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

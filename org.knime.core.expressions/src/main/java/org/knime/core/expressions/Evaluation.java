@@ -62,6 +62,7 @@ import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 
+import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.BinaryOp;
 import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.Ast.BooleanConstant;
@@ -202,6 +203,11 @@ final class Evaluation {
 
             // Apply the function
             return Typing.getFunctionImpl(node).apply(argComputers);
+        }
+
+        @Override
+        public Computer visit(final AggregationCall node) {
+            throw new IllegalStateException("not implemented yet");
         }
 
         private static Computer missingFallbackOperatorImpl(final ValueType outputType, final Computer arg1,

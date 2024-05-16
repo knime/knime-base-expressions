@@ -65,6 +65,7 @@ import static org.knime.core.expressions.Ast.BinaryOperator.MULTIPLY;
 import static org.knime.core.expressions.Ast.BinaryOperator.NOT_EQUAL_TO;
 import static org.knime.core.expressions.Ast.BinaryOperator.PLUS;
 import static org.knime.core.expressions.Ast.BinaryOperator.REMAINDER;
+import static org.knime.core.expressions.AstTestUtils.AGG;
 import static org.knime.core.expressions.AstTestUtils.BOOL;
 import static org.knime.core.expressions.AstTestUtils.COL;
 import static org.knime.core.expressions.AstTestUtils.FLOAT;
@@ -74,6 +75,9 @@ import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.STR;
+
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -198,6 +202,7 @@ final class ParserTest {
             OP_GREATER_THAN("10 > 20", OP(INT(10), GREATER_THAN, INT(20))), //
             OP_GREATER_THAN_EQUAL("10 >= 20", OP(INT(10), GREATER_THAN_EQUAL, INT(20))), //
             OP_EQUAL_TO_1("10 = 20", OP(INT(10), EQUAL_TO, INT(20))), //
+            OP_EQUAL_TO_X("'foo' = 20", OP(STR("foo"), EQUAL_TO, INT(20))), //
             OP_EQUAL_TO_2("10 == 20", OP(INT(10), EQUAL_TO, INT(20))), //
             OP_NOT_EQUAL_TO_1("10 != 20", OP(INT(10), NOT_EQUAL_TO, INT(20))), //
             OP_NOT_EQUAL_TO_2("10 <> 20", OP(INT(10), NOT_EQUAL_TO, INT(20))), //
@@ -239,10 +244,15 @@ final class ParserTest {
             // Function calls
             FUNC_NO_ARGS("my_func()", FUN("my_func")), //
             FUNC_SINGLE_ARG("a(1)", FUN("a", INT(1))), //
-            FUNC_UPPERCASE_ID("AB_00(1)", FUN("AB_00", INT(1))), //
-            FUNC_STARTING_UNDERSCORE("_func__(1,2,3)", FUN("_func__", INT(1), INT(2), INT(3))), //
             FUNC_TRAILING_COMMA("foo120(1,2,)", FUN("foo120", INT(1), INT(2))), //
             FUNC_COLUMN_ACCESS_PARM("foo($[\"col\"] , 2)", FUN("foo", COL("col"), INT(2))), //
+
+            // Aggregation functions
+            COL_AGG("COLUMN_MEAN(\"column name\")", AGG("COLUMN_MEAN", STR("column name"))), //
+            COL_AGG_NAMED_ARG("COLUMN_MEAN(\"column name\", ignore_missing=true)",
+                AGG("COLUMN_MEAN", List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
+            COL_AGG_ONLY_NAMED_ARGS("COLUMN_MEAN(column=\"column name\", ignore_missing=true)",
+                AGG("COLUMN_MEAN", List.of(), Map.of("column", STR("column name"), "ignore_missing", BOOL(true)))), //
 
             // Special stuff
 
@@ -343,6 +353,14 @@ final class ParserTest {
             UNMATCHED_CLOSING_SQ_STRING("Hello'"), //
             UNMATCHED_OPENING_DQ_STRING("\"Hello"), //
             UNMATCHED_CLOSING_DQ_STRING("Hello\""), //
+
+            // Invalid identifiers
+            FUNC_STARTING_UNDERSCORE("_func__(1,2,3)"), //
+
+            // Invalid aggregation args
+            AGG_WITH_EXPR_ARG("AB_00(1 + 2)"), //
+            AGG_WITH_NO_ARGS("FOO()"), //
+            AGG_WITH_POSITIONAL_AFTER_NAMED_ARGS("FOO(a=100, 10)"), //
 
             // Trying to break it
             NOT_OP_WITHOUT_SPACE("not10"), // NB: can maybe parsed to a constant at some point

@@ -5,16 +5,25 @@ grammar KnimeExpression;
 // Eternal rule for the full expression
 fullExpr: expr EOF;
 
+// atoms
+atom:
+    BOOLEAN
+    | INTEGER
+    | FLOAT
+    | STRING
+    | MISSING;
+
 // Any valid expression
 expr:
-    '$$' (shortName = IDENTIFIER | '['+ longName = STRING ']')      # flowVarAccess
-    | '$' (shortName = IDENTIFIER | '['+ longName = STRING ']')     # colAccess
-    | name = IDENTIFIER '(' functionArgs? ')'                       # functionCall
-    | expr op = MISSING_FALLBACK expr                               # binaryOp
-    | <assoc = right> expr op = EXPONENTIATE expr                   # binaryOp
-    | op = MINUS expr                                               # unaryOp
-    | expr op = (MULTIPLY | DIVIDE | MODULO | FLOOR_DIVIDE) expr    # binaryOp
-    | expr op = (PLUS | MINUS) expr                                 # binaryOp
+    (shortName = FLOW_VAR_IDENTIFIER | '$$['+ longName = STRING ']')  # flowVarAccess
+    | (shortName = COLUMN_IDENTIFIER | '$['+ longName = STRING ']')   # colAccess
+    | name = FUNCTION_IDENTIFIER '(' functionArgs? ')'                # functionCall
+    | name = AGGREGATION_IDENTIFIER '(' aggregationArgs ')'           # aggregationCall
+    | expr op = MISSING_FALLBACK expr                                 # binaryOp
+    | <assoc = right> expr op = EXPONENTIATE expr                     # binaryOp
+    | op = MINUS expr                                                 # unaryOp
+    | expr op = (MULTIPLY | DIVIDE | MODULO | FLOOR_DIVIDE) expr      # binaryOp
+    | expr op = (PLUS | MINUS) expr                                   # binaryOp
     | expr op = (
         LESS_THAN
         | LESS_THAN_EQUAL
@@ -27,13 +36,17 @@ expr:
     | expr op = AND expr                # binaryOp
     | expr op = OR expr                 # binaryOp
     | '(' inner = expr ')'              # parenthesisedExpr
-    | BOOLEAN                           # atom
-    | INTEGER                           # atom
-    | FLOAT                             # atom
-    | STRING                            # atom
-    | MISSING                           # atom;
+    | atom                              # atomExpr;
 
 functionArgs: expr (',' expr)* ','?;
+
+aggregationArgs:
+    (positionalAggregationArgs (',' namedAggregationArgs)? ','?)
+    | (namedAggregationArgs ','?);
+positionalAggregationArgs: atom (',' atom)*;
+namedAggregationArgs: namedAggregationArg (',' namedAggregationArg)*;
+namedAggregationArg: argName=NAMED_ARGUMENT_IDENTIFIER atom;
+
 
 // Single-line comment
 LINE_COMMENT: '#' ~[\r\n]* -> skip;
@@ -95,4 +108,8 @@ NOT: 'not';
 MISSING_FALLBACK: '??';
 
 // Identifier
-IDENTIFIER: [a-zA-Z_] [a-zA-Z_0-9]*;
+AGGREGATION_IDENTIFIER: [A-Z] [A-Z_0-9]*;
+FUNCTION_IDENTIFIER: [a-z] [a-z_0-9]*;
+COLUMN_IDENTIFIER: '$' [a-zA-Z_0-9]*;
+FLOW_VAR_IDENTIFIER: '$$' [a-zA-Z_0-9]*;
+NAMED_ARGUMENT_IDENTIFIER: [a-z] [a-z_0-9]* '=';

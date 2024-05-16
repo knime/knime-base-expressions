@@ -48,6 +48,7 @@
  */
 package org.knime.core.expressions;
 
+import static org.knime.core.expressions.Ast.aggregationCall;
 import static org.knime.core.expressions.Ast.binaryOp;
 import static org.knime.core.expressions.Ast.booleanConstant;
 import static org.knime.core.expressions.Ast.columnAccess;
@@ -64,9 +65,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
@@ -78,11 +82,13 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.knime.core.expressions.Ast.BinaryOperator;
+import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.antlr.KnimeExpressionBaseVisitor;
 import org.knime.core.expressions.antlr.KnimeExpressionLexer;
 import org.knime.core.expressions.antlr.KnimeExpressionParser;
+import org.knime.core.expressions.antlr.KnimeExpressionParser.AggregationCallContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.BinaryOpContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.ColAccessContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FlowVarAccessContext;
@@ -232,13 +238,13 @@ final class Parser {
 
         @Override
         public Ast visitColAccess(final ColAccessContext ctx) {
-            var col = ctx.shortName != null ? ctx.shortName.getText() : parseStringLiteral(ctx.longName);
+            var col = ctx.shortName != null ? ctx.shortName.getText().substring(1) : parseStringLiteral(ctx.longName);
             return columnAccess(col, createData(getLocation(ctx)));
         }
 
         @Override
         public Ast visitFlowVarAccess(final FlowVarAccessContext ctx) {
-            var name = ctx.shortName != null ? ctx.shortName.getText() : parseStringLiteral(ctx.longName);
+            var name = ctx.shortName != null ? ctx.shortName.getText().substring(2) : parseStringLiteral(ctx.longName);
             return flowVarAccess(name, createData(getLocation(ctx)));
         }
 
@@ -251,6 +257,37 @@ final class Parser {
                     ? List.<Ast> of() //
                     : argsContext.expr().stream().map(a -> a.accept(this)).toList();
             return functionCall(name, args, createData(getLocation(ctx)));
+        }
+
+        @Override
+        public Ast visitAggregationCall(final AggregationCallContext ctx) {
+            // NB: The cast to ConstantAst is safe because the grammar ensures that the arguments are constant
+
+            var positionalArgs = //
+                Optional.ofNullable(ctx.aggregationArgs().positionalAggregationArgs()) //
+                    .map(paa -> paa.atom().stream()) //
+                    .orElseGet(Stream::empty) //
+                    .map(a -> (ConstantAst)a.accept(this)) //
+                    .toList(); //
+
+            var namedArgs = //
+                Optional.ofNullable(ctx.aggregationArgs().namedAggregationArgs()) //
+                    .map(naa -> naa.namedAggregationArg().stream()) //
+                    .orElseGet(Stream::empty) //
+                    .collect( //
+                        Collectors.toMap( //
+                            // NB: The "=" is part of the text but we need to remove it
+                            arg -> removeLastChar(arg.argName.getText()), // identifier
+                            arg -> (ConstantAst)arg.atom().accept(this) // value
+                        ) //
+                    );
+
+            var name = ctx.name.getText();
+            return aggregationCall(name, new Arguments<>(positionalArgs, namedArgs), createData(getLocation(ctx)));
+        }
+
+        private static String removeLastChar(final String str) {
+            return str.substring(0, str.length() - 1);
         }
 
         @Override

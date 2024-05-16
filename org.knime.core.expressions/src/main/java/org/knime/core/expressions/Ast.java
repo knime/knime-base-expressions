@@ -60,15 +60,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.BinaryOp;
-import org.knime.core.expressions.Ast.BooleanConstant;
 import org.knime.core.expressions.Ast.ColumnAccess;
-import org.knime.core.expressions.Ast.FloatConstant;
+import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Ast.FunctionCall;
-import org.knime.core.expressions.Ast.IntegerConstant;
-import org.knime.core.expressions.Ast.MissingConstant;
-import org.knime.core.expressions.Ast.StringConstant;
 import org.knime.core.expressions.Ast.UnaryOp;
 
 /**
@@ -78,8 +75,12 @@ import org.knime.core.expressions.Ast.UnaryOp;
  * @author Tobias Pietzsch
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerConstant, FloatConstant, StringConstant,
-    ColumnAccess, FlowVarAccess, UnaryOp, BinaryOp, FunctionCall {
+public sealed interface Ast
+    permits ColumnAccess, FlowVarAccess, UnaryOp, BinaryOp, FunctionCall, AggregationCall, ConstantAst {
+
+    sealed interface ConstantAst extends Ast
+        permits MissingConstant, BooleanConstant, IntegerConstant, FloatConstant, StringConstant {
+    }
 
     /**
      * Additional data that is attached to the node. Note, that, the data is modifiable.
@@ -451,7 +452,6 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
      *
      * @param name the name of the function
      * @param args the arguments
-     * @param data
      * @return the node
      */
     static FunctionCall functionCall(final String name, final List<Ast> args) {
@@ -468,6 +468,30 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
      */
     static FunctionCall functionCall(final String name, final List<Ast> args, final Map<String, Object> data) {
         return new FunctionCall(name, args, data);
+    }
+
+    /**
+     * Create a new {@link AggregationCall} with the given arguments and with no data.
+     *
+     * @param name the name of the aggregation
+     * @param args the arguments
+     * @return the node
+     */
+    static AggregationCall aggregationCall(final String name, final Arguments<ConstantAst> args) {
+        return aggregationCall(name, args, new HashMap<>());
+    }
+
+    /**
+     * Create a new {@link AggregationCall} with the given arguments and with the given data.
+     *
+     * @param name the name of the aggregation
+     * @param args the arguments
+     * @param data
+     * @return the node
+     */
+    static AggregationCall aggregationCall(final String name, final Arguments<ConstantAst> args,
+        final Map<String, Object> data) {
+        return new AggregationCall(name, args, data);
     }
 
     // ======================================================
@@ -590,6 +614,8 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
         O visit(UnaryOp node) throws E;
 
         O visit(FunctionCall node) throws E;
+
+        O visit(AggregationCall aggregationCall) throws E;
     }
 
     /**
@@ -650,6 +676,11 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
         public Optional<O> visit(final FunctionCall node) throws E {
             return Optional.empty();
         }
+
+        @Override
+        public Optional<O> visit(final AggregationCall node) throws E {
+            return Optional.empty();
+        }
     }
 
     // ======================================================
@@ -661,7 +692,7 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
      *
      * @param data attached data
      */
-    record MissingConstant(Map<String, Object> data) implements Ast {
+    record MissingConstant(Map<String, Object> data) implements ConstantAst {
 
         @Override
         public String toExpression() {
@@ -681,7 +712,7 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
      * @param value the value
      * @param data attached data
      */
-    record BooleanConstant(boolean value, Map<String, Object> data) implements Ast {
+    record BooleanConstant(boolean value, Map<String, Object> data) implements ConstantAst {
 
         @Override
         public String toExpression() {
@@ -700,7 +731,7 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
      * @param value the value
      * @param data attached data
      */
-    record IntegerConstant(long value, Map<String, Object> data) implements Ast {
+    record IntegerConstant(long value, Map<String, Object> data) implements ConstantAst {
 
         @Override
         public String toExpression() {
@@ -719,7 +750,7 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
      * @param value the value
      * @param data attached data
      */
-    record FloatConstant(double value, Map<String, Object> data) implements Ast {
+    record FloatConstant(double value, Map<String, Object> data) implements ConstantAst {
 
         @Override
         public String toExpression() {
@@ -738,7 +769,7 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
      * @param value the value
      * @param data attached data
      */
-    record StringConstant(String value, Map<String, Object> data) implements Ast {
+    record StringConstant(String value, Map<String, Object> data) implements ConstantAst {
 
         @Override
         public String toExpression() {
@@ -874,4 +905,27 @@ public sealed interface Ast permits MissingConstant, BooleanConstant, IntegerCon
         }
     }
 
+    /**
+     * {@link Ast} representing a function call
+     *
+     * @param name the name of the function
+     * @param args the arguments of the function
+     * @param data attached data
+     */
+    record AggregationCall(String name, Arguments<ConstantAst> args, Map<String, Object> data) implements Ast {
+        @Override
+        public String toExpression() {
+            return name + args.renderArgumentList(ConstantAst::toExpression);
+        }
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public List<Ast> children() {
+            return new ArrayList<>(args.asList());
+        }
+    }
 }

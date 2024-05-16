@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.BinaryOp;
 import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.Ast.BooleanConstant;
@@ -230,6 +231,11 @@ final class Typing {
             // TODO(AP-22303) show better error if the function is not applicable
             return resolvedFunction.get().returnType(argTypes)
                 .orElseGet(() -> ErrorValueType.functionNotApplicable(node, argTypes));
+        }
+
+        @Override
+        public ValueType visit(final AggregationCall node) {
+            throw new IllegalStateException("not implemented yet");
         }
 
         private static ValueType arithmeticType(final BinaryOp node, final ValueType typeA, final ValueType typeB) {
