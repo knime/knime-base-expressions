@@ -112,6 +112,8 @@ public final class BuiltInFunctions {
         MathFunctions.AVERAGE, //
         MathFunctions.MEDIAN, //
         MathFunctions.BINOMIAL, //
+        MathFunctions.NORMAL, //
+        MathFunctions.ERROR_FUNCTION, //
         StringFunctions.COMPARE, //
         StringFunctions.CONTAINS, //
         StringFunctions.STARTS_WITH, //
