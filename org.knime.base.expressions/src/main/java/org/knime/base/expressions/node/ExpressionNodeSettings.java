@@ -66,29 +66,20 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
 
     public static final String DEFAULT_SCRIPT = """
             # Welcome to the KNIME Expression Editor!
+            # Here you can write expressions to manipulate data.
+            # To the right you can see a function list with docs
+            # for each. Here are some usage examples:
             #
-            # Here you can write short expressions to manipulate and analyze data in the
-            # table. To the right, you can see a function list with all the functions
-            # currently available, plus some documentation for each (if you can't see it,
-            # try pulling out the function catalog). Here are some examples of what you
-            # can do:
-            #
-            # 1. Calculate the sine of a column:
+            # 1. Calculate the sine of all column values:
             # sin($["My Column"])
             #
-            # 2. Divide all values in a column by a flow variable:
+            # 2. Divide column values by a flow variable:
             # $["My Column"] / $$["My Flow Variable"]
             #
-            # 3. Replace all MISSING values in a column by 42:
-            # $["My Integer Column"] ?? 42
-            #
-            # 4. String manipulation
+            # 3. String manipulation:
             # substring($["firstname"], 1, 4) + $["lastname"]
             #
-            # 5. Something more complicated?
-            # if($["My Column"] < 0, 12, $["My Column"]*3) + sqrt(456) / 7.8e9
-            #
-            # If you need help, try the K-AI button at the bottom left!
+            # If you need help, try the K-AI button!
             """;
 
     public static final String DEFAULT_CREATED_COLUMN = "New Column";
