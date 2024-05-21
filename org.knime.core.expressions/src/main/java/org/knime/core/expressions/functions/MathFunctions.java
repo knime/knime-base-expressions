@@ -185,14 +185,15 @@ public final class MathFunctions {
      * Approximation of the error function.
      */
     public static final ExpressionFunction ERROR_FUNCTION = functionBuilder() //
-        .name("erf") //
+        .name("error_function") //
         .description(
             "The error function has the following interpretation: for a random variable Y "
             + "that is normally distributed with mean 0 and standard deviation 1/√2, "
-            + "erf x is the probability that Y falls in the range [−x, x]. Here erf is the scaled error function, "
-            + "where the mean and standard deviation of the underlying can be adjusted."
+            + "error_function(x) is the probability that Y falls in the range [−x, x]. Here"
+            + "error_function is the scaled error function, where the mean and standard "
+            + "deviation of the underlying distribution can be adjusted."
           ) //
-        .keywords("gaussian", "distribution", "probability") //
+        .keywords("gaussian", "distribution", "probability", "erf") //
         .category(CATEGORY.name()) //
         .args( //
             arg("x", "value to evaluate the error function", isNumericOrOpt()), //
