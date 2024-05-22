@@ -116,6 +116,8 @@ public final class BuiltInFunctions {
         MathFunctions.BINOMIAL, //
         MathFunctions.NORMAL, //
         MathFunctions.ERROR_FUNCTION, //
+        MathFunctions.IS_NAN, //
+        MathFunctions.NAN_TO_MISSING, //
         StringFunctions.COMPARE, //
         StringFunctions.CONTAINS, //
         StringFunctions.STARTS_WITH, //

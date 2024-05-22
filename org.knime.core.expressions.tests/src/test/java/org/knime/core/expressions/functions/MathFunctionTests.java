@@ -1015,4 +1015,30 @@ final class MathFunctionTests {
             .impl("NaN 3",List.of(arg(1), arg(2), arg(Float.NaN)), Float.NaN ) //
             .tests();
     }
+
+    @TestFactory
+    List<DynamicNode> isNaN() {
+        return new FunctionTestBuilder(MathFunctions.IS_NAN) //
+            .typing("FLOAT", List.of(FLOAT), BOOLEAN) //
+            .illegalArgs("INTEGER", List.of(INTEGER)) //
+            .illegalArgs("STRING", List.of(STRING)) //
+            .illegalArgs("MISSING", List.of(MISSING)) //
+            .impl("FLOAT", List.of(arg(1.9)), false) //
+            .impl("MISSING", List.of(misFloat()), false) //
+            .impl("NaN", List.of(arg(Float.NaN)), true) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> NaNToMissing() {
+        return new FunctionTestBuilder(MathFunctions.NAN_TO_MISSING) //
+            .typing("FLOAT", List.of(FLOAT), FLOAT) //
+            .typing("FLOAT?", List.of(OPT_FLOAT), OPT_FLOAT) //
+            .illegalArgs("INTEGER", List.of(INTEGER)) //
+            .illegalArgs("STRING", List.of(STRING)) //
+            .impl("FLOAT", List.of(arg(1.9)), 1.9) //
+            .impl("NaN", List.of(arg(Float.NaN))) //
+            .impl("missing", List.of(misFloat())) //
+            .tests();
+    }
 }

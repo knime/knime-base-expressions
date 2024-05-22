@@ -49,6 +49,7 @@
 package org.knime.core.expressions.functions;
 
 import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.STRING;
 
@@ -111,17 +112,6 @@ public final class ExpressionFunctionBuilder {
      */
     public static Predicate<WarningMessageListener> anyMissing(final Collection<Computer> values) {
         return wml -> values.stream().anyMatch(c -> c.isMissing(wml));
-    }
-
-    /**
-     * Factory for isMissing argument to computers. Returns an Predicate<WarningMessageListener> that returns true iff
-     * at least one if the arguments is missing.
-     *
-     * @param values
-     * @return the predicate
-     */
-    public static Predicate<WarningMessageListener> anyMissing(final Computer... values) {
-        return wml -> Arrays.stream(values).anyMatch(c -> c.isMissing(wml));
     }
 
     /**
@@ -189,6 +179,16 @@ public final class ExpressionFunctionBuilder {
     /** @return an {@link ArgMatcher} that matches {@link ValueType#INTEGER} and {@link ValueType#OPT_INTEGER} */
     public static ArgMatcher isIntegerOrOpt() {
         return hasBaseType(INTEGER);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#FLOAT} */
+    public static ArgMatcher isFloat() {
+        return hasType(FLOAT);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#FLOAT} and {@link ValueType#OPT_FLOAT} */
+    public static ArgMatcher isFloatOrOpt() {
+        return hasBaseType(FLOAT);
     }
 
     /** @return an {@link ArgMatcher} that matches {@link ValueType#STRING} */

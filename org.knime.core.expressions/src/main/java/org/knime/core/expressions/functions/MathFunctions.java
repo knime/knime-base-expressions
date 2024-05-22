@@ -49,6 +49,7 @@
 package org.knime.core.expressions.functions;
 
 import static org.knime.core.expressions.Computer.toFloat;
+import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.allBaseTypesMatch;
@@ -56,6 +57,7 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.any
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.arg;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
+import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isFloatOrOpt;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isIntegerOrOpt;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isNumericOrOpt;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.optarg;
@@ -72,6 +74,7 @@ import java.util.function.ToLongFunction;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.OperatorCategory;
@@ -1770,6 +1773,56 @@ public final class MathFunctions {
         return t * Math.exp(-x * x - 1.26551223 + 1.00002368 * t + 0.37409196 * tPow[2] + 0.09678418 * tPow[3]
             - 0.18628806 * tPow[4] + 0.27886807 * tPow[5] - 1.13520398 * tPow[6] + 1.48851587 * tPow[7]
             - 0.82215223 * tPow[8] + 0.17087277 * tPow[9]);
+    }
+
+    /** Check if a number is NaN */
+    public static final ExpressionFunction IS_NAN = functionBuilder() //
+        .name("is_nan") //
+        .description("""
+                Check if a number is NaN (i.e. not a number).
+
+                Examples:
+                * `is_nan(0)` returns `false`
+                * `is_nan(sqrt(-1))` returns `true`
+                * `is_nan(MISSING)` returns `false`
+                """) //
+        .keywords("NaN") //
+        .category(CATEGORY.name()) //
+        .args(arg("x", "the number", isFloatOrOpt())) //
+        .returnType("true if x is NaN, false otherwise", "BOOLEAN", args -> BOOLEAN) //
+        .impl(MathFunctions::isNanImpl) //
+        .build();
+
+    private static Computer isNanImpl(final List<Computer> args) {
+        var c = toFloat(args.get(0));
+        return BooleanComputer.of(wml -> !c.isMissing(wml) && Double.isNaN(c.compute(wml)), wml -> false);
+    }
+
+    /** Convert NaN to MISSING */
+    public static final ExpressionFunction NAN_TO_MISSING = functionBuilder() //
+        .name("nan_to_missing") //
+        .description("""
+                Convert NaN to MISSING. If the input is not NaN, the output will be
+                the same as the input.
+
+                Examples:
+                * `nan_to_missing(0)` returns 0
+                * `nan_to_missing(sqrt(-1))` returns `MISSING`
+                * `nan_to_missing(MISSING)` returns `MISSING`
+                """) //
+        .keywords("NaN") //
+        .category(CATEGORY.name()) //
+        .args(arg("x", "the number", isFloatOrOpt())) //
+        .returnType("x if x is not NaN, MISSING otherwise", "NUMBER?", args -> FLOAT(anyOptional(args))) //
+        .impl(MathFunctions::nanToMissingImpl) //
+        .build();
+
+    private static Computer nanToMissingImpl(final List<Computer> args) {
+        var c = toFloat(args.get(0));
+        return FloatComputer.of( //
+            c::compute, //
+            wml -> c.isMissing(wml) || Double.isNaN(c.compute(wml)) //
+        );
     }
 
     // ======================= UTILITIES ==============================
