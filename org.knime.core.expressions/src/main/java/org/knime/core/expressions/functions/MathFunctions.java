@@ -65,7 +65,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 import java.util.stream.IntStream;
@@ -95,7 +94,19 @@ public final class MathFunctions {
     /** The maximum of multiple numbers */
     public static final ExpressionFunction MAX = functionBuilder() //
         .name("max") //
-        .description("The maximum value of a list of numbers") //
+        .description("""
+                The maximum value of a list of numbers. If all inputs are integers,
+                the output will be an integer. If any of the inputs is a float, the
+                output will be a float. If any argument is `MISSING`, the result is
+                also `MISSING`. At least two arguments are required, but beyond that
+                you can supply as many as you like.
+
+                Examples:
+                * `max(1, 2, 3)` returns 3
+                * `max(1.0, 2.0, 3.0)` returns 3.0
+                * `max(1, 2.0, 3)` returns 3.0
+                * `max(1, MISSING, 3)` returns MISSING
+                """) //
         .keywords("maximum") //
         .category(CATEGORY.name()) //
         .args( //
@@ -126,7 +137,19 @@ public final class MathFunctions {
     /** The minimum of multiple numbers */
     public static final ExpressionFunction MIN = functionBuilder() //
         .name("min") //
-        .description("The minimum value of a list of numbers") //
+        .description("""
+                The minimum value of a list of numbers. If all inputs are integers,
+                the output will be an integer. If any of the inputs is a float, the
+                output will be a float. If any argument is `MISSING`, the result is
+                also `MISSING`. At least two arguments are required, but beyond that
+                you can supply as many as you like.
+
+                Examples:
+                * `min(1, 2, 3)` returns 1
+                * `min(1.0, 2.0, 3.0)` returns 1.0
+                * `min(1, 2.0, 3)` returns 1.0
+                * `min(1, MISSING, 3)` returns MISSING
+                """) //
         .keywords("minimum") //
         .category(CATEGORY.name()) //
         .args( //
@@ -134,7 +157,7 @@ public final class MathFunctions {
             arg("input2", "second number", isNumericOrOpt()), //
             vararg("more", "additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("the smallest number of the arguments", "INTEGER? | FLOAT?",
+        .returnType("The smallest number of the arguments", "INTEGER? | FLOAT?",
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(MathFunctions::minImpl) //
         .build();
@@ -154,105 +177,24 @@ public final class MathFunctions {
         }
     }
 
-    /** The normal distribution */
-    public static final ExpressionFunction NORMAL = functionBuilder() //
-        .name("normal") //
-        .description(
-            "probability of the random variable for the given normal distribution") //
-        .keywords("gaussian", "distribution", "probability") //
-        .category(CATEGORY.name()) //
-        .args( //
-            arg("value", "random variable", isNumericOrOpt()), //
-            arg("mean", "mean value of the normal distribution", isNumericOrOpt()), //
-            optarg("standard deviation", "standard deviation of the normal distribution", isNumericOrOpt()) //
-        ) //
-        .returnType("probability of the random variable for the given normal distribution.", OPTIONAL_FLOAT,
-            args -> FLOAT(anyOptional(args))) //
-        .impl(MathFunctions::normalImpl) //
-        .build();
-
-    private static Computer normalImpl(final List<Computer> args) {
-        Predicate<WarningMessageListener> isMissing = wml -> args.stream().anyMatch(c -> c.isMissing(wml));
-        return FloatComputer.of(wml -> {
-            var value = toFloat(args.get(0)).compute(wml);
-            var mean = toFloat(args.get(1)).compute(wml);
-            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(wml) : 1.0;
-            return Math.exp(-Math.pow(value - mean, 2) / (2 * Math.pow(standardDeviation, 2)))
-                / (standardDeviation * Math.sqrt(2 * Math.PI));
-        }, isMissing);
-    }
-
-    /**
-     * Approximation of the error function.
-     */
-    public static final ExpressionFunction ERROR_FUNCTION = functionBuilder() //
-        .name("error_function") //
-        .description(
-            "The error function has the following interpretation: for a random variable Y "
-            + "that is normally distributed with mean 0 and standard deviation 1/√2, "
-            + "error_function(x) is the probability that Y falls in the range [−x, x]. Here"
-            + "error_function is the scaled error function, where the mean and standard "
-            + "deviation of the underlying distribution can be adjusted."
-          ) //
-        .keywords("gaussian", "distribution", "probability", "erf") //
-        .category(CATEGORY.name()) //
-        .args( //
-            arg("x", "value to evaluate the error function", isNumericOrOpt()), //
-            arg("mean", "Mean of the underlying normal distribution. For the standard error function "
-                + "set mean=0", isNumericOrOpt()), //
-            optarg("standard deviation", "Standard deviation of the underlying normal distribution. "
-                + "Classical Error function is sigma=1/√2 "
-                + "which is the default when no value is given.", isNumericOrOpt()) //
-        ) //
-        .returnType("probability of getting at least the value", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
-        .impl(MathFunctions::errorFunctionImpl) //
-        .build();
-
-    private static Computer errorFunctionImpl(final List<Computer> args) {
-        Predicate<WarningMessageListener> isMissing = wml -> args.stream().anyMatch(c -> c.isMissing(wml));
-        return FloatComputer.of(wml -> {
-            var value = toFloat(args.get(0)).compute(wml);
-            var mean = toFloat(args.get(1)).compute(wml);
-            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(wml) : (1.0/Math.sqrt(2));
-
-            double scaledValue = (value - mean) / (standardDeviation * Math.sqrt(2));
-            return erf(scaledValue);
-        }, isMissing);
-    }
-
-
-    /**
-     * Source: Numerical Recipes in Fortran 77: The Art of Scientific Computing.
-     * Cambridge University Press, 1992
-     * @param x
-     * @return error function result
-     */
-    private static double erf(final double x) {
-        double t = 1 / (1 + 0.5 * Math.abs(x));
-        if (x >= 0) {
-            return 1 - tau(x, t);
-        } else {
-            return tau(-x, t) - 1;
-        }
-    }
-
-    private static double tau(final double x, final double t) {
-        double[] tPow = new double[10];
-        tPow[0] = 1;
-        for (int i = 1; i < 10; i++) {
-            tPow[i] = tPow[i - 1] * t;
-        }
-        return t * Math.exp(-x * x - 1.26551223 + 1.00002368 * t + 0.37409196 * tPow[2] + 0.09678418 * tPow[3]
-                    - 0.18628806 * tPow[4] + 0.27886807 * tPow[5] - 1.13520398 * tPow[6]
-                    + 1.48851587 * tPow[7] - 0.82215223 * tPow[8] + 0.17087277 * tPow[9]);
-    }
-
     /** Index of the maximum of multiple numbers */
     public static final ExpressionFunction ARGMAX = functionBuilder() //
         .name("argmax") //
         .description("""
-                The index of the maximum of a list of numbers.
-                If there are multiple copies of the max value, return the index of the first one.
+                The index of the maximum value of a list of numbers, starting at 1.
+                If any argument is `MISSING`, the result is also `MISSING`. At least
+                two arguments are required, but beyond that you can supply as many
+                as you like.
+
+                If there are multiple copies of the max value, returns the index of
+                the first one.
+
+                Examples:
+                * `argmax(2, 4, 6)` returns 3
+                * `argmax(2.0, 4.0, 6.0)` returns 3
+                * `argmax(2, 4.0, 6)` returns 3
+                * `argmax(1, 2, 2)` returns 2
+                * `argmax(1, MISSING, 3)` returns MISSING
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
@@ -294,13 +236,24 @@ public final class MathFunctions {
         );
     }
 
-
     /** Index of the minimum of multiple numbers */
     public static final ExpressionFunction ARGMIN = functionBuilder() //
         .name("argmin") //
         .description("""
-                The index of the minimum of a list of numbers.
-                If there are multiple copies of the min value, return the index of the first one.
+                The index of the minimum value of a list of numbers, starting at 1.
+                If any argument is `MISSING`, the result is also `MISSING`. At least
+                two arguments are required, but beyond that you can supply as many
+                as you like.
+
+                If there are multiple copies of the min value, returns the index of
+                the first one.
+
+                Examples:
+                * `argmin(2, 4, 6)` returns 1
+                * `argmin(2.0, 4.0, 6.0)` returns 1
+                * `argmin(2, 4.0, 6)` returns 1
+                * `argmin(1, 2, 1)` returns 1
+                * `argmin(1, MISSING, 3)` returns MISSING
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
@@ -345,7 +298,15 @@ public final class MathFunctions {
     /** The absolute value of a number */
     public static final ExpressionFunction ABS = functionBuilder() //
         .name("abs") //
-        .description("The absolute value of a number") //
+        .description("""
+                The absolute value of a number. If the input is `MISSING`, the
+                output will also be `MISSING`.
+
+                Examples:
+                * `abs(1)` returns 1
+                * `abs(-2)` returns 2
+                * `abs(-3.0)` returns 3.0
+                """) //
         .keywords("absolute") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -365,7 +326,15 @@ public final class MathFunctions {
     /** The sine of one number */
     public static final ExpressionFunction SIN = functionBuilder() //
         .name("sin") //
-        .description("The sine of a number") //
+        .description("""
+                The sine of a number, with the input in radians. If the input is
+                `MISSING`, the output will also be `MISSING`.
+
+                Examples:
+                * `sin(0)` returns 0.0
+                * `sin(PI)` returns 0.0
+                * `sin(PI/2)` returns 1.0
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -381,7 +350,15 @@ public final class MathFunctions {
     /** The cosine of one number */
     public static final ExpressionFunction COS = functionBuilder() //
         .name("cos") //
-        .description("The cosine of a number") //
+        .description("""
+                The cosine of a number, with the input in radians. If the input is
+                `MISSING`, the output will also be `MISSING`.
+
+                Examples:
+                * `cos(0)` returns 1.0
+                * `cos(PI)` returns -1.0
+                * `cos(PI/2)` returns 0.0
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -397,7 +374,15 @@ public final class MathFunctions {
     /** The tangent of one number */
     public static final ExpressionFunction TAN = functionBuilder() //
         .name("tan") //
-        .description("The tangent of a number") //
+        .description("""
+                The tangent of a number, with the input in radians. If the input is
+                `MISSING`, the output will also be `MISSING`.
+
+                Examples:
+                * `tan(0)` returns 0.0
+                * `tan(PI)` returns 0.0
+                * `tan(PI/2)` returns +Infinity
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -413,7 +398,16 @@ public final class MathFunctions {
     /** The arcsine of one number */
     public static final ExpressionFunction ASIN = functionBuilder() //
         .name("asin") //
-        .description("The arcsine of a number") //
+        .description("""
+                The arcsine of a number, with the output in radians. If the input is
+                `MISSING`, the output will also be `MISSING`. If the input is
+                outside the range [-1, 1], a warning will be issued and the result
+                will be NaN.
+
+                Examples:
+                * `asin(0)` returns 0.0
+                * `asin(1)` returns 1.570796... (approx. PI/2)
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -437,7 +431,16 @@ public final class MathFunctions {
     /** The arccosine of one number */
     public static final ExpressionFunction ACOS = functionBuilder() //
         .name("acos") //
-        .description("The arccosine of a number") //
+        .description("""
+                The arccosine of a number, with the output in radians between -PI
+                and +PI. If the input is `MISSING`, the output will also be
+                `MISSING`. If the input is outside the range [-1, 1], a warning will
+                be issued and the result will be NaN.
+
+                Examples:
+                * `acos(0)` returns 1.570796... (approx. PI/2)
+                * `acos(1)` returns 0.0
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -461,7 +464,15 @@ public final class MathFunctions {
     /** The arctan of one number */
     public static final ExpressionFunction ATAN = functionBuilder() //
         .name("atan") //
-        .description("The arctangent of a number") //
+        .description("""
+                The arctangent of a number, with the output in radians between -PI/2
+                and +PI/2. If the input is `MISSING`, the output will also be
+                `MISSING`.
+
+                Examples:
+                * `atan(0)` returns 0.0
+                * `atan(1)` returns 0.785398... (approx. PI/4)
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -477,7 +488,21 @@ public final class MathFunctions {
     /** The arctan of two numbers */
     public static final ExpressionFunction ATAN2 = functionBuilder() //
         .name("atan2") //
-        .description("The arctangent of two numbers") //
+        .description("""
+                The arctangent of two numbers, with the output in radians between
+                -PI and +PI.
+
+                This differs from atan in that it knows the sign of both arguments,
+                so it can return the correct quadrant for the angle. For example,
+                `atan2(-1, -1)` returns -3PI/4, while `atan(-1/-1)` returns PI/4.
+
+                If both arguments are zero, the result is NaN and a warning is
+                issued. If the input is `MISSING`, the output will also be `MISSING`.
+
+                Examples:
+                * `atan2(1, 1)` returns 0.785398... (approx. PI/4)
+                * `atan2(-1, -1)` returns -2.356194... (approx. -3PI/4)
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
@@ -492,7 +517,17 @@ public final class MathFunctions {
         var y = toFloat(args.get(0));
         var x = toFloat(args.get(1));
         return FloatComputer.of( //
-            wml -> Math.atan2(y.compute(wml), x.compute(wml)), //
+            wml -> {
+                var xC = x.compute(wml);
+                var yC = y.compute(wml);
+
+                if (isNearZero(xC) && isNearZero(yC)) {
+                    wml.addWarning("invalid argument to atan2 (both args are zero)");
+                    return Float.NaN;
+                }
+
+                return Math.atan2(yC, xC);
+            }, //
             anyMissing(args) //
         );
     }
@@ -500,7 +535,14 @@ public final class MathFunctions {
     /** Hyperbolic sine of one number */
     public static final ExpressionFunction SINH = functionBuilder() //
         .name("sinh") //
-        .description("The hyperbolic sine of a number") //
+        .description("""
+                The hyperbolic sine of a number. If the input is `MISSING`, the
+                output will also be `MISSING`.
+
+                Examples:
+                * `sinh(0)` returns 0.0
+                * `sinh(1)` returns 1.175201...
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -516,7 +558,14 @@ public final class MathFunctions {
     /** Hyperbolic cosine of one number */
     public static final ExpressionFunction COSH = functionBuilder() //
         .name("cosh") //
-        .description("The hyperbolic cosine of a number") //
+        .description("""
+                The hyperbolic cosine of a number. If the input is `MISSING`, the
+                output will also be `MISSING`.
+
+                Examples:
+                * `cosh(0)` returns 1.0
+                * `cosh(1)` returns 1.543080...
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -526,21 +575,20 @@ public final class MathFunctions {
 
     private static Computer coshImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> {
-            var cC = c.compute(wml);
-
-            if (cC < 1) {
-                wml.addWarning("invalid argument to cosh (arg < 1)");
-            }
-
-            return Math.cosh(cC);
-        }, c::isMissing);
+        return FloatComputer.of(wml -> Math.cosh(c.compute(wml)), c::isMissing);
     }
 
     /** Hyperbolic tangent of one number */
     public static final ExpressionFunction TANH = functionBuilder() //
         .name("tanh") //
-        .description("The hyperbolic tangent of a number") //
+        .description("""
+                The hyperbolic tangent of a number. If the input is `MISSING`, the
+                output will also be `MISSING`.
+
+                Examples:
+                * `tanh(0)` returns 0.0
+                * `tanh(1)` returns 0.761594...
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -556,7 +604,14 @@ public final class MathFunctions {
     /** Hyperbolic arcsine of one number */
     public static final ExpressionFunction ASINH = functionBuilder() //
         .name("asinh") //
-        .description("The hyperbolic arcsine of a number") //
+        .description("""
+                The hyperbolic arcsine of a number. If the input is `MISSING`, the
+                output will also be `MISSING`.
+
+                Examples:
+                * `asinh(0)` returns 0.0
+                * `asinh(1)` returns 1.570796...
+                """) //
         .keywords("arcsinh", "arsinh") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -579,7 +634,17 @@ public final class MathFunctions {
     /** Hyperbolic arccosine of one number */
     public static final ExpressionFunction ACOSH = functionBuilder() //
         .name("acosh") //
-        .description("The hyperbolic arccosine of a number") //
+        .description("""
+                The hyperbolic arccosine of a number.
+
+                If the input is `MISSING`, the output will also be `MISSING`. If
+                the input is less than 1, a warning will be issued and the
+                result will be NaN.
+
+                Examples:
+                * `acosh(1)` returns 0.0
+                * `acosh(2)` returns 1.316957...
+                """) //
         .keywords("arccosh", "arcosh") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -593,6 +658,11 @@ public final class MathFunctions {
         ToDoubleFunction<WarningMessageListener> value = wml -> {
             var cC = c.compute(wml);
 
+            if (cC < 1) {
+                wml.addWarning("invalid argument to acosh (arg < 1)");
+                return Float.NaN;
+            }
+
             return Math.log(cC + Math.sqrt(cC * cC - 1));
         };
 
@@ -602,7 +672,17 @@ public final class MathFunctions {
     /** Hyperbolic arctangent of one number */
     public static final ExpressionFunction ATANH = functionBuilder() //
         .name("atanh") //
-        .description("The hyperbolic arctangent of a number") //
+        .description("""
+                The hyperbolic arctangent of a number.
+
+                If the input is `MISSING`, the output will also be `MISSING`. If the
+                input is outside the range [-1, 1], a warning will be issued and the
+                result will be NaN.
+
+                Examples:
+                * `atanh(0)` returns 0.0
+                * `atanh(0.5)` returns 0.549306...
+                """) //
         .keywords("arctanh", "artanh") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -629,8 +709,18 @@ public final class MathFunctions {
     /** The natural logarithm of one number */
     public static final ExpressionFunction LN = functionBuilder() //
         .name("ln") //
-        .description("The natural logarithm of a number") //
-        .keywords() //
+        .description("""
+                The natural logarithm of a number.
+
+                If the input is `MISSING`, the output will also be `MISSING`. If the
+                input is less than or equal to 0, a warning will be issued and the
+                result will be NaN.
+
+                Examples:
+                * `ln(1)` returns 0.0
+                * `ln(E)` returns 1.0
+                """) //
+        .keywords("natural log") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
         .returnType("the natural logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
@@ -653,8 +743,18 @@ public final class MathFunctions {
     /** The base-10 logarithm of one number */
     public static final ExpressionFunction LOG10 = functionBuilder() //
         .name("log10") //
-        .description("The base-10 logarithm of a number") //
-        .keywords() //
+        .description("""
+                The base-10 logarithm of a number.
+
+                If the input is `MISSING`, the output will also be `MISSING`. If the
+                input is less than or equal to 0, a warning will be issued and the
+                result will be NaN.
+
+                Examples:
+                * `log10(1)` returns 0.0
+                * `log10(10)` returns 1.0
+                """) //
+        .keywords("common log", "decimal log") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
         .returnType("the base-10 logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args)))
@@ -677,7 +777,17 @@ public final class MathFunctions {
     /** The base-2 logarithm of one number */
     public static final ExpressionFunction LOG2 = functionBuilder() //
         .name("log2") //
-        .description("The base-2 logarithm of a number") //
+        .description("""
+                The base-2 logarithm of a number.
+
+                If the input is `MISSING`, the output will also be `MISSING`. If the
+                input is less than or equal to 0, a warning will be issued and the
+                result will be NaN.
+
+                Examples:
+                * `log2(1)` returns 0.0
+                * `log2(2)` returns 1.0
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -701,7 +811,22 @@ public final class MathFunctions {
     /** The base-n logarithm of one number */
     public static final ExpressionFunction LOG_BASE = functionBuilder() //
         .name("log") //
-        .description("The logarithm of a number, with the given base") //
+        .description("""
+                The logarithm of a number, with the given base.
+
+                If the input is `MISSING`, the output will also be `MISSING`. If
+                either of the number or the base are less than or equal to 0,
+                or the base is 1, a warning will be issued and the result will be
+                NaN.
+
+                This is mathematically equivalent to `ln(x) / ln(b)`.
+
+                Examples:
+                * `log(1, 10)` returns 0.0
+                * `log(1000, 10)` returns 3.0
+                * `log(64, 2)` returns 6.0
+                * `log(0, 10)` returns -Infinity (and a warning)
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
@@ -720,15 +845,24 @@ public final class MathFunctions {
             var bC = b.compute(wml);
             var cC = c.compute(wml);
 
+            if (bC > 0 && isNearZero(cC)) {
+                wml.addWarning("invalid argument to log (n == 0, base > 0)");
+            }
+
             if (bC <= 0) {
                 wml.addWarning("invalid argument to log (base <= 0)");
+                return Float.NaN;
+            }
+
+            if (Math.abs(bC - 1) < 2 * Double.MIN_VALUE) {
+                wml.addWarning("invalid argument to log (base == 1)");
             }
 
             if (cC <= 0) {
                 wml.addWarning("invalid argument to log (number <= 0)");
             }
 
-            return (Math.abs(bC) < 2 * Double.MIN_VALUE) ? Float.NaN : (Math.log(cC) / Math.log(bC));
+            return Math.log(cC) / Math.log(bC);
         };
 
         return FloatComputer.of(value, anyMissing(args));
@@ -737,7 +871,22 @@ public final class MathFunctions {
     /** natural log of a number plus 1, i.e. ln(1+x) */
     public static final ExpressionFunction LOG1P = functionBuilder() //
         .name("log1p") //
-        .description("The natural logarithm of one plus a number") //
+        .description("""
+                The natural logarithm of one plus a number.
+
+                This is a more accurate way to compute the natural logarithm of
+                numbers close to 1, as it avoids the loss of precision that can
+                occur when adding 1 to a number close to 0 before taking the
+                logarithm.
+
+                If the input is `MISSING`, the output will also be `MISSING`. If
+                the input is less than or equal to -1, a warning will be issued
+                and the result will be NaN.
+
+                Examples:
+                * `log1p(0)` returns 0.0
+                * `log1p(1)` returns 0.693147...
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -764,8 +913,17 @@ public final class MathFunctions {
     /** exponent of a number */
     public static final ExpressionFunction EXP = functionBuilder() //
         .name("exp") //
-        .description("e raised to the power of a number") //
-        .keywords() //
+        .description("""
+                The exponent of a number, i.e. Euler's constant e raised to the
+                power of the number. If the input is `MISSING`, the output will also
+                be `MISSING`.
+
+                Examples:
+                * `exp(0)` returns 1.0
+                * `exp(1)` returns 2.718281... (approx. e)
+                * `exp(-1)` returns 0.367879... (approx. 1/e)
+                """) //
+        .keywords("exponent") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
         .returnType("exponent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
@@ -783,8 +941,25 @@ public final class MathFunctions {
     /** For two numbers, x to the power of y */
     public static final ExpressionFunction POW = functionBuilder() //
         .name("pow") //
-        .description("One number raised to the power of another") //
-        .keywords() //
+        .description("""
+                One number raised to the power of another.
+
+                If both arguments are integers, the result will be an integer. If
+                either argument is a float, the result will be a float.
+
+                If either argument is `MISSING`, the result will also be `MISSING`.
+                If both arguments are zero, or the base is zero and the exponent is
+                negative, then the result will be:
+                * NaN if at least one argument is a float
+                * 0 if both arguments are integers
+                In either case, a warning will be issued.
+
+                Examples:
+                * `pow(2, 3)` returns 8
+                * `pow(2.0, 3)` returns 8.0
+                * `pow(16, 0.5)` returns 4.0
+                """) //
+        .keywords("power") //
         .category(CATEGORY.name()) //
         .args( //
             arg("x", "the base", isNumericOrOpt()), //
@@ -804,8 +979,8 @@ public final class MathFunctions {
                     var xC = x.compute(wml);
                     var yC = y.compute(wml);
 
-                    if (xC == 0 && yC == 0) {
-                        wml.addWarning("invalid arguments to pow (pow(0,0) is undefined)");
+                    if (xC == 0 && yC <= 0) {
+                        wml.addWarning("invalid arguments to pow (pow(0, <=0) is undefined)");
                         return 0;
                     }
 
@@ -820,8 +995,8 @@ public final class MathFunctions {
                     var xC = x.compute(wml);
                     var yC = y.compute(wml);
 
-                    if (isNearZero(xC) && isNearZero(yC)) {
-                        wml.addWarning("invalid arguments to pow (pow(0,0) is undefined)");
+                    if (isNearZero(xC) && (isNearZero(yC) || yC < 0)) {
+                        wml.addWarning("invalid arguments to pow (pow(0, <=0) is undefined)");
                         return Float.NaN;
                     }
 
@@ -834,8 +1009,18 @@ public final class MathFunctions {
     /** square root of a number */
     public static final ExpressionFunction SQRT = functionBuilder() //
         .name("sqrt") //
-        .description("square root of a number") //
-        .keywords() //
+        .description("""
+                The square root of a number.
+
+                If the input is `MISSING`, the output will also be `MISSING`. If the
+                input is negative, a warning will be issued and the result will be
+                NaN.
+
+                Examples:
+                * `sqrt(4)` returns 2.0
+                * `sqrt(9)` returns 3.0
+                """) //
+        .keywords("squareroot") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
         .returnType("square root of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
@@ -860,8 +1045,25 @@ public final class MathFunctions {
     /** One number modulo another */
     public static final ExpressionFunction MOD = functionBuilder() //
         .name("mod") //
-        .description("One number modulo another") //
-        .keywords() //
+        .description("""
+                One number modulo another.
+
+                If both arguments are integers, the result will be an integer. If
+                either argument is a float, the result will be a float. The result
+                will always have the same sign as the numerator.
+
+                If either argument is `MISSING`, the result will also be `MISSING`.
+                If the divisor is zero, the result will be
+                * 0 if both arguments are integers
+                * NaN if either argument is a float
+                A warning will be issued in either case.
+
+                Examples:
+                * `mod(5, 3)` returns 2
+                * `mod(5.0, 3)` returns 2.0
+                * `mod(-5, 3)` returns -2
+                """) //
+        .keywords("modulo", "remainder") //
         .category(CATEGORY.name()) //
         .args( //
             arg("x", "the numerator", isNumericOrOpt()), //
@@ -879,7 +1081,7 @@ public final class MathFunctions {
                 var y = toInteger(args.get(1)).compute(wml);
 
                 if (y == 0) {
-                    wml.addWarning("invalid arguments to mod (y = 0)");
+                    wml.addWarning("invalid arguments to mod (y == 0)");
                     return 0;
                 }
 
@@ -905,7 +1107,15 @@ public final class MathFunctions {
     /** number from radians to degrees */
     public static final ExpressionFunction DEGREES = functionBuilder() //
         .name("degrees") //
-        .description("Convert a number from radians to degrees") //
+        .description("""
+                Convert a number from radians to degrees.
+
+                If the input is `MISSING`, the output will also be `MISSING`.
+
+                Examples:
+                * `degrees(0)` returns 0.0
+                * `degrees(PI)` returns 180.0
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -924,7 +1134,15 @@ public final class MathFunctions {
     /** number from degrees to radians */
     public static final ExpressionFunction RADIANS = functionBuilder() //
         .name("radians") //
-        .description("Convert a number from degrees to radians") //
+        .description("""
+                Convert a number from degrees to radians.
+
+                If the input is `MISSING`, the output will also be `MISSING`.
+
+                Examples:
+                * `radians(0)` returns 0.0
+                * `radians(180)` returns 3.141592... (approx. PI)
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -943,7 +1161,16 @@ public final class MathFunctions {
     /** floor of number */
     public static final ExpressionFunction FLOOR = functionBuilder() //
         .name("floor") //
-        .description("Round x to nearest smaller integer") //
+        .description("""
+                Round x to nearest smaller integer.
+
+                If the input is `MISSING`, the output will also be `MISSING`.
+
+                Examples:
+                * `floor(2.5)` returns 2
+                * `floor(-2.5)` returns -3
+                * `floor(1.0)` returns 1
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -962,7 +1189,16 @@ public final class MathFunctions {
     /** ceil of number */
     public static final ExpressionFunction CEIL = functionBuilder() //
         .name("ceil") //
-        .description("Round x to nearest larger integer") //
+        .description("""
+                Round x to nearest larger integer.
+
+                If the input is `MISSING`, the output will also be `MISSING`.
+
+                Examples:
+                * `ceil(2.5)` returns 3
+                * `ceil(-2.5)` returns -2
+                * `ceil(1.0)` returns 1
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -981,7 +1217,16 @@ public final class MathFunctions {
     /** truncate number, i.e. round towards zero */
     public static final ExpressionFunction TRUNC = functionBuilder() //
         .name("trunc") //
-        .description("Round x towards zero") //
+        .description("""
+                Round x to the nearest integer closer to zero.
+
+                If the input is `MISSING`, the output will also be `MISSING`.
+
+                Examples:
+                * `trunc(2.5)` returns 2
+                * `trunc(-2.5)` returns -2
+                * `trunc(1.0)` returns 1
+                """) //
         .keywords("rounddown") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -1000,7 +1245,26 @@ public final class MathFunctions {
     /** round towards nearest integer (n + 0.5 rounds to nearest closer to zero) */
     public static final ExpressionFunction ROUNDHALFDOWN = functionBuilder() //
         .name("roundhalfdown") //
-        .description("Round x to n decimal places. In case of ambiguity, round to the one closer to zero.") //
+        .description("""
+                Round x to n decimal places. In case of an argument halfway between
+                two possible rounded values, round to the one closer to zero.
+
+                If any argument is `MISSING`, the result will also be `MISSING`. If
+                the precision argument is not specified, the result will be of type
+                INTEGER, otherwise it will be of type FLOAT, even if the precision
+                is zero!
+
+                Examples:
+                * Without ambiguity:
+                    * `roundhalfdown(1.4)` returns 1
+                    * `roundhalfdown(1.6)` returns 2
+                    * `roundhalfdown(-1.44, 1)` returns -1.4
+                    * `roundhalfdown(-1.4, 0)` returns -1.0
+                * Halfway between two possible rounded values:
+                    * `roundhalfdown(2.5)` returns 2
+                    * `roundhalfdown(-2.5)` returns -2
+                    * `roundhalfdown(1.65, 1)` returns 1.6
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
@@ -1032,7 +1296,26 @@ public final class MathFunctions {
     /** round towards nearest integer (n + 0.5 rounds to nearest further from zero) */
     public static final ExpressionFunction ROUNDHALFUP = functionBuilder() //
         .name("roundhalfup") //
-        .description("Round x to n decimal places. In case of ambiguity, round to the one further from zero.") //
+        .description("""
+                Round x to n decimal places. In case of an argument halfway between
+                two possible rounded values, round to the one further from zero.
+
+                If any argument is `MISSING`, the result will also be `MISSING`. If
+                the precision argument is not specified, the result will be of type
+                INTEGER, otherwise it will be of type FLOAT, even if the precision
+                is zero!
+
+                Examples:
+                * Without ambiguity:
+                    * `roundhalfup(1.4)` returns 1
+                    * `roundhalfup(1.6)` returns 2
+                    * `roundhalfup(-1.44, 1)` returns -1.4
+                    * `roundhalfup(-1.4, 0)` returns -1.0
+                * Halfway between two possible rounded values:
+                    * `roundhalfup(2.5)` returns 3
+                    * `roundhalfup(-2.5)` returns -3
+                    * `roundhalfup(1.65, 1)` returns 1.7
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
@@ -1064,7 +1347,29 @@ public final class MathFunctions {
     /** round towards nearest integer (n + 0.5 rounds to nearest even) */
     public static final ExpressionFunction ROUNDHALFEVEN = functionBuilder() //
         .name("round") //
-        .description("Round x to n decimal places. In case of ambiguity, round to the one that is even.") //
+        .description("""
+                Round x to n decimal places. In case of an argument halfway between
+                two possible rounded values, round to the one that ends with an even
+                digit.
+
+                If any argument is `MISSING`, the result will also be `MISSING`. If
+                the precision argument is not specified, the result will be of type
+                INTEGER, otherwise it will be of type FLOAT, even if the precision
+                is zero!
+
+                Examples:
+                * Without ambiguity:
+                    * `round(1.4)` returns 1
+                    * `round(1.6)` returns 2
+                    * `round(-1.44, 1)` returns -1.4
+                    * `round(-1.4, 0)` returns -1.0
+                * Halfway between two possible rounded values:
+                    * `round(2.5)` returns 2
+                    * `round(-2.5)` returns -2
+                    * `round(3.5)` returns 4
+                    * `round(-3.5)` returns -4
+                    * `round(1.65, 1)` returns 1.6
+                """) //
         .keywords("roundhalfeven") //
         .category(CATEGORY.name()) //
         .args( //
@@ -1096,7 +1401,15 @@ public final class MathFunctions {
     /** The sign of one number */
     public static final ExpressionFunction SIGN = functionBuilder() //
         .name("sign") //
-        .description("The sign of the number") //
+        .description("""
+                Get the sign of a number. If  the input is `MISSING`, the output
+                will also be `MISSING`.
+
+                Examples:
+                * `sign(0)` returns 0
+                * `sign(42)` returns 1
+                * `sign(-0.3)` returns -1
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isNumericOrOpt())) //
@@ -1112,7 +1425,17 @@ public final class MathFunctions {
     /** The mean of multiple numbers */
     public static final ExpressionFunction AVERAGE = functionBuilder() //
         .name("average") //
-        .description("The mean value of a list of numbers") //
+        .description("""
+                The mean value of a list of numbers. If any argument is
+                `MISSING`, the result is also `MISSING`. At least two arguments
+                are required, but beyond that you can supply as many as you
+                like.
+
+                Examples:
+                * `average(2, 4, 6)` returns 4.0
+                * `average(1, 2, 3, 4, 5)` returns 3.0
+                * `average(1, 2, MISSING, 4, 5)` returns `MISSING`
+                """) //
         .keywords("mean") //
         .category(CATEGORY.name()) //
         .args( //
@@ -1136,7 +1459,17 @@ public final class MathFunctions {
     /** The median of multiple numbers */
     public static final ExpressionFunction MEDIAN = functionBuilder() //
         .name("median") //
-        .description("The median value of a list of numbers") //
+        .description("""
+                The median value of a list of numbers. If any argument is
+                `MISSING`, the result is also `MISSING`. At least two arguments
+                are required, but beyond that you can supply as many as you
+                like.
+
+                Examples:
+                * `median(2, 4, 6)` returns 4.0
+                * `median(2, 4, 6, 1000)` returns 5.0
+                * `median(1, 2, MISSING, 4, 5)` returns `MISSING`
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
@@ -1168,8 +1501,31 @@ public final class MathFunctions {
     /** Binomial coefficient nCr of two numbers */
     public static final ExpressionFunction BINOMIAL = functionBuilder() //
         .name("binomial") //
-        .description("Binomial coefficient nCr = n!/r!(n-r)!") //
-        .keywords() //
+        .description("""
+                The binomial coefficient, also known as "n choose r", is the number
+                of ways to choose an unordered subset of r elements from a set of n
+                elements. It is also the coefficient of the x^r term in the binomial
+                expansion of (1 + x)^n.
+
+                The binomial coefficient is calculated as:
+
+                `binomial(n, r) = n! / (r! * (n-r)!)`
+
+                where `!` denotes the factorial function.
+
+                If either input is `MISSING`, the result will also be `MISSING`. If
+                any of the following are true:
+                * r < 0
+                * n < 0
+                * r > n
+                a warning will be issued and the result will be 0.
+
+                Examples:
+                * `binomial(5, 3)` returns 10
+                * `binomial(0, 0)` returns 1
+                * `binomial(10, 0)` returns 1
+                """) //
+        .keywords("choose", "permutations") //
         .category(CATEGORY.name()) //
         .args( //
             arg("n", "n", isIntegerOrOpt()), //
@@ -1229,6 +1585,135 @@ public final class MathFunctions {
         };
 
         return IntegerComputer.of(value, anyMissing(args));
+    }
+
+    /** The normal distribution */
+    public static final ExpressionFunction NORMAL = functionBuilder() //
+        .name("normal") //
+        .description("""
+                Compute the probability density function of the normal distribution
+                at a given value, mean, and standard deviation. If the standard
+                deviation is not provided, it is taken to be 1.
+
+                If any of the arguments are `MISSING`, the result will also be
+                `MISSING`. If the standard deviation is less than or equal to 0, a
+                warning will be issued and the result will be NaN.
+
+                Examples:
+                * `normal(1, 0)` returns 0.241970...
+                * `normal(0, 0, 1)` returns 0.398942...
+                """) //
+        .keywords("gaussian", "distribution", "probability") //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("value", "random variable", isNumericOrOpt()), //
+            arg("mean", "mean value of the normal distribution", isNumericOrOpt()), //
+            optarg("standard deviation", "standard deviation of the normal distribution", isNumericOrOpt()) //
+        ) //
+        .returnType("probability of the random variable for the given normal distribution.", OPTIONAL_FLOAT,
+            args -> FLOAT(anyOptional(args))) //
+        .impl(MathFunctions::normalImpl) //
+        .build();
+
+    private static Computer normalImpl(final List<Computer> args) {
+        return FloatComputer.of(wml -> {
+            var value = toFloat(args.get(0)).compute(wml);
+            var mean = toFloat(args.get(1)).compute(wml);
+            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(wml) : 1.0;
+
+            if (isNearZero(standardDeviation) || standardDeviation < 0) {
+                wml.addWarning("invalid argument to error_function (standard deviation <= 0)");
+                return Float.NaN;
+            }
+
+            return Math.exp(-Math.pow(value - mean, 2) / (2 * Math.pow(standardDeviation, 2)))
+                / (standardDeviation * Math.sqrt(2 * Math.PI));
+        }, anyMissing(args));
+    }
+
+    /**
+     * Approximation of the error function.
+     */
+    public static final ExpressionFunction ERROR_FUNCTION = functionBuilder() //
+        .name("error_function") //
+        .description("""
+                Compute the value of the error function at a given point, with the
+                specified mean and optionally the standard deviation. If the
+                standard deviation is not provided, it is taken to be 1/√2.
+
+                The error function has the following interpretation: for a random
+                variable Y that is normally distributed with mean 0 and standard
+                deviation 1/√2, error_function(x) is the probability that Y falls
+                in the range [−x, x]. Here error_function is the scaled error
+                function, so the mean and standard deviation of the underlying
+                distribution can be adjusted.
+
+                The cumulative distribution function of the normal distribution can
+                be calculated from the error function:
+                `0.5 * (1 + error_function(x))`.
+
+                If any of the arguments are `MISSING`, the result will also be
+                `MISSING`. If the standard deviation is less than or equal to 0, a
+                warning will be issued and the result will be NaN.
+
+                Examples:
+                * `error_function(0, 0)` returns approx. 0.0
+                * `error_function(1, 0)` returns 0.8427007...
+                * `error_function(1, 0, 1)` returns 0.682689...
+                """) //
+        .keywords("gaussian", "distribution", "probability") //
+        .category(CATEGORY.name()) //
+        .args( //
+            arg("x", "value at which to evaluate the error function", isNumericOrOpt()), //
+            arg("mean", "mean of the underlying normal distribution", isNumericOrOpt()), //
+            optarg("standard deviation",
+                "standard deviation of the underlying normal distribution. If unspecified, defaults to 1/√2.",
+                isNumericOrOpt()) //
+        ) //
+        .returnType("probability of getting at least the value", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .impl(MathFunctions::errorFunctionImpl) //
+        .build();
+
+    private static Computer errorFunctionImpl(final List<Computer> args) {
+        return FloatComputer.of(wml -> {
+            var value = toFloat(args.get(0)).compute(wml);
+            var mean = toFloat(args.get(1)).compute(wml);
+            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(wml) : (1.0 / Math.sqrt(2));
+
+            if (isNearZero(standardDeviation) || standardDeviation < 0) {
+                wml.addWarning("invalid argument to error_function (standard deviation <= 0)");
+                return Float.NaN;
+            }
+
+            double scaledValue = (value - mean) / (standardDeviation * Math.sqrt(2));
+            return erf(scaledValue);
+        }, anyMissing(args));
+    }
+
+    /**
+     * Source: Numerical Recipes in Fortran 77: The Art of Scientific Computing. Cambridge University Press, 1992
+     *
+     * @param x
+     * @return error function result
+     */
+    private static double erf(final double x) {
+        double t = 1 / (1 + 0.5 * Math.abs(x));
+        if (x >= 0) {
+            return 1 - tau(x, t);
+        } else {
+            return tau(-x, t) - 1;
+        }
+    }
+
+    private static double tau(final double x, final double t) {
+        double[] tPow = new double[10];
+        tPow[0] = 1;
+        for (int i = 1; i < 10; i++) {
+            tPow[i] = tPow[i - 1] * t;
+        }
+        return t * Math.exp(-x * x - 1.26551223 + 1.00002368 * t + 0.37409196 * tPow[2] + 0.09678418 * tPow[3]
+            - 0.18628806 * tPow[4] + 0.27886807 * tPow[5] - 1.13520398 * tPow[6] + 1.48851587 * tPow[7]
+            - 0.82215223 * tPow[8] + 0.17087277 * tPow[9]);
     }
 
     // ======================= UTILITIES ==============================

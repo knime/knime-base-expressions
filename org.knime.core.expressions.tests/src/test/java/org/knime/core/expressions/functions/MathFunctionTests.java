@@ -336,7 +336,6 @@ final class MathFunctionTests {
             .implWithTolerance("FLOAT", List.of(arg(1.2)), Math.cosh(1.2)) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
-            .warns("< 1", List.of(arg(0.9))) //
             .tests();
     }
 
@@ -392,6 +391,7 @@ final class MathFunctionTests {
             .impl("NaN", List.of(arg(0.7)), Float.NaN) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .warns("<1", List.of(arg(0.9))) //
             .tests();
     }
 
@@ -546,6 +546,7 @@ final class MathFunctionTests {
             .typing("FLOAT", List.of(FLOAT, FLOAT), FLOAT) //
             .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_INTEGER) //
             .typing("FLOAT?", List.of(OPT_FLOAT, FLOAT), OPT_FLOAT) //
+            .typing("INTEGER + FLOAT", List.of(INTEGER, FLOAT), FLOAT) //
             .illegalArgs("INTEGER", List.of(INTEGER)) //
             .illegalArgs("TOO MANY FLOATS", List.of(FLOAT, FLOAT, FLOAT)) //
             .illegalArgs("STRING", List.of(STRING)) //
@@ -557,7 +558,14 @@ final class MathFunctionTests {
             .impl("missing first FLOAT", List.of(misFloat(), arg(5.2))) //
             .impl("missing second INTEGER", List.of(arg(5), misInteger())) //
             .impl("missing second FLOAT", List.of(arg(5.2), misFloat())) //
+            .impl("0.0^0.0", List.of(arg(0.0), arg(0.0)), Float.NaN) //
+            .impl("0^0", List.of(arg(0), arg(0)), 0) //
+            .impl("0^negative", List.of(arg(0), arg(-1)), 0) //
+            .impl("0.0^negative", List.of(arg(0.0), arg(-1)), Float.NaN) //
             .warns("0^0", List.of(arg(0), arg(0))) //
+            .warns("0.0^0.0", List.of(arg(0.0), arg(0.0))) //
+            .warns("0^negative", List.of(arg(0), arg(-1))) //
+            .warns("0.0^negative", List.of(arg(0.0), arg(-1))) //
             .tests();
     }
 
@@ -895,15 +903,16 @@ final class MathFunctionTests {
             .typing("INTEGER", List.of(INTEGER, INTEGER), FLOAT) //
             .typing("FLOAT", List.of(FLOAT, FLOAT), FLOAT) //
             .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_FLOAT) //
-            .typing("INTEGER+FLOAT", List.of(INTEGER, FLOAT, FLOAT), FLOAT)
+            .typing("INTEGER+FLOAT", List.of(INTEGER, FLOAT, FLOAT), FLOAT) //
             .illegalArgs("STRING", List.of(STRING)) //
             .illegalArgs("BOOLEAN", List.of(BOOLEAN)) //
             .illegalArgs("MISSING", List.of(MISSING)) //
             .illegalArgs("TOO FEW", List.of(INTEGER)) //
-            .implWithTolerance("peak value", List.of(arg(0), arg(0),arg(1)), 1/(Math.sqrt(2*Math.PI))) //
-            .implWithTolerance("peak value without deviation", List.of(arg(0), arg(0)), 1/(Math.sqrt(2*Math.PI))) //
-            .implWithTolerance("far away", List.of(arg(0), arg(-1000),arg(1)), 0) //
-            .implWithTolerance("value 1,0", List.of(arg(1), arg(0)), 0.241970725,-10^-6) //
+            .warns("negative deviation", List.of(arg(0), arg(0), arg(-1))) //
+            .implWithTolerance("peak value", List.of(arg(0), arg(0), arg(1)), 1 / (Math.sqrt(2 * Math.PI))) //
+            .implWithTolerance("peak value without deviation", List.of(arg(0), arg(0)), 1 / (Math.sqrt(2 * Math.PI))) //
+            .implWithTolerance("far away", List.of(arg(0), arg(-1000), arg(1)), 0) //
+            .implWithTolerance("value 1,0", List.of(arg(1), arg(0)), 0.241970725, -10 ^ -6) //
             .tests();
     }
 
@@ -913,18 +922,19 @@ final class MathFunctionTests {
             .typing("INTEGER", List.of(INTEGER, INTEGER), FLOAT) //
             .typing("FLOAT", List.of(FLOAT, FLOAT), FLOAT) //
             .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_FLOAT) //
-            .typing("INTEGER+FLOAT", List.of(INTEGER, FLOAT, FLOAT), FLOAT)
+            .typing("INTEGER+FLOAT", List.of(INTEGER, FLOAT, FLOAT), FLOAT) //
             .illegalArgs("STRING", List.of(STRING)) //
             .illegalArgs("BOOLEAN", List.of(BOOLEAN)) //
             .illegalArgs("MISSING", List.of(MISSING)) //
             .illegalArgs("TOO FEW", List.of(INTEGER)) //
-            .implWithTolerance("inflection point", List.of(arg(0), arg(0),arg(1)), 0.,-10^-6) //
-            .implWithTolerance("peak value", List.of(arg(100), arg(0),arg(1)), 1,-10^-6) //
-            .implWithTolerance("peak value without deviation", List.of(arg(100), arg(0)), 1,-10^-6) //
-            .implWithTolerance("should be zero", List.of(arg(-100), arg(100)), 0,-10^-6) //
-            .implWithTolerance("value 1", List.of(arg(1), arg(0)), 0.842700793,-10^-6)
-            .implWithTolerance("value 2", List.of(arg(2), arg(0)), 0.995322265,-10^-6)
-            .implWithTolerance("value 3", List.of(arg(3), arg(0)), 0.999977909,-10^-6)
+            .warns("negative deviation", List.of(arg(0), arg(0), arg(-1))) //
+            .implWithTolerance("inflection point", List.of(arg(0), arg(0), arg(1)), 0., -10 ^ -6) //
+            .implWithTolerance("peak value", List.of(arg(100), arg(0), arg(1)), 1, -10 ^ -6) //
+            .implWithTolerance("peak value without deviation", List.of(arg(100), arg(0)), 1, -10 ^ -6) //
+            .implWithTolerance("should be zero", List.of(arg(-100), arg(100)), 0, -10 ^ -6) //
+            .implWithTolerance("value 1", List.of(arg(1), arg(0)), 0.842700793, -10 ^ -6) //
+            .implWithTolerance("value 2", List.of(arg(2), arg(0)), 0.995322265, -10 ^ -6) //
+            .implWithTolerance("value 3", List.of(arg(3), arg(0)), 0.999977909, -10 ^ -6) //
             .tests();
     }
 }

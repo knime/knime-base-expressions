@@ -93,6 +93,7 @@ import org.knime.core.expressions.WarningMessageListener;
  * Implementation of built-in functions that manipulate strings.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
 @SuppressWarnings("javadoc")
 public final class StringFunctions {
@@ -106,14 +107,29 @@ public final class StringFunctions {
 
     public static final ExpressionFunction COMPARE = functionBuilder() //
         .name("compare") //
-        .description("Compares two strings lexicographically") //
-        .keywords() //
+        .description("""
+                Compares two strings lexicographically, returning the lexographical
+                distance between them. The function returns a negative number, zero,
+                or a positive number when string1 is less than, equal to, or greater
+                than string2 respectively.
+
+                If either string is `MISSING`, the result is also `MISSING`.
+
+                 Examples:
+                 * `compare("abc", "abc")` returns 0
+                 * `compare("abc", "ABC")` returns 32
+                 * `compare("ABC", "abc")` returns -32
+                 * `compare("ab", "abc")` returns -1
+                 * `compare("", "ABC")` returns -3
+                 * `compare("ABC", "")` returns 3
+                """) //
+        .keywords("match", "equals") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("x", "the first string", isStringOrOpt()), //
-            arg("y", "the second string", isStringOrOpt()) //
+            arg("string1", "the first string", isStringOrOpt()), //
+            arg("string2", "the second string", isStringOrOpt()) //
         ) //
-        .returnType("-1 if x < y, 0 if x == y, and 1 if x > y", "INTEGER?",
+        .returnType("returns the lexicographical distance `x - y`; if the strings are equal this is 0", "INTEGER?",
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::compareImpl) //
         .build();
@@ -130,15 +146,27 @@ public final class StringFunctions {
 
     public static final ExpressionFunction CONTAINS = functionBuilder() //
         .name("contains") //
-        .description("Checks if a string contains another string") //
-        .keywords() //
+        .description("""
+                This function returns `true` if the specified string contains the
+                search term. It can optionally perform a case-insensitive match
+                using the "i" modifier. If the string or search term is `MISSING`,
+                the result is also `MISSING`.
+
+                Examples:
+                * `contains("Hello World", "world")` returns `false`\\
+                  By default, the match is case-sensitive.
+                * `contains("Hello World", "world", "i")` returns `true`\\
+                  With the "i" modifier, the match becomes case-insensitive.
+                * `contains("OpenAI", "AI")` returns `true`
+                """) //
+        .keywords("match", "pattern", "includes") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string to check", isStringOrOpt()), //
+            arg("string", "the string to check", isStringOrOpt()), //
             arg("search", "the search term", isStringOrOpt()), //
-            optarg("modifiers", "(optional), \"i\" for ignore case (root locale)", isString()) //
+            optarg("modifiers", "(optional), \"i\" case-insensitive match (root locale)", isString()) //
         ) //
-        .returnType("true if str contains the search term, false otherwise", "BOOLEAN?",
+        .returnType("true if string contains the search term, false otherwise", "BOOLEAN?",
             args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::containsImpl) //
         .build();
@@ -147,10 +175,8 @@ public final class StringFunctions {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
 
-        // Modifiers
         final Predicate<WarningMessageListener> ignoreCase;
         if (args.size() == 3) {
-            // modifier present
             var modifier = (StringComputer)args.get(2);
             ignoreCase = wml -> modifier.compute(wml).contains("i");
         } else {
@@ -168,13 +194,24 @@ public final class StringFunctions {
 
     public static final ExpressionFunction STARTS_WITH = functionBuilder() //
         .name("starts_with") //
-        .description("Check if the string starts with the given string") //
-        .keywords() //
+        .description("""
+                Check whether the specified string begins with the provided prefix
+                string. Matching is case-sensitive. If any of the arguments are
+                `MISSING`, the result is also `MISSING`.
+
+                The optional modifiers argument can be used to specify case-insensitive
+                matching.
+
+                Examples:
+                * `starts_with("Hello world", "Hello")` returns `true`
+                * `starts_with("Hello world", "abc")` returns `false`
+                """) //
+        .keywords("match", "pattern") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string to check", isStringOrOpt()), //
-            arg("prefix", "the prefix to check", isStringOrOpt()) //
-        ) //
+            arg("string", "the string to check", isStringOrOpt()), //
+            arg("prefix", "the prefix to check", isStringOrOpt()), //
+            optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString())) //
         .returnType("true if the string starts with prefix, false otherwise", "BOOLEAN?", //
             args -> BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::startsWithImpl) //
@@ -185,21 +222,44 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
 
         return BooleanComputer.of( //
-            wml -> c1.compute(wml).startsWith(c2.compute(wml)), //
+            wml -> {
+                String s1 = c1.compute(wml);
+                String s2 = c2.compute(wml);
+                String modifiers = extractModifiersOrDefault(args, 2, wml);
+
+                if (modifiers.contains("i")) {
+                    s1 = s1.toLowerCase(Locale.ROOT);
+                    s2 = s2.toLowerCase(Locale.ROOT);
+                }
+
+                return s1.startsWith(s2);
+            }, //
             anyMissing(args) //
         );
     }
 
     public static final ExpressionFunction ENDS_WITH = functionBuilder() //
         .name("ends_with") //
-        .description("Check if the string ends with the given string") //
-        .keywords() //
+        .description("""
+                Check whether the specified string ends with the provided suffix
+                string. Matching is case-sensitive. If any of the arguments are
+                `MISSING`, the result is also `MISSING`.
+
+                The optional modifiers argument can be used to specify case-insensitive
+                matching.
+
+                Examples:
+                * `ends_with("Hello world", "world")` returns `true`
+                * `ends_with("Hello world", "abs")` returns `false`
+                """) //
+        .keywords("match", "pattern") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string to check", isStringOrOpt()), //
-            arg("suffix", "the suffix to check", isStringOrOpt()) //
+            arg("string", "the string to check", isStringOrOpt()), //
+            arg("suffix", "the suffix to check", isStringOrOpt()), //
+            optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
-        .returnType("true if the string ends with suffix, false otherwise", "BOOLEAN?", //
+        .returnType("`true` if the string ends with suffix, `false` otherwise", "BOOLEAN?", //
             args -> BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::endsWithImpl) //
         .build();
@@ -209,7 +269,18 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
 
         return BooleanComputer.of( //
-            wml -> c1.compute(wml).endsWith(c2.compute(wml)), //
+            wml -> {
+                String s1 = c1.compute(wml);
+                String s2 = c2.compute(wml);
+                String modifiers = extractModifiersOrDefault(args, 2, wml);
+
+                if (modifiers.contains("i")) {
+                    s1 = s1.toLowerCase(Locale.ROOT);
+                    s2 = s2.toLowerCase(Locale.ROOT);
+                }
+
+                return s1.endsWith(s2);
+            }, //
             anyMissing(args) //
         );
     }
@@ -218,17 +289,33 @@ public final class StringFunctions {
     public static final ExpressionFunction LIKE = functionBuilder() //
         .name("like") //
         .description("""
-                Check if string matches the given pattern using SQL LIKE syntax.
-                 * `_` is a single-character wildcard
-                 * `%` represents 0, 1, or more characters
-                 * to match a literal `%` or `_`, use `[%]` or `[_]`
+                Check if string matches the given pattern using the syntax of SQL's
+                LIKE:
+                * `_` is a single-character wildcard
+                * `%` represents 0, 1, or more characters
+                * to match a literal `%` or `_`, use `[%]` or `[_]`
+
+                The optional modifiers argument gives the ability to tune the search
+                parameters:
+                * "i" to ignore case
+
+                If any of the arguments are `MISSING`, the result is also
+                `MISSING`.
+
+                Examples:
+                * `like("apple", "a%le")` returns `true`\\
+                  matches any string starting with "a" and ending with "le")
+                * `like("banana", "_a_a_a")` returns `true`\\
+                  matches strings like "banana", "bacada"
+                * `like("abc", "A_C", "i")` returns `true`\\
+                  case-insensitive match, matches "A_C" with "a_c"
                  """) //
-        .keywords() //
+        .keywords("match", "pattern", "wildcard", "SQL") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string to check", isStringOrOpt()), //
+            arg("string", "the string to check", isStringOrOpt()), //
             arg("pattern", "the matching rule", isStringOrOpt()), //
-            optarg("ignore_case", "if true, do case insensitive matching", isBoolean())) //
+            optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString())) //
         .returnType("true if the string matches the pattern, false otherwise", "BOOLEAN?", //
             args -> BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::likeImpl) //
@@ -248,8 +335,9 @@ public final class StringFunctions {
         Predicate<WarningMessageListener> value = wml -> {
             String escapedPattern = c2.compute(wml);
             String toMatch = c1.compute(wml);
+            var ignoreCase = extractModifiersOrDefault(args, 2, wml).contains("i");
 
-            if (args.size() == 3 && toBoolean(args.get(2)).compute(wml)) {
+            if (ignoreCase) {
                 escapedPattern = escapedPattern.toLowerCase(Locale.ROOT);
                 toMatch = toMatch.toLowerCase(Locale.ROOT);
             }
@@ -281,14 +369,26 @@ public final class StringFunctions {
 
     public static final ExpressionFunction REGEX_MATCH = functionBuilder() //
         .name("regex_match") //
-        .description( //
-            "Check if string matches the given regular expression" //
-        ) //
-        .keywords() //
+        .description("""
+                  Checks if a string matches the given regular expression pattern.
+
+                  Raises an error if the regex is invalid. If any of the arguments
+                  are `MISSING`, the result is also `MISSING`.
+
+                  The optional `modifiers` argument can be used to specify case-insensitive
+                  matching.
+
+                  Examples:
+                  * `regex_match("hello123", "[a-z]+\\d+")` returns `true`
+                  * `regex_match("abc", "a.c")` returns `true`
+                  * `regex_match("123-456-7890", "\\d{3}-\\d{3}-\\d{4}")` returns `true`
+                """) //
+        .keywords("pattern") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string to check", isStringOrOpt()), //
-            arg("pattern", "the regex", isStringOrOpt()) //
+            arg("string", "the string to check against the regex pattern", isStringOrOpt()), //
+            arg("pattern", "the regex", isStringOrOpt()), //
+            optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
         .returnType("true if the string matches the pattern, false otherwise", "BOOLEAN?", //
             args -> BOOLEAN(anyOptional(args))) //
@@ -301,31 +401,57 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
 
         return BooleanComputer.of( //
-            wml -> c1.compute(wml).matches(c2.compute(wml)), //
+            wml -> {
+                String str = c1.compute(wml);
+                String patternString = c2.compute(wml);
+                String modifiers = extractModifiersOrDefault(args, 2, wml);
+
+                return Pattern.compile(patternString, modifiers.contains("i") ? Pattern.CASE_INSENSITIVE : 0) //
+                    .matcher(str) //
+                    .matches();
+            }, //
             anyMissing(args) //
         );
     }
 
     public static final ExpressionFunction REGEX_EXTRACT = functionBuilder() //
         .name("regex_extract") //
-        .description( //
-            "Given a regex that captures some groups, extract and return the group "
-                + "referred to by the index. Groups are one-indexed, so e.g. for the regex"
-                + "`[0-9]([a-z]+).*` applied to the string `5hello123`, group 1 would be" + "`hello`." //
-        ) //
-        .keywords() //
+        .description("""
+                Given a regex that captures some groups, extract and return the
+                group referred to by the index. Groups are one-indexed. Index `0`
+                refers to the entire match.
+
+                Raises an error if the regex is invalid. If the group index is out
+                of bounds, the regex does not match, or any of the arguments are
+                `MISSING`, returns `MISSING`.
+
+                The optional `modifiers` argument can be used to specify case-insensitive
+                matching.
+
+                Examples:
+                * `regex_extract("5hello123", "[0-9]([a-z]+).*", 1)` returns "hello"
+                * `regex_extract("abc123def", "(\\d+)", 1)` returns "123"
+                * `regex_extract("foo_bar_baz", "foo_(\\w+)_baz", 1)` returns "bar"
+                * `regex_extract("abc", "(a)(b)(c)", 2)` returns "b"
+                """) //
+        .keywords("pattern", "match", "capture group") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string to check", isStringOrOpt()), //
+            arg("string", "the string to check against the regex pattern", isStringOrOpt()), //
             arg("pattern", "the regex", isStringOrOpt()), //
-            arg("group", "the index of the group to extract", isIntegerOrOpt())) //
+            arg("group", "the index of the group to extract", isIntegerOrOpt()), //
+            optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString())) //
         .returnType("the extracted group", "STRING?", //
             args -> STRING(anyOptional(args))) //
         .impl(StringFunctions::regexExtractImpl) //
         .build();
 
-    private static String extractGroupOrReturnNull(final String toMatch, final String pattern, final int group) {
-        var matcher = Pattern.compile(pattern).matcher(toMatch);
+    private static String extractGroupOrReturnNull(final String toMatch, final String pattern, final int group,
+        final String modifiers) {
+
+        boolean ignoreCase = modifiers.contains("i");
+
+        var matcher = Pattern.compile(pattern, ignoreCase ? Pattern.CASE_INSENSITIVE : 0).matcher(toMatch);
 
         if (!matcher.matches() || group < 0 || group > matcher.groupCount()) {
             return null;
@@ -341,25 +467,50 @@ public final class StringFunctions {
         var c3 = toInteger(args.get(2));
 
         Predicate<WarningMessageListener> isMissing = wml -> anyMissing(args).test(wml) //
-            || extractGroupOrReturnNull(c1.compute(wml), c2.compute(wml), (int)c3.compute(wml)) == null;
-        Function<WarningMessageListener, String> value =
-            wml -> extractGroupOrReturnNull(c1.compute(wml), c2.compute(wml), (int)c3.compute(wml));
+            || extractGroupOrReturnNull(c1.compute(wml), c2.compute(wml), (int)c3.compute(wml),
+                extractModifiersOrDefault(args, 3, wml)) == null;
+
+        Function<WarningMessageListener, String> value = wml -> extractGroupOrReturnNull(c1.compute(wml),
+            c2.compute(wml), (int)c3.compute(wml), extractModifiersOrDefault(args, 3, wml));
 
         return StringComputer.of(value, isMissing);
     }
 
     public static final ExpressionFunction REGEX_REPLACE = functionBuilder() //
         .name("regex_replace") //
-        .description("Replace text matching the given regex") //
-        .keywords() //
+        .description("""
+                Replaces the parts of the string that match the given regex pattern
+                with the replacement string. The optional `modifiers` argument can
+                be used to specify case-insensitive matching.
+
+                The replacement string can specify regex groups using `$1`, `$2`,
+                etc., allowing for some very flexible usage. See the examples for
+                more detail.
+
+                Raises an error if the regex is invalid, and returns `MISSING` if
+                any of the arguments are `MISSING`.
+
+                The optional `modifiers` argument can be used to tune the search:
+                * "i" for case-insensitive matching
+
+                Examples:
+                * `regex_replace("abc", "[a-zA-Z]{3}", "cba")` returns "cba"\\
+                  Replaces the entire string "abc" with "cba".
+                * `regex_replace("fooBARFOO", "foo', "baz", "i")` returns "bazBARbaz"\\
+                  Case-insensitive replacement of "foo" with "baz". Both "foo" instances are replaced.
+                * `regex_replace("abcd", "[a-zA-Z]{3}", "ABC")` returns "ABCd"\\
+                * `regex_replace("abc-123-456-xyz", "([0-9]+)-([0-9]+)", "$2-$1")` returns "abc-456-123-xyz"\\
+                  Uses regex groups to swap the two numbers in the string.
+                """) //
+        .keywords("pattern", "match", "substitute") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
-            arg("pattern", "the search term", isStringOrOpt()), //
-            arg("replace", "the replacement", isStringOrOpt()), //
-            optarg("modifiers", "(optional), \"i\" for ignore case (root locale)", isString()) //
+            arg("string", "the input string to perform replacements on", isStringOrOpt()), //
+            arg("pattern", "the regular expression pattern to search for", isStringOrOpt()), //
+            arg("replace", "the replacement text", isStringOrOpt()), //
+            optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
-        .returnType("str with pattern replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("string with pattern replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::regexReplaceImpl) //
         .build();
 
@@ -383,17 +534,35 @@ public final class StringFunctions {
 
     public static final ExpressionFunction REPLACE = functionBuilder() //
         .name("replace") //
-        .description("Replace text matching the given literal pattern") //
+        .description("""
+                Replaces all occurrences of a string pattern within another given
+                input string. The optional modifiers argument gives several options
+                to control the search:
+                * "i" to ignore case
+                * "w" to match whole words only (word boundaries are whitespace
+                characters).
+
+                Modifiers can be combined, e.g. "iw" for case-insensitive whole
+                word matching.
+
+                If any of the arguments are `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `replace("abcABC", "ab", "z")` returns "zcABC"
+                * `replace("abcABC", "ab", "")` returns "cABC"
+                * `replace("abcABC", "ab", "z", "i")` returns "zczC"
+                * `replace("ab abAB AB", "ab", "z", "w")` returns "z abAB AB"
+                """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the input string to perform replacements on", isStringOrOpt()), //
             arg("pattern", "the search term", isStringOrOpt()), //
             arg("replace", "the replacement", isStringOrOpt()), //
-            optarg("modifiers", "(optional), \"i\" for ignore case (root locale), " //
+            optarg("modifiers", "(optional), \"i\" for case-insensitive matching (root locale), " //
                 + "\"w\" to match whole words only", isString()) //
         ) //
-        .returnType("str with pattern replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("string with pattern replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::replaceImpl) //
         .build();
 
@@ -423,20 +592,37 @@ public final class StringFunctions {
     /** Basically does a translate like in python or SQL */
     public static final ExpressionFunction REPLACE_CHARS = functionBuilder() //
         .name("replace_chars") //
-        .description("Replace characters in str with the given substitions. For example,"
-            + "if str is \"hello\" and old_chars is \"el\" and new_chars is \"12\","
-            + "the result will be \"h122o\". If the string of new characters is shorter,"
-            + "then we delete the corresponding old characters, so for example if str is"
-            + "\"hello\" and old_chars is\"el\" and new_chars is \"1\", the result would" + "be \"h1o\".") // "
-        .keywords("translate") //
+        .description("""
+                Replace characters in string with the given substitutions. If the
+                string of new characters is shorter, then we delete the
+                corresponding old characters. If new_chars is longer than old_chars
+                the additional chars in new_chars will be ignored.
+
+                The optional modifiers argument can be used to specify
+                case-insensitive matching.
+
+                If any of the arguments are `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `replace_chars("abcABC", "ac", "xy")` returns "xbyABC"\\
+                  Replaces "a" with "x" and "c" with "y".
+                * `replace_chars("abcABC", "ac", "")` returns "bABC"\\
+                  Removes all "a" and "c" characters.
+                * `replace_chars("abcABC", "ac", "x")` returns "xbABC"\\
+                  Replaces "a" with "x" and removes "c".
+                * `replace_chars("abcABC", "ac", "xyz")` returns "xbyABC"\\
+                  Replaces "a" with "x" and "c" with "y", ignoring the extra "z".
+                """) //
+        .keywords("translate", "substitute", "match") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
-            arg("old_chars", "", isStringOrOpt()), //
-            arg("new_chars", "", isStringOrOpt()), //
-            optarg("modifiers", "(optional), \"i\" for ignore case (root locale)", isString()) //
+            arg("string", "the input string to perform replacements on", isStringOrOpt()), //
+            arg("old_chars", "the characters to be replaced", isStringOrOpt()), //
+            arg("new_chars", "the characters to replace with", isStringOrOpt()), //
+            optarg("modifiers", "(optional), \"i\" for case-insensitive matching (root locale)", isString()) //
         ) //
-        .returnType("str with characters replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("the string with (old) characters replaced by (new) characters", "STRING?",
+            args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::replaceCharsImpl) //
         .build();
 
@@ -476,15 +662,37 @@ public final class StringFunctions {
 
     public static final ExpressionFunction REPLACE_UMLAUTS = functionBuilder() //
         .name("replace_umlauts") //
-        .description("replace umlauts with their ascii equivalents") //
-        .keywords() //
+        .description("""
+                Replaces umlauts (i.e., ä, ö, ü) with their ASCII equivalents.
+                If the `no_e` argument is true, replaces characters like ö with o.
+                If false, replaces characters like ö with oe.
+
+                By default, also replaces ß and ẞ with ss and SS respectively, but
+                this behaviour can be changed by setting the optional argument
+                `replace_eszett` to false).
+
+                If any of the arguments are `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `replace_umlauts("fröhlich", false)` returns "froehlich"\\
+                  Replaces ö with oe.
+                * `replace_umlauts("fröhlich", true)` returns "frohlich"\\
+                  Replaces ö with o.
+                * `replace_umlauts("übermäßig", false)` returns "uebermaessig"\\
+                  Replaces ü with ue and ß with ss.
+                * `replace_umlauts("übermäßig", true)` returns "ubermassig"\\
+                  Replaces ü with u and ß with ss.
+                * `replace_umlauts("übermäßig", true, false)` returns "ubermaßig"\\
+                  Replaces ü with u and keeps ß unchanged.
+                """) //
+        .keywords("translate", "special characters", "conversion", "normalize") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the string to convert", isStringOrOpt()), //
             arg("no_e", "if true, e.g. ö->o. If false, o->oe", isBooleanOrOpt()), //
-            optarg("replace_esszet", "if true, also replace ß and ẞ (default true)", isBoolean()) //
+            optarg("replace_eszett", "if true, also replace ß with ss (default true)", isBoolean()) //
         ) //
-        .returnType("str with umlauts replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("string with umlauts replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::replaceUmlautsImpl) //
         .build();
 
@@ -524,13 +732,27 @@ public final class StringFunctions {
 
     public static final ExpressionFunction REPLACE_DIACRITICS = functionBuilder() //
         .name("replace_diacritics") //
-        .description("replace diacritics with their ascii equivalents") //
-        .keywords() //
+        .description("""
+                Replace diacritics in the given string with their ASCII equivalents.
+                This process converts characters like é to e, ü to u, and so on. If
+                the string provided is `MISSING`, the result is also `MISSING`.
+
+                (NB: This is implemented by Java's
+
+                `Normalizer.normalize(string, Normalizer.Form.NFKD)`
+
+                under the hood.)
+
+                Examples:
+                * `replace_diacritics("café")` returns "cafe"
+                * `replace_diacritics("français")` returns "francais"
+                """) //
+        .keywords("conversion", "special characters", "translate", "normalize") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to convert", isStringOrOpt()) //
         ) //
-        .returnType("str with diacritics replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("string with diacritics replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::replaceDiacriticsImpl) //
         .build();
 
@@ -549,13 +771,24 @@ public final class StringFunctions {
 
     public static final ExpressionFunction LOWER_CASE = functionBuilder() //
         .name("lower_case") //
-        .description("string to lower case") //
-        .keywords() //
+        .description("""
+                Convert the given string to lower case. This method uses the root
+                locale for the conversion to ensure consistency across different
+                locales. If the string provided is `MISSING`, the result is also
+                `MISSING`.
+
+                Examples:
+                * `lower_case("Hello World")` returns "hello world"
+                * `lower_case("JAVA")` returns "java"
+                * `lower_case("123ABC")` returns "123abc"\\
+                  Numbers are not affected.
+                """) //
+        .keywords("conversion") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to convert", isStringOrOpt()) //
         ) //
-        .returnType("str in lower case", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("string in lower case", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::lowerCaseImpl) //
         .build();
 
@@ -567,13 +800,24 @@ public final class StringFunctions {
 
     public static final ExpressionFunction UPPER_CASE = functionBuilder() //
         .name("upper_case") //
-        .description("string to upper case") //
-        .keywords() //
+        .description("""
+                Convert the given string to upper case. This method uses the root
+                locale for the conversion to ensure consistency across different
+                locales. If the string provided is `MISSING`, the result is also
+                `MISSING`.
+
+                Examples:
+                * `upper_case("Hello World")` returns "HELLO WORLD"
+                * `upper_case("java")` returns "JAVA"
+                * `upper_case("123abc")` returns "123ABC"\\
+                  Numbers are not affected.
+                """) //
+        .keywords("conversion") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to convert", isStringOrOpt()) //
         ) //
-        .returnType("str in upper case", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("string in upper case", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::upperCaseImpl) //
         .build();
 
@@ -585,13 +829,26 @@ public final class StringFunctions {
 
     public static final ExpressionFunction CAPITALIZE = functionBuilder() //
         .name("capitalize") //
-        .description("string to title case") //
+        .description("""
+                Convert the given string to title case, where the first letter of
+                each word is capitalized. Words are defined as sequences of
+                characters separated by whitespace. If the string provided is
+                `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `capitalize("hello world")` returns "Hello World"
+                * `capitalize("hello-world")` returns "Hello-world"\\
+                  Hypens are not considered word separators.
+                * `capitalize("java is fun")` returns "Java Is Fun"
+                * `capitalize("123abc")` returns "123abc"\\
+                  Numbers are not affected.
+                """) //
         .keywords("capitalise", "title_case") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to convert", isStringOrOpt()) //
         ) //
-        .returnType("str in title case", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("string in title case", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::titleCaseImpl) //
         .build();
 
@@ -623,16 +880,38 @@ public final class StringFunctions {
 
     public static final ExpressionFunction PAD_END = functionBuilder() //
         .name("pad_end") //
-        .description("Right-pad a string to the specified length. " //
-            + "\nIf the string is already that length or longer, do nothing") //
-        .keywords() //
+        .description("""
+                Right-pad the given string to the specified length with the provided
+                character. If the string is already that length or longer, no
+                padding is applied.
+
+                By default, the string is padded with spaces, but if an optional
+                padding character is provided, the string is padded with that
+                character instead. Note that this padding character has to be a
+                _single_  character. Anything longer will be truncated.
+
+                If any of the arguments are `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `pad_end("hello", 10)` returns "hello     "\\
+                  Pads the string "hello" with spaces to make it 10 characters long.
+                * `pad_end("abc", 3)` returns "abc"\\
+                  No padding is applied since the string is already 3 characters long.
+                * `pad_end("test", 8, "*")` returns "test****"\\
+                  Pads the string "test" with asterisks to make it 8 characters long.
+                * `pad_end("abc", 3, "x")` returns "abc"\\
+                  No padding is applied since the padding character is longer than the string.
+                * `pad_end("abc", 5, "xy")` returns "abcxx"\\
+                  Pads the string "abc" with "x". The extra "y" is ignored.
+                """) //
+        .keywords("right-pad") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the string to pad", isStringOrOpt()), //
             arg("length", "the desired length", isIntegerOrOpt()), //
             optarg("char", "the char with which to pad (default: space)", isString()) //
         ) //
-        .returnType("str padded to specified length", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("string padded to specified length", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::padEndImpl) //
         .build();
 
@@ -641,8 +920,6 @@ public final class StringFunctions {
             String str = toString(args.get(0)).compute(wml);
             int targetLength = (int)toInteger(args.get(1)).compute(wml);
 
-            // If they've given us more than one char to pad with,
-            // just use the first one.
             String charToAppend = args.size() == 3 //
                 ? takeFirstChar(toString(args.get(2)).compute(wml), " ") //
                 : " ";
@@ -665,17 +942,35 @@ public final class StringFunctions {
     public static final ExpressionFunction PAD_START = functionBuilder() //
         .name("pad_start") //
         .description("""
-                Left-pad a string to the specified length.
-                If the string is already that length or longer, do nothing
+                Left-pad the given string to the specified length with the provided
+                character. If the string is already that length or longer, no
+                padding is applied.
+
+                By default, the string is padded with spaces, but if an optional
+                padding character is provided, the string is padded with that
+                character instead. Note that this padding character has to be a
+                _single_  character. Anything longer will be truncated.
+
+                If any of the arguments are `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `pad_start("hello", 10)` returns "     hello"\\
+                  Pads the string "hello" with spaces to make it 10 characters long.
+                * `pad_start("abc", 3)` returns "abc"\\
+                  No padding is applied since the string is already 3 characters long.
+                * `pad_start("test", 8, "*")` returns "****test"\\
+                  Pads the string "test" with asterisks to make it 8 characters long.
+                * `pad_start("abc", 5, "xy")` returns "xxabc"\\
+                  Pads the string "abc" with "x". The extra "y" is ignored.
                 """) //
-        .keywords() //
+        .keywords("left-pad") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the string to pad", isStringOrOpt()), //
             arg("length", "the desired length", isIntegerOrOpt()), //
             optarg("char", "the char with which to pad (default: space)", isString()) //
         ) //
-        .returnType("str padded to specified length", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("string padded to specified length", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::padStartImpl) //
         .build();
 
@@ -703,11 +998,20 @@ public final class StringFunctions {
 
     public static final ExpressionFunction JOIN = functionBuilder() //
         .name("join") //
-        .description("Join several strings") //
-        .keywords() //
+        .description("""
+                Join several strings with the specified separator. If any of the
+                arguments are `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `join(",", "apple", "banana", "orange")` returns "apple,banana,orange"
+                * `join(" ", "Hello", "world!")` returns "Hello world!"
+                * `join("", "a", "b", "c")` returns "abc"
+                * `join("-", "one")` returns "one"
+                """) //
+        .keywords("concatenation") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("sep", "separator with which to join the strings", isStringOrOpt()), //
+            arg("seperator", "the separator with which to join the strings", isStringOrOpt()), //
             arg("string1", "first string", isStringOrOpt()), //
             vararg("strings...", "more strings", isStringOrOpt()) //
         ) //
@@ -736,11 +1040,25 @@ public final class StringFunctions {
 
     public static final ExpressionFunction SUBSTR = functionBuilder() //
         .name("substr") //
-        .description("Get a substring of the string.") //
-        .keywords() //
+        .description("""
+                Get a substring of the string. If the length is unspecified or
+                bigger than the remaining characters in the string after the start
+                index, it returns the entire substring after the start index. The
+                start index begins at 1.
+
+                If any of the arguments are `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `substr("OpenAI", 2, 4)` returns "penA"
+                * `substr("abcdef", 2, 10)` returns "bcdef"\\
+                  Length is greater than the remaining characters, so returns the rest of the string.
+                * `substr("substring", 5)` returns "tring"\\
+                  No length provided, so returns everything after the 5th character
+                """) //
+        .keywords("extract") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the original string", isStringOrOpt()), //
             arg("start", "start index (inclusive, 1-indexed)", isIntegerOrOpt()), //
             optarg("length", "length - if unspecified, or bigger than the string, get entire string after the start",
                 isInteger()) //
@@ -775,11 +1093,23 @@ public final class StringFunctions {
 
     public static final ExpressionFunction FIRST_CHARS = functionBuilder() //
         .name("first_chars") //
-        .description("Get the first n characters from a string") //
-        .keywords() //
+        .description("""
+                Extract the first n characters from a string. If n is greater than
+                or equal to the length of the string, it returns the entire string.
+                If either of the arguments is `MISSING`, the result is also
+                `MISSING`.
+
+                Examples:
+                * `first_chars("Hello world", 5)` returns "Hello"
+                * `first_chars("12345", 10)` returns "12345"\\
+                  Retrieves the entire string since the specified length exceeds the string's length.
+                * `first_chars("", 3)` returns ""\\
+                  Returns an empty string since the input string is empty.
+                """) //
+        .keywords("substring", "start", "extract") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the input string", isStringOrOpt()), //
             arg("n", "number of characters to get from start", isIntegerOrOpt()) //
         ) //
         .returnType("substring", "STRING?", //
@@ -807,11 +1137,23 @@ public final class StringFunctions {
 
     public static final ExpressionFunction LAST_CHARS = functionBuilder() //
         .name("last_chars") //
-        .description("Get the last n characters from a string") //
-        .keywords() //
+        .description("""
+                Extract the last n characters from a string. If n is greater than
+                or equal to the length of the string, it returns the entire string.
+                If either of the arguments is `MISSING`, the result is also
+                `MISSING`.
+
+                Examples:
+                * `last_chars("Hello world", 5)` returns "world"
+                * `last_chars("12345", 10)` returns "12345"\\
+                  Retrieves the entire string since the specified length exceeds the string's length.
+                * `last_chars("", 3)` returns ""\\
+                  Returns an empty string since the input string is empty.
+                """) //
+        .keywords("substring", "end", "extract") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the input string", isStringOrOpt()), //
             arg("n", "number of characters to get from end", isIntegerOrOpt()) //
         ) //
         .returnType("substring", "STRING?", //
@@ -839,13 +1181,24 @@ public final class StringFunctions {
 
     public static final ExpressionFunction REMOVE_CHARS = functionBuilder() //
         .name("remove_chars") //
-        .description("Remove the given chars from the string." //
-            + "\nEquivalent to `replace_chars(str, chars, \"\")`") //
-        .keywords() //
+        .description("""
+                Remove the specified characters from the input string. Equivalent to
+                `replace_chars(string, chars, "")`. If either of the inputs is
+                `MISSING`, the result is also `MISSING`. The optional modifiers
+                argument can be used to tune the matching:
+                * "i" for case-insensitive matching.
+
+                Examples:
+                * `remove_chars("Hello world", "lo")` returns "He wrd"
+                * `remove_chars("abcdef", "ace")` returns "bdf"
+                * `remove_chars("Mississippi", "s")` returns "Miippi"
+                """) //
+        .keywords("substring", "delete") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
-            arg("chars", "characters to delete", isStringOrOpt()) //
+            arg("string", "the string to convert", isStringOrOpt()), //
+            arg("chars", "characters to delete", isStringOrOpt()), //
+            optarg("modifiers", "(optional), \"i\" for case-insensitive matching (root locale)", isString()) //)
         ) //
         .returnType("string with characters removed", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -881,11 +1234,22 @@ public final class StringFunctions {
 
     public static final ExpressionFunction STRIP = functionBuilder() //
         .name("strip") //
-        .description("Remove leading and trailing whitespace from the string") //
-        .keywords() //
+        .description("""
+                Remove leading and trailing whitespace from the input string. If the
+                input string is `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `strip("  Hello world  ")` returns "Hello world"\\
+                  Removes spaces from both ends.
+                * `strip("No extra spaces")` returns "No extra spaces"\\
+                  Leaves strings with no leading/trailing spaces unchanged.
+                * `strip("   ")` returns ""\\
+                  Converts a string of only spaces to an empty string.
+                """) //
+        .keywords("trim", "whitespace", "clean") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to convert", isStringOrOpt()) //
         ) //
         .returnType("the string with leading/trailing whitespace removed", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -901,11 +1265,22 @@ public final class StringFunctions {
 
     public static final ExpressionFunction STRIP_START = functionBuilder() //
         .name("strip_start") //
-        .description("Remove leading whitespace from the string") //
-        .keywords() //
+        .description("""
+                Remove leading whitespace from the input string. If the input string
+                is `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `strip_start("  Hello world  ")` returns "Hello world  "
+                * `strip_start("  No leading space")` returns "No leading space"
+                * `strip_start("No trailing space  ")` returns "No trailing space  "\\
+                  Does not remove spaces from the end.
+                * `strip_start("   ")` returns ""\\
+                  Converts a string of only spaces to an empty string.
+                """) //
+        .keywords("trim", "whitespace", "clean") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to convert", isStringOrOpt()) //
         ) //
         .returnType("the string with leading whitespace removed", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -921,11 +1296,22 @@ public final class StringFunctions {
 
     public static final ExpressionFunction STRIP_END = functionBuilder() //
         .name("strip_end") //
-        .description("Remove trailing whitespace from the string") //
-        .keywords() //
+        .description("""
+                Remove trailing whitespace from the input string. If the input
+                string is `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `strip_end("  Hello world  ")` returns "  Hello world"
+                * `strip_end("No leading space  ")` returns "No leading space"
+                * `strip_end("  No trailing space")` returns "  No trailing space"\\
+                  Does not remove spaces from the start.
+                * `strip_end("   ")` returns ""\\
+                  Converts a string of only spaces to an empty string.
+                """) //
+        .keywords("trim", "whitespace", "clean") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to convert", isStringOrOpt()) //
         ) //
         .returnType("the string with trailing whitespace removed", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -943,11 +1329,23 @@ public final class StringFunctions {
 
     public static final ExpressionFunction REMOVE_DUPLICATE_SPACES = functionBuilder() //
         .name("remove_duplicate_spaces") //
-        .description("Replace all duplicated spaces with a single space") //
-        .keywords() //
+        .description("""
+                Replace all duplicated spaces with a single space in the given
+                string. If the input string is `MISSING`, the result is also
+                `MISSING`.
+
+                Examples:
+                * `remove_duplicate_spaces("This  is  a  test")` returns "This is a test"\\
+                  Reduces multiple spaces between words to one.
+                * `remove_duplicate_spaces("Single space")` returns "Single space"\\
+                  Leaves strings with single spaces between words unchanged.
+                * `remove_duplicate_spaces("  Leading and trailing  ")` returns " Leading and trailing "\\
+                  Also reduces multiple leading/trailing spaces to one.
+                """) //
+        .keywords("trim", "spaces", "whitespace", "clean") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to clean up", isStringOrOpt()) //
         ) //
         .returnType("the string with all repeated spaces replaced", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -963,11 +1361,23 @@ public final class StringFunctions {
 
     public static final ExpressionFunction MISSING_TO_EMPTY = functionBuilder() //
         .name("missing_to_empty") //
-        .description("If string is `MISSING`, return empty string. Otherwise just return the string.") //
-        .keywords() //
+        .description("""
+                If the input string is `MISSING`, return an empty string. Otherwise,
+                return the input string.
+
+                This function is useful for handling cases where a `MISSING` value
+                should be converted to an empty string to avoid issues with further
+                processing.
+
+                Examples:
+                * `missing_to_empty(MISSING)` returns ""
+                * `missing_to_empty("Hello")` returns "Hello"\\
+                  Any non-missing string is unchanged.
+                """) //
+        .keywords("default", "null") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string", isStringOrOpt()) //
         ) //
         .returnType("the string or empty", "STRING", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -983,13 +1393,22 @@ public final class StringFunctions {
 
     public static final ExpressionFunction EMPTY_TO_MISSING = functionBuilder() //
         .name("empty_to_missing") //
-        .description("If string is empty, return `MISSING`. Otherwise just return the string.") //
-        .keywords() //
+        .description("""
+                If the input string is empty or `MISSING`, returns `MISSING`.
+                Otherwise, returns the input string unchanged.
+
+                Examples:
+                * `empty_to_missing("")` returns `MISSING`
+                * `empty_to_missing("Hello")` returns "Hello"
+                * `empty_to_missing(MISSING)` returns `MISSING`\\
+                  Leaves `MISSING` unchanged.
+                """) //
+        .keywords("default", "null") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to convert", isStringOrOpt()) //
         ) //
-        .returnType("the string or `MISSING`", "STRING?", //
+        .returnType("the string itself or `MISSING` when string was empty", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::emptyToNull) //
         .build();
@@ -1003,11 +1422,19 @@ public final class StringFunctions {
 
     public static final ExpressionFunction REVERSE = functionBuilder() //
         .name("reverse") //
-        .description("Return the string, reversed") //
-        .keywords() //
+        .description("""
+                Reverses the input string and returns the result. If the input
+                string is `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `reverse("hello")` returns "olleh"
+                * `reverse("12345") returns "54321"
+                * `reverse("")` returns ""
+                """) //
+        .keywords("invert", "mirror", "backward", "flip") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string t reverse", isStringOrOpt()) //
         ) //
         .returnType("the reversed string", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -1023,13 +1450,20 @@ public final class StringFunctions {
 
     public static final ExpressionFunction LENGTH = functionBuilder() //
         .name("length") //
-        .description("Get the number of character in a string") //
-        .keywords() //
+        .description("""
+                Returns the number of characters in the input string. If the input
+                string is `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `length("hello")` returns 5
+                * `length("")` returns 0
+                """) //
+        .keywords("count", "size", "number of characters") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to count chars for", isStringOrOpt()) //
         ) //
-        .returnType("the length", "INTEGER?", //
+        .returnType("the length of the string", "INTEGER?", //
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::lengthImpl) //
         .build();
@@ -1043,13 +1477,37 @@ public final class StringFunctions {
 
     public static final ExpressionFunction COUNT = functionBuilder() //
         .name("count") //
-        .description("Get the number of occurences of the search term in a string") //
-        .keywords() //
+        .description("""
+                Returns the number of occurrences of the search term in the input
+                string. The optional modifiers argument can be used to tune the
+                behaviour:
+                * "i" to enable case-insensitive matching
+                * "w" to match only whole words
+
+                Modifiers can be combined, so e.g. "iw" ignores case and matches
+                only whole words.
+
+                If any of the arguments are `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `count("hello", "l")` returns 2\\
+                  Returns 2 as "l" occurs twice in "hello".
+                * `count("hello", "L", "i")` returns 2\\
+                  Returns 2 as "L" occurs twice in "hello" when case-insensitive matching is enabled.
+                * `count("hello world hello", "hello")` returns 2\\
+                  Returns 2 as "hello" occurs twice in the input string.
+                * `count("hello world", "ello", "w")` returns 0\\
+                  Returns 0 as "ello" does not occur as a whole word in the input string.
+                * `count("", "")` returns 0\\
+                  Returns 0 when both input string and search term are empty.
+                """) //
+        .keywords("occurrences", "matching") //
+
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the string to search within", isStringOrOpt()), //
             arg("search", "the search term", isStringOrOpt()), //
-            optarg("modifiers", "(optional), \"i\" to ignore case, " //
+            optarg("modifiers", "(optional), \"i\" case-insensitive matching, " //
                 + "\"w\" to match only whole words", isString()) //
         ) //
         .returnType("the number of occurences", "INTEGER?", //
@@ -1089,13 +1547,36 @@ public final class StringFunctions {
 
     public static final ExpressionFunction COUNT_CHARS = functionBuilder() //
         .name("count_chars") //
-        .description("Count how many times the given characters appear in the string") //
-        .keywords() //
+        .description("""
+                Counts the number of occurrences of the specified characters in the input string.
+                If more than one character is provided, the occurrences of each character are summed.
+                The optional modifiers argument can be used to tune the behaviour:
+                * "i" to ignore case when looking for chars
+                * "v" to count all characters except those provided
+
+                Modifiers can be combined, so e.g. "iv" ignores case and counts all
+                characters _except_ those provided.
+
+                If any of the arguments are `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `count_chars("hello", "l")` returns 2\\
+                  Returns 2 as "l" occurs twice in "hello".
+                * `count_chars("hello", "L", "i")` returns 2\\
+                  Returns 2 as "L" occurs twice in "hello" ignoring case.
+                * `count_chars("hello world", "ol")` returns 5\\
+                  Returns 3 as "o" and "l" occur three times in "hello world".
+                * `count_chars("hello", "ol", "v")` returns 2\\
+                  Returns 2 as "l" and "o" appear 3 times and there are 2 chars left.
+                * `count_chars("", "")` returns 0\\
+                  Returns 0 when both the input string and search characters are empty.
+                """) //
+        .keywords("occurrences") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the string to count chars for", isStringOrOpt()), //
             arg("search", "the characters to search for", isStringOrOpt()), //
-            optarg("modifiers", "(optional), \"i\" to ignore case" //
+            optarg("modifiers", "(optional), \"i\" case-insensitive matching" //
                 + "\"v\" to count all chars except those provided", isString()) //
         ) //
         .returnType("the number of occurences", "INTEGER?", //
@@ -1132,17 +1613,36 @@ public final class StringFunctions {
 
     public static final ExpressionFunction FIND = functionBuilder() //
         .name("find") //
-        .description("Find first or last occurence of given string") //
-        .keywords() //
+        .description("""
+                Find the index (starting at 1) of the first or last occurrence of
+                the given string within another string. The optional modifiers
+                parameter can be used to tune the behaviour:
+                * "i" to ignore case when matching strings
+                * "w" to match whole words only
+                * "b" to search backwards (i.e. find the _last_ matching instance)
+
+                Modifiers can be combined, so e.g. "ib" would ignore case and search
+                backwards.
+
+                If any of the arguments are `MISSING`, or the search string is not
+                found, the result is `MISSING`.
+
+                Examples:
+                * `find("hello world", "world")` returns 7
+                * `find("hello world", "World", "i")` returns 7
+                * `find("hello hello", "l", "b")` returns 10
+                * `find("hello world", "universe")` returns `MISSING`
+                """) //
+        .keywords("index", "position", "search") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the string to search within", isStringOrOpt()), //
             arg("search", "the string to search for", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" to ignore case, " //
                 + "\"w\" to match whole words, " //
                 + "\"b\" to search backwards", isString()) //
         ) //
-        .returnType("the index of the first occurence (or `MISSING` if not found)", "INTEGER?", //
+        .returnType("the index (1-based) of the first occurence (or `MISSING` if not found)", "INTEGER?", //
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::findImpl) //
         .build();
@@ -1170,7 +1670,6 @@ public final class StringFunctions {
             }
             match.reset();
 
-            // One-indexing, so we add 1.
             if (backwards) {
                 return match.results().reduce((a, b) -> b).get().start() + 1;
             } else {
@@ -1178,7 +1677,6 @@ public final class StringFunctions {
             }
         };
 
-        // If not found, return missing
         Predicate<WarningMessageListener> isMissing = wml -> //
         anyMissing(args).test(wml) //
             || indexSupplier.applyAsLong(wml) == -1;
@@ -1191,17 +1689,43 @@ public final class StringFunctions {
 
     public static final ExpressionFunction FIND_CHARS = functionBuilder() //
         .name("find_chars") //
-        .description("Find the index of the first character that is also in chars") //
-        .keywords() //
+        .description("""
+                Find the index (starting at 1) of the first character in the
+                string that matches any of the characters provided in the search
+                string. The optional modifiers argument can be used to tune the
+                behaviour:
+                * "i" to ignore case when matching characters
+                * "v" to match only characters _not_ provided
+                * "b" to search backwards (i.e. get the _last_ matching character)
+
+                Modifiers can be combined, so e.g. "iv" would ignore case and match
+                only characters _not_ provided.
+
+                If any of the arguments are `MISSING`, or none of the search
+                characters are present in the string, the result is `MISSING`.
+
+                Examples:
+                * `find_chars("hello world", "o")` returns 5
+                * `find_chars("hello world", "owxl")` returns 3
+                * `find_chars("hello world", "O", "i")` returns 5
+                * `find_chars("hello world", "ab", "v")` returns 1\\
+                  The first character that isn't a or b is at index 1.
+                * `find_chars("hello world", "l", "b")` returns 9
+                * `find_chars("hello world", "xyz")` returns `MISSING`\\
+                  Returns `MISSING` as none of the search characters are found.
+                * `find_chars("hello world", "")` returns `MISSING`\\
+                  Returns `MISSING` as no search characters are provided.
+                """) //
+        .keywords("index", "position", "search") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()), //
+            arg("string", "the string to search within", isStringOrOpt()), //
             arg("chars", "the characters to search for", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" to ignore case, " //
                 + "\"v\" to match all characters not provided, " //
                 + "\"b\" to search backwards", isString()) //
         ) //
-        .returnType("the index of the first occurence (or -1 if not found)", "INTEGER?", //
+        .returnType("the index (1-based!) of the first occurence (or `MISSING` if not found)", "INTEGER?", //
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::findCharsImpl) //
         .build();
@@ -1227,17 +1751,16 @@ public final class StringFunctions {
             var matchingdIndicesStream = IntStream.range(0, str.length())
                 .filter(i -> invert ^ finalSearch.contains(String.valueOf(finalStr.charAt(i))));
 
-            OptionalInt ret = backwards //
+            OptionalInt returnValue = backwards //
                 ? matchingdIndicesStream.reduce((a, b) -> b) //
                 : matchingdIndicesStream.findFirst();
 
-            // As always, one indexing
-            return 1 + ret.orElse(-2);
+            return returnValue.isEmpty() ? -1 : (1 + returnValue.getAsInt());
         };
 
         return IntegerComputer.of( //
             value, //
-            anyMissing(args) //
+            wml -> anyMissing(args).test(wml) || value.applyAsLong(wml) < 0//
         );
     }
 
@@ -1245,11 +1768,20 @@ public final class StringFunctions {
         .name("checksum_md5") //
         .description("""
                 Get the MD5 checksum of the string.
-                Note that MD5 is prone to hash collisions, and not safe for hashing passwords.
-                """).keywords() //
+
+                *Note that MD5 is prone to hash collisions and is not safe for
+                hashing passwords.*
+
+                If the input string is `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `checksum_md5("hello")` returns "5d41402abc4b2a76b9719d911017c592"
+                * `checksum_md5("") returns "d41d8cd98f00b204e9800998ecf8427e"
+                """) //
+        .keywords("hash") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to compute the MD5 checksum for", isStringOrOpt()) //
         ) //
         .returnType("the MD5 hash of the string", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -1285,11 +1817,25 @@ public final class StringFunctions {
 
     public static final ExpressionFunction XML_ENCODE = functionBuilder() //
         .name("xml_encode") //
-        .description("Escape XML characters in a string") //
-        .keywords() //
+        .description("""
+                Escape XML characters in a string.
+
+                XML encoding replaces certain characters with their
+                corresponding XML entities to prevent interpretation of the
+                characters as markup.
+
+                The following characters are replaced: &, <, >, \\, ' and ".
+
+                If the input string is `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `xml_encode("<a>Hello</a>")` returns "&lt;a&gt;Hello&lt;/a&gt;"
+                * `xml_encode("&")` returns "&amp;"
+                """) //
+        .keywords("escape", "special characters", "markup") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string to ", isStringOrOpt()) //
         ) //
         .returnType("the string with XML special characters escaped", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -1312,11 +1858,25 @@ public final class StringFunctions {
 
     public static final ExpressionFunction URL_ENCODE = functionBuilder() //
         .name("url_encode") //
-        .description("Replace forbidden characters in a URL") //
-        .keywords() //
+        .description("""
+                Replaces characters that can break URLs. This includes non-ascii
+                characters (e.g. umlauts) and reserved characters (e.g. "?").
+                The resulting string is "percent encoded", i.e., non-alphanumeric
+                values are replaced. The resulting string is safe to use in a HTTP
+                GET request, for instance when sending data via an HTML form. The
+                method uses the UTF-8 encoding scheme to obtain the bytes for
+                unsafe characters.
+
+                If the input string is `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `urlEncode("the space between")` returns "the+space+between"
+                * `urlEncode("1 + 1 = 2")` returns "1+%2B+1+%3D+2"
+                """) //
+        .keywords("escape", "special characters") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string", isStringOrOpt()) //
         ) //
         .returnType("the string with forbidden characters escaped", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -1332,11 +1892,20 @@ public final class StringFunctions {
 
     public static final ExpressionFunction URL_DECODE = functionBuilder() //
         .name("url_decode") //
-        .description("Given a URL with forbidden characters escaped, recover the original URL") //
-        .keywords() //
+        .description("""
+                Given a string with forbidden URL characters escaped, recover
+                the original string by decoding the percent-encoded characters.
+
+                If the input string is `MISSING`, the result is also `MISSING`.
+
+                Examples:
+                * `url_decode("the+space+between")` returns "the space between"
+                * `url_decode("1+%2B+1+%3D+2")` returns "1 + 1 = 2"
+                """) //
+        .keywords("escape", "special characters") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("str", "the string", isStringOrOpt()) //
+            arg("string", "the string with escaped URL-specific chars", isStringOrOpt()) //
         ) //
         .returnType("the original URL, with encoding undone", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
@@ -1352,11 +1921,29 @@ public final class StringFunctions {
 
     public static final ExpressionFunction TO_STRING = functionBuilder() //
         .name("string") //
-        .description("Convert input to a string. A value that is `MISSING` will be converted to the string \"MISSING\"") //
-        .keywords() //
+        .description("""
+                Convert the input to a string.
+
+                This function supports converting various data types to strings:
+                * Boolean: converted to either "true" or "false".
+                * Float: Converted to their string representations, e.g. "5.4".
+                * Integer: Converted to their string representations, e.g. "1".
+                * String: Returns unchanged input string.
+
+                Any values that are `MISSING` are converted to the string "MISSING".
+
+                Examples:
+                * `string(42)` returns "42"\\
+                  Converts the integer 42 to the string "42".
+                * `string(true)` returns "true"\\
+                  Converts the boolean `true` to the string "true".
+                * `string(MISSING)` returns "MISSING"\\
+                  Converts the `MISSING` value to the string "MISSING".
+                """) //
+        .keywords("cast", "types") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("i", "the input", isAnything()) //
+            arg("i", "the input to convert to a string", isAnything()) //
         ) //
         .returnType("input as string", "STRING", args -> ValueType.STRING) //
         .impl(StringFunctions::toStringImpl) //
@@ -1386,11 +1973,23 @@ public final class StringFunctions {
 
     public static final ExpressionFunction PARSE_FLOAT = functionBuilder() //
         .name("parse_float") //
-        .description("Convert a string to a float if possible, otherwise return `MISSING`") //
-        .keywords() //
+        .description("""
+                Convert a string to a float if possible.
+
+                This function attempts to parse the input string as a float value.
+                If successful, returns the float representation of the string. If
+                the input string cannot be parsed as a float (or the input is
+                `MISSING`), returns `MISSING`.
+
+                Examples:
+                * `parse_float("3.14")` returns 3.14
+                * `parse_float("3")` returns 3.0
+                * `parse_float("hello")` returns `MISSING`
+                """) //
+        .keywords("cast", "types") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("s", "the string", isStringOrOpt()) //
+            arg("s", "the string to parse as float", isStringOrOpt()) //
         ) //
         .returnType("float representation of the string, or MISSING", "FLOAT?", //
             args -> ValueType.FLOAT(anyOptional(args))) //
@@ -1417,11 +2016,23 @@ public final class StringFunctions {
 
     public static final ExpressionFunction PARSE_INT = functionBuilder() //
         .name("parse_int") //
-        .description("Convert a string to an integer if possible, otherwise return `MISSING`") //
-        .keywords() //
+        .description("""
+                Convert a string to an integer if possible.
+
+                This function attempts to parse the input string as an integer. If
+                successful, returns the float representation of the string. If the
+                input string cannot be parsed as an integer (or the input is
+                `MISSING`), returns `MISSING`.
+
+                Examples:
+                * `parse_int("123")` returns 123
+                * `parse_int("123.0")` returns `MISSING`
+                * `parse_int("hello")` returns `MISSING`
+                """) //
+        .keywords("cast", "types") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("s", "the string", isStringOrOpt()) //
+            arg("s", "the string to parse as integer", isStringOrOpt()) //
         ) //
         .returnType("integer representation of the string, or MISSING", "INTEGER?", //
             args -> ValueType.INTEGER(anyOptional(args))) //
@@ -1448,11 +2059,25 @@ public final class StringFunctions {
 
     public static final ExpressionFunction PARSE_BOOL = functionBuilder() //
         .name("parse_bool") //
-        .description("Convert a string to a boolean if possible, otherwise return `MISSING`") //
-        .keywords() //
+        .description("""
+                Convert a string to a boolean if possible. If the input cannot be
+                interpreted as a boolean, or is `MISSING`, returns `MISSING`.
+
+                This function attempts to parse the input string as a boolean value,
+                according to the following rules:
+                * If the string is "true" (case-insensitive), returns `true`.
+                * If the string is "false" (case-insensitive), returns `false`.
+                * If the string is neither "true" nor "false", returns `MISSING`.
+
+                Examples:
+                * `parse_bool("true")` returns `true`
+                * `parse_bool("False")` returns `false`
+                * `parse_bool("abc")` returns `MISSING`
+                """) //
+        .keywords("parse", "types") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("s", "the string", isStringOrOpt()) //
+            arg("s", "the string to parse as boolean", isStringOrOpt()) //
         ) //
         .returnType("boolean representation of the string, or MISSING", "BOOLEAN?", //
             args -> ValueType.BOOLEAN(anyOptional(args))) //

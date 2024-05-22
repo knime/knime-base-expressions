@@ -112,6 +112,7 @@ final class StringFunctionTests {
         return new FunctionTestBuilder(StringFunctions.STARTS_WITH) //
             .typing("STRING", List.of(STRING, STRING), BOOLEAN) //
             .typing("STRING?", List.of(STRING, OPT_STRING), OPT_BOOLEAN) //
+            .typing("2 x String", List.of(STRING, STRING), BOOLEAN) //
             .illegalArgs("INTEGER", List.of(INTEGER, INTEGER)) //
             .illegalArgs("1 STRING", List.of(STRING)) //
             .illegalArgs("BOOLEAN", List.of(BOOLEAN, BOOLEAN)) //
@@ -119,6 +120,7 @@ final class StringFunctionTests {
             .impl("starts with", List.of(arg("barfoo"), arg("bar")), true) //
             .impl("doesn't start with", List.of(arg("foo"), arg("bar")), false) //
             .impl("EQ", List.of(arg("foo"), arg("foo")), true) //
+            .impl("case insensitive", List.of(arg("HELLO"), arg("hello"), arg("i")), true) //
             .impl("missing STRING", List.of(misString(), arg("foo"))) //
             .tests();
     }
@@ -128,6 +130,7 @@ final class StringFunctionTests {
         return new FunctionTestBuilder(StringFunctions.ENDS_WITH) //
             .typing("STRING", List.of(STRING, STRING), BOOLEAN) //
             .typing("STRING?", List.of(STRING, OPT_STRING), OPT_BOOLEAN) //
+            .typing("2 x String", List.of(STRING, STRING), BOOLEAN) //
             .illegalArgs("INTEGER", List.of(INTEGER, INTEGER)) //
             .illegalArgs("1 STRING", List.of(STRING)) //
             .illegalArgs("BOOLEAN", List.of(BOOLEAN, BOOLEAN)) //
@@ -135,6 +138,7 @@ final class StringFunctionTests {
             .impl("ends with", List.of(arg("foobar"), arg("bar")), true) //
             .impl("doesn't end with", List.of(arg("foo"), arg("bar")), false) //
             .impl("EQ", List.of(arg("foo"), arg("foo")), true) //
+            .impl("case insensitive", List.of(arg("HELLO"), arg("hello"), arg("i")), true) //
             .impl("missing STRING", List.of(misString(), arg("foo"))) //
             .tests();
     }
@@ -142,9 +146,9 @@ final class StringFunctionTests {
     @TestFactory
     List<DynamicNode> like() {
         return new FunctionTestBuilder(StringFunctions.LIKE) //
-            .typing("STRING", List.of(STRING, STRING), BOOLEAN) //
-            .typing("STRING?", List.of(STRING, OPT_STRING), OPT_BOOLEAN) //
-            .typing("STRINGs + BOOLEAN", List.of(STRING, STRING, BOOLEAN), BOOLEAN) //
+            .typing("STRING + STRING", List.of(STRING, STRING), BOOLEAN) //
+            .typing("STRING + STRING?", List.of(STRING, OPT_STRING), OPT_BOOLEAN) //
+            .typing("STRING x 3", List.of(STRING, STRING, STRING), BOOLEAN) //
             .illegalArgs("INTEGER", List.of(INTEGER, INTEGER)) //
             .illegalArgs("1 STRING", List.of(STRING)) //
             .illegalArgs("BOOLEAN", List.of(BOOLEAN, BOOLEAN)) //
@@ -157,8 +161,7 @@ final class StringFunctionTests {
             .impl("escape % at end", List.of(arg("5050%"), arg("5050[%]")), true) //
             .impl("escape _ at start", List.of(arg("_5050"), arg("[_]5050")), true) //
             .impl("double escape _", List.of(arg("50[_]50"), arg("50[[_]]50")), true) //
-            .impl("case insensitive", List.of(arg("HELLO"), arg("hello"), arg(true)), true) //
-            .impl("case insensitive", List.of(arg("HELLO"), arg("hello"), arg(false)), false) //
+            .impl("case insensitive", List.of(arg("HELLO"), arg("hello"), arg("i")), true) //
             .impl("missing STRING", List.of(misString(), arg("foo"))) //
             .tests();
     }
@@ -168,6 +171,7 @@ final class StringFunctionTests {
         return new FunctionTestBuilder(StringFunctions.REGEX_MATCH) //
             .typing("STRING", List.of(STRING, STRING), BOOLEAN) //
             .typing("STRING?", List.of(STRING, OPT_STRING), OPT_BOOLEAN) //
+            .typing("STRING x 3", List.of(STRING, STRING, STRING), BOOLEAN) //
             .illegalArgs("INTEGER", List.of(INTEGER, INTEGER)) //
             .illegalArgs("1 STRING", List.of(STRING)) //
             .illegalArgs("BOOLEAN", List.of(BOOLEAN, BOOLEAN)) //
@@ -177,6 +181,7 @@ final class StringFunctionTests {
             .impl("regex 2 matches", List.of(arg("12a"), arg("[abc123]+")), true) //
             .impl("regex 2 doesn't match", List.of(arg("14a"), arg("[abc123]+")), false) //
             .impl("literal", List.of(arg("foo"), arg("foo")), true) //
+            .impl("case insensitive", List.of(arg("HELLO"), arg("hello"), arg("i")), true) //
             .impl("missing STRING", List.of(misString(), arg("foo"))) //
             .tests();
     }
@@ -186,6 +191,7 @@ final class StringFunctionTests {
         return new FunctionTestBuilder(StringFunctions.REGEX_EXTRACT) //
             .typing("STRING", List.of(STRING, STRING, INTEGER), STRING) //
             .typing("STRING?", List.of(STRING, OPT_STRING, INTEGER), OPT_STRING) //
+            .typing("with modifiers", List.of(STRING, STRING, INTEGER, STRING), STRING) //
             .illegalArgs("too few strings", List.of(STRING, STRING)) //
             .illegalArgs("1 STRING", List.of(STRING)) //
             .illegalArgs("BOOLEAN", List.of(BOOLEAN, BOOLEAN)) //
@@ -196,6 +202,7 @@ final class StringFunctionTests {
             .impl("group too big", List.of(arg("12-_a"), arg("(\\d+)(?:[_-]+)(\\w+)"), arg(3))) //
             .impl("group < 0", List.of(arg("12-_a"), arg("(\\d+)(?:[_-]+)(\\w+)"), arg(-1))) //
             .impl("regex doesn't match", List.of(arg("14a"), arg("[abc123]+"), arg(0))) //
+            .impl("case insensitive", List.of(arg("HELLO"), arg("h(el)lo"), arg(1), arg("i"), arg(0)), "EL") //
             .impl("missing STRING", List.of(misString(), arg("foo"), arg(0))) //
             .tests();
     }
@@ -212,7 +219,7 @@ final class StringFunctionTests {
             .impl("replace", List.of(arg("1234abcd"), arg("12345?"), arg("56")), "56abcd") //
             .impl("ignore case", List.of(arg("1234abcd"), arg("[ABC]{3}"), arg("yz"), arg("i")), "1234yzd") //
             .impl("multiple replacements", List.of(arg("quick quicker"), arg("quick(er)?"), arg("slow")), "slow slow") //
-            .impl("groups", List.of(arg("abc-123-456-xyz"), arg("([0-9]+)-([0-9]+)"), arg("$2-$1")), "abc-456-123-xyz")
+            .impl("groups", List.of(arg("abc-123-456-xyz"), arg("([0-9]+)-([0-9]+)"), arg("$2-$1")), "abc-456-123-xyz") //
             .impl("noop", List.of(arg("a"), arg("A"), arg("b")), "a") //
             .tests();
     }
@@ -572,7 +579,7 @@ final class StringFunctionTests {
             .impl("find backward", List.of(arg("teststring"), arg("st"), arg("b")), 6) //
             .impl("find ignorecase", List.of(arg("TestsTring"), arg("t"), arg("i")), 1) //
             .impl("find inverted", List.of(arg("tests test"), arg("test"), arg("v")), 6) //
-            .impl("not found", List.of(arg("tests test"), arg("q")), -1) //
+            .impl("not found", List.of(arg("tests test"), arg("q"))) //
             .impl("missing STRING", List.of(misString(), arg("foo"))) //
             .tests();
     }
