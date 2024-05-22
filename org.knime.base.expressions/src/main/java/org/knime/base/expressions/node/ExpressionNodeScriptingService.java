@@ -64,12 +64,10 @@ import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
 import org.knime.base.expressions.node.ExpressionNodeModel.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
-import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
-import org.knime.core.data.v2.RowRead;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileError;
@@ -268,8 +266,9 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
             List<String> warnings = new ArrayList<>();
             EvaluationContext evaluationContext = warnings::add;
-            var numRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
             var exprContext = new NodeExpressionMapperContext(this::getAvailableFlowVariables);
+
+            var numRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
             var slicedInputTable = inputTable.getVirtualTable().slice(0, numRows);
 
             var expressionResult = ExpressionRunnerUtils.applyExpression( //
@@ -279,32 +278,12 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                 exprContext, //
                 evaluationContext);
 
-            var result = new ArrayList<String>();
-            try (var expressionResultTable =
-                new VirtualTableExtensionTable(new ReferenceTable[]{inputTable}, expressionResult, numRows, 0)) {
-
-                try (var cursor = expressionResultTable.cursor()) {
-                    var resultIdx = expressionResultTable.getDataTableSpec().findColumnIndex(columnName);
-                    while (cursor.canForward()) {
-                        var rowRead = cursor.forward();
-                        result.add(getRowResult(rowRead, resultIdx));
-                    }
-                }
-            }
-            addConsoleOutputEvent(new ConsoleText(formatResult(result), false));
-
             updateTablePreview(inputTable, slicedInputTable, expressionResult, columnName, columnInsertionModeString,
                 numRows);
 
             for (var warning : warnings) {
                 addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));
             }
-        }
-
-        private static String getRowResult(final RowRead rowRead, final int resultIdx) {
-            return rowRead.isMissing(resultIdx) //
-                ? "MISSING" //
-                : rowRead.getValue(resultIdx).materializeDataCell().toString();
         }
 
         /**
@@ -343,22 +322,11 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                 m_cleanUpTableViewDataService.run();
                 updateOutputTable(numRows);
             } catch (CanceledExecutionException e) {
-                throw new IllegalStateException("This is an implementation error. Must not happen "
-                    + "because canceling the execution should not be possible.", e);
+                throw new IllegalStateException("Preview evaluation cancelled by the user.", e);
             } catch (VirtualTableIncompatibleException e) {
                 throw new IllegalStateException("This is an implementation error. Must not happen "
                     + "because the table is guaranteed to be compatible.", e);
             }
-        }
-
-        private static String formatResult(final ArrayList<String> result) {
-            var sb = new StringBuilder();
-            sb.append("Result on the first ").append(result.size()).append(" rows:").append('\n');
-            for (var value : result) {
-                sb.append('\t').append(value).append('\n');
-            }
-            sb.append('\n');
-            return sb.toString();
         }
 
         public record Diagnostic(String message, DiagnosticSeverity severity, TextRange location) {

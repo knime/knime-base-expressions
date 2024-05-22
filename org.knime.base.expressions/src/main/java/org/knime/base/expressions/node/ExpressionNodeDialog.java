@@ -173,10 +173,11 @@ final class ExpressionNodeDialog implements NodeDialog {
 
         final AtomicReference<BufferedDataTable> previewTable = new AtomicReference<>();
         var tableId = "previewTable.dummyId";
-        var outputPreviewTableDataService = TableViewUtil.createTableViewDataService(previewTable::get, null, tableId);
+        var outputPreviewTableDataService =
+            TableViewUtil.createTableViewDataService(previewTable::get, null, tableId);
 
         Runnable cleanUpTableViewDataService =
-            () -> TableViewUtil.deactivateTableViewDataService(outputPreviewTableDataService, tableId);
+            () -> TableViewUtil.deactivateTableViewDataService(outputPreviewTableDataService,tableId);
 
         var scriptingService = new ExpressionNodeScriptingService(previewTable, cleanUpTableViewDataService);
 
