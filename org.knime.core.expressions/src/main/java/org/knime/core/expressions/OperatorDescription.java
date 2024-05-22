@@ -48,7 +48,11 @@
  */
 package org.knime.core.expressions;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * A description of a function or aggregation.
@@ -72,5 +76,47 @@ public record OperatorDescription(String name, String description, List<Operator
      * @param description
      */
     public record Argument(String name, String type, String description) {
+
+        /**
+         * Match the positional and named arguments to the signature.
+         *
+         * @param <T> the type of the arguments
+         * @param signature the signature of the function
+         * @param arguments the arguments
+         * @return the matched arguments or {@link Optional#empty()} if the arguments do not match the signature
+         */
+        public static <T> Optional<Map<String, T>> matchSignature(final List<OperatorDescription.Argument> signature,
+            final Arguments<T> arguments) {
+
+            // TODO(AP-22303) return an error instead of Optional.empty
+            // TODO(AP-22303) add support for varargs
+
+            var argumentsMap = new HashMap<String, T>();
+
+            // Add positional arguments to the map
+            for (var i = 0; i < arguments.positionalArguments().size(); i++) {
+                if (i >= signature.size()) {
+                    // Too many arguments
+                    return Optional.empty();
+                }
+                argumentsMap.put(signature.get(i).name(), arguments.positionalArguments().get(i));
+            }
+
+            // Add named arguments to the map
+            var argSigIds = signature.stream().map(OperatorDescription.Argument::name).collect(Collectors.toSet());
+            for (final var entry : arguments.namedArguments().entrySet()) {
+                var name = entry.getKey();
+                if (argumentsMap.containsKey(name)) {
+                    // Argument already set
+                    return Optional.empty();
+                }
+                if (!argSigIds.contains(name)) {
+                    // No argument with this identifier
+                    return Optional.empty();
+                }
+                argumentsMap.put(name, entry.getValue());
+            }
+            return Optional.of(argumentsMap);
+        }
     }
 }
