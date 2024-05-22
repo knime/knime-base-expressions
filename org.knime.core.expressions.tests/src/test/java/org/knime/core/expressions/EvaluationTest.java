@@ -500,7 +500,7 @@ final class EvaluationTest {
         }
 
         @Override
-        public Description description() {
+        public OperatorDescription description() {
             throw new IllegalStateException("Should not be called during function evaluation");
         }
     }

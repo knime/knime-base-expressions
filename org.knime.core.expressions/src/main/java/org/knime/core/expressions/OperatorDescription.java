@@ -44,51 +44,33 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 4, 2024 (benjamin): created
+ *   May 22, 2024 (benjamin): created
  */
-package org.knime.core.expressions.functions;
+package org.knime.core.expressions;
 
 import java.util.List;
-import java.util.Optional;
-
-import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.OperatorDescription;
-import org.knime.core.expressions.ValueType;
 
 /**
- * The definition and implementation of a function that can be used in expressions.
+ * A description of a function or aggregation.
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @param name
+ * @param description a description which can contain Markdown
+ * @param arguments the arguments
+ * @param returnType the type of the return value
+ * @param returnDescription a description of the return value
+ * @param keywords
+ * @param category
  */
-public interface ExpressionFunction {
+public record OperatorDescription(String name, String description, List<OperatorDescription.Argument> arguments,
+    String returnType, String returnDescription, List<String> keywords, String category) {
 
     /**
-     * @return the identifier of the function. Should be in <a href="https://en.wikipedia.org/wiki/Snake_case">snake
-     *         case</a>.
-     */
-    String name();
-
-    /**
-     * @return a description of the function
-     */
-    OperatorDescription description();
-
-    /**
-     * Infer the return type of the argument types.
+     * The description of a function argument.
      *
-     * @param argTypes the types of the input arguments
-     * @return the return type or <code>Optional.empty()</code> if the function is not applicable to the arguments
+     * @param name
+     * @param type
+     * @param description
      */
-    Optional<ValueType> returnType(List<ValueType> argTypes);
-
-    /**
-     * Apply the function on the given arguments. Note that the arguments are guaranteed to be the appropriate computers
-     * for one of the allowed argument types. Must return a computer that fits the {@link #returnType(List)} for these
-     * arguments. The <code>compute</code> and <code>isMissing</code> methods of the arguments must only be called from
-     * the resulting computer and must not be called more than once.
-     *
-     * @param args the arguments
-     * @return a computer that applies the function to the input arguments
-     */
-    Computer apply(List<Computer> args);
+    public record Argument(String name, String type, String description) {
+    }
 }

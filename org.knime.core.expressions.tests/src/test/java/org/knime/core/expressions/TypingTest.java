@@ -362,7 +362,7 @@ final class TypingTest {
         }
 
         @Override
-        public Description description() {
+        public OperatorDescription description() {
             throw new IllegalStateException("Should not be called during type inferrence");
         }
     }

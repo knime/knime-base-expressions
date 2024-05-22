@@ -62,10 +62,9 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.OperatorDescription;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.expressions.WarningMessageListener;
-import org.knime.core.expressions.functions.ExpressionFunction.Argument;
-import org.knime.core.expressions.functions.ExpressionFunction.Description;
 import org.knime.core.expressions.functions.ExpressionFunctionBuilder.Arg.ArgKind;
 
 /**
@@ -250,7 +249,7 @@ public final class ExpressionFunctionBuilder {
 
     interface RequiresDescription {
         /**
-         * @param description the {@link ExpressionFunction.Description#description()}
+         * @param description the {@link OperatorDescription#description()}
          * @return the next stage of the builder
          */
         RequiresKeywords description(String description);
@@ -258,7 +257,7 @@ public final class ExpressionFunctionBuilder {
 
     interface RequiresKeywords {
         /**
-         * @param keywords the {@link ExpressionFunction.Description#keywords()}
+         * @param keywords the {@link OperatorDescription#keywords()}
          * @return the next stage of the builder
          */
         RequiresCategory keywords(String... keywords);
@@ -266,7 +265,7 @@ public final class ExpressionFunctionBuilder {
 
     interface RequiresCategory {
         /**
-         * @param category the {@link ExpressionFunction.Description#category()}
+         * @param category the {@link OperatorDescription#category()}
          * @return the next stage of the builder
          */
         RequiresArgs category(String category);
@@ -282,8 +281,8 @@ public final class ExpressionFunctionBuilder {
 
     interface RequiresReturnType {
         /**
-         * @param returnDesc the {@link ExpressionFunction.Description#returnDescription()}
-         * @param returnType the {@link ExpressionFunction.Description#returnType()}
+         * @param returnDesc the {@link OperatorDescription#returnDescription()}
+         * @param returnType the {@link OperatorDescription#returnType()}
          * @param returnTypeMapping a function mapping from legal input argument types to the return type
          * @return the next stage of the builder
          */
@@ -310,10 +309,10 @@ public final class ExpressionFunctionBuilder {
             }
 
             var argsDesc = Arrays.stream(args) //
-                .map(a -> new Argument(a.name, a.matcher.allowed(), a.description)) //
+                .map(a -> new OperatorDescription.Argument(a.name, a.matcher.allowed(), a.description)) //
                 .toList();
-            var desc =
-                new Description(name, description, argsDesc, returnType, returnDesc, List.of(keywords), category);
+            var desc = new OperatorDescription(name, description, argsDesc, returnType, returnDesc, List.of(keywords),
+                category);
 
             return new FunctionImpl(name, desc, argTypes -> {
                 // Check if the args match the definition
@@ -348,13 +347,13 @@ public final class ExpressionFunctionBuilder {
 
         private String m_name;
 
-        private Description m_description;
+        private OperatorDescription m_description;
 
         private Function<List<ValueType>, Optional<ValueType>> m_typeMapping;
 
         private Function<List<Computer>, Computer> m_impl;
 
-        FunctionImpl(final String name, final Description description,
+        FunctionImpl(final String name, final OperatorDescription description,
             final Function<List<ValueType>, Optional<ValueType>> typeMapping,
             final Function<List<Computer>, Computer> impl) {
             m_name = name;
@@ -369,7 +368,7 @@ public final class ExpressionFunctionBuilder {
         }
 
         @Override
-        public Description description() {
+        public OperatorDescription description() {
             return m_description;
         }
 
