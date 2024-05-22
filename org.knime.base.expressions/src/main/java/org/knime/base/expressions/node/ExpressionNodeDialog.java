@@ -48,14 +48,36 @@
  */
 package org.knime.base.expressions.node;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.core.runtime.Platform;
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.NodeLogger;
+import org.knime.core.ui.CoreUIPlugin;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsSerializer;
+import org.knime.core.webui.node.dialog.defaultdialog.setting.selection.SelectionMode;
+import org.knime.core.webui.node.view.table.TableViewUtil;
+import org.knime.core.webui.node.view.table.TableViewViewSettings;
+import org.knime.core.webui.node.view.table.TableViewViewSettings.RowHeightMode;
+import org.knime.core.webui.node.view.table.data.TableViewDataService;
+import org.knime.core.webui.node.view.table.data.TableViewInitialDataImpl;
 import org.knime.core.webui.page.Page;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
 
 /**
  * The node dialog implementation of the Expression node.
@@ -65,18 +87,21 @@ import org.knime.core.webui.page.Page;
 @SuppressWarnings("restriction")
 final class ExpressionNodeDialog implements NodeDialog {
 
-    private final ExpressionNodeScriptingService m_scriptingService;
-
-    ExpressionNodeDialog() {
-        m_scriptingService = new ExpressionNodeScriptingService();
-    }
-
     @Override
     public Page getPage() {
         return Page //
             .builder(ExpressionNodeFactory.class, "js-src/dist", "index.html") //
             .addResourceDirectory("assets") //
             .addResourceDirectory("monacoeditorwork") //
+            .addResource(() -> {
+                try {
+                    return Files
+                        .newInputStream(getAbsoluteBasePath(CoreUIPlugin.class, null, "js-src/dist/TableView.js"));
+                } catch (IOException e) {
+                    NodeLogger.getLogger(this.getClass()).error("Failed to load TableView.js", e);
+                    return null;
+                }
+            }, "TableView.js")//
             .build();
     }
 
@@ -85,15 +110,85 @@ final class ExpressionNodeDialog implements NodeDialog {
         return Set.of(SettingsType.MODEL);
     }
 
+    private static Path getAbsoluteBasePath(final Class<?> clazz, final String bundleID, final String baseDir) {
+        if (clazz != null) {
+            return getAbsoluteBasePath(FrameworkUtil.getBundle(clazz), baseDir);
+        } else {
+            return getAbsoluteBasePath(Platform.getBundle(bundleID), baseDir);
+        }
+    }
+
+    /*
+     * The bundle path + base path.
+     */
+    private static Path getAbsoluteBasePath(final Bundle bundle, final String baseDir) {
+        var bundleUrl = bundle.getEntry(".");
+        try {
+            // must not use url.toURI() -- FileLocator leaves spaces in the URL (see eclipse bug 145096)
+            // -- taken from TableauHyperActivator.java line 158
+            var url = FileLocator.toFileURL(bundleUrl);
+            return Paths.get(new URI(url.getProtocol(), url.getFile(), null)).resolve(baseDir).normalize();
+        } catch (IOException | URISyntaxException ex) {
+            throw new IllegalStateException("Failed to resolve the directory " + baseDir, ex);
+        }
+    }
+
     @Override
     public NodeSettingsService getNodeSettingsService() {
         return ExpressionNodeSettings.createNodeSettingsService();
     }
 
+    public static class OutputPreviewTableInitialDataRpcSupplier {
+
+        AtomicReference<BufferedDataTable> m_table;
+
+        private TableViewDataService m_tableViewDataService;
+
+        OutputPreviewTableInitialDataRpcSupplier(final AtomicReference<BufferedDataTable> table,
+            final TableViewDataService tableViewDataService) {
+            this.m_table = table;
+            m_tableViewDataService = tableViewDataService;
+        }
+
+        public String getInitialData() {
+            var tab = new TableViewViewSettings(m_table.get().getSpec());
+            tab.m_title = null;
+            tab.m_enableGlobalSearch = false;
+            tab.m_showTableSize = false;
+            tab.m_enablePagination = false;
+            tab.m_rowHeightMode = RowHeightMode.COMPACT;
+            tab.m_selectionMode = SelectionMode.OFF;
+            try {
+                return new DefaultNodeSettingsSerializer<>().serialize(
+                    Map.of("result", new TableViewInitialDataImpl(tab, m_table::get, m_tableViewDataService)));
+            } catch (IOException e) {
+                NodeLogger.getLogger(this.getClass()).error("Failed to serialize the initial data", e);
+                return null;
+            }
+        }
+    }
+
     @Override
     public Optional<RpcDataService> createRpcDataService() {
-        return Optional.of(RpcDataService.builder(m_scriptingService.getJsonRpcService())
-            .onDeactivate(m_scriptingService::onDeactivate).build());
+
+        final AtomicReference<BufferedDataTable> previewTable = new AtomicReference<>();
+        var tableId = "previewTable.dummyId";
+        var outputPreviewTableDataService =
+            TableViewUtil.createTableViewDataService(previewTable::get, null, tableId);
+
+        Runnable cleanUpTableViewDataService =
+            () -> TableViewUtil.deactivateTableViewDataService(outputPreviewTableDataService,tableId);
+
+        var scriptingService = new ExpressionNodeScriptingService(previewTable, cleanUpTableViewDataService);
+
+        return Optional.of(RpcDataService.builder() //
+            .addService("ScriptingService", scriptingService.getJsonRpcService()) //
+            .addService(OutputPreviewTableInitialDataRpcSupplier.class.getSimpleName(), //
+                new OutputPreviewTableInitialDataRpcSupplier(previewTable, outputPreviewTableDataService)) //
+            .addService(TableViewDataService.class.getSimpleName(), outputPreviewTableDataService) //
+            .onDeactivate(scriptingService::onDeactivate) //
+            .onDeactivate(cleanUpTableViewDataService) //
+            .build()); //
     }
 
     @Override

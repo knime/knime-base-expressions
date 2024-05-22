@@ -55,15 +55,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
+import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
 import org.knime.base.expressions.node.ExpressionNodeModel.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
+import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
+import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
+import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
-import org.knime.core.data.container.filter.TableFilter;
 import org.knime.core.data.v2.RowRead;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.EvaluationContext;
@@ -75,6 +79,7 @@ import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
@@ -107,8 +112,17 @@ final class ExpressionNodeScriptingService extends ScriptingService {
      */
     private ReferenceTable m_inputTable;
 
-    ExpressionNodeScriptingService() {
+    private AtomicReference<BufferedDataTable> m_outputBufferTableReference;
+
+    private final Runnable m_cleanUpTableViewDataService;
+
+    ExpressionNodeScriptingService(final AtomicReference<BufferedDataTable> outputTableRef,
+        final Runnable cleanUpTableViewDataService) {
         super(null, flowVar -> SUPPORTED_FLOW_VARIABLE_TYPES_SET.contains(flowVar.getVariableType()));
+
+        m_outputBufferTableReference = outputTableRef;
+        m_outputBufferTableReference.set(getInputTable().getBufferedTable());
+        m_cleanUpTableViewDataService = cleanUpTableViewDataService;
     }
 
     @Override
@@ -211,63 +225,64 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             }
         }
 
-        public void runExpression(final String script, int numPreviewRows) {
-            // Let's just make sure that we don't get DOSed by the user
+        public void runExpression(final String script, final int numPreviewRows, final String columnInsertionModeString,
+            final String columnName) {
+
             if (numPreviewRows > PREVIEW_MAX_ROWS) {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            var inputTable = getInputTable();
-
-            numPreviewRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
-
-            // Prepare the expression
             final Ast expression;
             try {
                 expression = getPreparedExpression(script);
             } catch (ExpressionCompileException ex) {
-                // Note: This should not happen because the run button is disabled if the expression is invalid
                 NodeLogger.getLogger(ExpressionNodeScriptingService.class)
-                    .debug("Error while running expression in dialog: " + ex.getMessage(), ex);
+                    .debug("Error while running expression in dialog. This should not happen because the "
+                        + "run button is disabled if the expression is invalid: " + ex.getMessage(), ex);
                 addConsoleOutputEvent(new ConsoleText("Error: " + ex.getMessage(), true));
                 return;
             }
 
-            // Apply the expression on the input table using a ColumnarVirtualTable
-            List<String> warnings = new ArrayList<>();
-            EvaluationContext ctx = warning -> warnings.add(warning);
+            var inputTable = getInputTable();
 
-            // Pre-evaluate the aggregations
             // NB: We use the inRefTable because it is guaranteed to be a columnar table
             try {
                 ExpressionRunnerUtils.evaluateAggregations(expression, inputTable.getBufferedTable(),
                     new ExecutionMonitor(), numPreviewRows);
             } catch (CanceledExecutionException ex) {
-                // Cannot happen because we do not cancel the execution
-                throw new IllegalStateException(ex);
+                throw new IllegalStateException("This is an implementation error. Must not happen "
+                    + "because canceling the execution should not be possible.", ex);
             }
 
-            // Evaluate the expression
+            List<String> warnings = new ArrayList<>();
+            EvaluationContext evaluationContext = warnings::add;
+            var numRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
             var exprContext = new NodeExpressionMapperContext(this::getAvailableFlowVariables);
-            var expressionResult = ExpressionRunnerUtils.applyExpression( //
-                inputTable.getVirtualTable().slice(0, numPreviewRows), //
-                expression, //
-                "result", // column name is irrelevant
-                exprContext, //
-                ctx);
+            var slicedInputTable = inputTable.getVirtualTable().slice(0, numRows);
 
-            var result = new String[numPreviewRows];
+            var expressionResult = ExpressionRunnerUtils.applyExpression( //
+                slicedInputTable, //
+                expression, //
+                columnName, //
+                exprContext, //
+                evaluationContext);
+
+            var result = new ArrayList<String>();
             try (var expressionResultTable =
-                new VirtualTableExtensionTable(new ReferenceTable[]{inputTable}, expressionResult, numPreviewRows, 0)) {
-                try (var cursor = expressionResultTable.cursor(TableFilter.filterRangeOfRows(0, numPreviewRows))) {
-                    var resultIdx = expressionResultTable.getDataTableSpec().getNumColumns() - 1;
-                    for (var i = 0; i < numPreviewRows && cursor.canForward(); i++) {
-                        result[i] = getRowResult(cursor.forward(), resultIdx);
+                new VirtualTableExtensionTable(new ReferenceTable[]{inputTable}, expressionResult, numRows, 0)) {
+
+                try (var cursor = expressionResultTable.cursor()) {
+                    var resultIdx = expressionResultTable.getDataTableSpec().findColumnIndex(columnName);
+                    while (cursor.canForward()) {
+                        var rowRead = cursor.forward();
+                        result.add(getRowResult(rowRead, resultIdx));
                     }
                 }
             }
-
             addConsoleOutputEvent(new ConsoleText(formatResult(result), false));
+
+            updateTablePreview(inputTable, slicedInputTable, expressionResult, columnName, columnInsertionModeString,
+                numRows);
 
             for (var warning : warnings) {
                 addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));
@@ -280,9 +295,53 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                 : rowRead.getValue(resultIdx).materializeDataCell().toString();
         }
 
-        private static String formatResult(final String[] result) {
+        /**
+         * Updates the output preview table with the new column.
+         *
+         * @param inputTable the input table
+         * @param slicedInputTable the sliced input table
+         * @param expressionResult the result of the expression
+         * @param columnName the name of the new column
+         * @param columnInsertionModeString the column insertion mode
+         * @param numRows
+         */
+        private void updateTablePreview(final ReferenceTable inputTable, final ColumnarVirtualTable slicedInputTable,
+            final ColumnarVirtualTable expressionResult, final String columnName,
+            final String columnInsertionModeString, final int numRows) {
+
+            try {
+                var context =
+                    ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).createExecutionContext();
+
+                var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(
+                    ColumnInsertionMode.valueOf(columnInsertionModeString), columnName);
+                var outputTable =
+                    ExpressionRunnerUtils.constructOutputTable(slicedInputTable, expressionResult, newColumnPosition);
+
+                m_outputBufferTableReference.set(ColumnarVirtualTableMaterializer.materializer() //
+                    .sources(inputTable.getSources()) //
+                    .materializeRowKey(true) //
+                    .progress((rowIndex, rowKey) -> {
+                    }) //
+                    .executionContext(context) //
+                    .tableIdSupplier(Node.invokeGetDataRepository(context)::generateNewID) //
+                    .materialize(outputTable) //
+                    .getBufferedTable());
+
+                m_cleanUpTableViewDataService.run();
+                updateOutputTable(numRows);
+            } catch (CanceledExecutionException e) {
+                throw new IllegalStateException("This is an implementation error. Must not happen "
+                    + "because canceling the execution should not be possible.", e);
+            } catch (VirtualTableIncompatibleException e) {
+                throw new IllegalStateException("This is an implementation error. Must not happen "
+                    + "because the table is guaranteed to be compatible.", e);
+            }
+        }
+
+        private static String formatResult(final ArrayList<String> result) {
             var sb = new StringBuilder();
-            sb.append("Result on the first ").append(result.length).append(" rows:").append('\n');
+            sb.append("Result on the first ").append(result.size()).append(" rows:").append('\n');
             for (var value : result) {
                 sb.append('\t').append(value).append('\n');
             }

@@ -120,6 +120,10 @@ const runExpressions = (rows: number) => {
     scriptingService.sendToService("runExpression", [
       multiEditorComponentRef.value?.getEditorState().text.value,
       rows,
+      columnSectorState.value.outputMode,
+      columnSectorState.value.outputMode === "APPEND"
+        ? columnSectorState.value.createColumn
+        : columnSectorState.value.replaceColumn,
     ]);
   }
 };
