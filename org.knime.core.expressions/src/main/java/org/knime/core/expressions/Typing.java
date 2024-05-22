@@ -64,6 +64,7 @@ import org.knime.core.expressions.Ast.BinaryOp;
 import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.Ast.BooleanConstant;
 import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Ast.FloatConstant;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Ast.FunctionCall;
@@ -73,6 +74,7 @@ import org.knime.core.expressions.Ast.StringConstant;
 import org.knime.core.expressions.Ast.UnaryOp;
 import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
@@ -87,14 +89,21 @@ final class Typing {
 
     private static final String FUNCTION_IMPL_DATA_KEY = "function_impl";
 
+    private static final String AGGREGATION_IMPL_DATA_KEY = "aggregation_impl";
+
     private Typing() {
     }
 
-    static ValueType inferTypes(final Ast root, final Function<ColumnAccess, Optional<ValueType>> columnType,
-        final Function<String, Optional<ExpressionFunction>> functions,
-        final Function<FlowVarAccess, Optional<ValueType>> flowVariableTypeGetter) throws ExpressionCompileException {
-        var outputType =
-            Ast.putDataRecursive(root, TYPE_DATA_KEY, new TypingVisitor(columnType, functions, flowVariableTypeGetter));
+    // TODO re-order and rename arguments (same for the visitor)
+    static ValueType inferTypes( //
+        final Ast root, //
+        final Function<ColumnAccess, Optional<ValueType>> columnType, //
+        final Function<String, Optional<ExpressionFunction>> functions, //
+        final Function<FlowVarAccess, Optional<ValueType>> flowVariableTypeGetter, //
+        final Function<String, Optional<ColumnAggregation>> aggregations //
+    ) throws ExpressionCompileException {
+        var outputType = Ast.putDataRecursive(root, TYPE_DATA_KEY,
+            new TypingVisitor(columnType, functions, flowVariableTypeGetter, aggregations));
         if (outputType instanceof ErrorValueType errorValueType) {
             throw new ExpressionCompileException(errorValueType.m_errors);
         }
@@ -119,6 +128,16 @@ final class Typing {
         }
     }
 
+    static ColumnAggregation getAggregationImpl(final AggregationCall node) {
+        Object aggregation = node.data(AGGREGATION_IMPL_DATA_KEY);
+        if (aggregation instanceof ColumnAggregation f) {
+            return f;
+        } else {
+            throw new IllegalArgumentException(
+                "The node " + node + " has no resolved column aggregation implementation.");
+        }
+    }
+
     private static final class TypingVisitor implements Ast.AstVisitor<ValueType, RuntimeException> {
 
         private final Function<ColumnAccess, Optional<ValueType>> m_columnType;
@@ -127,12 +146,16 @@ final class Typing {
 
         private final Function<String, Optional<ExpressionFunction>> m_functions;
 
+        private final Function<String, Optional<ColumnAggregation>> m_aggregations;
+
         TypingVisitor(final Function<ColumnAccess, Optional<ValueType>> columnType,
             final Function<String, Optional<ExpressionFunction>> functions,
-            final Function<FlowVarAccess, Optional<ValueType>> getTypeOfFlowVariables) {
+            final Function<FlowVarAccess, Optional<ValueType>> getTypeOfFlowVariables,
+            final Function<String, Optional<ColumnAggregation>> aggregations) {
             m_columnType = columnType;
             m_functions = functions;
             m_flowVariableType = getTypeOfFlowVariables;
+            m_aggregations = aggregations;
         }
 
         @Override
@@ -234,8 +257,22 @@ final class Typing {
         }
 
         @Override
-        public ValueType visit(final AggregationCall node) {
-            throw new IllegalStateException("not implemented yet");
+        public ValueType visit(final AggregationCall node) throws RuntimeException {
+            // TODO should the function m_columnType operate on string instead of ColumnAccess after all?
+            Function<String, Optional<ValueType>> columnTypeGetter =
+                columnName -> m_columnType.apply(Ast.columnAccess(columnName));
+
+            var resolvedAggregation = m_aggregations.apply(node.name());
+            if (resolvedAggregation.isEmpty()) {
+                // TODO(AP-22372) propose aggregations with similar names if there is none with this name
+                return ErrorValueType.missingAggregation(node);
+            }
+
+            node.putData(AGGREGATION_IMPL_DATA_KEY, resolvedAggregation.get());
+
+            var args = node.args();
+            return resolvedAggregation.get().returnType(args, columnTypeGetter)
+                .orElseGet(() -> ErrorValueType.aggregationNotApplicable(node, args));
         }
 
         private static ValueType arithmeticType(final BinaryOp node, final ValueType typeA, final ValueType typeB) {
@@ -372,6 +409,15 @@ final class Typing {
 
         static ErrorValueType functionNotApplicable(final FunctionCall node, final List<ValueType> args) {
             return typingError("The function " + node.name() + " is not applicable to the arguments " + args, node);
+        }
+
+        static ErrorValueType missingAggregation(final AggregationCall node) {
+            return typingError("No aggregation with name " + node.name(), node);
+        }
+
+        static ErrorValueType aggregationNotApplicable(final AggregationCall node, final Arguments<ConstantAst> args) {
+            return typingError("The aggregation " + node.name() + " is not applicable to the arguments "
+                + args.renderArgumentList(Ast::toExpression), node);
         }
 
         static ErrorValueType nullishOpNotApplicable(final BinaryOp node, final ValueType t1, final ValueType t2) {

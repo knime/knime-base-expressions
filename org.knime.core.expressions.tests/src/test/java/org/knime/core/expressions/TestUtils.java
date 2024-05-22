@@ -63,6 +63,7 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
@@ -84,6 +85,16 @@ public final class TestUtils {
     public static Function<String, Optional<ExpressionFunction>>
         functionsMappingFromArray(final ExpressionFunction[] functions) {
         var map = Arrays.stream(functions).collect(Collectors.toMap(ExpressionFunction::name, f -> f));
+        return name -> Optional.ofNullable(map.get(name));
+    }
+
+    /**
+     * @param aggregations an array of {@link ColumnAggregation}
+     * @return a function that maps from the name to the aggregation
+     */
+    public static Function<String, Optional<ColumnAggregation>>
+        aggregationssMappingFromArray(final ColumnAggregation[] aggregations) {
+        var map = Arrays.stream(aggregations).collect(Collectors.toMap(ColumnAggregation::name, f -> f));
         return name -> Optional.ofNullable(map.get(name));
     }
 

@@ -72,6 +72,8 @@ import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.STR;
+import static org.knime.core.expressions.TestAggregations.TEST_AGGREGATIONS;
+import static org.knime.core.expressions.TestAggregations.TEST_AGGREGATIONS_COMPUTER;
 import static org.knime.core.expressions.TestUtils.computerResultChecker;
 
 import java.util.Arrays;
@@ -108,9 +110,12 @@ final class EvaluationTest {
     void test(final ExecutionTest params) throws Exception {
         var ast = params.m_expression;
         Typing.inferTypes(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::type)), TEST_FUNCTIONS,
-            FIND_TEST_FLOW_VARIABLE.andThen(c -> c.map(TestFlowVariable::type)));
-        var result = Evaluation.evaluate(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::computer)),
-            FIND_TEST_FLOW_VARIABLE.andThen(c -> c.map(TestFlowVariable::computer)));
+            FIND_TEST_FLOW_VARIABLE.andThen(c -> c.map(TestFlowVariable::type)), TEST_AGGREGATIONS);
+        var result = Evaluation.evaluate( //
+            ast, //
+            FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::computer)), //
+            FIND_TEST_FLOW_VARIABLE.andThen(c -> c.map(TestFlowVariable::computer)), //
+            TEST_AGGREGATIONS_COMPUTER);
         assertNotNull(result, "should output result");
         params.m_resultChecker.accept(result);
     }
@@ -350,9 +355,11 @@ final class EvaluationTest {
             STRING_CONCAT_STRING_AND_TRUE(OP(STR("This is "), PLUS, BOOL(true)), "This is true"), //
             STRING_CONCAT_STRING_AND_FALSE(OP(BOOL(false), PLUS, STR(" it is")), "false it is"), //
 
-            // === Function calls
+            // === Function and Aggregation calls
 
-            FN_PLUS_100(FUN("PLUS_100_FN", INT(10)), 110), //
+            FN_PLUS_100(FUN("plus_100_fn", INT(10)), 110), //
+            AGG_RETURN_42_WITH_COL_TYPE_I(AstTestUtils.AGG("RETURN_42_WITH_COL_TYPE", STR("INTEGER")), 42), //
+            AGG_RETURN_42_WITH_COL_TYPE_F(AstTestUtils.AGG("RETURN_42_WITH_COL_TYPE", STR("FLOAT")), 42.0), //
         ;
 
         private final Ast m_expression;
@@ -470,7 +477,7 @@ final class EvaluationTest {
         TestUtils.functionsMappingFromArray(TestFunctions.values());
 
     private static enum TestFunctions implements ExpressionFunction {
-            PLUS_100_FN(List.of(ValueType.INTEGER), ValueType.INTEGER,
+            plus_100_fn(List.of(ValueType.INTEGER), ValueType.INTEGER,
                 c -> IntegerComputer.of(wml -> ((IntegerComputer)c.get(0)).compute(wml) + 100, wml -> false)), //
         ;
 

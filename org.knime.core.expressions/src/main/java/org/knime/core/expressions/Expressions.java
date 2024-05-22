@@ -54,8 +54,10 @@ import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.FlowVarAccess;
+import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.functions.BuiltInFunctions;
 
 /**
@@ -107,15 +109,19 @@ public final class Expressions {
      *            return <code>Optional.empty()</code> if the column is not available.
      * @param flowVariableToType a function that returns the type of a flow variable accessed by the expression. The
      *            function should return <code>Optional.empty()</code> if the flow variable is not available.
+     * @param aggregations a function that returns the implementation of an aggregation call
      * @return the output type of the full expression
      * @throws ExpressionCompileException if type inference failed because operations are used for incompatible types or
      *             a column is not available
      */
-    public static ValueType inferTypes(final Ast expression,
-        final Function<ColumnAccess, Optional<ValueType>> columnToType,
-        final Function<FlowVarAccess, Optional<ValueType>> flowVariableToType) throws ExpressionCompileException {
+    public static ValueType inferTypes( //
+        final Ast expression, //
+        final Function<ColumnAccess, Optional<ValueType>> columnToType, //
+        final Function<FlowVarAccess, Optional<ValueType>> flowVariableToType, //
+        final Function<String, Optional<ColumnAggregation>> aggregations //
+    ) throws ExpressionCompileException {
         return Typing.inferTypes(expression, columnToType, BuiltInFunctions.BUILT_IN_FUNCTIONS_GETTER,
-            flowVariableToType);
+            flowVariableToType, aggregations);
     }
 
     /**
@@ -123,25 +129,26 @@ public final class Expressions {
      * result but evaluates it on each access. The caller has to provide the input data for each used
      * {@link ColumnAccess} via a {@link Computer} of the appropriate type.
      *
-     * @param expression the expression. Must include type information inferred by
-     *            {@link #inferTypes(Ast, Function, Function)}.
+     * @param expression the expression. Must include type information inferred by {@link #inferTypes}.
      * @param columnToComputer a function that returns the computer for column data accessed by the expression. The
      *            function should return <code>Optional.empty()</code> if the column is not available.
      * @param flowVariableToComputer a function that returns the computer for flow variable accessed by the expression.
      *            The function should return <code>Optional.empty()</code> if the flow variable is not available.
+     * @param aggregationToComputer a function that returns the computer for an aggregation call
      * @return the output type of the full expression
      * @throws ExpressionCompileException if the expression accesses a column that is not available
      */
     public static Computer evaluate(final Ast expression,
         final Function<ColumnAccess, Optional<Computer>> columnToComputer,
-        final Function<FlowVarAccess, Optional<Computer>> flowVariableToComputer) throws ExpressionCompileException {
-        return Evaluation.evaluate(expression, columnToComputer, flowVariableToComputer);
+        final Function<FlowVarAccess, Optional<Computer>> flowVariableToComputer,
+        final Function<AggregationCall, Optional<Computer>> aggregationToComputer) throws ExpressionCompileException {
+        return Evaluation.evaluate(expression, columnToComputer, flowVariableToComputer, aggregationToComputer);
     }
 
     /**
      * Get the inferred output type of the given expression.
      *
-     * @param expression the expression with present type information from {@link #inferTypes(Ast, Function, Function)}
+     * @param expression the expression with present type information from {@link #inferTypes}
      * @return the output type
      * @throws IllegalArgumentException if the expression is not typed
      */
@@ -158,6 +165,16 @@ public final class Expressions {
      */
     public static int getResolvedColumnIdx(final ColumnAccess columnAccess) {
         return ColumnIdxResolve.getColumnIdx(columnAccess);
+    }
+
+    /**
+     * Get the resolve aggregation implementation of the given AggregationCall.
+     *
+     * @param aggregationCall the aggregation call with present aggregation information from {@link #inferTypes}
+     * @return the aggregation implementation
+     */
+    public static ColumnAggregation getResolvedColumnAggregation(final AggregationCall aggregationCall) {
+        return Typing.getAggregationImpl(aggregationCall);
     }
 
     // EXCEPTIONS

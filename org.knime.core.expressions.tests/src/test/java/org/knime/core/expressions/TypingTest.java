@@ -65,6 +65,7 @@ import static org.knime.core.expressions.Ast.BinaryOperator.PLUS;
 import static org.knime.core.expressions.Ast.BinaryOperator.REMAINDER;
 import static org.knime.core.expressions.Ast.UnaryOperator.MINUS;
 import static org.knime.core.expressions.Ast.UnaryOperator.NOT;
+import static org.knime.core.expressions.AstTestUtils.AGG;
 import static org.knime.core.expressions.AstTestUtils.BOOL;
 import static org.knime.core.expressions.AstTestUtils.COL;
 import static org.knime.core.expressions.AstTestUtils.FLOAT;
@@ -74,6 +75,7 @@ import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.STR;
+import static org.knime.core.expressions.TestAggregations.TEST_AGGREGATIONS;
 import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
@@ -106,7 +108,8 @@ final class TypingTest {
     @EnumSource(TypingTestCase.class)
     void test(final TypingTestCase params) throws Exception {
         var ast = params.m_expression;
-        var outputType = Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS, TEST_FLOWVARIABLE_TO_TYPE);
+        var outputType =
+            Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS, TEST_FLOWVARIABLE_TO_TYPE, TEST_AGGREGATIONS);
         assertEquals(params.m_expectedType, outputType, "should fit output type");
         assertEquals(params.m_expectedType, Expressions.getInferredType(ast), "should fit output type");
         assertChildrenHaveTypes(ast);
@@ -219,6 +222,12 @@ final class TypingTest {
             FUNCTION_CALL_WITH_TWO_SIGS_1(FUN("TWO_SIG_FN", INT(1)), FLOAT), //
             FUNCTION_CALL_WITH_TWO_SIGS_2(FUN("TWO_SIG_FN", FLOAT(1), STR("bar")), INTEGER), //
 
+            // === Aggregation calls
+            AGG_CALL_WITH_INT_ARG_I(AGG("RETURN_42_WITH_COL_TYPE", STR("i")), INTEGER), //
+            AGG_CALL_WITH_INT_ARG_OPT_F(AGG("RETURN_42_WITH_COL_TYPE", STR("f?")), OPT_FLOAT), //
+            AGG_CALL_WITH_NAMED_ARG(
+                AGG("EXPECT_POS_AND_NAMED_ARG", List.of(INT(1)), Map.of("named_arg_id", FLOAT(2.0))), MISSING), //
+
             // === Complex Expressions
             NESTED_BINARY_OPS(OP(OP(INT(2), PLUS, COL("i?")), MULTIPLY, FLOAT(4.0)), OPT_FLOAT), //
         ;
@@ -235,11 +244,11 @@ final class TypingTest {
 
     @ParameterizedTest
     @EnumSource(TypingErrorTestCase.class)
-    void testError(final TypingErrorTestCase params) throws Exception {
+    void testError(final TypingErrorTestCase params) {
         var ast = params.m_expression;
-        var typingError = assertThrows(ExpressionCompileException.class,
-            () -> Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS, TEST_FLOWVARIABLE_TO_TYPE),
-            "should fail type inferrence");
+        var typingError =
+            assertThrows(ExpressionCompileException.class, () -> Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE,
+                TEST_FUNCTIONS, TEST_FLOWVARIABLE_TO_TYPE, TEST_AGGREGATIONS), "should fail type inferrence");
         var errorMessage = typingError.getMessage();
         for (var expectedSubstring : params.m_expectedErrorSubstrings) {
             assertTrue(errorMessage.contains(expectedSubstring),
@@ -285,6 +294,10 @@ final class TypingTest {
             // === Function calls
             FUNCTION_CALL_UNKNOWN_ID(FUN("not_a_fn", INT(1)), "not_a_fn"), //
             FUNCTION_CALL_WRONG_ARG_TYPES(FUN("INT_TO_FLOAT_FN", FLOAT(1.0)), "INT_TO_FLOAT_FN", "FLOAT"), //
+
+            // === Aggregation calls
+            AGG_CALL_UNKNOWN_ID(AGG("NOT_AN_AGG", STR("i")), "NOT_AN_AGG"), //
+            AGG_CALL_WRONG_ARG_TYPES(AGG("RETURN_42_WITH_COL_TYPE", INT(1)), "RETURN_42_WITH_COL_TYPE", "(1)"), //
         ;
 
         private final Ast m_expression;
@@ -298,11 +311,11 @@ final class TypingTest {
     }
 
     @Test
-    void testMissingColumn() throws Exception {
+    void testMissingColumn() {
         var colName = "not_a_column";
         var ast = OP(INT(10), PLUS, COL(colName));
         var exception = assertThrows(ExpressionCompileException.class,
-            () -> Expressions.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FLOWVARIABLE_TO_TYPE),
+            () -> Expressions.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FLOWVARIABLE_TO_TYPE, TEST_AGGREGATIONS),
             "should fail type inferrence");
         var errors = exception.getErrors();
         assertEquals(1, errors.size(), "should be one error");

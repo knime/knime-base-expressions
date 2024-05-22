@@ -94,9 +94,13 @@ final class Evaluation {
 
     private static final Computer MISSING_CONSTANT_COMPUTER = wml -> true;
 
-    static Computer evaluate(final Ast expression, final Function<ColumnAccess, Optional<Computer>> columnToComputer,
-        final Function<FlowVarAccess, Optional<Computer>> flowVariableToComputer) throws ExpressionCompileException {
-        return expression.accept(new ComputerFactory(columnToComputer, flowVariableToComputer));
+    static Computer evaluate( //
+        final Ast expression, //
+        final Function<ColumnAccess, Optional<Computer>> columnToComputer, //
+        final Function<FlowVarAccess, Optional<Computer>> flowVariableToComputer, //
+        final Function<AggregationCall, Optional<Computer>> aggregationToComputer //
+    ) throws ExpressionCompileException {
+        return expression.accept(new ComputerFactory(columnToComputer, flowVariableToComputer, aggregationToComputer));
     }
 
     private static final class EvaluationImplementationError extends RuntimeException {
@@ -113,10 +117,14 @@ final class Evaluation {
 
         private final Function<FlowVarAccess, Optional<Computer>> m_flowVariableToComputer;
 
+        private final Function<AggregationCall, Optional<Computer>> m_aggregationToComputer;
+
         public ComputerFactory(final Function<ColumnAccess, Optional<Computer>> columnToComputer,
-            final Function<FlowVarAccess, Optional<Computer>> flowVariableToComputer) {
+            final Function<FlowVarAccess, Optional<Computer>> flowVariableToComputer,
+            final Function<AggregationCall, Optional<Computer>> aggregationToComputer) {
             m_columnToComputer = columnToComputer;
             m_flowVariableToComputer = flowVariableToComputer;
+            m_aggregationToComputer = aggregationToComputer;
         }
 
         @Override
@@ -206,8 +214,9 @@ final class Evaluation {
         }
 
         @Override
-        public Computer visit(final AggregationCall node) {
-            throw new IllegalStateException("not implemented yet");
+        public Computer visit(final AggregationCall aggregationCall) throws ExpressionCompileException {
+            return m_aggregationToComputer.apply(aggregationCall).orElseThrow(() -> new EvaluationImplementationError(
+                "No computer provided for aggregation call " + aggregationCall));
         }
 
         private static Computer missingFallbackOperatorImpl(final ValueType outputType, final Computer arg1,
