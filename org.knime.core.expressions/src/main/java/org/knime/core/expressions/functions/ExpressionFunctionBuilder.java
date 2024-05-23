@@ -59,6 +59,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
@@ -73,6 +74,9 @@ import org.knime.core.expressions.functions.ExpressionFunctionBuilder.Arg.ArgKin
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 public final class ExpressionFunctionBuilder {
+
+    // NOTE: Sonar suggest use unicode-aware char classes but we only support ASCII names for functions
+    private static final Pattern SNAKE_CASE_PATTERN = Pattern.compile("^[a-z][a-z0-9_]*$"); // NOSONAR
 
     private ExpressionFunctionBuilder() {
     }
@@ -304,6 +308,11 @@ public final class ExpressionFunctionBuilder {
         Function<List<Computer>, Computer> impl) {
 
         public ExpressionFunction build() {
+            // Check that the name is snake_case
+            if (!SNAKE_CASE_PATTERN.matcher(name).matches()) {
+                throw new IllegalArgumentException("Function name must be snake case");
+            }
+
             if (Arrays.stream(args).limit(args.length - 1L).anyMatch(a -> a.kind != ArgKind.REQUIRED)) {
                 throw new IllegalArgumentException("Only the last argument can be optional or variable");
             }
