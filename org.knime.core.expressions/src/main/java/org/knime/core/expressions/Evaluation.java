@@ -136,7 +136,7 @@ final class Evaluation {
         @Override
         public Computer visit(final FlowVarAccess node) throws ExpressionCompileException {
             return m_flowVariableToComputer.apply(node).orElseThrow(
-                () -> new ExpressionCompileException(ExpressionCompileError.missingControlFlowVariableError(node)));
+                () -> new ExpressionCompileException(ExpressionCompileError.missingFlowVariableError(node)));
         }
 
         @Override

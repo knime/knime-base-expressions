@@ -376,7 +376,7 @@ final class Typing {
         }
 
         static ErrorValueType missingFlowVariable(final FlowVarAccess node) {
-            return new ErrorValueType(List.of(ExpressionCompileError.missingControlFlowVariableError(node)));
+            return new ErrorValueType(List.of(ExpressionCompileError.missingFlowVariableError(node)));
         }
 
         static ErrorValueType combined(final List<ValueType> children) {

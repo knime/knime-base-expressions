@@ -98,7 +98,7 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
         return missingColumnError(node.name(), Parser.getTextLocation(node));
     }
 
-    static ExpressionCompileError missingControlFlowVariableError(final FlowVarAccess node) {
+    static ExpressionCompileError missingFlowVariableError(final FlowVarAccess node) {
         return missingFlowVariableError(node.name(), Parser.getTextLocation(node));
     }
 
