@@ -106,11 +106,14 @@ public final class MathFunctions {
                 also `MISSING`. At least two arguments are required, but beyond that
                 you can supply as many as you like.
 
+                If any argument is `NaN` the result will be `NaN`.
+
                 Examples:
                 * `max(1, 2, 3)` returns 3
                 * `max(1.0, 2.0, 3.0)` returns 3.0
                 * `max(1, 2.0, 3)` returns 3.0
                 * `max(1, MISSING, 3)` returns MISSING
+                * `max(1, 2, NaN)` returns `NaN`
                 """) //
         .keywords("maximum") //
         .category(CATEGORY.name()) //
@@ -151,11 +154,14 @@ public final class MathFunctions {
                 also `MISSING`. At least two arguments are required, but beyond that
                 you can supply as many as you like.
 
+                If any argument is `NaN` the result will be `NaN`.
+
                 Examples:
                 * `min(1, 2, 3)` returns 1
                 * `min(1.0, 2.0, 3.0)` returns 1.0
                 * `min(1, 2.0, 3)` returns 1.0
                 * `min(1, MISSING, 3)` returns MISSING
+                * `min(1, 2, NaN)` returns `NaN`
                 """) //
         .keywords("minimum") //
         .category(CATEGORY.name()) //
@@ -198,12 +204,15 @@ public final class MathFunctions {
                 If there are multiple copies of the max value, returns the index of
                 the first one.
 
+                If any argument is `NaN` the result will be the index of the first `NaN`.
+
                 Examples:
                 * `argmax(2, 4, 6)` returns 3
                 * `argmax(2.0, 4.0, 6.0)` returns 3
                 * `argmax(2, 4.0, 6)` returns 3
                 * `argmax(1, 2, 2)` returns 2
                 * `argmax(1, MISSING, 3)` returns MISSING
+                * `argmax(1, 2, NaN)` returns 3
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
@@ -262,12 +271,15 @@ public final class MathFunctions {
                 If there are multiple copies of the min value, returns the index of
                 the first one.
 
+                If any argument is `NaN` the result will be the index of the first `NaN`.
+
                 Examples:
                 * `argmin(2, 4, 6)` returns 1
                 * `argmin(2.0, 4.0, 6.0)` returns 1
                 * `argmin(2, 4.0, 6)` returns 1
                 * `argmin(1, 2, 1)` returns 1
                 * `argmin(1, MISSING, 3)` returns MISSING
+                * `argmin(1, 2, NaN)` returns 3
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
@@ -321,6 +333,8 @@ public final class MathFunctions {
                 The absolute value of a number. If the input is `MISSING`, the
                 output will also be `MISSING`.
 
+                `abs(NaN)` returns `NaN`.
+
                 Examples:
                 * `abs(1)` returns 1
                 * `abs(-2)` returns 2
@@ -349,6 +363,8 @@ public final class MathFunctions {
                 The sine of a number, with the input in radians. If the input is
                 `MISSING`, the output will also be `MISSING`.
 
+                `sin(NaN)` returns `NaN`.
+
                 Examples:
                 * `sin(0)` returns 0.0
                 * `sin(PI)` returns 0.0
@@ -372,6 +388,8 @@ public final class MathFunctions {
         .description("""
                 The cosine of a number, with the input in radians. If the input is
                 `MISSING`, the output will also be `MISSING`.
+
+                `cos(NaN)` returns `NaN`.
 
                 Examples:
                 * `cos(0)` returns 1.0
@@ -397,6 +415,8 @@ public final class MathFunctions {
                 The tangent of a number, with the input in radians. If the input is
                 `MISSING`, the output will also be `MISSING`.
 
+                `tan(NaN)` returns `NaN`.
+
                 Examples:
                 * `tan(0)` returns 0.0
                 * `tan(PI)` returns 0.0
@@ -421,7 +441,9 @@ public final class MathFunctions {
                 The arcsine of a number, with the output in radians. If the input is
                 `MISSING`, the output will also be `MISSING`. If the input is
                 outside the range [-1, 1], a warning will be issued and the result
-                will be NaN.
+                will be `NaN`.
+
+                `asin(NaN)` returns `NaN`.
 
                 Examples:
                 * `asin(0)` returns 0.0
@@ -454,7 +476,9 @@ public final class MathFunctions {
                 The arccosine of a number, with the output in radians between -PI
                 and +PI. If the input is `MISSING`, the output will also be
                 `MISSING`. If the input is outside the range [-1, 1], a warning will
-                be issued and the result will be NaN.
+                be issued and the result will be `NaN`.
+
+                `acos(NaN)` returns `NaN`.
 
                 Examples:
                 * `acos(0)` returns 1.570796... (approx. PI/2)
@@ -488,6 +512,8 @@ public final class MathFunctions {
                 and +PI/2. If the input is `MISSING`, the output will also be
                 `MISSING`.
 
+                `atan(NaN)` returns `NaN`.
+
                 Examples:
                 * `atan(0)` returns 0.0
                 * `atan(1)` returns 0.785398... (approx. PI/4)
@@ -515,8 +541,10 @@ public final class MathFunctions {
                 so it can return the correct quadrant for the angle. For example,
                 `atan2(-1, -1)` returns -3PI/4, while `atan(-1/-1)` returns PI/4.
 
-                If both arguments are zero, the result is NaN and a warning is
+                If both arguments are zero, the result is `NaN` and a warning is
                 issued. If the input is `MISSING`, the output will also be `MISSING`.
+
+                If any argument is `NaN` the function returns `NaN`.
 
                 Examples:
                 * `atan2(1, 1)` returns 0.785398... (approx. PI/4)
@@ -558,6 +586,8 @@ public final class MathFunctions {
                 The hyperbolic sine of a number. If the input is `MISSING`, the
                 output will also be `MISSING`.
 
+                `sinh(NaN)` returns `NaN`.
+
                 Examples:
                 * `sinh(0)` returns 0.0
                 * `sinh(1)` returns 1.175201...
@@ -580,6 +610,8 @@ public final class MathFunctions {
         .description("""
                 The hyperbolic cosine of a number. If the input is `MISSING`, the
                 output will also be `MISSING`.
+
+                `cosh(NaN)` returns `NaN`.
 
                 Examples:
                 * `cosh(0)` returns 1.0
@@ -604,6 +636,8 @@ public final class MathFunctions {
                 The hyperbolic tangent of a number. If the input is `MISSING`, the
                 output will also be `MISSING`.
 
+                `tanh(NaN)` returns `NaN`.
+
                 Examples:
                 * `tanh(0)` returns 0.0
                 * `tanh(1)` returns 0.761594...
@@ -626,6 +660,8 @@ public final class MathFunctions {
         .description("""
                 The hyperbolic arcsine of a number. If the input is `MISSING`, the
                 output will also be `MISSING`.
+
+                `asinh(NaN)` returns `NaN`.
 
                 Examples:
                 * `asinh(0)` returns 0.0
@@ -658,7 +694,9 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`. If
                 the input is less than 1, a warning will be issued and the
-                result will be NaN.
+                result will be `NaN`.
+
+                `acosh(NaN)` returns `NaN`.
 
                 Examples:
                 * `acosh(1)` returns 0.0
@@ -696,7 +734,9 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`. If the
                 input is outside the range [-1, 1], a warning will be issued and the
-                result will be NaN.
+                result will be `NaN`.
+
+                `atanh(NaN)` returns `NaN`.
 
                 Examples:
                 * `atanh(0)` returns 0.0
@@ -733,7 +773,9 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`. If the
                 input is less than or equal to 0, a warning will be issued and the
-                result will be NaN.
+                result will be `NaN`.
+
+                `ln(NaN)` returns `NaN`.
 
                 Examples:
                 * `ln(1)` returns 0.0
@@ -767,7 +809,9 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`. If the
                 input is less than or equal to 0, a warning will be issued and the
-                result will be NaN.
+                result will be `NaN`.
+
+                `log10(NaN)` returns `NaN`.
 
                 Examples:
                 * `log10(1)` returns 0.0
@@ -801,7 +845,9 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`. If the
                 input is less than or equal to 0, a warning will be issued and the
-                result will be NaN.
+                result will be `NaN`.
+
+                `log2(NaN)` returns `NaN`.
 
                 Examples:
                 * `log2(1)` returns 0.0
@@ -836,9 +882,11 @@ public final class MathFunctions {
                 If the input is `MISSING`, the output will also be `MISSING`. If
                 either of the number or the base are less than or equal to 0,
                 or the base is 1, a warning will be issued and the result will be
-                NaN.
+                `NaN`.
 
                 This is mathematically equivalent to `ln(x) / ln(b)`.
+
+                If any argument is `NaN` the function returns `NaN`.
 
                 Examples:
                 * `log(1, 10)` returns 0.0
@@ -900,7 +948,9 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`. If
                 the input is less than or equal to -1, a warning will be issued
-                and the result will be NaN.
+                and the result will be `NaN`.
+
+                `log1p(NaN)` returns `NaN`.
 
                 Examples:
                 * `log1p(0)` returns 0.0
@@ -937,6 +987,8 @@ public final class MathFunctions {
                 power of the number. If the input is `MISSING`, the output will also
                 be `MISSING`.
 
+                `exp(NaN)` returns `NaN`.
+
                 Examples:
                 * `exp(0)` returns 1.0
                 * `exp(1)` returns 2.718281... (approx. e)
@@ -969,9 +1021,11 @@ public final class MathFunctions {
                 If either argument is `MISSING`, the result will also be `MISSING`.
                 If both arguments are zero, or the base is zero and the exponent is
                 negative, then the result will be:
-                * NaN if at least one argument is a float
+                * `NaN` if at least one argument is a float
                 * 0 if both arguments are integers
                 In either case, a warning will be issued.
+
+                If one argument is `NaN` the function returns `NaN`.
 
                 Examples:
                 * `pow(2, 3)` returns 8
@@ -1033,7 +1087,9 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`. If the
                 input is negative, a warning will be issued and the result will be
-                NaN.
+                `NaN`.
+
+                `sqrt(NaN)` returns `NaN`.
 
                 Examples:
                 * `sqrt(4)` returns 2.0
@@ -1074,8 +1130,10 @@ public final class MathFunctions {
                 If either argument is `MISSING`, the result will also be `MISSING`.
                 If the divisor is zero, the result will be
                 * 0 if both arguments are integers
-                * NaN if either argument is a float
+                * `NaN` if either argument is a float
                 A warning will be issued in either case.
+
+                If any argument is `NaN` the function returns `NaN`.
 
                 Examples:
                 * `mod(5, 3)` returns 2
@@ -1131,6 +1189,8 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`.
 
+                `degrees(NaN)` returns `NaN`.
+
                 Examples:
                 * `degrees(0)` returns 0.0
                 * `degrees(PI)` returns 180.0
@@ -1157,6 +1217,8 @@ public final class MathFunctions {
                 Convert a number from degrees to radians.
 
                 If the input is `MISSING`, the output will also be `MISSING`.
+
+                `radians(NaN)` returns `NaN`.
 
                 Examples:
                 * `radians(0)` returns 0.0
@@ -1185,6 +1247,8 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`.
 
+                `floor(NaN)` returns `NaN`.
+
                 Examples:
                 * `floor(2.5)` returns 2
                 * `floor(-2.5)` returns -3
@@ -1205,7 +1269,7 @@ public final class MathFunctions {
                 if (c.isMissing(wml)) {
                     return true;
                 } else if (Double.isNaN(c.compute(wml))) {
-                    wml.addWarning("Invalid arguments to floor: arg is NaN");
+                    wml.addWarning("Invalid arguments to floor: arg is `NaN`");
                     return true;
                 } else {
                     return false;
@@ -1221,6 +1285,8 @@ public final class MathFunctions {
                 Round x to nearest larger integer.
 
                 If the input is `MISSING`, the output will also be `MISSING`.
+
+                `ceil(NaN)` returns `NaN`.
 
                 Examples:
                 * `ceil(2.5)` returns 3
@@ -1242,7 +1308,7 @@ public final class MathFunctions {
                 if (c.isMissing(wml)) {
                     return true;
                 } else if (Double.isNaN(c.compute(wml))) {
-                    wml.addWarning("Invalid arguments to ceil: arg is NaN");
+                    wml.addWarning("Invalid arguments to ceil: arg is `NaN`");
                     return true;
                 } else {
                     return false;
@@ -1258,6 +1324,8 @@ public final class MathFunctions {
                 Round x to the nearest integer closer to zero.
 
                 If the input is `MISSING`, the output will also be `MISSING`.
+
+                `trunc(NaN)` returns `NaN`.
 
                 Examples:
                 * `trunc(2.5)` returns 2
@@ -1279,7 +1347,7 @@ public final class MathFunctions {
                 if (c.isMissing(wml)) {
                     return true;
                 } else if (Double.isNaN(c.compute(wml))) {
-                    wml.addWarning("Invalid arguments to trunc: arg is NaN");
+                    wml.addWarning("Invalid arguments to trunc: arg is `NaN`");
                     return true;
                 } else {
                     return false;
@@ -1295,10 +1363,16 @@ public final class MathFunctions {
                 Round x to n decimal places. In case of an argument halfway between
                 two possible rounded values, round to the one closer to zero.
 
+                Negative values of precision will round to the left of the decimal, i.e.
+                `roundhalfdown(123.4, -2)` will round to 100.0.
+
                 If any argument is `MISSING`, the result will also be `MISSING`. If
                 the precision argument is not specified, the result will be of type
                 INTEGER, otherwise it will be of type FLOAT, even if the precision
                 is zero!
+
+                `roundhalfdown(NaN)` returns `NaN`. The precision argument must be an
+                integer and cannot be `NaN`.
 
                 Examples:
                 * Without ambiguity:
@@ -1329,10 +1403,16 @@ public final class MathFunctions {
                 Round x to n decimal places. In case of an argument halfway between
                 two possible rounded values, round to the one further from zero.
 
+                Negative values of precision will round to the left of the decimal, i.e.
+                `roundhalfup(123.45, -2)` will round to 100.0.
+
                 If any argument is `MISSING`, the result will also be `MISSING`. If
                 the precision argument is not specified, the result will be of type
                 INTEGER, otherwise it will be of type FLOAT, even if the precision
                 is zero!
+
+                `roundhalfup(NaN)` returns `NaN`. The precision argument must be an
+                integer and cannot be `NaN`.
 
                 Examples:
                 * Without ambiguity:
@@ -1364,10 +1444,16 @@ public final class MathFunctions {
                 two possible rounded values, round to the one that ends with an even
                 digit.
 
+                Negative values of precision will round to the left of the decimal, i.e.
+                `round(123.45, -2)` will round to 100.0.
+
                 If any argument is `MISSING`, the result will also be `MISSING`. If
                 the precision argument is not specified, the result will be of type
                 INTEGER, otherwise it will be of type FLOAT, even if the precision
                 is zero!
+
+                `round(NaN)` returns `NaN`. The precision argument must be an
+                integer and cannot be `NaN`.
 
                 Examples:
                 * Without ambiguity:
@@ -1412,7 +1498,7 @@ public final class MathFunctions {
                         if (anyMissing(args).test(wml)) {
                             return true;
                         } else if (Double.isNaN(c.compute(wml))) {
-                            wml.addWarning("Invalid arguments to %s: arg is NaN".formatted(functionName));
+                            wml.addWarning("Invalid arguments to %s: arg is `NaN`".formatted(functionName));
                             return true;
                         } else {
                             return false;
@@ -1440,6 +1526,8 @@ public final class MathFunctions {
                 Get the sign of a number. If  the input is `MISSING`, the output
                 will also be `MISSING`.
 
+                `sign(NaN)` returns `NaN`.
+
                 Examples:
                 * `sign(0)` returns 0
                 * `sign(42)` returns 1
@@ -1460,7 +1548,7 @@ public final class MathFunctions {
                 if (c.isMissing(wml)) {
                     return true;
                 } else if (Double.isNaN(c.compute(wml))) {
-                    wml.addWarning("Invalid arguments to sign: arg is NaN");
+                    wml.addWarning("Invalid arguments to sign: arg is `NaN`");
                     return true;
                 } else {
                     return false;
@@ -1477,6 +1565,10 @@ public final class MathFunctions {
                 `MISSING`, the result is also `MISSING`. At least two arguments
                 are required, but beyond that you can supply as many as you
                 like.
+
+                If any of the numbers are `NaN`, the result will be `NaN`. `NEGATIVE_INFINITY` or
+                `POSITIVE_INFINITY` will coerce the result to `NEGATIVE_INFINITY` or `POSITIVE_INFINITY` respectively.
+                Mixing `NEGATIVE_INFINITY` and `POSITIVE_INFINITY` will result in `NaN`.
 
                 Examples:
                 * `average(2, 4, 6)` returns 4.0
@@ -1512,6 +1604,13 @@ public final class MathFunctions {
                 `MISSING`, the result is also `MISSING`. At least two arguments
                 are required, but beyond that you can supply as many as you
                 like.
+
+                Using `NEGATIVE_INFINITY` or `POSITIVE_INFINITY` as an argument affects the result as follows.
+                - If the median is influenced by `NEGATIVE_INFINITY` or `POSITIVE_INFINITY`,
+                  the result will be `NEGATIVE_INFINITY` or `POSITIVE_INFINITY` respectively.
+                - If the median is influenced by `NEGATIVE_INFINITY` and `POSITIVE_INFINITY`, the result will be `NaN`
+
+                If any of the numbers are `NaN`, the result will be `NaN`.
 
                 Examples:
                 * `median(2, 4, 6)` returns 4.0
@@ -1656,7 +1755,9 @@ public final class MathFunctions {
 
                 If any of the arguments are `MISSING`, the result will also be
                 `MISSING`. If the standard deviation is less than or equal to 0, a
-                warning will be issued and the result will be NaN.
+                warning will be issued and the result will be `NaN`.
+
+                If any argument is `NaN` the function returns `NaN`.
 
                 Examples:
                 * `normal(1, 0)` returns 0.241970...
@@ -1713,7 +1814,9 @@ public final class MathFunctions {
 
                 If any of the arguments are `MISSING`, the result will also be
                 `MISSING`. If the standard deviation is less than or equal to 0, a
-                warning will be issued and the result will be NaN.
+                warning will be issued and the result will be `NaN`.
+
+                If any argument is `NaN` the function returns `NaN`.
 
                 Examples:
                 * `error_function(0, 0)` returns approx. 0.0
