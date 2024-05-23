@@ -417,14 +417,16 @@ public final class FunctionTestBuilder {
             WarningMessageListener wml = w -> warnings.add(w);
 
             // Compute the computer
-            if (resultComputer instanceof IntegerComputer ic) {
-                ic.compute(wml);
-            } else if (resultComputer instanceof FloatComputer fc) {
-                fc.compute(wml);
-            } else if (resultComputer instanceof BooleanComputer bc) {
-                bc.compute(wml);
-            } else if (resultComputer instanceof StringComputer sc) {
-                sc.compute(wml);
+            if (!resultComputer.isMissing(wml)) {
+                if (resultComputer instanceof IntegerComputer ic) {
+                    ic.compute(wml);
+                } else if (resultComputer instanceof FloatComputer fc) {
+                    fc.compute(wml);
+                } else if (resultComputer instanceof BooleanComputer bc) {
+                    bc.compute(wml);
+                } else if (resultComputer instanceof StringComputer sc) {
+                    sc.compute(wml);
+                }
             }
 
             assertFalse(warnings.isEmpty(), "expected warnings");

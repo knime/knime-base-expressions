@@ -65,14 +65,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.IntBinaryOperator;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.WarningMessageListener;
 
 /**
@@ -120,7 +122,9 @@ public final class MathFunctions {
         .build();
 
     private static Computer maxImpl(final List<Computer> args) {
-        if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
+        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
+
+        if (allArgsAreIntegers) {
             return IntegerComputer.of( //
                 wml -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(wml)).max().getAsLong(), //
                 anyMissing(args) //
@@ -163,7 +167,9 @@ public final class MathFunctions {
         .build();
 
     private static Computer minImpl(final List<Computer> args) {
-        if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
+        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
+
+        if (allArgsAreIntegers) {
             return IntegerComputer.of( //
                 wml -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(wml)).min().getAsLong(), //
                 anyMissing(args) //
@@ -209,31 +215,36 @@ public final class MathFunctions {
         .build();
 
     private static Computer argmaxImpl(final List<Computer> args) {
-        // are all the arguments integers?
-        boolean allInts = args.stream().allMatch(IntegerComputer.class::isInstance);
+        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
 
-        ToLongFunction<WarningMessageListener> value = wml -> {
-            if (allInts) {
+        ToLongFunction<WarningMessageListener> supplier;
+
+        if (allArgsAreIntegers) {
+            supplier = wml -> {
                 var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
 
-                // One indexing
-                return 1 + IntStream.range(0, computedArgs.length) //
-                    .reduce((a, b) -> computedArgs[a] < computedArgs[b] ? b : a) //
-                    .getAsInt();
-            } else {
-                var computedArgs = args.stream().map(c -> toFloat(c).compute(wml)).toArray(Double[]::new);
+                var intStream = IntStream.range(0, computedArgs.length);
 
-                // One indexing
-                return 1 + IntStream.range(0, computedArgs.length) //
-                    .reduce((a, b) -> computedArgs[a] < computedArgs[b] ? b : a) //
-                    .getAsInt();
-            }
-        };
+                // Add 1 here because we want to return 1-indexed values.
+                return 1 + intStream.reduce(streamExtremumReducer(ExtremumType.MAXIMUM, computedArgs)) //
+                    .getAsInt(); //
+            };
+        } else {
+            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
 
-        return IntegerComputer.of( //
-            value, //
-            anyMissing(args) //
-        );
+            supplier = wml -> {
+                var computedArgs = Arrays.stream(floatArgs).map(c -> c.compute(wml)).toArray(Double[]::new);
+
+                var intStream = IntStream.range(0, computedArgs.length);
+
+                // Add 1 here because we want to return 1-indexed values.
+                return 1 + intStream // Custom reducer produces first NaN if there are NaNs
+                    .reduce(nanPropagatingStreamExtremumReducer(ExtremumType.MAXIMUM, computedArgs)) //
+                    .orElseThrow(() -> new IllegalStateException("Stream was empty. This is an implementation bug"));
+            };
+        }
+
+        return IntegerComputer.of(supplier, anyMissing(args));
     }
 
     /** Index of the minimum of multiple numbers */
@@ -268,31 +279,36 @@ public final class MathFunctions {
         .build();
 
     private static Computer argminImpl(final List<Computer> args) {
-        // are all the arguments integers?
-        boolean allInts = args.stream().allMatch(IntegerComputer.class::isInstance);
+        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
 
-        ToLongFunction<WarningMessageListener> value = wml -> {
-            if (allInts) {
+        ToLongFunction<WarningMessageListener> supplier;
+
+        if (allArgsAreIntegers) {
+            supplier = wml -> {
                 var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
 
-                // One indexing
-                return 1 + IntStream.range(0, computedArgs.length) //
-                    .reduce((a, b) -> computedArgs[a] > computedArgs[b] ? b : a) //
-                    .getAsInt();
-            } else {
-                var computedArgs = args.stream().map(c -> toFloat(c).compute(wml)).toArray(Double[]::new);
+                var intStream = IntStream.range(0, computedArgs.length);
 
-                // One indexing
-                return 1 + IntStream.range(0, computedArgs.length) //
-                    .reduce((a, b) -> computedArgs[a] > computedArgs[b] ? b : a) //
-                    .getAsInt();
-            }
-        };
+                // Add 1 here because we want to return 1-indexed values.
+                return 1 + intStream.reduce(streamExtremumReducer(ExtremumType.MINIMUM, computedArgs)) //
+                    .getAsInt(); //
+            };
+        } else {
+            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
 
-        return IntegerComputer.of( //
-            value, //
-            anyMissing(args) //
-        );
+            supplier = wml -> {
+                var computedArgs = Arrays.stream(floatArgs).map(c -> c.compute(wml)).toArray(Double[]::new);
+
+                var intStream = IntStream.range(0, computedArgs.length);
+
+                // Add 1 here because we want to return 1-indexed values.
+                return 1 + intStream // Custom reducer produces first NaN if there are NaNs
+                    .reduce(nanPropagatingStreamExtremumReducer(ExtremumType.MINIMUM, computedArgs)) //
+                    .orElseThrow(() -> new IllegalStateException("Stream was empty. This is an implementation bug"));
+            };
+        }
+
+        return IntegerComputer.of(supplier, anyMissing(args));
     }
 
     /** The absolute value of a number */
@@ -1182,7 +1198,16 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
             wml -> (long)Math.floor(c.compute(wml)), //
-            c::isMissing //
+            wml -> {
+                if (c.isMissing(wml)) {
+                    return true;
+                } else if (Double.isNaN(c.compute(wml))) {
+                    wml.addWarning("Invalid arguments to floor: arg is NaN");
+                    return true;
+                } else {
+                    return false;
+                }
+            } //
         );
     }
 
@@ -1210,7 +1235,16 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
             wml -> (int)Math.ceil(c.compute(wml)), //
-            c::isMissing //
+            wml -> {
+                if (c.isMissing(wml)) {
+                    return true;
+                } else if (Double.isNaN(c.compute(wml))) {
+                    wml.addWarning("Invalid arguments to ceil: arg is NaN");
+                    return true;
+                } else {
+                    return false;
+                }
+            } //
         );
     }
 
@@ -1238,7 +1272,16 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
             wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.DOWN).longValue(), //
-            c::isMissing //
+            wml -> {
+                if (c.isMissing(wml)) {
+                    return true;
+                } else if (Double.isNaN(c.compute(wml))) {
+                    wml.addWarning("Invalid arguments to trunc: arg is NaN");
+                    return true;
+                } else {
+                    return false;
+                }
+            } //
         );
     }
 
@@ -1273,25 +1316,8 @@ public final class MathFunctions {
         ) //
         .returnType("nearest integer to x", "INTEGER? | FLOAT?",
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
-        .impl(MathFunctions::roundHalfDownImpl) //
+        .impl(roundImplFactory(RoundingMode.HALF_DOWN, "roundhalfdown")) //
         .build();
-
-    private static Computer roundHalfDownImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
-
-        if (args.size() == 1) {
-            // Return integer
-            return IntegerComputer.of( //
-                wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.HALF_DOWN).longValue(), //
-                anyMissing(args) //
-            );
-        } else {
-            return FloatComputer.of(wml -> {
-                int scale = (int)toInteger(args.get(1)).compute(wml);
-                return BigDecimal.valueOf(c.compute(wml)).setScale(scale, RoundingMode.HALF_DOWN).doubleValue();
-            }, anyMissing(args));
-        }
-    }
 
     /** round towards nearest integer (n + 0.5 rounds to nearest further from zero) */
     public static final ExpressionFunction ROUNDHALFUP = functionBuilder() //
@@ -1324,25 +1350,8 @@ public final class MathFunctions {
         ) //
         .returnType("nearest integer to x", "INTEGER? | FLOAT?",
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
-        .impl(MathFunctions::roundHalfUpImpl) //
+        .impl(roundImplFactory(RoundingMode.HALF_UP, "roundhalfup")) //
         .build();
-
-    private static Computer roundHalfUpImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
-
-        if (args.size() == 1) {
-            // Return integer
-            return IntegerComputer.of( //
-                wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.HALF_UP).longValue(), //
-                anyMissing(args) //
-            );
-        } else {
-            return FloatComputer.of(wml -> {
-                int scale = (int)toInteger(args.get(1)).compute(wml);
-                return BigDecimal.valueOf(c.compute(wml)).setScale(scale, RoundingMode.HALF_UP).doubleValue();
-            }, anyMissing(args));
-        }
-    }
 
     /** round towards nearest integer (n + 0.5 rounds to nearest even) */
     public static final ExpressionFunction ROUNDHALFEVEN = functionBuilder() //
@@ -1378,24 +1387,47 @@ public final class MathFunctions {
         ) //
         .returnType("nearest integer to x", "INTEGER? | FLOAT?",
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
-        .impl(MathFunctions::roundevenImpl) //
+        .impl(roundImplFactory(RoundingMode.HALF_EVEN, "round")) //
         .build();
 
-    private static Computer roundevenImpl(final List<Computer> args) {
-        var c = toFloat(args.get(0));
+    /**
+     * Factory for round function implementations.
+     *
+     * @param mode the rounding mode
+     * @return the function implementation
+     */
+    private static Function<List<Computer>, Computer> roundImplFactory(final RoundingMode mode,
+        final String functionName) {
+        return args -> {
+            var c = toFloat(args.get(0));
 
-        if (args.size() == 1) {
-            // Return integer
-            return IntegerComputer.of( //
-                wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.HALF_EVEN).longValue(), //
-                anyMissing(args) //
-            );
-        } else {
-            return FloatComputer.of(wml -> {
-                int scale = (int)toInteger(args.get(1)).compute(wml);
-                return BigDecimal.valueOf(c.compute(wml)).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
-            }, anyMissing(args));
-        }
+            if (args.size() == 1) {
+                // Return integer
+                return IntegerComputer.of( //
+                    wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, mode).longValue(), //
+                    wml -> {
+                        if (anyMissing(args).test(wml)) {
+                            return true;
+                        } else if (Double.isNaN(c.compute(wml))) {
+                            wml.addWarning("Invalid arguments to %s: arg is NaN".formatted(functionName));
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    });
+            } else {
+                return FloatComputer.of(wml -> {
+                    int scale = (int)toInteger(args.get(1)).compute(wml);
+                    double value = c.compute(wml);
+
+                    if (Double.isNaN(value)) {
+                        return Double.NaN;
+                    } else {
+                        return BigDecimal.valueOf(value).setScale(scale, mode).doubleValue();
+                    }
+                }, anyMissing(args));
+            }
+        };
     }
 
     /** The sign of one number */
@@ -1419,7 +1451,19 @@ public final class MathFunctions {
 
     private static Computer signImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return IntegerComputer.of(wml -> (int)Math.signum(c.compute(wml)), c::isMissing);
+        return IntegerComputer.of( //
+            wml -> (int)Math.signum(c.compute(wml)), //
+            wml -> {
+                if (c.isMissing(wml)) {
+                    return true;
+                } else if (Double.isNaN(c.compute(wml))) {
+                    wml.addWarning("Invalid arguments to sign: arg is NaN");
+                    return true;
+                } else {
+                    return false;
+                }
+            } //
+        );
     }
 
     /** The mean of multiple numbers */
@@ -1448,12 +1492,13 @@ public final class MathFunctions {
         .build();
 
     private static Computer averageImpl(final List<Computer> args) {
-        var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
+        ToDoubleFunction<WarningMessageListener> value = wml -> args.stream() //
+            .map(c -> toFloat(c).compute(wml)) //
+            .mapToDouble(Double::valueOf) //
+            .average() //
+            .getAsDouble();
 
-        return FloatComputer.of( //
-            wml -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(wml)).average().getAsDouble(), //
-            anyMissing(args) //
-        );
+        return FloatComputer.of(value, anyMissing(args));
     }
 
     /** The median of multiple numbers */
@@ -1484,13 +1529,24 @@ public final class MathFunctions {
     private static Computer medianImpl(final List<Computer> args) {
         ToDoubleFunction<WarningMessageListener> value = wml -> {
             // Because we use ::compute we need to do this inside the DoubleSupplier
-            var sortedFloatArgs = args.stream().map(c -> toFloat(c).compute(wml)) //
-                .sorted().toArray(Double[]::new);
+            var sortedFloatArgs = args.stream() //
+                .map(c -> toFloat(c).compute(wml)) //
+                .sorted() //
+                .toArray(Double[]::new); //
 
-            if (sortedFloatArgs.length % 2 == 0) {
+            if (Double.isNaN(sortedFloatArgs[sortedFloatArgs.length - 1])) {
+                // This can only run if we have an array with at least one NaN value and
+                // we are not ignoring NaNs.
+                //
+                // (works because 'sorted' considers NaN to be > any other element so it
+                // will always be last in the array)
+                return Double.NaN;
+            } else if (sortedFloatArgs.length % 2 == 0) {
+                // Median is average of two middle elements if we have an even number of them
                 return 0.5
                     * (sortedFloatArgs[sortedFloatArgs.length / 2] + sortedFloatArgs[sortedFloatArgs.length / 2 - 1]);
             } else {
+                // Median is middle element if we have an odd number of them
                 return sortedFloatArgs[sortedFloatArgs.length / 2];
             }
         };
@@ -1727,5 +1783,52 @@ public final class MathFunctions {
 
     private static boolean isNearZero(final double d) {
         return Math.abs(d) < 2 * Double.MIN_VALUE;
+    }
+
+    private enum ExtremumType {
+            MAXIMUM, MINIMUM
+    }
+
+    /**
+     * Helper that creates an IntBinaryOperator that can be passed to reduce to extract the index of the largest or
+     * smallest value in a stream of doubles. Notably, if the stream contains a NaN, the index of the first NaN will be
+     * returned. If there are multiple of the largest or smallest value, the index of the first one will be returned.
+     *
+     * @param largest if true, extract the index of the largest value, otherwise extract the index of the smallest value
+     * @param values
+     * @return
+     */
+    private static IntBinaryOperator nanPropagatingStreamExtremumReducer(final ExtremumType extremum,
+                                                                         final Double[] values) {
+        return (a, b) -> {
+            if (Double.isNaN(values[a])) {
+                return a;
+            } else if (Double.isNaN(values[b])) {
+                return b;
+            } else if (extremum == ExtremumType.MAXIMUM) {
+                return values[a] >= values[b] ? a : b;
+            } else {
+                return values[a] <= values[b] ? a : b;
+            }
+        };
+    }
+
+    /**
+     * Helper that creates an IntBinaryOperator that can be passed to reduce to extract the index of the largest or
+     * smallest value in a stream of longs. If there are multiple copies of the largest or smallest value, the index of
+     * the first one will be returned.
+     *
+     * @param largest if true, extract the index of the largest value, otherwise extract the index of the smallest value
+     * @param values
+     * @return
+     */
+    private static IntBinaryOperator streamExtremumReducer(final ExtremumType extremum, final Long[] values) {
+        return (a, b) -> {
+            if (extremum == ExtremumType.MAXIMUM) {
+                return values[a] >= values[b] ? a : b;
+            } else {
+                return values[a] <= values[b] ? a : b;
+            }
+        };
     }
 }
