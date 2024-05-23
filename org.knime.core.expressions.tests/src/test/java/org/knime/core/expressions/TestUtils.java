@@ -57,14 +57,13 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
+import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
-import org.knime.core.expressions.aggregations.ColumnAggregation;
-import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin Germany
@@ -75,27 +74,34 @@ public final class TestUtils {
     private static final WarningMessageListener DUMMY_WML = w -> {
     };
 
+    /** Function that maps from a {@link ColumnAccess} to its name */
+    public static Function<ColumnAccess, String> COLUMN_NAME = ColumnAccess::name;
+
+    /** Function that maps from a {@link FlowVarAccess} to its name */
+    public static Function<FlowVarAccess, String> FLOW_VAR_NAME = FlowVarAccess::name;
+
     private TestUtils() {
     }
 
     /**
-     * @param functions an array of {@link ExpressionFunction}
-     * @return a function that maps from the name to the function
+     * @param <T> the enum type
+     * @param values the enum values to search
+     * @return a function that maps from a string to an optional enum value
      */
-    public static Function<String, Optional<ExpressionFunction>>
-        functionsMappingFromArray(final ExpressionFunction[] functions) {
-        var map = Arrays.stream(functions).collect(Collectors.toMap(ExpressionFunction::name, f -> f));
-        return name -> Optional.ofNullable(map.get(name));
+    public static final <T extends Enum<T>> Function<String, Optional<T>> enumFinder(final T[] values) {
+        return name -> Arrays.stream(values).filter(t -> t.name().equals(name)).findFirst();
     }
 
     /**
-     * @param aggregations an array of {@link ColumnAggregation}
-     * @return a function that maps from the name to the aggregation
+     * @param <T> the enum type
+     * @param <O> the output type
+     * @param values the enum values to search
+     * @param outputType the output type
+     * @return a function that maps from a string to an optional enum value
      */
-    public static Function<String, Optional<ColumnAggregation>>
-        aggregationssMappingFromArray(final ColumnAggregation[] aggregations) {
-        var map = Arrays.stream(aggregations).collect(Collectors.toMap(ColumnAggregation::name, f -> f));
-        return name -> Optional.ofNullable(map.get(name));
+    public static final <T extends Enum<T>, O> Function<String, Optional<O>> enumFinder(final T[] values,
+        final Class<O> outputType) {
+        return enumFinder(values).andThen(o -> o.map(outputType::cast));
     }
 
     /**

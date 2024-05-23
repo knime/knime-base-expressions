@@ -94,7 +94,6 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
@@ -109,7 +108,7 @@ final class TypingTest {
     void test(final TypingTestCase params) throws Exception {
         var ast = params.m_expression;
         var outputType =
-            Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FUNCTIONS, TEST_FLOWVARIABLE_TO_TYPE, TEST_AGGREGATIONS);
+            Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FLOWVARIABLE_TO_TYPE, TEST_FUNCTIONS, TEST_AGGREGATIONS);
         assertEquals(params.m_expectedType, outputType, "should fit output type");
         assertEquals(params.m_expectedType, Expressions.getInferredType(ast), "should fit output type");
         assertChildrenHaveTypes(ast);
@@ -248,7 +247,7 @@ final class TypingTest {
         var ast = params.m_expression;
         var typingError =
             assertThrows(ExpressionCompileException.class, () -> Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE,
-                TEST_FUNCTIONS, TEST_FLOWVARIABLE_TO_TYPE, TEST_AGGREGATIONS), "should fail type inferrence");
+                TEST_FLOWVARIABLE_TO_TYPE, TEST_FUNCTIONS, TEST_AGGREGATIONS), "should fail type inferrence");
         var errorMessage = typingError.getMessage();
         for (var expectedSubstring : params.m_expectedErrorSubstrings) {
             assertTrue(errorMessage.contains(expectedSubstring),
@@ -333,11 +332,11 @@ final class TypingTest {
         "s", STRING, "s?", OPT_STRING //
     );
 
-    private static final Function<ColumnAccess, Optional<ValueType>> TEST_COLUMN_TO_TYPE =
-        c -> Optional.ofNullable(TEST_TYPES.get(c.name()));
+    private static final Function<String, Optional<ValueType>> TEST_COLUMN_TO_TYPE =
+        c -> Optional.ofNullable(TEST_TYPES.get(c));
 
-    private static final Function<Ast.FlowVarAccess, Optional<ValueType>> TEST_FLOWVARIABLE_TO_TYPE =
-        c -> Optional.ofNullable(TEST_TYPES.get(c.name()));
+    private static final Function<String, Optional<ValueType>> TEST_FLOWVARIABLE_TO_TYPE =
+        c -> Optional.ofNullable(TEST_TYPES.get(c));
 
     private static void assertChildrenHaveTypes(final Ast astWithTypes) {
         for (var child : astWithTypes.children()) {
@@ -347,7 +346,7 @@ final class TypingTest {
     }
 
     private static final Function<String, Optional<ExpressionFunction>> TEST_FUNCTIONS =
-        TestUtils.functionsMappingFromArray(TestFunctions.values());
+        TestUtils.enumFinder(TestFunctions.values(), ExpressionFunction.class);
 
     private static enum TestFunctions implements ExpressionFunction {
             FN_WITH_NO_ARGS(List.of(), MISSING), //

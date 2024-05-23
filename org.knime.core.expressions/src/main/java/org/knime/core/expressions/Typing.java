@@ -94,16 +94,15 @@ final class Typing {
     private Typing() {
     }
 
-    // TODO re-order and rename arguments (same for the visitor)
     static ValueType inferTypes( //
         final Ast root, //
-        final Function<ColumnAccess, Optional<ValueType>> columnType, //
+        final Function<String, Optional<ValueType>> columnType, //
+        final Function<String, Optional<ValueType>> flowVarType, //
         final Function<String, Optional<ExpressionFunction>> functions, //
-        final Function<FlowVarAccess, Optional<ValueType>> flowVariableTypeGetter, //
         final Function<String, Optional<ColumnAggregation>> aggregations //
     ) throws ExpressionCompileException {
         var outputType = Ast.putDataRecursive(root, TYPE_DATA_KEY,
-            new TypingVisitor(columnType, functions, flowVariableTypeGetter, aggregations));
+            new TypingVisitor(columnType, flowVarType, functions, aggregations));
         if (outputType instanceof ErrorValueType errorValueType) {
             throw new ExpressionCompileException(errorValueType.m_errors);
         }
@@ -140,21 +139,23 @@ final class Typing {
 
     private static final class TypingVisitor implements Ast.AstVisitor<ValueType, RuntimeException> {
 
-        private final Function<ColumnAccess, Optional<ValueType>> m_columnType;
+        private final Function<String, Optional<ValueType>> m_columnType;
 
-        private final Function<FlowVarAccess, Optional<ValueType>> m_flowVariableType;
+        private final Function<String, Optional<ValueType>> m_flowVariableType;
 
         private final Function<String, Optional<ExpressionFunction>> m_functions;
 
         private final Function<String, Optional<ColumnAggregation>> m_aggregations;
 
-        TypingVisitor(final Function<ColumnAccess, Optional<ValueType>> columnType,
-            final Function<String, Optional<ExpressionFunction>> functions,
-            final Function<FlowVarAccess, Optional<ValueType>> getTypeOfFlowVariables,
-            final Function<String, Optional<ColumnAggregation>> aggregations) {
+        TypingVisitor( //
+            final Function<String, Optional<ValueType>> columnType, //
+            final Function<String, Optional<ValueType>> flowVarType, //
+            final Function<String, Optional<ExpressionFunction>> functions, //
+            final Function<String, Optional<ColumnAggregation>> aggregations //
+        ) {
             m_columnType = columnType;
             m_functions = functions;
-            m_flowVariableType = getTypeOfFlowVariables;
+            m_flowVariableType = flowVarType;
             m_aggregations = aggregations;
         }
 
@@ -185,12 +186,12 @@ final class Typing {
 
         @Override
         public ValueType visit(final ColumnAccess node) {
-            return m_columnType.apply(node).orElseGet(() -> ErrorValueType.missingColumn(node));
+            return m_columnType.apply(node.name()).orElseGet(() -> ErrorValueType.missingColumn(node));
         }
 
         @Override
         public ValueType visit(final FlowVarAccess node) {
-            return m_flowVariableType.apply(node).orElseGet(() -> ErrorValueType.missingFlowVariable(node));
+            return m_flowVariableType.apply(node.name()).orElseGet(() -> ErrorValueType.missingFlowVariable(node));
         }
 
         @Override
@@ -258,10 +259,6 @@ final class Typing {
 
         @Override
         public ValueType visit(final AggregationCall node) throws RuntimeException {
-            // TODO should the function m_columnType operate on string instead of ColumnAccess after all?
-            Function<String, Optional<ValueType>> columnTypeGetter =
-                columnName -> m_columnType.apply(Ast.columnAccess(columnName));
-
             var resolvedAggregation = m_aggregations.apply(node.name());
             if (resolvedAggregation.isEmpty()) {
                 // TODO(AP-22372) propose aggregations with similar names if there is none with this name
@@ -271,7 +268,7 @@ final class Typing {
             node.putData(AGGREGATION_IMPL_DATA_KEY, resolvedAggregation.get());
 
             var args = node.args();
-            return resolvedAggregation.get().returnType(args, columnTypeGetter)
+            return resolvedAggregation.get().returnType(args, m_columnType)
                 .orElseGet(() -> ErrorValueType.aggregationNotApplicable(node, args));
         }
 

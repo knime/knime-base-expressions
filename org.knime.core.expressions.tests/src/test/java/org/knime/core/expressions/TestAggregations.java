@@ -48,7 +48,6 @@
  */
 package org.knime.core.expressions;
 
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -101,11 +100,10 @@ enum TestAggregations implements ColumnAggregation {
     ;
 
     public static final Function<String, Optional<ColumnAggregation>> TEST_AGGREGATIONS =
-        TestUtils.aggregationssMappingFromArray(TestAggregations.values());
+        TestUtils.enumFinder(TestAggregations.values(), ColumnAggregation.class);
 
     public static final Function<AggregationCall, Optional<Computer>> TEST_AGGREGATIONS_COMPUTER =
-        agg -> Arrays.stream(TestAggregations.values()).filter(t -> t.name().equals(agg.name())).findFirst()
-            .flatMap(t -> t.computer(agg));
+        agg -> TestUtils.enumFinder(TestAggregations.values()).apply(agg.name()).flatMap(t -> t.computer(agg));
 
     private final BiFunction<Arguments<ConstantAst>, Function<String, Optional<ValueType>>, Optional<ValueType>> m_returnType;
 

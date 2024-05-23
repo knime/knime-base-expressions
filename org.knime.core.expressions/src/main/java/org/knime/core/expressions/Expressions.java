@@ -107,8 +107,8 @@ public final class Expressions {
      * @param expression the expression
      * @param columnToType a function that returns the type of a column accessed by the expression. The function should
      *            return <code>Optional.empty()</code> if the column is not available.
-     * @param flowVariableToType a function that returns the type of a flow variable accessed by the expression. The
-     *            function should return <code>Optional.empty()</code> if the flow variable is not available.
+     * @param flowVarType a function that returns the type of a flow variable accessed by the expression. The function
+     *            should return <code>Optional.empty()</code> if the flow variable is not available.
      * @param aggregations a function that returns the implementation of an aggregation call
      * @return the output type of the full expression
      * @throws ExpressionCompileException if type inference failed because operations are used for incompatible types or
@@ -116,12 +116,12 @@ public final class Expressions {
      */
     public static ValueType inferTypes( //
         final Ast expression, //
-        final Function<ColumnAccess, Optional<ValueType>> columnToType, //
-        final Function<FlowVarAccess, Optional<ValueType>> flowVariableToType, //
+        final Function<String, Optional<ValueType>> columnToType, //
+        final Function<String, Optional<ValueType>> flowVarType, //
         final Function<String, Optional<ColumnAggregation>> aggregations //
     ) throws ExpressionCompileException {
-        return Typing.inferTypes(expression, columnToType, BuiltInFunctions.BUILT_IN_FUNCTIONS_GETTER,
-            flowVariableToType, aggregations);
+        return Typing.inferTypes(expression, columnToType, flowVarType, BuiltInFunctions.BUILT_IN_FUNCTIONS_GETTER,
+            aggregations);
     }
 
     /**

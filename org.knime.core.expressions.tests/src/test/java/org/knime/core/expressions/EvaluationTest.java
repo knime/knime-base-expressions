@@ -73,10 +73,9 @@ import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.STR;
 import static org.knime.core.expressions.TestAggregations.TEST_AGGREGATIONS;
-import static org.knime.core.expressions.TestAggregations.TEST_AGGREGATIONS_COMPUTER;
+import static org.knime.core.expressions.TestUtils.COLUMN_NAME;
 import static org.knime.core.expressions.TestUtils.computerResultChecker;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -88,7 +87,6 @@ import java.util.function.ToLongFunction;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
@@ -109,13 +107,13 @@ final class EvaluationTest {
     @EnumSource(ExecutionTest.class)
     void test(final ExecutionTest params) throws Exception {
         var ast = params.m_expression;
-        Typing.inferTypes(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::type)), TEST_FUNCTIONS,
-            FIND_TEST_FLOW_VARIABLE.andThen(c -> c.map(TestFlowVariable::type)), TEST_AGGREGATIONS);
+        Typing.inferTypes(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::type)), FIND_TEST_FLOW_VARIABLE.andThen(c -> c.map(TestFlowVariable::type)),
+            TEST_FUNCTIONS, TEST_AGGREGATIONS);
         var result = Evaluation.evaluate( //
             ast, //
-            FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::computer)), //
-            FIND_TEST_FLOW_VARIABLE.andThen(c -> c.map(TestFlowVariable::computer)), //
-            TEST_AGGREGATIONS_COMPUTER);
+            COLUMN_NAME.andThen(FIND_TEST_COLUMN).andThen(c -> c.map(TestColumn::computer)), //
+            TestUtils.FLOW_VAR_NAME.andThen(FIND_TEST_FLOW_VARIABLE).andThen(c -> c.map(TestFlowVariable::computer)), //
+            TestAggregations.TEST_AGGREGATIONS_COMPUTER);
         assertNotNull(result, "should output result");
         params.m_resultChecker.accept(result);
     }
@@ -392,12 +390,11 @@ final class EvaluationTest {
         }
     }
 
-    private static final Function<ColumnAccess, Optional<TestColumn>> FIND_TEST_COLUMN =
-        colAccess -> Arrays.stream(TestColumn.values()).filter(t -> t.name().equals(colAccess.name())).findFirst();
+    private static final Function<String, Optional<TestColumn>> FIND_TEST_COLUMN =
+        TestUtils.enumFinder(TestColumn.values());
 
-    private static final Function<Ast.FlowVarAccess, Optional<TestFlowVariable>> FIND_TEST_FLOW_VARIABLE =
-        flowVariableAccess -> Arrays.stream(TestFlowVariable.values())
-            .filter(t -> t.name().equals(flowVariableAccess.name())).findFirst();
+    private static final Function<String, Optional<TestFlowVariable>> FIND_TEST_FLOW_VARIABLE =
+        TestUtils.enumFinder(TestFlowVariable.values());
 
     private static final Predicate<WarningMessageListener> THROWING_BOOL_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
@@ -474,7 +471,7 @@ final class EvaluationTest {
     }
 
     private static final Function<String, Optional<ExpressionFunction>> TEST_FUNCTIONS =
-        TestUtils.functionsMappingFromArray(TestFunctions.values());
+        TestUtils.enumFinder(TestFunctions.values(), ExpressionFunction.class);
 
     private static enum TestFunctions implements ExpressionFunction {
             plus_100_fn(List.of(ValueType.INTEGER), ValueType.INTEGER,
