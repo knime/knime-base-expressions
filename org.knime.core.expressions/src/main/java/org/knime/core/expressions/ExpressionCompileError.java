@@ -48,6 +48,7 @@
  */
 package org.knime.core.expressions;
 
+import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 
@@ -94,12 +95,21 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
             CompileErrorType.MISSING_FLOW_VARIABLE, location);
     }
 
+    static ExpressionCompileError aggregationNotImplemented(final String aggregationName, final TextRange location) {
+        return new ExpressionCompileError("The aggregation '" + aggregationName + "' is not implemented",
+            CompileErrorType.AGG_NOT_IMPLEMENTED, location);
+    }
+
     static ExpressionCompileError missingColumnError(final ColumnAccess node) {
         return missingColumnError(node.name(), Parser.getTextLocation(node));
     }
 
     static ExpressionCompileError missingFlowVariableError(final FlowVarAccess node) {
         return missingFlowVariableError(node.name(), Parser.getTextLocation(node));
+    }
+
+    static ExpressionCompileError aggregationNotImplemented(final AggregationCall node) {
+        return aggregationNotImplemented(node.name(), Parser.getTextLocation(node));
     }
 
     /** Types of compile errors */
@@ -115,7 +125,13 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
             MISSING_COLUMN("Missing column error"),
 
             /** Indicates that the expression tries to access a column that does not exist */
-            MISSING_FLOW_VARIABLE("Missing flow variable error");
+            MISSING_FLOW_VARIABLE("Missing flow variable error"),
+
+            /**
+             * Indicates that the expression tries to use an aggregation which is not implemented by the executing
+             * backend
+             */
+            AGG_NOT_IMPLEMENTED("Aggregation not implemented error");
 
         private final String m_title;
 

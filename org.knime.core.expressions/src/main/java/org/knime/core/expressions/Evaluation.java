@@ -214,9 +214,9 @@ final class Evaluation {
         }
 
         @Override
-        public Computer visit(final AggregationCall aggregationCall) throws ExpressionCompileException {
-            return m_aggregationToComputer.apply(aggregationCall).orElseThrow(() -> new EvaluationImplementationError(
-                "No computer provided for aggregation call " + aggregationCall));
+        public Computer visit(final AggregationCall node) throws ExpressionCompileException {
+            return m_aggregationToComputer.apply(node).orElseThrow(
+                () -> new ExpressionCompileException(ExpressionCompileError.aggregationNotImplemented(node)));
         }
 
         private static Computer missingFallbackOperatorImpl(final ValueType outputType, final Computer arg1,
