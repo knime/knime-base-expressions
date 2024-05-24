@@ -137,7 +137,9 @@ const onFunctionInsertionTriggered = (payload: {
 const onInputOutputItemInsertionTriggered = (codeToInsert: string) => {
   // Note that we're ignoring requiredImport, because the expression editor
   // doesn't need imports.
-  multiEditorComponentRef.value?.getEditorState().insertText(codeToInsert);
+  multiEditorComponentRef.value
+    ?.getEditorState()
+    .insertColumnReference(codeToInsert);
 };
 
 // Shift+Enter while editor has focus runs expressions
