@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.FlowVarAccess;
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
 import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.functions.BuiltInFunctions;
 
@@ -109,7 +110,6 @@ public final class Expressions {
      *            return <code>Optional.empty()</code> if the column is not available.
      * @param flowVarType a function that returns the type of a flow variable accessed by the expression. The function
      *            should return <code>Optional.empty()</code> if the flow variable is not available.
-     * @param aggregations a function that returns the implementation of an aggregation call
      * @return the output type of the full expression
      * @throws ExpressionCompileException if type inference failed because operations are used for incompatible types or
      *             a column is not available
@@ -117,11 +117,10 @@ public final class Expressions {
     public static ValueType inferTypes( //
         final Ast expression, //
         final Function<String, Optional<ValueType>> columnToType, //
-        final Function<String, Optional<ValueType>> flowVarType, //
-        final Function<String, Optional<ColumnAggregation>> aggregations //
+        final Function<String, Optional<ValueType>> flowVarType //
     ) throws ExpressionCompileException {
         return Typing.inferTypes(expression, columnToType, flowVarType, BuiltInFunctions.BUILT_IN_FUNCTIONS_GETTER,
-            aggregations);
+            BuiltInAggregations.BUILT_IN_AGGREGATIONS_GETTER);
     }
 
     /**

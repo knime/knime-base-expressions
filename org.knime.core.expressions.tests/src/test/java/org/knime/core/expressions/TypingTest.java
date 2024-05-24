@@ -313,9 +313,8 @@ final class TypingTest {
     void testMissingColumn() {
         var colName = "not_a_column";
         var ast = OP(INT(10), PLUS, COL(colName));
-        var exception = assertThrows(ExpressionCompileException.class,
-            () -> Expressions.inferTypes(ast, TEST_COLUMN_TO_TYPE, TEST_FLOWVARIABLE_TO_TYPE, TEST_AGGREGATIONS),
-            "should fail type inferrence");
+        var exception = assertThrows(ExpressionCompileException.class, () -> Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE,
+            TEST_FLOWVARIABLE_TO_TYPE, TEST_FUNCTIONS, TEST_AGGREGATIONS), "should fail type inferrence");
         var errors = exception.getErrors();
         assertEquals(1, errors.size(), "should be one error");
         assertEquals(ExpressionCompileError.CompileErrorType.MISSING_COLUMN, errors.get(0).type(),
