@@ -48,18 +48,36 @@
  */
 package org.knime.base.expressions.node;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
+import org.knime.core.expressions.OperatorCategory;
+import org.knime.core.expressions.OperatorDescription;
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
+import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.functions.BuiltInFunctions;
 import org.knime.core.expressions.functions.ExpressionFunction;
-import org.knime.core.expressions.functions.FunctionCategory;
 
 /**
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("restriction")
-record FunctionCatalogData(List<FunctionCategory> categories, List<ExpressionFunction.Description> functions) {
+record FunctionCatalogData(List<OperatorCategory> categories, List<OperatorDescription> functions) {
 
-    public static final FunctionCatalogData BUILT_IN = new FunctionCatalogData(BuiltInFunctions.BUILT_IN_CATEGORIES,
-        BuiltInFunctions.BUILT_IN_FUNCTIONS.stream().map(ExpressionFunction::description).toList());
+    public static final FunctionCatalogData BUILT_IN =
+        new FunctionCatalogData(getBuiltInCategories(), getBuiltInOperators());
+
+    private static List<OperatorDescription> getBuiltInOperators() {
+        return Stream.concat( //
+            BuiltInFunctions.BUILT_IN_FUNCTIONS.stream().map(ExpressionFunction::description), //
+            BuiltInAggregations.BUILT_IN_AGGREGATIONS.stream().map(ColumnAggregation::description) //
+        ).toList();
+    }
+
+    private static List<OperatorCategory> getBuiltInCategories() {
+        var categories = new ArrayList<>(BuiltInFunctions.BUILT_IN_CATEGORIES);
+        categories.addAll(BuiltInAggregations.BUILT_IN_CATEGORIES);
+        return categories;
+    }
 }
