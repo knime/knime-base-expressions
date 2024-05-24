@@ -81,6 +81,7 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
@@ -100,8 +101,8 @@ public final class StringFunctions {
     }
 
     /** The "String Manipulation" category */
-    public static final FunctionCategory CATEGORY =
-        new FunctionCategory("String Manipulation", "Functions that operate on strings");
+    public static final OperatorCategory CATEGORY =
+        new OperatorCategory("String Manipulation", "Functions that operate on strings");
 
     public static final ExpressionFunction COMPARE = functionBuilder() //
         .name("compare") //

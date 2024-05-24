@@ -46,14 +46,14 @@
  * History
  *   Apr 5, 2024 (benjamin): created
  */
-package org.knime.core.expressions.functions;
+package org.knime.core.expressions;
 
 /**
- * A category of functions.
+ * A category of functions or aggregations.
  *
  * @param name
  * @param description
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public record FunctionCategory(String name, String description) {
+public record OperatorCategory(String name, String description) {
 }

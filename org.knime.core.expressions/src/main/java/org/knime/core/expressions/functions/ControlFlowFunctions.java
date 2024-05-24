@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
@@ -82,7 +83,7 @@ public final class ControlFlowFunctions {
     }
 
     /** The "Control flow" category */
-    public static final FunctionCategory CATEGORY = new FunctionCategory("Control", "Control flow functions");
+    public static final OperatorCategory CATEGORY = new OperatorCategory("Control", "Control flow functions");
 
     /** The "if*" function */
     public static final ExpressionFunction IF = functionBuilder() //

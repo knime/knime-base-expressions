@@ -54,8 +54,10 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.knime.core.expressions.OperatorCategory;
+
 /**
- * Holds the collection of all built-in {@link ExpressionFunction functions} and {@link FunctionCategory function
+ * Holds the collection of all built-in {@link ExpressionFunction functions} and {@link OperatorCategory function
  * categories}.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
@@ -66,7 +68,7 @@ public final class BuiltInFunctions {
     }
 
     /** Built-in function categories */
-    public static final List<FunctionCategory> BUILT_IN_CATEGORIES = List.of( //
+    public static final List<OperatorCategory> BUILT_IN_CATEGORIES = List.of( //
         MathFunctions.CATEGORY, //
         StringFunctions.CATEGORY //
     );

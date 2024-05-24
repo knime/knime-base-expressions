@@ -71,6 +71,7 @@ import java.util.function.ToLongFunction;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.WarningMessageListener;
@@ -89,7 +90,7 @@ public final class MathFunctions {
     }
 
     /** The "Math" category */
-    public static final FunctionCategory CATEGORY = new FunctionCategory("Math", "Math functions");
+    public static final OperatorCategory CATEGORY = new OperatorCategory("Math", "Math functions");
 
     /** The maximum of multiple numbers */
     public static final ExpressionFunction MAX = functionBuilder() //
