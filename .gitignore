@@ -103,5 +103,7 @@ org.knime.base.expressions/js-src/**/node/
 # Maven
 **/.flattened-pom.xml
 **/CHANGELOG.md
-.polyglot.build.properties
+**/.polyglot.build.properties
+**/.polyglot.feature.xml
+**/.polyglot.META-INF
 org.knime.base.expressions/knime-base-expressions.jar
