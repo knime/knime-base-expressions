@@ -73,7 +73,6 @@ import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
-import org.knime.core.expressions.ValueType;
 import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.table.access.ReadAccess;
@@ -94,9 +93,15 @@ import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 @SuppressWarnings("restriction") // Expressions API is not yet public
 public final class ExpressionMapperFactory implements ColumnarMapperFactory {
 
+    /** Context for evaluating expressions. */
     public interface ExpressionEvaluationContext {
-        Optional<ValueType> flowVariableToType(Ast.FlowVarAccess flowVarAccess);
 
+        /**
+         * Returns a computer for the given flow variable access.
+         *
+         * @param flowVarAccess the flow variable access
+         * @return a computer that returns the value of the flow variable
+         */
         Optional<Computer> flowVariableToComputer(Ast.FlowVarAccess flowVarAccess);
     }
 
@@ -106,7 +111,16 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
 
     private final String m_outputColumnName;
 
-    public ExpressionMapperFactory(final String expression, final ColumnarValueSchema inputTableSchema,
+    /**
+     * Creates a new instance.
+     *
+     * @param ast the expression. Must have {@link Expressions#inferTypes inferred types}.
+     * @param inputTableSchema
+     * @param outputColumnName
+     * @param exprContext
+     * @param wml
+     */
+    public ExpressionMapperFactory(final Ast ast, final ColumnarValueSchema inputTableSchema,
         final String outputColumnName, final ExpressionEvaluationContext exprContext,
         final WarningMessageListener wml) {
         m_outputColumnName = outputColumnName;
@@ -116,12 +130,7 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
                 var colIdx = inputTableSchema.getSourceSpec().findColumnIndex(colName);
                 return colIdx == -1 ? OptionalInt.empty() : OptionalInt.of(colIdx + 1);
             };
-            Function<Ast.ColumnAccess, Optional<ValueType>> colNameToType =
-                colAccess -> colNameToIdx.apply(colAccess.name()).stream().mapToObj(inputTableSchema::getSpec)
-                    .map(s -> s.accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE)).findFirst();
-            var ast = Expressions.parse(expression);
             Expressions.resolveColumnIndices(ast, colNameToIdx);
-            Expressions.inferTypes(ast, colNameToType, exprContext::flowVariableToType);
 
             final var columns = Exec.RequiredColumns.of(ast);
             m_columnIndices = columns.columnIndices();

@@ -101,32 +101,42 @@ class ExpressionNodeModel extends NodeModel {
         m_settings = new ExpressionNodeSettings();
     }
 
-    /** Utility function to get a mapper from column access to the value type for a table spec */
-    static Function<Ast.ColumnAccess, Optional<ValueType>> columnToTypesForTypeInference(final DataTableSpec spec) {
+    /** Utility function to get a mapper from column names to the value type for a table spec */
+    static Function<String, Optional<ValueType>> columnToTypesForTypeInference(final DataTableSpec spec) {
         // We use a NotInWorkflowWriteFileStoreHandler here because we only want to deduce the type,
         // we'll never write any data in configure.
         var fsHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID());
-        return col -> Optional.ofNullable(spec.getColumnSpec(col.name())) // column spec
+        return name -> Optional.ofNullable(spec.getColumnSpec(name)) // column spec
             .map(s -> ValueFactoryUtils.getValueFactory(s.getType(), fsHandler)) // value factory
             .map(v -> v.getSpec()) // data spec
             .map(s -> s.accept(Exec.DATA_SPEC_TO_EXPRESSION_TYPE));
+    }
+
+    /** Utility function to get a mapper from flow variable names to the value type */
+    static Function<String, Optional<ValueType>>
+        flowVarToTypeForTypeInference(final Map<String, FlowVariable> flowVars) {
+        return name -> Optional.ofNullable(flowVars.get(name)) //
+            .map(FlowVariable::getVariableType) //
+            .map(ExpressionNodeModel::mapVariableToValueType); //
     }
 
     static final VariableType<?>[] SUPPORTED_FLOW_VARIABLE_TYPES =
         new VariableType<?>[]{VariableType.BooleanType.INSTANCE, VariableType.DoubleType.INSTANCE,
             VariableType.LongType.INSTANCE, VariableType.IntType.INSTANCE, VariableType.StringType.INSTANCE};
 
-    private ExpressionEvaluationContext m_exprContext =
-        new NodeExpressionEvaluationContext(this::getAvailableInputFlowVariables);
+    /** @return the typed Ast for the configured expression */
+    private Ast getPreparedExpression(final DataTableSpec inSpec) throws ExpressionCompileException {
+        var ast = Expressions.parse(m_settings.getScript());
+        Expressions.inferTypes(ast, columnToTypesForTypeInference(inSpec),
+            flowVarToTypeForTypeInference(getAvailableInputFlowVariables(SUPPORTED_FLOW_VARIABLE_TYPES)));
+        return ast;
+    }
 
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
-        String input = m_settings.getScript();
-
         try {
-            var ast = Expressions.parse(input);
-            var outputType = Expressions.inferTypes(ast, columnToTypesForTypeInference(inSpecs[0]),
-                m_exprContext::flowVariableToType);
+            var ast = getPreparedExpression(inSpecs[0]);
+            var outputType = Expressions.getInferredType(ast);
             var outputDataSpec = Exec.valueTypeToDataSpec(outputType);
             var outputColumnSpec = ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(),
                 m_settings.getActiveOutputColumn());
@@ -154,9 +164,15 @@ class ExpressionNodeModel extends NodeModel {
         WarningMessageListener wml = messageBuilder::addTextIssue;
 
         var inTable = inData[0];
+
+        // Prepare the expression
+        var expression = getPreparedExpression(inTable.getDataTableSpec());
+
+        // Evaluate the expression and materialize the result
         var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec);
-        var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, m_settings.getScript(),
-            newColumnPosition.columnName(), exec, m_exprContext, wml);
+        var exprContext = new NodeExpressionEvaluationContext(this::getAvailableInputFlowVariables);
+        var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
+            newColumnPosition.columnName(), exec, exprContext, wml);
         var output = ExpressionRunnerUtils.constructOutputTable(inRefTable.getVirtualTable(),
             expressionResult.getVirtualTable(), newColumnPosition);
 
@@ -218,14 +234,6 @@ class ExpressionNodeModel extends NodeModel {
         }
 
         @Override
-        public Optional<ValueType> flowVariableToType(final FlowVarAccess flowVariableAccess) {
-            return Optional
-                .ofNullable(m_getFlowVariable.apply(SUPPORTED_FLOW_VARIABLE_TYPES).get(flowVariableAccess.name())) //
-                .map(FlowVariable::getVariableType) //
-                .map(NodeExpressionEvaluationContext::mapVariableToValueType); //
-        }
-
-        @Override
         public Optional<Computer> flowVariableToComputer(final FlowVarAccess flowVariableAccess) {
             return Optional
                 .ofNullable(m_getFlowVariable.apply(SUPPORTED_FLOW_VARIABLE_TYPES).get(flowVariableAccess.name()))
@@ -255,22 +263,21 @@ class ExpressionNodeModel extends NodeModel {
                 throw new IllegalArgumentException("Unsupported variable type: " + variableType);
             }
         }
-
-        private static ValueType mapVariableToValueType(final VariableType<?> variableType) {
-            if (variableType == VariableType.DoubleType.INSTANCE) {
-                return ValueType.FLOAT;
-            } else if (variableType == VariableType.BooleanType.INSTANCE) {
-                return ValueType.BOOLEAN;
-            } else if (variableType == VariableType.LongType.INSTANCE) {
-                return ValueType.INTEGER;
-            } else if (variableType == VariableType.IntType.INSTANCE) {
-                return ValueType.INTEGER;
-            } else if (variableType == VariableType.StringType.INSTANCE) {
-                return ValueType.STRING;
-            } else {
-                throw new IllegalArgumentException("Unsupported variable type: " + variableType);
-            }
-        }
     }
 
+    private static ValueType mapVariableToValueType(final VariableType<?> variableType) {
+        if (variableType == VariableType.DoubleType.INSTANCE) {
+            return ValueType.FLOAT;
+        } else if (variableType == VariableType.BooleanType.INSTANCE) {
+            return ValueType.BOOLEAN;
+        } else if (variableType == VariableType.LongType.INSTANCE) {
+            return ValueType.INTEGER;
+        } else if (variableType == VariableType.IntType.INSTANCE) {
+            return ValueType.INTEGER;
+        } else if (variableType == VariableType.StringType.INSTANCE) {
+            return ValueType.STRING;
+        } else {
+            throw new IllegalArgumentException("Unsupported variable type: " + variableType);
+        }
+    }
 }

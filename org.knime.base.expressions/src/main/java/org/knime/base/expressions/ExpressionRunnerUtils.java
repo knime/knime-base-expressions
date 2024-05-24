@@ -62,6 +62,8 @@ import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializ
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.container.DataContainerSettings;
+import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -181,9 +183,14 @@ public final class ExpressionRunnerUtils {
      * Virtually apply the expression to the given input table. The output table will contain the RowIDs of the input
      * table and the expression result.
      *
-     * @param exprContext
+     * @param input the input table
+     * @param expression the expression. Must have {@link Expressions#inferTypes inferred types}.
+     * @param outputColumnName the name of the column that will contain the result of the expression
+     * @param exprContext the expression evaluation context
+     * @param wml the warning message listener
+     * @return the result of the expression
      */
-    public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final String expression,
+    public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final Ast expression,
         final String outputColumnName, final ExpressionEvaluationContext exprContext,
         final WarningMessageListener wml) {
         var expressionMapperFactory =
@@ -192,9 +199,23 @@ public final class ExpressionRunnerUtils {
             .append(input.map(expressionMapperFactory, expressionMapperFactory.getInputColumnIndices()));
     }
 
+    /**
+     * Apply the given expression to the given table and materialize the result. The output table will contain the
+     * RowIDs of the input table and the expression result.
+     *
+     * @param refTable the input table
+     * @param expression the expression. Must have {@link Expressions#inferTypes inferred types}.
+     * @param outputColumnName the name of the column that will contain the result of the expression
+     * @param exec the execution context
+     * @param exprContext the expression evaluation context
+     * @param wml the warning message listener
+     * @return the materialized result of the expression
+     * @throws CanceledExecutionException if the execution was canceled
+     * @throws VirtualTableIncompatibleException if the input table is not compatible with the expression
+     */
     public static ReferenceTable applyAndMaterializeExpression( //
         final ReferenceTable refTable, //
-        final String expression, //
+        final Ast expression, //
         final String outputColumnName, //
         final ExecutionContext exec, //
         final ExpressionEvaluationContext exprContext, //

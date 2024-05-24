@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -63,7 +64,7 @@ import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.container.filter.TableFilter;
 import org.knime.core.data.v2.RowRead;
-import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.ExpressionCompileError;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
@@ -71,6 +72,8 @@ import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.NodeLogger;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
@@ -91,15 +94,12 @@ final class ExpressionNodeScriptingService extends ScriptingService {
      * Cached function for mapping column access to output types for checking the expression types. Use
      * {@link #getColumnToTypeMapper()} to access this!
      */
-    private Function<ColumnAccess, Optional<ValueType>> m_columnToType;
+    private Function<String, Optional<ValueType>> m_columnToType;
 
     /**
      * Cached input table for executing the expression.
      */
     private ReferenceTable m_inputTable;
-
-    private NodeExpressionEvaluationContext m_exprContext = new NodeExpressionEvaluationContext(
-        types -> getWorkflowControl().getFlowObjectStack().getAvailableFlowVariables(types));
 
     ExpressionNodeScriptingService() {
         super(null,
@@ -119,7 +119,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         m_inputTable = null;
     }
 
-    synchronized Function<ColumnAccess, Optional<ValueType>> getColumnToTypeMapper() {
+    synchronized Function<String, Optional<ValueType>> getColumnToTypeMapper() {
         if (m_columnToType == null) {
             var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
             m_columnToType = ExpressionNodeModel.columnToTypesForTypeInference(spec);
@@ -172,29 +172,57 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             return FunctionCatalogData.BUILT_IN;
         }
 
+        private Map<String, FlowVariable> getAvailableFlowVariables(final VariableType<?>[] types) {
+            return getWorkflowControl().getFlowObjectStack().getAvailableFlowVariables(types);
+        }
+
+        /**
+         * Parses and type-checks the expression.
+         *
+         * @return an expression that is ready to be executed
+         */
+        private Ast getPreparedExpression(final String script) throws ExpressionCompileException {
+            var ast = Expressions.parse(script);
+            var flowVarToTypeMapper = ExpressionNodeModel.flowVarToTypeForTypeInference(
+                getAvailableFlowVariables(ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES));
+            Expressions.inferTypes(ast, getColumnToTypeMapper(), flowVarToTypeMapper);
+            return ast;
+        }
+
         public List<Diagnostic> getDiagnostics(final String expression) {
             try {
-                var ast = Expressions.parse(expression);
-                Expressions.inferTypes(ast, getColumnToTypeMapper(), m_exprContext::flowVariableToType);
+                getPreparedExpression(expression);
                 return List.of();
             } catch (ExpressionCompileException ex) {
                 return Diagnostic.fromException(ex);
             }
         }
 
-        public void runExpression(final String expression) {
-            // Apply the expression on the input table using a ColumnarVirtualTable
+        public void runExpression(final String script) {
+            // Prepare the expression
+            final Ast expression;
+            try {
+                expression = getPreparedExpression(script);
+            } catch (ExpressionCompileException ex) {
+                // Note: This should not happen because the run button is disabled if the expression is invalid
+                NodeLogger.getLogger(ExpressionNodeScriptingService.class)
+                    .debug("Error while running expression in dialog: " + ex.getMessage(), ex);
+                addConsoleOutputEvent(new ConsoleText("Error: " + ex.getMessage(), true));
+                return;
+            }
 
+            // Apply the expression on the input table using a ColumnarVirtualTable
             List<String> warnings = new ArrayList<>();
             WarningMessageListener wml = warning -> warnings.add(warning);
 
+            var exprContext = new NodeExpressionEvaluationContext(this::getAvailableFlowVariables);
             var inputTable = getInputTable();
             var numRows = (int)Math.min(DIALOG_PREVIEW_NUM_ROWS, inputTable.getBufferedTable().size());
             var expressionResult = ExpressionRunnerUtils.applyExpression( //
                 inputTable.getVirtualTable().slice(0, numRows), //
                 expression, //
                 "result", // column name is irrelevant
-                m_exprContext, //
+                exprContext, //
                 wml);
 
             var result = new String[numRows];
