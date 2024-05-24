@@ -103,6 +103,14 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
          * @return a computer that returns the value of the flow variable
          */
         Optional<Computer> flowVariableToComputer(Ast.FlowVarAccess flowVarAccess);
+
+        /**
+         * Returns a computer for the given aggregation call.
+         *
+         * @param aggregationCall the aggregation call
+         * @return a computer that returns the result of the aggregation
+         */
+        Optional<Computer> aggregationToComputer(Ast.AggregationCall aggregationCall);
     }
 
     private final MapperFactory m_mapperFactory;
@@ -143,8 +151,8 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
                     return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
                 };
 
-            m_mapperFactory =
-                Exec.createMapperFactory(ast, columnIndexToComputerFactory, exprContext::flowVariableToComputer, wml);
+            m_mapperFactory = Exec.createMapperFactory(ast, columnIndexToComputerFactory,
+                exprContext::flowVariableToComputer, exprContext::aggregationToComputer, wml);
 
         } catch (ExpressionCompileException ex) {
             throw new IllegalArgumentException(ex);

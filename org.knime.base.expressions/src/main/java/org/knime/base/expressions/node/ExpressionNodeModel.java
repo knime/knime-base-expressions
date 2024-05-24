@@ -66,6 +66,7 @@ import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.data.v2.ValueFactoryUtils;
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
@@ -168,8 +169,14 @@ class ExpressionNodeModel extends NodeModel {
         // Prepare the expression
         var expression = getPreparedExpression(inTable.getDataTableSpec());
 
-        // Evaluate the expression and materialize the result
+        // Create a reference table for the input table
         var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec);
+
+        // Pre-evaluate the aggregations
+        // NB: We use the inRefTable because it is guaranteed to be a columnar table
+        ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(), exec);
+
+        // Evaluate the expression and materialize the result
         var exprContext = new NodeExpressionEvaluationContext(this::getAvailableInputFlowVariables);
         var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
             newColumnPosition.columnName(), exec, exprContext, wml);
@@ -238,7 +245,11 @@ class ExpressionNodeModel extends NodeModel {
             return Optional
                 .ofNullable(m_getFlowVariable.apply(SUPPORTED_FLOW_VARIABLE_TYPES).get(flowVariableAccess.name()))
                 .map(NodeExpressionEvaluationContext::computerForFlowVariable);
+        }
 
+        @Override
+        public Optional<Computer> aggregationToComputer(final AggregationCall aggregationCall) {
+            return Optional.ofNullable(ExpressionRunnerUtils.getAggregationResultComputer(aggregationCall));
         }
 
         private static Computer computerForFlowVariable(final FlowVariable variable) {

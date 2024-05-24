@@ -52,9 +52,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.knime.base.expressions.ExpressionMapperFactory.ExpressionEvaluationContext;
+import org.knime.base.expressions.aggregations.ColumnAggregations;
 import org.knime.core.data.columnar.ColumnarTableBackend;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
@@ -63,11 +65,14 @@ import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Ast.AggregationCall;
+import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 
@@ -80,6 +85,8 @@ import org.knime.core.node.NodeLogger;
 public final class ExpressionRunnerUtils {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(ExpressionRunnerUtils.class);
+
+    private static final String AGGREGATION_RESULT_DATA_KEY = "aggregationResultComputer";
 
     /**
      * What should happen with new columns, whether they're appended at the end or replace an existing column.
@@ -177,6 +184,78 @@ public final class ExpressionRunnerUtils {
             }
 
         }
+    }
+
+    private static List<AggregationCall> collectAggregations(final Ast expression) {
+        var acc = new ArrayList<AggregationCall>();
+        collectAggregations(expression, acc);
+        return acc;
+    }
+
+    /** Recursively collect all aggregation calls in the expression */
+    private static void collectAggregations(final Ast expression, final List<AggregationCall> acc) {
+        for (var child : expression.children()) {
+            collectAggregations(child, acc);
+        }
+        if (expression instanceof AggregationCall agg) {
+            acc.add(agg);
+        }
+    }
+
+    /**
+     * Evaluate the aggregations in the given expression on the given table. The result of each aggregation is stored in
+     * the {@link AggregationCall} as a {@link Computer}. The computer can be retrieved using the method
+     * {@link #getAggregationResultComputer}. Must be called after typing and before {@link #applyExpression}.
+     *
+     * @param expression the expression
+     * @param table the table to evaluate the aggregations on
+     * @param exec an execution monitor for progress and cancellation checks
+     * @throws CanceledExecutionException if the execution was canceled
+     */
+    public static void evaluateAggregations(final Ast expression, final BufferedDataTable table,
+        final ExecutionMonitor exec) throws CanceledExecutionException {
+        // Collect the aggregations for the expression
+        var aggregationCalls = collectAggregations(expression);
+        if (aggregationCalls.isEmpty()) {
+            return;
+        }
+        var aggregationResults = aggregationCalls.stream().collect(Collectors.toMap(a -> a,
+            a -> ColumnAggregations.getAggregationImplementationFor(a, table.getDataTableSpec())));
+
+        // Run the aggregations on the table
+        var numRows = table.size();
+        var progressMonitor = exec.createSubProgress(0.5);
+        progressMonitor.setMessage("Evaluating aggregations");
+
+        var currentRow = 0L;
+        try (var cursor = table.cursor()) {
+            while (cursor.canForward()) {
+                currentRow++;
+                var row = cursor.forward();
+                aggregationResults.values().forEach(a -> a.addRow(row));
+                progressMonitor.setProgress(currentRow / (double)numRows);
+                exec.checkCanceled();
+            }
+        }
+        progressMonitor.setProgress(1);
+
+        // Remember the result computer for each aggregation call
+        for (var entry : aggregationResults.entrySet()) {
+            var aggregationCall = entry.getKey();
+            var resultComputer = entry.getValue().createResultComputer();
+            aggregationCall.putData(AGGREGATION_RESULT_DATA_KEY, resultComputer);
+        }
+    }
+
+    /**
+     * Get the result computer for the given aggregation call. Must be called after calling
+     * {@link #evaluateAggregations}.
+     *
+     * @param agg the aggregation call
+     * @return the computer that returns the result of the aggregation
+     */
+    public static Computer getAggregationResultComputer(final AggregationCall agg) { // NOSONAR - not applicable to a generic Ast
+        return (Computer)agg.data(AGGREGATION_RESULT_DATA_KEY);
     }
 
     /**

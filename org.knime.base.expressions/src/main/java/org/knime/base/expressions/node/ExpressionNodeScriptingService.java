@@ -73,6 +73,8 @@ import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.expressions.WarningMessageListener;
 import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
@@ -216,9 +218,21 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             List<String> warnings = new ArrayList<>();
             WarningMessageListener wml = warning -> warnings.add(warning);
 
-            var exprContext = new NodeExpressionEvaluationContext(this::getAvailableFlowVariables);
             var inputTable = getInputTable();
+
+            // Pre-evaluate the aggregations
+            // NB: We use the inRefTable because it is guaranteed to be a columnar table
+            try {
+                ExpressionRunnerUtils.evaluateAggregations(expression, inputTable.getBufferedTable(),
+                    new ExecutionMonitor());
+            } catch (CanceledExecutionException ex) {
+                // Cannot happen because we do not cancel the execution
+                throw new IllegalStateException(ex);
+            }
+
+            // Evaluate the expression
             var numRows = (int)Math.min(DIALOG_PREVIEW_NUM_ROWS, inputTable.getBufferedTable().size());
+            var exprContext = new NodeExpressionEvaluationContext(this::getAvailableFlowVariables);
             var expressionResult = ExpressionRunnerUtils.applyExpression( //
                 inputTable.getVirtualTable().slice(0, numRows), //
                 expression, //
