@@ -51,11 +51,12 @@ package org.knime.base.expressions.node;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionNodeModel.NodeExpressionEvaluationContext;
@@ -90,6 +91,9 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
     private static final int DIALOG_PREVIEW_NUM_ROWS = 10;
 
+    private static final Set<VariableType<?>> SUPPORTED_FLOW_VARIABLE_TYPES_SET =
+        Arrays.stream(ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES).collect(Collectors.toSet());
+
     /**
      * Cached function for mapping column access to output types for checking the expression types. Use
      * {@link #getColumnToTypeMapper()} to access this!
@@ -102,10 +106,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
     private ReferenceTable m_inputTable;
 
     ExpressionNodeScriptingService() {
-        super(null,
-            flowVar -> new HashSet<VariableType<?>>(
-                new HashSet<>(Arrays.asList(ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES)))
-                    .contains(flowVar.getVariableType()));
+        super(null, flowVar -> SUPPORTED_FLOW_VARIABLE_TYPES_SET.contains(flowVar.getVariableType()));
     }
 
     @Override
