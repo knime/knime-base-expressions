@@ -44,61 +44,58 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 24, 2024 (benjamin): created
+ *   May 27, 2024 (benjamin): created
  */
 package org.knime.core.expressions.aggregations;
 
-import static org.knime.core.expressions.AstTestUtils.STR;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.knime.core.expressions.aggregations.ArgumentsBuilder.args;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DynamicNode;
-import org.junit.jupiter.api.TestFactory;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.knime.core.expressions.Ast.AggregationCall;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Expressions;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ValueType;
 
 /**
- * Tests for the built-in aggregations.
+ * Provides arguments for testing that a consumer can provide a Computer for each built-in aggregation.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("static-method")
-final class BuiltInAggregationsTests {
+public class TestColumnAggregationArgumentSource implements ArgumentsProvider {
 
-    private static final String INT_COL = "intCol";
+    /** Test columns used in the testing aggregations */
+    public static final Map<String, ValueType> TEST_COLUMNS =
+        Map.of("INT_COL", ValueType.INTEGER, "FLOAT_COL", ValueType.FLOAT, "STRING_COL", ValueType.STRING);
 
-    private static final String FLOAT_COL = "floatCol";
-
-    private static final String STR_COL = "stringCol";
-
-    private static final Map<String, ValueType> COLUMN_TYPES = Map.of( //
-        INT_COL, ValueType.OPT_INTEGER, //
-        FLOAT_COL, ValueType.OPT_FLOAT, //
-        STR_COL, ValueType.OPT_STRING //
-    );
-
-    @ParameterizedTest
-    @ArgumentsSource(TestColumnAggregationArgumentSource.class)
-    void testArgsForAllAggregations(final AggregationCall agg) {
-        Assertions.assertNotNull(agg, "No test arguments for " + agg);
+    @Override
+    public Stream<? extends Arguments> provideArguments(final ExtensionContext context) throws Exception {
+        return BuiltInAggregations.BUILT_IN_AGGREGATIONS.stream()
+            .map(TestColumnAggregationArgumentSource::getTestAstFor) //
+            .map(Arguments::of);
     }
 
-    @TestFactory
-    List<DynamicNode> max() {
-        return new ColumnAggregationTestBuilder(BuiltInAggregations.MAX, COLUMN_TYPES) //
-            .typing("Integer column positional", args().p(STR(INT_COL)).build(), ValueType.OPT_INTEGER) //
-            .typing("Integer column named", args().n("column", STR(INT_COL)).build(), ValueType.OPT_INTEGER) //
-            .typing("Float column positional", args().p(STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
-            .typing("Float column named", args().n("column", STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
-            .illegalArgs("No column arg", args().build()) //
-            .illegalArgs("String column", args().p(STR(STR_COL)).build()) //
-            .illegalArgs("Missing column", args().p(STR("foo")).build()) //
-            .tests();
+    private static Ast.AggregationCall getTestAstFor(final ColumnAggregation agg) {
+        var args = getTestArgsFor(agg);
+        var ast = Ast.aggregationCall(agg.name(), args);
+        try {
+            Expressions.inferTypes(ast, n -> Optional.ofNullable(TEST_COLUMNS.get(n)), n -> Optional.empty());
+        } catch (ExpressionCompileException ex) {
+            fail("Failed to infer types for " + ast, ex); // NOSONAR - the method cannot throw to be usable in map
+        }
+        return ast;
+    }
 
+    private static org.knime.core.expressions.Arguments<Ast.ConstantAst> getTestArgsFor(final ColumnAggregation call) {
+        if (BuiltInAggregations.MAX.equals(call)) {
+            return args().p(Ast.stringConstant("INT_COL")).build();
+        }
+        return fail("No test arguments for aggregation " + call.name());
     }
 }

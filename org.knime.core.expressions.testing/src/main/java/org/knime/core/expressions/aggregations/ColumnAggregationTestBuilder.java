@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,70 +34,6 @@ public final class ColumnAggregationTestBuilder {
 
     /** Map to store column names and their corresponding value types */
     private final Map<String, ValueType> m_columnTypes;
-
-    /** Interface for the second builder stage */
-    public interface RequiresNamedArgs {
-
-        /**
-         * Adds a named argument to the arguments list.
-         *
-         * @param name
-         * @param argument
-         * @return the next stage of the builder
-         */
-        RequiresNamedArgs n(String name, Ast.ConstantAst argument);
-
-        /**
-         * Builds the arguments.
-         *
-         * @return the arguments
-         */
-        Arguments<Ast.ConstantAst> build();
-    }
-
-    /** Interface for the first builder stage */
-    public interface RequiresPositionalArgs extends RequiresNamedArgs {
-
-        /**
-         * Adds a positional argument to the arguments list.
-         *
-         * @param argument
-         * @return the next stage of the builder
-         */
-        RequiresPositionalArgs p(Ast.ConstantAst argument);
-    }
-
-    /**
-     * @return a new builder for creating arguments
-     */
-    public static RequiresPositionalArgs args() {
-        return new ArgsBuilderImpl();
-    }
-
-    // NOTE: The interfaces define the stages
-    private static class ArgsBuilderImpl implements RequiresPositionalArgs {
-
-        private final List<Ast.ConstantAst> m_positionalArguments = new ArrayList<>();
-
-        private final Map<String, Ast.ConstantAst> m_namedArguments = new HashMap<>();
-
-        @Override
-        public RequiresPositionalArgs p(final Ast.ConstantAst argument) {
-            m_positionalArguments.add(argument);
-            return this;
-        }
-
-        @Override
-        public RequiresNamedArgs n(final String name, final Ast.ConstantAst argument) {
-            m_namedArguments.put(name, argument);
-            return this;
-        }
-
-        @Override
-        public Arguments<Ast.ConstantAst> build() {
-            return new Arguments<>(m_positionalArguments, m_namedArguments);
-        }
-    }
 
     /**
      * @param aggregation The `ColumnAggregation` implementation to be tested.

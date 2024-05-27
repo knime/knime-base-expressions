@@ -8,7 +8,8 @@ Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Require-Bundle: 
  org.knime.core.expressions;bundle-version="[5.3.0,6.0.0)",
- junit-jupiter-api;bundle-version="[5.9.2,6.0.0)"
+ junit-jupiter-api;bundle-version="[5.9.2,6.0.0)",
+ junit-jupiter-params;bundle-version="[5.9.2,6.0.0)"
 Export-Package: org.knime.core.expressions;x-friends:="org.knime.core.expressions.tests,org.knime.base.expressions.tests",
  org.knime.core.expressions.aggregations;x-friends:="org.knime.core.expressions.tests,org.knime.base.expressions.tests",
  org.knime.core.expressions.functions;x-friends:="org.knime.core.expressions.tests,org.knime.base.expressions.tests"

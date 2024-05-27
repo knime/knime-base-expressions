@@ -44,61 +44,90 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 24, 2024 (benjamin): created
+ *   May 27, 2024 (benjamin): created
  */
 package org.knime.core.expressions.aggregations;
 
-import static org.knime.core.expressions.AstTestUtils.STR;
-import static org.knime.core.expressions.aggregations.ArgumentsBuilder.args;
-
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DynamicNode;
-import org.junit.jupiter.api.TestFactory;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.knime.core.expressions.Ast.AggregationCall;
-import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.Arguments;
+import org.knime.core.expressions.Ast;
 
 /**
- * Tests for the built-in aggregations.
+ * A builder for creating arguments for aggregations. This builder simplifies the process of defining positional and
+ * named arguments.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("static-method")
-final class BuiltInAggregationsTests {
+public final class ArgumentsBuilder {
 
-    private static final String INT_COL = "intCol";
-
-    private static final String FLOAT_COL = "floatCol";
-
-    private static final String STR_COL = "stringCol";
-
-    private static final Map<String, ValueType> COLUMN_TYPES = Map.of( //
-        INT_COL, ValueType.OPT_INTEGER, //
-        FLOAT_COL, ValueType.OPT_FLOAT, //
-        STR_COL, ValueType.OPT_STRING //
-    );
-
-    @ParameterizedTest
-    @ArgumentsSource(TestColumnAggregationArgumentSource.class)
-    void testArgsForAllAggregations(final AggregationCall agg) {
-        Assertions.assertNotNull(agg, "No test arguments for " + agg);
+    private ArgumentsBuilder() {
     }
 
-    @TestFactory
-    List<DynamicNode> max() {
-        return new ColumnAggregationTestBuilder(BuiltInAggregations.MAX, COLUMN_TYPES) //
-            .typing("Integer column positional", args().p(STR(INT_COL)).build(), ValueType.OPT_INTEGER) //
-            .typing("Integer column named", args().n("column", STR(INT_COL)).build(), ValueType.OPT_INTEGER) //
-            .typing("Float column positional", args().p(STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
-            .typing("Float column named", args().n("column", STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
-            .illegalArgs("No column arg", args().build()) //
-            .illegalArgs("String column", args().p(STR(STR_COL)).build()) //
-            .illegalArgs("Missing column", args().p(STR("foo")).build()) //
-            .tests();
+    /** Interface for the second builder stage */
+    public interface RequiresNamedArgs {
 
+        /**
+         * Adds a named argument to the arguments list.
+         *
+         * @param name
+         * @param argument
+         * @return the next stage of the builder
+         */
+        RequiresNamedArgs n(String name, Ast.ConstantAst argument);
+
+        /**
+         * Builds the arguments.
+         *
+         * @return the arguments
+         */
+        Arguments<Ast.ConstantAst> build();
+    }
+
+    /** Interface for the first builder stage */
+    public interface RequiresPositionalArgs extends RequiresNamedArgs {
+
+        /**
+         * Adds a positional argument to the arguments list.
+         *
+         * @param argument
+         * @return the next stage of the builder
+         */
+        RequiresPositionalArgs p(Ast.ConstantAst argument);
+    }
+
+    /**
+     * @return a new builder for creating arguments
+     */
+    public static RequiresPositionalArgs args() {
+        return new ArgsBuilderImpl();
+    }
+
+    // NOTE: The interfaces define the stages
+    private static class ArgsBuilderImpl implements RequiresPositionalArgs {
+
+        private final List<Ast.ConstantAst> m_positionalArguments = new ArrayList<>();
+
+        private final Map<String, Ast.ConstantAst> m_namedArguments = new HashMap<>();
+
+        @Override
+        public RequiresPositionalArgs p(final Ast.ConstantAst argument) {
+            m_positionalArguments.add(argument);
+            return this;
+        }
+
+        @Override
+        public RequiresNamedArgs n(final String name, final Ast.ConstantAst argument) {
+            m_namedArguments.put(name, argument);
+            return this;
+        }
+
+        @Override
+        public Arguments<Ast.ConstantAst> build() {
+            return new Arguments<>(m_positionalArguments, m_namedArguments);
+        }
     }
 }
