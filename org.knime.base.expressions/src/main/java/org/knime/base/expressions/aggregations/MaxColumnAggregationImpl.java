@@ -91,53 +91,47 @@ final class MaxColumnAggregationImpl {
         }
     }
 
-    private static final class MaxFloatAggregation implements Aggregation {
-        private final int m_columnIdx;
+    private static final class MaxFloatAggregation extends AbstractAggregation {
 
         private double m_max = Double.MIN_VALUE;
 
         private MaxFloatAggregation(final int columnIdx) {
-            m_columnIdx = columnIdx;
+            super(columnIdx);
         }
 
         @Override
-        public void addRow(final RowRead row) {
-            if (!row.isMissing(m_columnIdx)) {
-                var value = ((DoubleValue)row.getValue(m_columnIdx)).getDoubleValue();
-                if (value > m_max) {
-                    m_max = value;
-                }
+        protected void addNonMissingRow(final RowRead row) {
+            var value = ((DoubleValue)row.getValue(m_columnIdx)).getDoubleValue();
+            if (value > m_max) {
+                m_max = value;
             }
         }
 
         @Override
         public Computer createResultComputer() {
-            return Computer.FloatComputer.of(wml -> m_max, wml -> false);
+            return Computer.FloatComputer.of(wml -> m_max, wml -> m_isMissing);
         }
     }
 
-    private static final class MaxIntegerAggregation implements Aggregation {
-        private final int m_columnIdx;
+    private static final class MaxIntegerAggregation extends AbstractAggregation {
 
         private long m_max = Long.MIN_VALUE;
 
         private MaxIntegerAggregation(final int columnIdx) {
-            m_columnIdx = columnIdx;
+            super(columnIdx);
         }
 
         @Override
-        public void addRow(final RowRead row) {
-            if (!row.isMissing(m_columnIdx)) {
-                var value = ((LongValue)row.getValue(m_columnIdx)).getLongValue();
-                if (value > m_max) {
-                    m_max = value;
-                }
+        protected void addNonMissingRow(final RowRead row) {
+            var value = ((LongValue)row.getValue(m_columnIdx)).getLongValue();
+            if (value > m_max) {
+                m_max = value;
             }
         }
 
         @Override
         public Computer createResultComputer() {
-            return Computer.IntegerComputer.of(wml -> m_max, wml -> false);
+            return Computer.IntegerComputer.of(wml -> m_max, wml -> m_isMissing);
         }
     }
 }
