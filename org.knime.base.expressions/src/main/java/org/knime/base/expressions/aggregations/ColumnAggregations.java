@@ -60,7 +60,6 @@ import org.knime.core.expressions.aggregations.BuiltInAggregations;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction") // Expression API is not yet public
 public final class ColumnAggregations {
 
     private ColumnAggregations() {

@@ -81,7 +81,7 @@ import org.knime.core.node.NodeLogger;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction") // Expressions API is not yet public
+@SuppressWarnings("restriction") // ColumnarVirtualTable API is not yet public
 public final class ExpressionRunnerUtils {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(ExpressionRunnerUtils.class);

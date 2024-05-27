@@ -62,7 +62,6 @@ import org.knime.core.expressions.functions.ExpressionFunction;
 /**
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction")
 record FunctionCatalogData(List<OperatorCategory> categories, List<OperatorDescription> functions) {
 
     public static final FunctionCatalogData BUILT_IN =
