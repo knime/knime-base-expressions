@@ -14,7 +14,7 @@ Require-Bundle:
  com.google.guava;bundle-version="[19.0.0,20.0.0)",
  com.fasterxml.jackson.core.jackson-core;bundle-version="[2.11.0,3.0.0)",
  com.fasterxml.jackson.core.jackson-databind;bundle-version="[2.11.0,3.0.0)"
-Export-Package: org.knime.core.expressions;x-internal:=true,
- org.knime.core.expressions.aggregations;x-internal:=true,
- org.knime.core.expressions.functions;x-internal:=true
+Export-Package: org.knime.core.expressions;x-friends:="org.knime.base.expressions,org.knime.core.expressions.testing,org.knime.base.expressions.tests",
+ org.knime.core.expressions.aggregations;x-friends:="org.knime.base.expressions,org.knime.core.expressions.testing,org.knime.base.expressions.tests",
+ org.knime.core.expressions.functions;x-friends:="org.knime.base.expressions,org.knime.core.expressions.testing,org.knime.base.expressions.tests"
 Automatic-Module-Name: org.knime.core.expressions
