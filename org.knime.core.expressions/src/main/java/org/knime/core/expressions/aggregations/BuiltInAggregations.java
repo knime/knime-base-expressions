@@ -48,6 +48,7 @@
  */
 package org.knime.core.expressions.aggregations;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,10 +108,8 @@ public final class BuiltInAggregations {
         MAX //
     );
 
-    private static final Map<String, ColumnAggregation> BUILT_IN_AGGREGATIONS_MAP =
-        BUILT_IN_AGGREGATIONS.stream().collect(Collectors.toMap(ColumnAggregation::name, f -> f));
+    public static final Map<String, ColumnAggregation> BUILT_IN_AGGREGATIONS_MAP = Collections.unmodifiableMap( //
+        BUILT_IN_AGGREGATIONS.stream().collect(Collectors.toMap(ColumnAggregation::name, f -> f)) //
+    );
 
-    /** A function mapping from function name to the built-in {@link ColumnAggregation column aggregation} */
-    public static final Function<String, Optional<ColumnAggregation>> BUILT_IN_AGGREGATIONS_GETTER =
-        name -> Optional.ofNullable(BUILT_IN_AGGREGATIONS_MAP.get(name));
 }

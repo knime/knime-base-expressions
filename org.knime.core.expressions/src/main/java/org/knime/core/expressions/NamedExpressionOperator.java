@@ -44,54 +44,25 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 4, 2024 (benjamin): created
+ *   May 31, 2024 (david): created
  */
-package org.knime.core.expressions.functions;
-
-import java.util.List;
-import java.util.Optional;
-
-import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.NamedExpressionOperator;
-import org.knime.core.expressions.OperatorDescription;
-import org.knime.core.expressions.ValueType;
+package org.knime.core.expressions;
 
 /**
- * The definition and implementation of a function that can be used in expressions.
+ * Super interface for expression operators like functions and aggregations.
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
-public interface ExpressionFunction extends NamedExpressionOperator {
+public interface NamedExpressionOperator {
 
     /**
-     * @return the identifier of the function. Should be in
-     *         <a href="https://en.wikipedia.org/wiki/Snake_case">snake_case</a>.
+     * @return the identifier of the operator.
      */
-    @Override
     String name();
 
     /**
-     * @return a description of the function
+     * @return the description of the operator
      */
-    @Override
     OperatorDescription description();
 
-    /**
-     * Infer the return type of the argument types.
-     *
-     * @param argTypes the types of the input arguments
-     * @return the return type or <code>Optional.empty()</code> if the function is not applicable to the arguments
-     */
-    Optional<ValueType> returnType(List<ValueType> argTypes);
-
-    /**
-     * Apply the function on the given arguments. Note that the arguments are guaranteed to be the appropriate computers
-     * for one of the allowed argument types. Must return a computer that fits the {@link #returnType(List)} for these
-     * arguments. The <code>compute</code> and <code>isMissing</code> methods of the arguments must only be called from
-     * the resulting computer and must not be called more than once.
-     *
-     * @param args the arguments
-     * @return a computer that applies the function to the input arguments
-     */
-    Computer apply(List<Computer> args);
 }

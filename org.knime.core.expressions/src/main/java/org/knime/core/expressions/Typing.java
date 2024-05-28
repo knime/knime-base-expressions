@@ -56,6 +56,7 @@ import static org.knime.core.expressions.ValueType.STRING;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -98,8 +99,8 @@ final class Typing {
         final Ast root, //
         final Function<String, Optional<ValueType>> columnType, //
         final Function<String, Optional<ValueType>> flowVarType, //
-        final Function<String, Optional<ExpressionFunction>> functions, //
-        final Function<String, Optional<ColumnAggregation>> aggregations //
+        final Map<String, ExpressionFunction> functions, //
+        final Map<String, ColumnAggregation> aggregations //
     ) throws ExpressionCompileException {
         var outputType = Ast.putDataRecursive(root, TYPE_DATA_KEY,
             new TypingVisitor(columnType, flowVarType, functions, aggregations));
@@ -143,15 +144,15 @@ final class Typing {
 
         private final Function<String, Optional<ValueType>> m_flowVariableType;
 
-        private final Function<String, Optional<ExpressionFunction>> m_functions;
+        private final Map<String, ExpressionFunction> m_functions;
 
-        private final Function<String, Optional<ColumnAggregation>> m_aggregations;
+        private final Map<String, ColumnAggregation> m_aggregations;
 
         TypingVisitor( //
             final Function<String, Optional<ValueType>> columnType, //
             final Function<String, Optional<ValueType>> flowVarType, //
-            final Function<String, Optional<ExpressionFunction>> functions, //
-            final Function<String, Optional<ColumnAggregation>> aggregations //
+            final Map<String, ExpressionFunction> functions, //
+            final Map<String, ColumnAggregation> aggregations //
         ) {
             m_columnType = columnType;
             m_functions = functions;
@@ -241,15 +242,17 @@ final class Typing {
         public ValueType visit(final FunctionCall node) {
             var argTypes = node.args().stream().map(Typing::getType).toList();
 
-            var resolvedFunction = m_functions.apply(node.name());
+            var resolvedFunction = Optional.ofNullable(m_functions.get(node.name()));
             if (resolvedFunction.isEmpty()) {
-                // TODO(AP-22372) propose functions with similar names if there is none with this name
                 var errorTypes = new ArrayList<>(argTypes);
-                errorTypes.add(ErrorValueType.missingFunction(node));
+
+                errorTypes.add(ErrorValueType.missingFunction(node,
+                    NamedOperatorFuzzyMatching.findMostSimilarlyNamedOperators(node.name(), m_functions)));
                 return ErrorValueType.combined(errorTypes);
             } else if (argTypes.stream().anyMatch(ErrorValueType.class::isInstance)) {
                 return ErrorValueType.combined(argTypes);
             }
+
             node.putData(FUNCTION_IMPL_DATA_KEY, resolvedFunction.get());
 
             // TODO(AP-22303) show better error if the function is not applicable
@@ -259,10 +262,11 @@ final class Typing {
 
         @Override
         public ValueType visit(final AggregationCall node) throws RuntimeException {
-            var resolvedAggregation = m_aggregations.apply(node.name());
+            var resolvedAggregation = Optional.ofNullable(m_aggregations.get(node.name()));
             if (resolvedAggregation.isEmpty()) {
-                // TODO(AP-22372) propose aggregations with similar names if there is none with this name
-                return ErrorValueType.missingAggregation(node);
+
+                return ErrorValueType.missingAggregation(node,
+                    NamedOperatorFuzzyMatching.findMostSimilarlyNamedOperators(node.name(), m_aggregations));
             }
 
             node.putData(AGGREGATION_IMPL_DATA_KEY, resolvedAggregation.get());
@@ -400,16 +404,19 @@ final class Typing {
             return typingError("Operator '" + node.op().symbol() + "' is not applicable for " + t.name() + ".", node);
         }
 
-        static ErrorValueType missingFunction(final FunctionCall node) {
-            return typingError("No function with name " + node.name(), node);
+        static ErrorValueType missingFunction(final FunctionCall node, final List<String> similarFunctionNames) {
+            return typingError(getMissingExpressionOperatorErrorMessage(node.name(), "function", similarFunctionNames),
+                node);
         }
 
         static ErrorValueType functionNotApplicable(final FunctionCall node, final List<ValueType> args) {
             return typingError("The function " + node.name() + " is not applicable to the arguments " + args, node);
         }
 
-        static ErrorValueType missingAggregation(final AggregationCall node) {
-            return typingError("No aggregation with name " + node.name(), node);
+        static ErrorValueType missingAggregation(final AggregationCall node,
+            final List<String> similarAggregationNames) {
+            return typingError(
+                getMissingExpressionOperatorErrorMessage(node.name(), "aggregation", similarAggregationNames), node);
         }
 
         static ErrorValueType aggregationNotApplicable(final AggregationCall node, final Arguments<ConstantAst> args) {
@@ -444,6 +451,19 @@ final class Typing {
         @Override
         public ValueType optionalType() {
             return this;
+        }
+
+        private static String getMissingExpressionOperatorErrorMessage(final String name, final String type,
+            final List<String> similarNames) {
+
+            return switch (similarNames.size()) {
+                case 0 -> "No %s with name %s.".formatted(type, name);
+                case 1 -> "No %s with name %s. Did you mean %s?" //
+                    .formatted(type, name, similarNames.get(0));
+                default -> "No %s with name %s. Did you mean %s, or %s?" //
+                    .formatted(type, name, String.join(",", similarNames.subList(0, similarNames.size() - 1)), //
+                        similarNames.get(similarNames.size() - 1));
+            };
         }
     }
 }

@@ -48,10 +48,9 @@
  */
 package org.knime.core.expressions.functions;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.knime.core.expressions.OperatorCategory;
@@ -165,11 +164,9 @@ public final class BuiltInFunctions {
 
     );
 
-    private static final Map<String, ExpressionFunction> BUILT_IN_FUNCTIONS_MAP =
-        BUILT_IN_FUNCTIONS.stream().collect(Collectors.toMap(ExpressionFunction::name, f -> f));
-
-    /** A function mapping from function name to the built-in {@link ExpressionFunction function} */
-    public static final Function<String, Optional<ExpressionFunction>> BUILT_IN_FUNCTIONS_GETTER =
-        name -> Optional.ofNullable(BUILT_IN_FUNCTIONS_MAP.get(name));
+    /** Built-in functions as map */
+    public static final Map<String, ExpressionFunction> BUILT_IN_FUNCTIONS_MAP = Collections.unmodifiableMap( //
+        BUILT_IN_FUNCTIONS.stream().collect(Collectors.toMap(ExpressionFunction::name, f -> f)) //
+    );
 
 }

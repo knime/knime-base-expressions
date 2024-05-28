@@ -53,6 +53,7 @@ import java.util.function.Function;
 
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast.ConstantAst;
+import org.knime.core.expressions.NamedExpressionOperator;
 import org.knime.core.expressions.OperatorDescription;
 import org.knime.core.expressions.ValueType;
 
@@ -62,17 +63,19 @@ import org.knime.core.expressions.ValueType;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public interface ColumnAggregation {
+public interface ColumnAggregation extends NamedExpressionOperator {
 
     /**
-     * @return the identifier of the function. Must be in <a href="https://en.wikipedia.org/wiki/Snake_case">screaming
-     *         snake case</a>.
+     * @return the identifier of the aggregation. Must be in
+     *         <a href="https://en.wikipedia.org/w/index.php?title=SCREAMING_SNAKE_CASE">SCREAMING_SNAKE_CASE</a>}
      */
+    @Override
     String name();
 
     /**
      * @return a description of the aggregation
      */
+    @Override
     OperatorDescription description();
 
     /**

@@ -293,10 +293,15 @@ final class TypingTest {
             // === Function calls
             FUNCTION_CALL_UNKNOWN_ID(FUN("not_a_fn", INT(1)), "not_a_fn"), //
             FUNCTION_CALL_WRONG_ARG_TYPES(FUN("INT_TO_FLOAT_FN", FLOAT(1.0)), "INT_TO_FLOAT_FN", "FLOAT"), //
+            FUNCTION_CALL_UNKNOWN_ID_SUGGESTS_ANOTHER(FUN("FN_WITH_NO_ARGZ"), "FN_WITH_NO_ARGS"), //
+            FUNCTION_CALL_UNKNOWN_ID_SUGGESTS_MULTIPLE(FUN("FN_WITH_NO_ZZZZ"), "FN_WITH_NO_ARGS", "FN_WITH_NO_XXXX"), //
 
             // === Aggregation calls
             AGG_CALL_UNKNOWN_ID(AGG("NOT_AN_AGG", STR("i")), "NOT_AN_AGG"), //
             AGG_CALL_WRONG_ARG_TYPES(AGG("RETURN_42_WITH_COL_TYPE", INT(1)), "RETURN_42_WITH_COL_TYPE", "(1)"), //
+            AGG_CALL_UNKNOWN_ID_SUGGESTIONS_ANOTHER(AGG("RETURN_42_WITH_COL_TYPP"), "RETURN_42_WITH_COL_TYPE"), //
+            AGG_CALL_UNKNOWN_ID_SUGGESTIONS_MULTIPLE(AGG("RETURN_42_WITH_COL_ZZZZ"), "RETURN_42_WITH_COL_TXXX",
+                "RETURN_42_WITH_COL_TYPE"), //
         ;
 
         private final Ast m_expression;
@@ -344,13 +349,14 @@ final class TypingTest {
         }
     }
 
-    private static final Function<String, Optional<ExpressionFunction>> TEST_FUNCTIONS =
-        TestUtils.enumFinder(TestFunctions.values(), ExpressionFunction.class);
+    private static final Map<String, ExpressionFunction> TEST_FUNCTIONS =
+        TestUtils.enumFinderAsMap(TestFunctions.values(), ExpressionFunction.class);
 
     private static enum TestFunctions implements ExpressionFunction {
             FN_WITH_NO_ARGS(List.of(), MISSING), //
             INT_TO_FLOAT_FN(List.of(INTEGER), FLOAT), //
-            TWO_SIG_FN(Map.of(List.of(INTEGER), FLOAT, List.of(FLOAT, STRING), INTEGER));
+            TWO_SIG_FN(Map.of(List.of(INTEGER), FLOAT, List.of(FLOAT, STRING), INTEGER)), //
+            FN_WITH_NO_XXXX(List.of(), MISSING); // here to test error message - note similarity to FN_WITH_NO_ARGS
 
         private final Map<List<ValueType>, ValueType> m_argsToOutputs;
 
@@ -374,7 +380,8 @@ final class TypingTest {
 
         @Override
         public OperatorDescription description() {
-            throw new IllegalStateException("Should not be called during type inferrence");
+            return new OperatorDescription(this.name(), "Test function", List.of(), "Some return type",
+                "Some return description", List.of(), "Test category");
         }
     }
 }

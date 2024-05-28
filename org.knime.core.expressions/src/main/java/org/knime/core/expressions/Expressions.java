@@ -119,8 +119,8 @@ public final class Expressions {
         final Function<String, Optional<ValueType>> columnToType, //
         final Function<String, Optional<ValueType>> flowVarType //
     ) throws ExpressionCompileException {
-        return Typing.inferTypes(expression, columnToType, flowVarType, BuiltInFunctions.BUILT_IN_FUNCTIONS_GETTER,
-            BuiltInAggregations.BUILT_IN_AGGREGATIONS_GETTER);
+        return Typing.inferTypes(expression, columnToType, flowVarType, BuiltInFunctions.BUILT_IN_FUNCTIONS_MAP,
+            BuiltInAggregations.BUILT_IN_AGGREGATIONS_MAP);
     }
 
     /**

@@ -391,10 +391,10 @@ final class EvaluationTest {
     }
 
     private static final Function<String, Optional<TestColumn>> FIND_TEST_COLUMN =
-        TestUtils.enumFinder(TestColumn.values());
+        TestUtils.enumFinderAsFunction(TestColumn.values());
 
     private static final Function<String, Optional<TestFlowVariable>> FIND_TEST_FLOW_VARIABLE =
-        TestUtils.enumFinder(TestFlowVariable.values());
+        TestUtils.enumFinderAsFunction(TestFlowVariable.values());
 
     private static final Predicate<EvaluationContext> THROWING_BOOL_SUPPLIER = ctx -> {
         throw new AssertionError("should not call compute on missing values");
@@ -470,8 +470,8 @@ final class EvaluationTest {
         }
     }
 
-    private static final Function<String, Optional<ExpressionFunction>> TEST_FUNCTIONS =
-        TestUtils.enumFinder(TestFunctions.values(), ExpressionFunction.class);
+    private static final Map<String, ExpressionFunction> TEST_FUNCTIONS =
+        TestUtils.enumFinderAsMap(TestFunctions.values(), ExpressionFunction.class);
 
     private static enum TestFunctions implements ExpressionFunction {
             plus_100_fn(List.of(ValueType.INTEGER), ValueType.INTEGER,

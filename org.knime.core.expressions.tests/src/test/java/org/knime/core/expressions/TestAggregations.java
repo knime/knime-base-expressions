@@ -48,6 +48,8 @@
  */
 package org.knime.core.expressions;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -97,13 +99,15 @@ enum TestAggregations implements ColumnAggregation {
                 return Optional.of(ctx -> true);
             } //
         ), //
+        /** Exists only to check that error message for unknown aggregation suggests similar aggregation names */
+        RETURN_42_WITH_COL_TXXX((args, columnType) -> Optional.empty(), call -> Optional.empty());
     ;
 
-    public static final Function<String, Optional<ColumnAggregation>> TEST_AGGREGATIONS =
-        TestUtils.enumFinder(TestAggregations.values(), ColumnAggregation.class);
+    public static final Map<String, ColumnAggregation> TEST_AGGREGATIONS =
+        TestUtils.enumFinderAsMap(TestAggregations.values(), ColumnAggregation.class);
 
-    public static final Function<AggregationCall, Optional<Computer>> TEST_AGGREGATIONS_COMPUTER =
-        agg -> TestUtils.enumFinder(TestAggregations.values()).apply(agg.name()).flatMap(t -> t.computer(agg));
+    public static final Function<AggregationCall, Optional<Computer>> TEST_AGGREGATIONS_COMPUTER = agg -> TestUtils
+        .enumFinderAsFunction(TestAggregations.values()).apply(agg.name()).flatMap(t -> t.computer(agg));
 
     private final BiFunction<Arguments<ConstantAst>, Function<String, Optional<ValueType>>, Optional<ValueType>> m_returnType;
 
@@ -128,6 +132,7 @@ enum TestAggregations implements ColumnAggregation {
 
     @Override
     public OperatorDescription description() {
-        throw new IllegalStateException("Should not be called during tests");
+        return new OperatorDescription(this.name(), "Test aggregation", List.of(), "Some return type",
+            "Some return description", List.of(), "Test category");
     }
 }

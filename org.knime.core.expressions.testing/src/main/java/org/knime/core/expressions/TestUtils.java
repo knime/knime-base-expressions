@@ -54,9 +54,11 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.FlowVarAccess;
@@ -64,6 +66,7 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin Germany
@@ -88,8 +91,29 @@ public final class TestUtils {
      * @param values the enum values to search
      * @return a function that maps from a string to an optional enum value
      */
-    public static final <T extends Enum<T>> Function<String, Optional<T>> enumFinder(final T[] values) {
+    public static final <T extends Enum<T>> Function<String, Optional<T>> enumFinderAsFunction(final T[] values) {
         return name -> Arrays.stream(values).filter(t -> t.name().equals(name)).findFirst();
+    }
+
+    /**
+     * @param <O> the output type
+     * @param values the enum values to search
+     * @param outputType the output type
+     * @return a function that maps from a string to an optional enum value
+     */
+    public static final <T extends Enum<T>, O> Function<String, Optional<O>> enumFinderAsFunction(final T[] values,
+        final Class<O> outputType) {
+
+        return enumFinderAsFunction(values).andThen(o -> o.map(outputType::cast));
+    }
+
+    /**
+     * @param <T> the enum type
+     * @param values the enum values to search
+     * @return a map from a string to an enum value
+     */
+    public static final <T extends Enum<T>> Map<String, T> enumFinderAsMap(final T[] values) {
+        return Arrays.stream(values).collect(Collectors.toMap(e -> e.name(), e -> e));
     }
 
     /**
@@ -97,11 +121,21 @@ public final class TestUtils {
      * @param <O> the output type
      * @param values the enum values to search
      * @param outputType the output type
-     * @return a function that maps from a string to an optional enum value
+     * @return a map to an optional enum value
      */
-    public static final <T extends Enum<T>, O> Function<String, Optional<O>> enumFinder(final T[] values,
+    public static final <T extends Enum<T>, O> Map<String, O> enumFinderAsMap(final T[] values,
         final Class<O> outputType) {
-        return enumFinder(values).andThen(o -> o.map(outputType::cast));
+
+        return enumFinderAsMap(values).entrySet().stream() //
+            .collect(Collectors.toMap(Map.Entry::getKey, entry -> outputType.cast(entry.getValue())));
+    }
+
+    /**
+     * @param functions an array of {@link ExpressionFunction}
+     * @return a map that maps from the name to the function
+     */
+    public static Map<String, ExpressionFunction> functionsMappingFromArray(final ExpressionFunction[] functions) {
+        return Arrays.stream(functions).collect(Collectors.toMap(ExpressionFunction::name, f -> f));
     }
 
     /**
