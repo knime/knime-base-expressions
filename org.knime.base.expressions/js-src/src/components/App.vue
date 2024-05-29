@@ -7,6 +7,9 @@ import {
 import { getExpressionScriptingService } from "@/expressionScriptingService";
 import Button from "webapps-common/ui/components/Button.vue";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
+import SplitButton from "webapps-common/ui/components/SplitButton.vue";
+import DropdownIcon from "webapps-common/ui/assets/img/icons/arrow-dropdown.svg";
+import SubMenu from "webapps-common/ui/components/SubMenu.vue";
 import { onMounted, ref } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
@@ -28,6 +31,8 @@ import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage"
 const language = "knime-expression";
 
 const MIN_WIDTH_FUNCTION_CATALOG = 280;
+
+const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
 
 const scriptingService = getExpressionScriptingService();
 const store = useStore();
@@ -109,11 +114,12 @@ onMounted(() => {
   setActiveEditorStoreForAi(multiEditorComponentRef.value?.getEditorState());
 });
 
-const runExpressions = () => {
+const runExpressions = (rows: number) => {
   // TODO make this work with multiple editors
   if (store.expressionValid) {
     scriptingService.sendToService("runExpression", [
       multiEditorComponentRef.value?.getEditorState().text.value,
+      rows,
     ]);
   }
 };
@@ -149,7 +155,7 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
     multiEditorComponentRef.value?.getEditorState().editor.value?.hasTextFocus()
   ) {
     evt.preventDefault();
-    runExpressions();
+    runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN);
   }
 });
 </script>
@@ -192,14 +198,31 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
       </template>
       <!-- Controls for the very bottom bar -->
       <template #code-editor-controls>
-        <Button
-          primary
-          compact
-          :disabled="!inputsAvailable || !store.expressionValid"
-          @click="runExpressions"
-        >
-          <PlayIcon /> Run
-        </Button>
+        <SplitButton>
+          <Button
+            primary
+            compact
+            :disabled="!inputsAvailable || !store.expressionValid"
+            @click="runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN)"
+          >
+            <PlayIcon />Evaluate first
+            {{ DEFAULT_NUMBER_OF_ROWS_TO_RUN }} rows</Button
+          >
+          <SubMenu
+            :items="[
+              { text: 'Evaluate first 100 rows', metadata: 100 },
+              { text: 'Evaluate first 1000 rows', metadata: 1000 },
+            ]"
+            class="submenu"
+            button-title="Open my submenu with icons"
+            orientation="left"
+            @item-click="
+              (_evt: any, item: any) => runExpressions(item.metadata)
+            "
+          >
+            <DropdownIcon />
+          </SubMenu>
+        </SplitButton>
       </template>
     </ScriptingEditor>
   </main>
@@ -217,5 +240,18 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.submenu {
+  background-color: var(--knime-yellow);
+
+  &:focus-within,
+  &:hover {
+    background-color: var(--knime-masala);
+
+    & .submenu-toggle svg {
+      stroke: var(--knime-white);
+    }
+  }
 }
 </style>

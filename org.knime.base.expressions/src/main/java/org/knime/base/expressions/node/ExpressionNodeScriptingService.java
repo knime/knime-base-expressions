@@ -66,12 +66,12 @@ import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.container.filter.TableFilter;
 import org.knime.core.data.v2.RowRead;
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileError;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
@@ -91,7 +91,7 @@ import org.knime.scripting.editor.ScriptingService;
 @SuppressWarnings("restriction")
 final class ExpressionNodeScriptingService extends ScriptingService {
 
-    private static final int DIALOG_PREVIEW_NUM_ROWS = 10;
+    private static final int PREVIEW_MAX_ROWS = 1000;
 
     private static final Set<VariableType<?>> SUPPORTED_FLOW_VARIABLE_TYPES_SET =
         Arrays.stream(ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES).collect(Collectors.toSet());
@@ -201,7 +201,12 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             }
         }
 
-        public void runExpression(final String script) {
+        public void runExpression(final String script, final int numPreviewRows) {
+            // Let's just make sure that we don't get DOSed by the user
+            if (numPreviewRows > PREVIEW_MAX_ROWS) {
+                throw new IllegalArgumentException("Number of preview rows must be at most 1000");
+            }
+
             // Prepare the expression
             final Ast expression;
             try {
@@ -231,7 +236,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             }
 
             // Evaluate the expression
-            var numRows = (int)Math.min(DIALOG_PREVIEW_NUM_ROWS, inputTable.getBufferedTable().size());
+            var numRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
             var exprContext = new NodeExpressionMapperContext(this::getAvailableFlowVariables);
             var expressionResult = ExpressionRunnerUtils.applyExpression( //
                 inputTable.getVirtualTable().slice(0, numRows), //
