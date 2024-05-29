@@ -111,8 +111,7 @@ public final class ExpressionRunnerUtils {
      * Construct an output table containing the expression result based on the new column position settings
      *
      * @param inputTable the input of the node
-     * @param expressionResult the result of applying the expression
-     *            ({@link #applyAndMaterializeExpression(ReferenceTable, String, String, ExecutionContext)})
+     * @param expressionResult the result of applying the expression ({@link #applyAndMaterializeExpression})
      * @param columnInsertionMode settings of how the expression column should be inserted in the output table
      * @return the outputTable
      */
