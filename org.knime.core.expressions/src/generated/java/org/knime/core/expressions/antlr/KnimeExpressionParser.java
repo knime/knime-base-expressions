@@ -18,12 +18,12 @@ public class KnimeExpressionParser extends Parser {
 		new PredictionContextCache();
 	public static final int
 		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, LINE_COMMENT=7, WHITESPACE=8, 
-		BOOLEAN=9, INTEGER=10, FLOAT=11, STRING=12, MISSING=13, PLUS=14, MINUS=15, 
-		MULTIPLY=16, DIVIDE=17, FLOOR_DIVIDE=18, EXPONENTIATE=19, MODULO=20, LESS_THAN=21, 
-		LESS_THAN_EQUAL=22, GREATER_THAN=23, GREATER_THAN_EQUAL=24, EQUAL=25, 
-		NOT_EQUAL=26, AND=27, OR=28, NOT=29, MISSING_FALLBACK=30, AGGREGATION_IDENTIFIER=31, 
-		FUNCTION_IDENTIFIER=32, COLUMN_IDENTIFIER=33, FLOW_VAR_IDENTIFIER=34, 
-		NAMED_ARGUMENT_IDENTIFIER=35;
+		BOOLEAN=9, INTEGER=10, FLOAT=11, STRING=12, MISSING=13, MATHS_CONSTANT=14, 
+		PLUS=15, MINUS=16, MULTIPLY=17, DIVIDE=18, FLOOR_DIVIDE=19, EXPONENTIATE=20, 
+		MODULO=21, LESS_THAN=22, LESS_THAN_EQUAL=23, GREATER_THAN=24, GREATER_THAN_EQUAL=25, 
+		EQUAL=26, NOT_EQUAL=27, AND=28, OR=29, NOT=30, MISSING_FALLBACK=31, AGGREGATION_IDENTIFIER=32, 
+		FUNCTION_IDENTIFIER=33, COLUMN_IDENTIFIER=34, FLOW_VAR_IDENTIFIER=35, 
+		NAMED_ARGUMENT_IDENTIFIER=36;
 	public static final int
 		RULE_fullExpr = 0, RULE_atom = 1, RULE_expr = 2, RULE_functionArgs = 3, 
 		RULE_aggregationArgs = 4, RULE_positionalAggregationArgs = 5, RULE_namedAggregationArgs = 6, 
@@ -39,20 +39,20 @@ public class KnimeExpressionParser extends Parser {
 	private static String[] makeLiteralNames() {
 		return new String[] {
 			null, "'$$['", "']'", "'$['", "'('", "')'", "','", null, null, null, 
-			null, null, null, "'MISSING'", "'+'", "'-'", "'*'", "'/'", "'//'", "'**'", 
-			"'%'", "'<'", "'<='", "'>'", "'>='", null, null, "'and'", "'or'", "'not'", 
-			"'??'"
+			null, null, null, "'MISSING'", null, "'+'", "'-'", "'*'", "'/'", "'//'", 
+			"'**'", "'%'", "'<'", "'<='", "'>'", "'>='", null, null, "'and'", "'or'", 
+			"'not'", "'??'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, null, null, null, null, null, null, "LINE_COMMENT", "WHITESPACE", 
-			"BOOLEAN", "INTEGER", "FLOAT", "STRING", "MISSING", "PLUS", "MINUS", 
-			"MULTIPLY", "DIVIDE", "FLOOR_DIVIDE", "EXPONENTIATE", "MODULO", "LESS_THAN", 
-			"LESS_THAN_EQUAL", "GREATER_THAN", "GREATER_THAN_EQUAL", "EQUAL", "NOT_EQUAL", 
-			"AND", "OR", "NOT", "MISSING_FALLBACK", "AGGREGATION_IDENTIFIER", "FUNCTION_IDENTIFIER", 
-			"COLUMN_IDENTIFIER", "FLOW_VAR_IDENTIFIER", "NAMED_ARGUMENT_IDENTIFIER"
+			"BOOLEAN", "INTEGER", "FLOAT", "STRING", "MISSING", "MATHS_CONSTANT", 
+			"PLUS", "MINUS", "MULTIPLY", "DIVIDE", "FLOOR_DIVIDE", "EXPONENTIATE", 
+			"MODULO", "LESS_THAN", "LESS_THAN_EQUAL", "GREATER_THAN", "GREATER_THAN_EQUAL", 
+			"EQUAL", "NOT_EQUAL", "AND", "OR", "NOT", "MISSING_FALLBACK", "AGGREGATION_IDENTIFIER", 
+			"FUNCTION_IDENTIFIER", "COLUMN_IDENTIFIER", "FLOW_VAR_IDENTIFIER", "NAMED_ARGUMENT_IDENTIFIER"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -161,6 +161,7 @@ public class KnimeExpressionParser extends Parser {
 		public TerminalNode FLOAT() { return getToken(KnimeExpressionParser.FLOAT, 0); }
 		public TerminalNode STRING() { return getToken(KnimeExpressionParser.STRING, 0); }
 		public TerminalNode MISSING() { return getToken(KnimeExpressionParser.MISSING, 0); }
+		public TerminalNode MATHS_CONSTANT() { return getToken(KnimeExpressionParser.MATHS_CONSTANT, 0); }
 		public AtomContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -189,7 +190,7 @@ public class KnimeExpressionParser extends Parser {
 			{
 			setState(19);
 			_la = _input.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 15872L) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 32256L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -529,7 +530,7 @@ public class KnimeExpressionParser extends Parser {
 				setState(45);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 32749174298L) != 0)) {
+				if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 65498349082L) != 0)) {
 					{
 					setState(44);
 					functionArgs();
@@ -595,6 +596,7 @@ public class KnimeExpressionParser extends Parser {
 			case FLOAT:
 			case STRING:
 			case MISSING:
+			case MATHS_CONSTANT:
 				{
 				_localctx = new AtomExprContext(_localctx);
 				_ctx = _localctx;
@@ -651,7 +653,7 @@ public class KnimeExpressionParser extends Parser {
 						setState(71);
 						((BinaryOpContext)_localctx).op = _input.LT(1);
 						_la = _input.LA(1);
-						if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 1507328L) != 0)) ) {
+						if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 3014656L) != 0)) ) {
 							((BinaryOpContext)_localctx).op = (Token)_errHandler.recoverInline(this);
 						}
 						else {
@@ -693,7 +695,7 @@ public class KnimeExpressionParser extends Parser {
 						setState(77);
 						((BinaryOpContext)_localctx).op = _input.LT(1);
 						_la = _input.LA(1);
-						if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 132120576L) != 0)) ) {
+						if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 264241152L) != 0)) ) {
 							((BinaryOpContext)_localctx).op = (Token)_errHandler.recoverInline(this);
 						}
 						else {
@@ -867,6 +869,7 @@ public class KnimeExpressionParser extends Parser {
 			case FLOAT:
 			case STRING:
 			case MISSING:
+			case MATHS_CONSTANT:
 				enterOuterAlt(_localctx, 1);
 				{
 				{
@@ -1142,7 +1145,7 @@ public class KnimeExpressionParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001#\u0087\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001$\u0087\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0001"+
 		"\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0002\u0001"+
@@ -1165,41 +1168,41 @@ public class KnimeExpressionParser extends Parser {
 		"\u0006\u0001\u0006\u0001\u0006\u0005\u0006\u007f\b\u0006\n\u0006\f\u0006"+
 		"\u0082\t\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0000\u0001"+
 		"\u0004\b\u0000\u0002\u0004\u0006\b\n\f\u000e\u0000\u0004\u0001\u0000\t"+
-		"\r\u0002\u0000\u0010\u0012\u0014\u0014\u0001\u0000\u000e\u000f\u0001\u0000"+
-		"\u0015\u001a\u0099\u0000\u0010\u0001\u0000\u0000\u0000\u0002\u0013\u0001"+
-		"\u0000\u0000\u0000\u0004>\u0001\u0000\u0000\u0000\u0006Z\u0001\u0000\u0000"+
-		"\u0000\bq\u0001\u0000\u0000\u0000\ns\u0001\u0000\u0000\u0000\f{\u0001"+
-		"\u0000\u0000\u0000\u000e\u0083\u0001\u0000\u0000\u0000\u0010\u0011\u0003"+
-		"\u0004\u0002\u0000\u0011\u0012\u0005\u0000\u0000\u0001\u0012\u0001\u0001"+
-		"\u0000\u0000\u0000\u0013\u0014\u0007\u0000\u0000\u0000\u0014\u0003\u0001"+
-		"\u0000\u0000\u0000\u0015\u001e\u0006\u0002\uffff\uffff\u0000\u0016\u001f"+
-		"\u0005\"\u0000\u0000\u0017\u0019\u0005\u0001\u0000\u0000\u0018\u0017\u0001"+
-		"\u0000\u0000\u0000\u0019\u001a\u0001\u0000\u0000\u0000\u001a\u0018\u0001"+
-		"\u0000\u0000\u0000\u001a\u001b\u0001\u0000\u0000\u0000\u001b\u001c\u0001"+
-		"\u0000\u0000\u0000\u001c\u001d\u0005\f\u0000\u0000\u001d\u001f\u0005\u0002"+
-		"\u0000\u0000\u001e\u0016\u0001\u0000\u0000\u0000\u001e\u0018\u0001\u0000"+
-		"\u0000\u0000\u001f?\u0001\u0000\u0000\u0000 )\u0005!\u0000\u0000!#\u0005"+
-		"\u0003\u0000\u0000\"!\u0001\u0000\u0000\u0000#$\u0001\u0000\u0000\u0000"+
-		"$\"\u0001\u0000\u0000\u0000$%\u0001\u0000\u0000\u0000%&\u0001\u0000\u0000"+
-		"\u0000&\'\u0005\f\u0000\u0000\')\u0005\u0002\u0000\u0000( \u0001\u0000"+
-		"\u0000\u0000(\"\u0001\u0000\u0000\u0000)?\u0001\u0000\u0000\u0000*+\u0005"+
-		" \u0000\u0000+-\u0005\u0004\u0000\u0000,.\u0003\u0006\u0003\u0000-,\u0001"+
-		"\u0000\u0000\u0000-.\u0001\u0000\u0000\u0000./\u0001\u0000\u0000\u0000"+
-		"/?\u0005\u0005\u0000\u000001\u0005\u001f\u0000\u000012\u0005\u0004\u0000"+
+		"\u000e\u0002\u0000\u0011\u0013\u0015\u0015\u0001\u0000\u000f\u0010\u0001"+
+		"\u0000\u0016\u001b\u0099\u0000\u0010\u0001\u0000\u0000\u0000\u0002\u0013"+
+		"\u0001\u0000\u0000\u0000\u0004>\u0001\u0000\u0000\u0000\u0006Z\u0001\u0000"+
+		"\u0000\u0000\bq\u0001\u0000\u0000\u0000\ns\u0001\u0000\u0000\u0000\f{"+
+		"\u0001\u0000\u0000\u0000\u000e\u0083\u0001\u0000\u0000\u0000\u0010\u0011"+
+		"\u0003\u0004\u0002\u0000\u0011\u0012\u0005\u0000\u0000\u0001\u0012\u0001"+
+		"\u0001\u0000\u0000\u0000\u0013\u0014\u0007\u0000\u0000\u0000\u0014\u0003"+
+		"\u0001\u0000\u0000\u0000\u0015\u001e\u0006\u0002\uffff\uffff\u0000\u0016"+
+		"\u001f\u0005#\u0000\u0000\u0017\u0019\u0005\u0001\u0000\u0000\u0018\u0017"+
+		"\u0001\u0000\u0000\u0000\u0019\u001a\u0001\u0000\u0000\u0000\u001a\u0018"+
+		"\u0001\u0000\u0000\u0000\u001a\u001b\u0001\u0000\u0000\u0000\u001b\u001c"+
+		"\u0001\u0000\u0000\u0000\u001c\u001d\u0005\f\u0000\u0000\u001d\u001f\u0005"+
+		"\u0002\u0000\u0000\u001e\u0016\u0001\u0000\u0000\u0000\u001e\u0018\u0001"+
+		"\u0000\u0000\u0000\u001f?\u0001\u0000\u0000\u0000 )\u0005\"\u0000\u0000"+
+		"!#\u0005\u0003\u0000\u0000\"!\u0001\u0000\u0000\u0000#$\u0001\u0000\u0000"+
+		"\u0000$\"\u0001\u0000\u0000\u0000$%\u0001\u0000\u0000\u0000%&\u0001\u0000"+
+		"\u0000\u0000&\'\u0005\f\u0000\u0000\')\u0005\u0002\u0000\u0000( \u0001"+
+		"\u0000\u0000\u0000(\"\u0001\u0000\u0000\u0000)?\u0001\u0000\u0000\u0000"+
+		"*+\u0005!\u0000\u0000+-\u0005\u0004\u0000\u0000,.\u0003\u0006\u0003\u0000"+
+		"-,\u0001\u0000\u0000\u0000-.\u0001\u0000\u0000\u0000./\u0001\u0000\u0000"+
+		"\u0000/?\u0005\u0005\u0000\u000001\u0005 \u0000\u000012\u0005\u0004\u0000"+
 		"\u000023\u0003\b\u0004\u000034\u0005\u0005\u0000\u00004?\u0001\u0000\u0000"+
-		"\u000056\u0005\u000f\u0000\u00006?\u0003\u0004\u0002\t78\u0005\u001d\u0000"+
+		"\u000056\u0005\u0010\u0000\u00006?\u0003\u0004\u0002\t78\u0005\u001e\u0000"+
 		"\u00008?\u0003\u0004\u0002\u00059:\u0005\u0004\u0000\u0000:;\u0003\u0004"+
 		"\u0002\u0000;<\u0005\u0005\u0000\u0000<?\u0001\u0000\u0000\u0000=?\u0003"+
 		"\u0002\u0001\u0000>\u0015\u0001\u0000\u0000\u0000>(\u0001\u0000\u0000"+
 		"\u0000>*\u0001\u0000\u0000\u0000>0\u0001\u0000\u0000\u0000>5\u0001\u0000"+
 		"\u0000\u0000>7\u0001\u0000\u0000\u0000>9\u0001\u0000\u0000\u0000>=\u0001"+
 		"\u0000\u0000\u0000?W\u0001\u0000\u0000\u0000@A\n\u000b\u0000\u0000AB\u0005"+
-		"\u001e\u0000\u0000BV\u0003\u0004\u0002\fCD\n\n\u0000\u0000DE\u0005\u0013"+
+		"\u001f\u0000\u0000BV\u0003\u0004\u0002\fCD\n\n\u0000\u0000DE\u0005\u0014"+
 		"\u0000\u0000EV\u0003\u0004\u0002\nFG\n\b\u0000\u0000GH\u0007\u0001\u0000"+
 		"\u0000HV\u0003\u0004\u0002\tIJ\n\u0007\u0000\u0000JK\u0007\u0002\u0000"+
 		"\u0000KV\u0003\u0004\u0002\bLM\n\u0006\u0000\u0000MN\u0007\u0003\u0000"+
-		"\u0000NV\u0003\u0004\u0002\u0007OP\n\u0004\u0000\u0000PQ\u0005\u001b\u0000"+
-		"\u0000QV\u0003\u0004\u0002\u0005RS\n\u0003\u0000\u0000ST\u0005\u001c\u0000"+
+		"\u0000NV\u0003\u0004\u0002\u0007OP\n\u0004\u0000\u0000PQ\u0005\u001c\u0000"+
+		"\u0000QV\u0003\u0004\u0002\u0005RS\n\u0003\u0000\u0000ST\u0005\u001d\u0000"+
 		"\u0000TV\u0003\u0004\u0002\u0004U@\u0001\u0000\u0000\u0000UC\u0001\u0000"+
 		"\u0000\u0000UF\u0001\u0000\u0000\u0000UI\u0001\u0000\u0000\u0000UL\u0001"+
 		"\u0000\u0000\u0000UO\u0001\u0000\u0000\u0000UR\u0001\u0000\u0000\u0000"+
@@ -1223,7 +1226,7 @@ public class KnimeExpressionParser extends Parser {
 		"\u0000\u0000}\u007f\u0003\u000e\u0007\u0000~|\u0001\u0000\u0000\u0000"+
 		"\u007f\u0082\u0001\u0000\u0000\u0000\u0080~\u0001\u0000\u0000\u0000\u0080"+
 		"\u0081\u0001\u0000\u0000\u0000\u0081\r\u0001\u0000\u0000\u0000\u0082\u0080"+
-		"\u0001\u0000\u0000\u0000\u0083\u0084\u0005#\u0000\u0000\u0084\u0085\u0003"+
+		"\u0001\u0000\u0000\u0000\u0083\u0084\u0005$\u0000\u0000\u0084\u0085\u0003"+
 		"\u0002\u0001\u0000\u0085\u000f\u0001\u0000\u0000\u0000\u0010\u001a\u001e"+
 		"$(->UW_chkoqx\u0080";
 	public static final ATN _ATN =

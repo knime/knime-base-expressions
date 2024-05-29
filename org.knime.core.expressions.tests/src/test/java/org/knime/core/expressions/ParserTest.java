@@ -110,6 +110,20 @@ final class ParserTest {
 
     enum ValidExpr {
 
+            // Maths constants
+            MATHS_CONSTANT_E("E", FLOAT(MathsConstantValue.E.value().doubleValue())),
+            MATHS_CONSTANT_PI("PI", FLOAT(MathsConstantValue.PI.value().doubleValue())),
+            MATHS_CONSTANT_NaN("NaN", FLOAT(MathsConstantValue.NaN.value().doubleValue())),
+            MATHS_CONSTANT_INF("INF", FLOAT(MathsConstantValue.INF.value().doubleValue())),
+            MATHS_CONSTANT_MIN_INT("MIN_INT", INT(MathsConstantValue.MIN_INT.value().longValue())),
+            MATHS_CONSTANT_MAX_INT("MAX_INT", INT(MathsConstantValue.MAX_INT.value().longValue())),
+            MATHS_CONSTANT_MIN_FLOAT("MIN_FLOAT", FLOAT(MathsConstantValue.MIN_FLOAT.value().doubleValue())),
+            MATHS_CONSTANT_MAX_FLOAT("MAX_FLOAT", FLOAT(MathsConstantValue.MAX_FLOAT.value().doubleValue())),
+            MATHS_CONSTANT_MIN_POSITIVE_FLOAT("MIN_POSITIVE_FLOAT",
+                FLOAT(MathsConstantValue.MIN_POSITIVE_FLOAT.value().doubleValue())),
+            MATHS_CONSTANT_MIN_NORMAL_FLOAT("MIN_NORMAL_FLOAT",
+                FLOAT(MathsConstantValue.MIN_NORMAL_FLOAT.value().doubleValue())),
+
             // Comments
             COMMENT_AT_START("# some comment\n1\n#some other comment", INT(1)),
             COMMENT_AT_END("1 # some comment", INT(1)),
@@ -263,6 +277,8 @@ final class ParserTest {
             MIXING_MISSING_IN_STR("\"MISSING\"", STR("MISSING")), //
             MIXING_NUMBERS_IN("\"1.2\"", STR("1.2")), //
             MIXING_EXPR_IN_COL_ACCESS("$[\"1 + 2\"]", COL("1 + 2")), //
+            AGG_WITH_CONSTANT_IN_NAME("AB_PI(1)", AGG("AB_PI", INT(1))), //
+            AGG_STARTING_WITH_CONSTANT_NAME("PI_AB(10)", AGG("PI_AB", INT(10))), //
 
             // Combined examples
             COMPLEX_1("not ($email = MISSING) or ($phone_number != MISSING and $opt_in_status == true)", //
