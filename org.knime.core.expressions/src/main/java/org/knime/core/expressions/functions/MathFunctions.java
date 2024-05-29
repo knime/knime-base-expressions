@@ -1852,7 +1852,7 @@ public final class MathFunctions {
      * @return
      */
     private static IntBinaryOperator nanPropagatingStreamExtremumReducer(final ExtremumType extremum,
-                                                                         final Double[] values) {
+        final Double[] values) {
         return (a, b) -> {
             if (Double.isNaN(values[a])) {
                 return a;

@@ -933,7 +933,8 @@ final class MathFunctionTests {
             .impl("positive inf", List.of(arg(Float.POSITIVE_INFINITY), arg(1)), Float.POSITIVE_INFINITY) //
             .impl("negative inf", List.of(arg(Float.NEGATIVE_INFINITY), arg(1)), Float.NEGATIVE_INFINITY) //
             .impl("both infs", List.of(arg(Float.POSITIVE_INFINITY), arg(Float.NEGATIVE_INFINITY)), Float.NaN) //
-            .impl("both infs with something between", List.of(arg(Float.POSITIVE_INFINITY), arg(42), arg(Float.NEGATIVE_INFINITY)), 42.0) //
+            .impl("both infs with something between",
+                List.of(arg(Float.POSITIVE_INFINITY), arg(42), arg(Float.NEGATIVE_INFINITY)), 42.0) //
             .impl("missing INTEGER", List.of(misInteger(), arg(1))) //
             .impl("missing FLOAT", List.of(misFloat(), arg(1.5))) //
             .impl("even NaN", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
@@ -985,9 +986,9 @@ final class MathFunctionTests {
             .implWithTolerance("peak value without deviation", List.of(arg(0), arg(0)), 1 / (Math.sqrt(2 * Math.PI))) //
             .implWithTolerance("far away", List.of(arg(0), arg(-1000), arg(1)), 0) //
             .implWithTolerance("value 1,0", List.of(arg(1), arg(0)), 0.241970725, -10 ^ -6) //
-            .impl("NaN",List.of(arg(Float.NaN), arg(1), arg(1)), Float.NaN ) //
-            .impl("NaN 2",List.of(arg(1), arg(Float.NaN), arg(1)), Float.NaN ) //
-            .impl("NaN 3",List.of(arg(1), arg(2), arg(Float.NaN)), Float.NaN ) //
+            .impl("NaN", List.of(arg(Float.NaN), arg(1), arg(1)), Float.NaN) //
+            .impl("NaN 2", List.of(arg(1), arg(Float.NaN), arg(1)), Float.NaN) //
+            .impl("NaN 3", List.of(arg(1), arg(2), arg(Float.NaN)), Float.NaN) //
             .tests();
     }
 
@@ -1010,9 +1011,9 @@ final class MathFunctionTests {
             .implWithTolerance("value 1", List.of(arg(1), arg(0)), 0.842700793, -10 ^ -6) //
             .implWithTolerance("value 2", List.of(arg(2), arg(0)), 0.995322265, -10 ^ -6) //
             .implWithTolerance("value 3", List.of(arg(3), arg(0)), 0.999977909, -10 ^ -6) //
-            .impl("NaN",List.of(arg(Float.NaN), arg(1), arg(1)), Float.NaN ) //
-            .impl("NaN 2",List.of(arg(1), arg(Float.NaN), arg(1)), Float.NaN ) //
-            .impl("NaN 3",List.of(arg(1), arg(2), arg(Float.NaN)), Float.NaN ) //
+            .impl("NaN", List.of(arg(Float.NaN), arg(1), arg(1)), Float.NaN) //
+            .impl("NaN 2", List.of(arg(1), arg(Float.NaN), arg(1)), Float.NaN) //
+            .impl("NaN 3", List.of(arg(1), arg(2), arg(Float.NaN)), Float.NaN) //
             .tests();
     }
 
