@@ -77,8 +77,8 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
-import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.OperatorCategory;
 
 /**
  * Implementation of built-in functions that do math.
@@ -1882,7 +1882,7 @@ public final class MathFunctions {
     public static final ExpressionFunction IS_NAN = functionBuilder() //
         .name("is_nan") //
         .description("""
-                Check if a number is NaN (i.e. not a number).
+                Check if a number is `NaN` (i.e. not a number).
 
                 Examples:
                 * `is_nan(0)` returns `false`
@@ -1892,7 +1892,7 @@ public final class MathFunctions {
         .keywords("NaN") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isFloatOrOpt())) //
-        .returnType("true if x is NaN, false otherwise", "BOOLEAN", args -> BOOLEAN) //
+        .returnType("`true` if x is `NaN`, `false` otherwise", "BOOLEAN", args -> BOOLEAN) //
         .impl(MathFunctions::isNanImpl) //
         .build();
 
@@ -1905,7 +1905,7 @@ public final class MathFunctions {
     public static final ExpressionFunction NAN_TO_MISSING = functionBuilder() //
         .name("nan_to_missing") //
         .description("""
-                Convert NaN to MISSING. If the input is not NaN, the output will be
+                Convert `NaN` to `MISSING`. If the input is not `NaN`, the output will be
                 the same as the input.
 
                 Examples:
@@ -1916,7 +1916,7 @@ public final class MathFunctions {
         .keywords("NaN") //
         .category(CATEGORY.name()) //
         .args(arg("x", "the number", isFloatOrOpt())) //
-        .returnType("x if x is not NaN, MISSING otherwise", "NUMBER?", args -> FLOAT(anyOptional(args))) //
+        .returnType("x if x is not `NaN`, `MISSING` otherwise", "NUMBER?", args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::nanToMissingImpl) //
         .build();
 

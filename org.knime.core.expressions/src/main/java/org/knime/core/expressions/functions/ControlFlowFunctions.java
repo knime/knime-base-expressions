@@ -67,9 +67,9 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.EvaluationContext;
 
 /**
  * Implementation of built-in functions that control the flow.
@@ -94,7 +94,7 @@ public final class ControlFlowFunctions {
                     `if(conditionA, exprIfATrue, ...<condition,exprIfTrue>, exprIfAllFalse)`  \s
 
                     The first expression after a fulfilled condition will be returned. \
-                    If no condition evaluates to `True` the `else` case, i.e. `exprIfAllFalse` will be returned.   \
+                    If no condition evaluates to `true` the `else` case, i.e. `exprIfAllFalse` will be returned.   \
                     Conditions needs to be boolean expressions and all branch expressions must have the same type. \
                     If integer expressions are used, they will be casted to float expressions if necessary.  \s
 
@@ -123,9 +123,9 @@ public final class ControlFlowFunctions {
         .category(CATEGORY.name()) //
         .args( //
             arg("condition", "Boolean condition", isBoolean()), //
-            arg("exprIfTrue", "Expression if condition is `True`", isAnything()), //
+            arg("exprIfTrue", "Expression if condition is `true`", isAnything()), //
             vararg("additionalConditionsAndDefaultElseCase",
-                "Pairs of conditions and related expressions " + "executed when the condition evaluates to `True`. "
+                "Pairs of conditions and related expressions " + "executed when the condition evaluates to `true`. "
                     + "Last argument is the mandatory default when no conditions are fulfilled",
                 isAnything()) //
         ) //
