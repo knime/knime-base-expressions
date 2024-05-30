@@ -111,18 +111,15 @@ final class ParserTest {
     enum ValidExpr {
 
             // Maths constants
-            MATHS_CONSTANT_E("E", FLOAT(MathsConstantValue.E.value().doubleValue())),
-            MATHS_CONSTANT_PI("PI", FLOAT(MathsConstantValue.PI.value().doubleValue())),
-            MATHS_CONSTANT_NaN("NaN", FLOAT(MathsConstantValue.NaN.value().doubleValue())),
-            MATHS_CONSTANT_INF("INF", FLOAT(MathsConstantValue.INF.value().doubleValue())),
-            MATHS_CONSTANT_MIN_INT("MIN_INT", INT(MathsConstantValue.MIN_INT.value().longValue())),
-            MATHS_CONSTANT_MAX_INT("MAX_INT", INT(MathsConstantValue.MAX_INT.value().longValue())),
-            MATHS_CONSTANT_MIN_FLOAT("MIN_FLOAT", FLOAT(MathsConstantValue.MIN_FLOAT.value().doubleValue())),
-            MATHS_CONSTANT_MAX_FLOAT("MAX_FLOAT", FLOAT(MathsConstantValue.MAX_FLOAT.value().doubleValue())),
-            MATHS_CONSTANT_MIN_POSITIVE_FLOAT("MIN_POSITIVE_FLOAT",
-                FLOAT(MathsConstantValue.MIN_POSITIVE_FLOAT.value().doubleValue())),
-            MATHS_CONSTANT_MIN_NORMAL_FLOAT("MIN_NORMAL_FLOAT",
-                FLOAT(MathsConstantValue.MIN_NORMAL_FLOAT.value().doubleValue())),
+            MATHS_CONSTANT_E("E", FLOAT(Math.E)), //
+            MATHS_CONSTANT_PI("PI", FLOAT(Math.PI)), //
+            MATHS_CONSTANT_NaN("NaN", FLOAT(Double.NaN)), //
+            MATHS_CONSTANT_INF("INF", FLOAT(Double.POSITIVE_INFINITY)), //
+            MATHS_CONSTANT_MIN_INT("MIN_INTEGER", INT(Long.MIN_VALUE)), //
+            MATHS_CONSTANT_MAX_INT("MAX_INTEGER", INT(Long.MAX_VALUE)), //
+            MATHS_CONSTANT_MIN_FLOAT("MIN_FLOAT", FLOAT(-Double.MAX_VALUE)), //
+            MATHS_CONSTANT_MAX_FLOAT("MAX_FLOAT", FLOAT(Double.MAX_VALUE)), //
+            MATHS_CONSTANT_TINY_FLOAT("TINY_FLOAT", FLOAT(Double.MIN_NORMAL)), //
 
             // Comments
             COMMENT_AT_START("# some comment\n1\n#some other comment", INT(1)),

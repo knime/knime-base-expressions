@@ -60,16 +60,25 @@ import org.knime.core.expressions.ValueType.NativeValueType;
  */
 public enum MathsConstantValue {
 
+        /** mathematical constant pi. */
         PI(Math.PI), //
+        /** mathematical constant e. */
         E(Math.E), //
+        /** positive infinity. */
         INF(Double.POSITIVE_INFINITY), //
+        /** not a number */
         NaN(Double.NaN), // NOSONAR NaN should be written in this way
-        MIN_INT(Long.MIN_VALUE), //
-        MAX_INT(Long.MAX_VALUE), //
+        /** the smallest INTEGER number */
+        MIN_INTEGER(Long.MIN_VALUE), //
+        /** the largest INTEGER number */
+        MAX_INTEGER(Long.MAX_VALUE), //
+        /** the smallest FLOAT number */
         MIN_FLOAT(-Double.MAX_VALUE), //
+        /** the largest FLOAT number */
         MAX_FLOAT(Double.MAX_VALUE), //
-        MIN_POSITIVE_FLOAT(Double.MIN_VALUE), //
-        MIN_NORMAL_FLOAT(Double.MIN_NORMAL); //
+        /** the smallest positive normal FLOAT number */
+        TINY_FLOAT(Double.MIN_NORMAL), //
+    ;
 
     private final Number m_value;
 
