@@ -216,7 +216,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
             // Apply the expression on the input table using a ColumnarVirtualTable
             List<String> warnings = new ArrayList<>();
-            EvaluationContext wml = warning -> warnings.add(warning);
+            EvaluationContext ctx = warning -> warnings.add(warning);
 
             var inputTable = getInputTable();
 
@@ -238,7 +238,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                 expression, //
                 "result", // column name is irrelevant
                 exprContext, //
-                wml);
+                ctx);
 
             var result = new String[numRows];
             try (var expressionResultTable =

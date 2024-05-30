@@ -162,7 +162,7 @@ class ExpressionNodeModel extends NodeModel {
             m_settings.getActiveOutputColumn());
 
         var messageBuilder = createMessageBuilder();
-        EvaluationContext wml = messageBuilder::addTextIssue;
+        EvaluationContext ctx = messageBuilder::addTextIssue;
 
         var inTable = inData[0];
 
@@ -179,7 +179,7 @@ class ExpressionNodeModel extends NodeModel {
         // Evaluate the expression and materialize the result
         var exprContext = new NodeExpressionMapperContext(this::getAvailableInputFlowVariables);
         var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
-            newColumnPosition.columnName(), exec, exprContext, wml);
+            newColumnPosition.columnName(), exec, exprContext, ctx);
         var output = ExpressionRunnerUtils.constructOutputTable(inRefTable.getVirtualTable(),
             expressionResult.getVirtualTable(), newColumnPosition);
 
@@ -256,20 +256,20 @@ class ExpressionNodeModel extends NodeModel {
             var variableType = variable.getVariableType();
 
             if (variableType == VariableType.BooleanType.INSTANCE) {
-                return Computer.BooleanComputer.of(wml -> variable.getValue(VariableType.BooleanType.INSTANCE),
-                    wml -> false);
+                return Computer.BooleanComputer.of(ctx -> variable.getValue(VariableType.BooleanType.INSTANCE),
+                    ctx -> false);
             } else if (variableType == VariableType.DoubleType.INSTANCE) {
-                return Computer.FloatComputer.of(wml -> variable.getValue(VariableType.DoubleType.INSTANCE),
-                    wml -> false);
+                return Computer.FloatComputer.of(ctx -> variable.getValue(VariableType.DoubleType.INSTANCE),
+                    ctx -> false);
             } else if (variableType == VariableType.LongType.INSTANCE) {
-                return Computer.IntegerComputer.of(wml -> variable.getValue(VariableType.LongType.INSTANCE),
-                    wml -> false);
+                return Computer.IntegerComputer.of(ctx -> variable.getValue(VariableType.LongType.INSTANCE),
+                    ctx -> false);
             } else if (variableType == VariableType.IntType.INSTANCE) {
-                return Computer.IntegerComputer.of(wml -> variable.getValue(VariableType.IntType.INSTANCE),
-                    wml -> false);
+                return Computer.IntegerComputer.of(ctx -> variable.getValue(VariableType.IntType.INSTANCE),
+                    ctx -> false);
             } else if (variableType == VariableType.StringType.INSTANCE) {
-                return Computer.StringComputer.of(wml -> variable.getValue(VariableType.StringType.INSTANCE),
-                    wml -> false);
+                return Computer.StringComputer.of(ctx -> variable.getValue(VariableType.StringType.INSTANCE),
+                    ctx -> false);
             } else {
                 throw new IllegalArgumentException("Unsupported variable type: " + variableType);
             }

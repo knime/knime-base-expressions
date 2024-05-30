@@ -108,7 +108,7 @@ final class MaxColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
-            return Computer.FloatComputer.of(wml -> m_max, wml -> m_isMissing);
+            return Computer.FloatComputer.of(ctx -> m_max, ctx -> m_isMissing);
         }
     }
 
@@ -130,7 +130,7 @@ final class MaxColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
-            return Computer.IntegerComputer.of(wml -> m_max, wml -> m_isMissing);
+            return Computer.IntegerComputer.of(ctx -> m_max, ctx -> m_isMissing);
         }
     }
 }

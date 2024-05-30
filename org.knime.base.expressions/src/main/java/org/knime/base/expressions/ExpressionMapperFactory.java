@@ -126,11 +126,11 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
      * @param inputTableSchema
      * @param outputColumnName
      * @param exprContext
-     * @param wml
+     * @param ctx
      */
     public ExpressionMapperFactory(final Ast ast, final ColumnarValueSchema inputTableSchema,
         final String outputColumnName, final ExpressionMapperContext exprContext,
-        final EvaluationContext wml) {
+        final EvaluationContext ctx) {
         m_outputColumnName = outputColumnName;
 
         try {
@@ -152,7 +152,7 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
                 };
 
             m_mapperFactory = Exec.createMapperFactory(ast, columnIndexToComputerFactory,
-                exprContext::flowVariableToComputer, exprContext::aggregationToComputer, wml);
+                exprContext::flowVariableToComputer, exprContext::aggregationToComputer, ctx);
 
         } catch (ExpressionCompileException ex) {
             throw new IllegalArgumentException(ex);

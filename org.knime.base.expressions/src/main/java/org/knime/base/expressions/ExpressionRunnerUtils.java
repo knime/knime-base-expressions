@@ -67,8 +67,8 @@ import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.Expressions;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -264,15 +264,15 @@ public final class ExpressionRunnerUtils {
      * @param input the input table
      * @param expression the expression. Must have {@link Expressions#inferTypes inferred types}.
      * @param outputColumnName the name of the column that will contain the result of the expression
-     * @param exprContext the expression evaluation context
-     * @param wml the warning message listener
+     * @param exprContext a context for the {@link ExpressionMapperFactory}
+     * @param ctx the {@link EvaluationContext}
      * @return the result of the expression
      */
     public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final Ast expression,
         final String outputColumnName, final ExpressionMapperContext exprContext,
-        final EvaluationContext wml) {
+        final EvaluationContext ctx) {
         var expressionMapperFactory =
-            new ExpressionMapperFactory(expression, input.getSchema(), outputColumnName, exprContext, wml);
+            new ExpressionMapperFactory(expression, input.getSchema(), outputColumnName, exprContext, ctx);
         return input.selectColumns(0)
             .append(input.map(expressionMapperFactory, expressionMapperFactory.getInputColumnIndices()));
     }
@@ -285,8 +285,8 @@ public final class ExpressionRunnerUtils {
      * @param expression the expression. Must have {@link Expressions#inferTypes inferred types}.
      * @param outputColumnName the name of the column that will contain the result of the expression
      * @param exec the execution context
-     * @param exprContext the expression evaluation context
-     * @param wml the warning message listener
+     * @param exprContext a context for the {@link ExpressionMapperFactory}
+     * @param ctx the {@link EvaluationContext}
      * @return the materialized result of the expression
      * @throws CanceledExecutionException if the execution was canceled
      * @throws VirtualTableIncompatibleException if the input table is not compatible with the expression
@@ -297,11 +297,11 @@ public final class ExpressionRunnerUtils {
         final String outputColumnName, //
         final ExecutionContext exec, //
         final ExpressionMapperContext exprContext, //
-        final EvaluationContext wml //
+        final EvaluationContext ctx //
     ) throws CanceledExecutionException, VirtualTableIncompatibleException {
         var numRows = refTable.getBufferedTable().size();
         var expressionResultVirtual =
-            applyExpression(refTable.getVirtualTable(), expression, outputColumnName, exprContext, wml);
+            applyExpression(refTable.getVirtualTable(), expression, outputColumnName, exprContext, ctx);
         return ColumnarVirtualTableMaterializer.materializer() //
             .sources(refTable.getSources()) //
             .materializeRowKey(false) //
