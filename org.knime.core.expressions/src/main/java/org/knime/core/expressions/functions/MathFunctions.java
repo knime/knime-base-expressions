@@ -78,7 +78,7 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.OperatorCategory;
-import org.knime.core.expressions.WarningMessageListener;
+import org.knime.core.expressions.EvaluationContext;
 
 /**
  * Implementation of built-in functions that do math.
@@ -229,7 +229,7 @@ public final class MathFunctions {
     private static Computer argmaxImpl(final List<Computer> args) {
         boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
 
-        ToLongFunction<WarningMessageListener> supplier;
+        ToLongFunction<EvaluationContext> supplier;
 
         if (allArgsAreIntegers) {
             supplier = wml -> {
@@ -296,7 +296,7 @@ public final class MathFunctions {
     private static Computer argminImpl(final List<Computer> args) {
         boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
 
-        ToLongFunction<WarningMessageListener> supplier;
+        ToLongFunction<EvaluationContext> supplier;
 
         if (allArgsAreIntegers) {
             supplier = wml -> {
@@ -677,7 +677,7 @@ public final class MathFunctions {
     private static Computer asinhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        ToDoubleFunction<WarningMessageListener> value = wml -> {
+        ToDoubleFunction<EvaluationContext> value = wml -> {
             var cC = c.compute(wml);
 
             return Math.log(cC + Math.sqrt(cC * cC + 1));
@@ -712,7 +712,7 @@ public final class MathFunctions {
     private static Computer acoshImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        ToDoubleFunction<WarningMessageListener> value = wml -> {
+        ToDoubleFunction<EvaluationContext> value = wml -> {
             var cC = c.compute(wml);
 
             if (cC < 1) {
@@ -752,7 +752,7 @@ public final class MathFunctions {
     private static Computer atanhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        ToDoubleFunction<WarningMessageListener> value = wml -> {
+        ToDoubleFunction<EvaluationContext> value = wml -> {
             var cC = c.compute(wml);
 
             if (Math.abs(cC) >= 1) {
@@ -908,7 +908,7 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         var b = toFloat(args.get(1));
 
-        ToDoubleFunction<WarningMessageListener> value = wml -> {
+        ToDoubleFunction<EvaluationContext> value = wml -> {
             var bC = b.compute(wml);
             var cC = c.compute(wml);
 
@@ -1587,7 +1587,7 @@ public final class MathFunctions {
         .build();
 
     private static Computer averageImpl(final List<Computer> args) {
-        ToDoubleFunction<WarningMessageListener> value = wml -> args.stream() //
+        ToDoubleFunction<EvaluationContext> value = wml -> args.stream() //
             .map(c -> toFloat(c).compute(wml)) //
             .mapToDouble(Double::valueOf) //
             .average() //
@@ -1629,7 +1629,7 @@ public final class MathFunctions {
         .build();
 
     private static Computer medianImpl(final List<Computer> args) {
-        ToDoubleFunction<WarningMessageListener> value = wml -> {
+        ToDoubleFunction<EvaluationContext> value = wml -> {
             // Because we use ::compute we need to do this inside the DoubleSupplier
             var sortedFloatArgs = args.stream() //
                 .map(c -> toFloat(c).compute(wml)) //
@@ -1694,7 +1694,7 @@ public final class MathFunctions {
         .build();
 
     private static Computer binomialImpl(final List<Computer> args) {
-        ToLongFunction<WarningMessageListener> value = wml -> {
+        ToLongFunction<EvaluationContext> value = wml -> {
             long n = toInteger(args.get(0)).compute(wml);
             long r = toInteger(args.get(1)).compute(wml);
 

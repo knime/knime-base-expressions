@@ -71,7 +71,7 @@ import org.knime.core.expressions.Computer.StringComputer;
 public final class TestUtils {
 
     // Listener that just ignores any warnings
-    private static final WarningMessageListener DUMMY_WML = w -> {
+    private static final EvaluationContext DUMMY_WML = w -> {
     };
 
     /** Function that maps from a {@link ColumnAccess} to its name */

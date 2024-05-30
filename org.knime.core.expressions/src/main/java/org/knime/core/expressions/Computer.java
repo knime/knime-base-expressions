@@ -68,38 +68,38 @@ import java.util.function.ToLongFunction;
 public interface Computer {
 
     /**
-     * @param wml a {@link WarningMessageListener} to report warnings
+     * @param wml a {@link EvaluationContext} to report warnings
      * @return <code>true</code> if the result is "MISSING"
      */
-    boolean isMissing(WarningMessageListener wml);
+    boolean isMissing(EvaluationContext wml);
 
     /** {@link Computer} for {@link ValueType#BOOLEAN} and {@link ValueType#OPT_BOOLEAN} */
     interface BooleanComputer extends Computer {
 
         /**
-         * @param wml a {@link WarningMessageListener} to report warnings
+         * @param wml a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
          */
-        boolean compute(WarningMessageListener wml);
+        boolean compute(EvaluationContext wml);
 
         /**
          * Helper method to create a {@link BooleanComputer}.
          *
-         * @param value a supplier for the {@link #compute(WarningMessageListener)} result
-         * @param missing a supplier that returns if the result {@link #isMissing(WarningMessageListener)}
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link BooleanComputer}
          */
-        static BooleanComputer of(final Predicate<WarningMessageListener> value,
-            final Predicate<WarningMessageListener> missing) {
+        static BooleanComputer of(final Predicate<EvaluationContext> value,
+            final Predicate<EvaluationContext> missing) {
             return new BooleanComputer() {
 
                 @Override
-                public boolean isMissing(final WarningMessageListener wml) {
+                public boolean isMissing(final EvaluationContext wml) {
                     return missing.test(wml);
                 }
 
                 @Override
-                public boolean compute(final WarningMessageListener wml) {
+                public boolean compute(final EvaluationContext wml) {
                     return value.test(wml);
                 }
             };
@@ -110,29 +110,29 @@ public interface Computer {
     interface IntegerComputer extends Computer {
 
         /**
-         * @param wml a {@link WarningMessageListener} to report warnings
+         * @param wml a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
          */
-        long compute(WarningMessageListener wml);
+        long compute(EvaluationContext wml);
 
         /**
          * Helper method to create an {@link IntegerComputer}.
          *
-         * @param value a supplier for the {@link #compute(WarningMessageListener)} result
-         * @param missing a supplier that returns if the result {@link #isMissing(WarningMessageListener)}
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns if the result {@link #isMissing(EvaluationContext)}
          * @return an {@link IntegerComputer}
          */
-        static IntegerComputer of(final ToLongFunction<WarningMessageListener> value,
-            final Predicate<WarningMessageListener> missing) {
+        static IntegerComputer of(final ToLongFunction<EvaluationContext> value,
+            final Predicate<EvaluationContext> missing) {
             return new IntegerComputer() {
 
                 @Override
-                public boolean isMissing(final WarningMessageListener wml) {
+                public boolean isMissing(final EvaluationContext wml) {
                     return missing.test(wml);
                 }
 
                 @Override
-                public long compute(final WarningMessageListener wml) {
+                public long compute(final EvaluationContext wml) {
                     return value.applyAsLong(wml);
                 }
             };
@@ -143,29 +143,29 @@ public interface Computer {
     interface FloatComputer extends Computer {
 
         /**
-         * @param wml a {@link WarningMessageListener} to report warnings
+         * @param wml a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
          */
-        double compute(WarningMessageListener wml);
+        double compute(EvaluationContext wml);
 
         /**
          * Helper method to create a {@link FloatComputer}.
          *
-         * @param value a supplier for the {@link #compute(WarningMessageListener)} result
-         * @param missing a supplier that returns if the result {@link #isMissing(WarningMessageListener)}
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link FloatComputer}
          */
-        static FloatComputer of(final ToDoubleFunction<WarningMessageListener> value,
-            final Predicate<WarningMessageListener> missing) {
+        static FloatComputer of(final ToDoubleFunction<EvaluationContext> value,
+            final Predicate<EvaluationContext> missing) {
             return new FloatComputer() {
 
                 @Override
-                public boolean isMissing(final WarningMessageListener wml) {
+                public boolean isMissing(final EvaluationContext wml) {
                     return missing.test(wml);
                 }
 
                 @Override
-                public double compute(final WarningMessageListener wml) {
+                public double compute(final EvaluationContext wml) {
                     return value.applyAsDouble(wml);
                 }
             };
@@ -176,29 +176,29 @@ public interface Computer {
     interface StringComputer extends Computer {
 
         /**
-         * @param wml a {@link WarningMessageListener} to report warnings
+         * @param wml a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
          */
-        String compute(WarningMessageListener wml);
+        String compute(EvaluationContext wml);
 
         /**
          * Helper method to create a {@link StringComputer}.
          *
-         * @param value a supplier for the {@link #compute(WarningMessageListener)} result
-         * @param missing a supplier that returns if the result {@link #isMissing(WarningMessageListener)}
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link StringComputer}
          */
-        static StringComputer of(final Function<WarningMessageListener, String> value,
-            final Predicate<WarningMessageListener> missing) {
+        static StringComputer of(final Function<EvaluationContext, String> value,
+            final Predicate<EvaluationContext> missing) {
             return new StringComputer() {
 
                 @Override
-                public boolean isMissing(final WarningMessageListener wml) {
+                public boolean isMissing(final EvaluationContext wml) {
                     return missing.test(wml);
                 }
 
                 @Override
-                public String compute(final WarningMessageListener wml) {
+                public String compute(final EvaluationContext wml) {
                     return value.apply(wml);
                 }
             };
@@ -233,10 +233,10 @@ public interface Computer {
      * @param returnType the intended return type of the computer; will be cast to the baseType if necessary
      * @return a {@link Computer} of the {@link ValueType} of return type
      */
-    static Computer createTypedResultComputer(final Function<WarningMessageListener, Computer> computerSupplier,
+    static Computer createTypedResultComputer(final Function<EvaluationContext, Computer> computerSupplier,
         final ValueType returnType) {
 
-        Predicate<WarningMessageListener> isMissing = wml -> computerSupplier.apply(wml).isMissing(wml);
+        Predicate<EvaluationContext> isMissing = wml -> computerSupplier.apply(wml).isMissing(wml);
 
         if (returnType.baseType() == BOOLEAN) {
             return BooleanComputer.of(wml -> ((BooleanComputer)computerSupplier.apply(wml)).compute(wml), // NOSONAR  - method reference is not possible due to delayed computation

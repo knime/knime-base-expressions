@@ -53,10 +53,10 @@ package org.knime.core.expressions;
  *
  * @author David Hickey, TNG Technology Consulting GmbH
  */
-public interface WarningMessageListener {
+public interface EvaluationContext {
 
     /**
-     * Add a warning to the listener.
+     * Add a warning that happened during expression evaluation.
      *
      * @param warning the warning to add
      */

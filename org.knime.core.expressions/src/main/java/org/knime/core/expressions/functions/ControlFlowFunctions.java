@@ -69,7 +69,7 @@ import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.WarningMessageListener;
+import org.knime.core.expressions.EvaluationContext;
 
 /**
  * Implementation of built-in functions that control the flow.
@@ -157,7 +157,7 @@ public final class ControlFlowFunctions {
         return ifReturnType(arguments.stream().map(Computer::getReturnTypeFromComputer).toArray(ValueType[]::new));
     }
 
-    private static Computer computeMatchingBranchIf(final List<Computer> arguments, final WarningMessageListener wml) {
+    private static Computer computeMatchingBranchIf(final List<Computer> arguments, final EvaluationContext wml) {
         for (int i = 0; i < arguments.size() - 1; i += 2) {
             if (((BooleanComputer)arguments.get(i)).compute(wml)) {
                 return arguments.get(i + 1);
@@ -268,7 +268,7 @@ public final class ControlFlowFunctions {
     }
 
     private static Computer computeMatchingCaseSwitch(final List<Computer> arguments,
-        final WarningMessageListener wml) { // NOSONAR
+        final EvaluationContext wml) { // NOSONAR
 
         Computer computerToSwitchOn = arguments.get(0);
         final boolean hasDefaultCase = arguments.size() % 2 == 0;

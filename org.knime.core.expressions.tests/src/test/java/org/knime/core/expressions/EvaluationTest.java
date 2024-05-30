@@ -396,19 +396,19 @@ final class EvaluationTest {
     private static final Function<String, Optional<TestFlowVariable>> FIND_TEST_FLOW_VARIABLE =
         TestUtils.enumFinder(TestFlowVariable.values());
 
-    private static final Predicate<WarningMessageListener> THROWING_BOOL_SUPPLIER = wml -> {
+    private static final Predicate<EvaluationContext> THROWING_BOOL_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final ToLongFunction<WarningMessageListener> THROWING_LONG_SUPPLIER = wml -> {
+    private static final ToLongFunction<EvaluationContext> THROWING_LONG_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final ToDoubleFunction<WarningMessageListener> THROWING_DOUBLE_SUPPLIER = wml -> {
+    private static final ToDoubleFunction<EvaluationContext> THROWING_DOUBLE_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final Function<WarningMessageListener, String> THROWING_STRING_SUPPLIER = wml -> {
+    private static final Function<EvaluationContext, String> THROWING_STRING_SUPPLIER = wml -> {
         throw new AssertionError("should not call compute on missing values");
     };
 

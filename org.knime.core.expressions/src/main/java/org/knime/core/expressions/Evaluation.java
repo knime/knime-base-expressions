@@ -222,10 +222,10 @@ final class Evaluation {
         private static Computer missingFallbackOperatorImpl(final ValueType outputType, final Computer arg1,
             final Computer arg2) {
             // Deferred evaluation to avoid calling missing during setup
-            Function<WarningMessageListener, Computer> outputComputer = wml -> arg1.isMissing(wml) ? arg2 : arg1;
+            Function<EvaluationContext, Computer> outputComputer = wml -> arg1.isMissing(wml) ? arg2 : arg1;
 
             // Output is missing iff both inputs are missing
-            Predicate<WarningMessageListener> outputMissing = wml -> arg1.isMissing(wml) && arg2.isMissing(wml);
+            Predicate<EvaluationContext> outputMissing = wml -> arg1.isMissing(wml) && arg2.isMissing(wml);
 
             // NOSONARs because it otherwise suggests a change that breaks deferred evaluation of get()
             if (BOOLEAN.equals(outputType.baseType())) {
@@ -281,10 +281,10 @@ final class Evaluation {
 
         private static BooleanComputer comparison( // NOSONAR - this method is complex but still clear
             final BinaryOperator op, final Computer arg1, final Computer arg2) {
-            Predicate<WarningMessageListener> anyMissing = wml -> arg1.isMissing(wml) || arg2.isMissing(wml);
-            Predicate<WarningMessageListener> bothMissing = wml -> arg1.isMissing(wml) && arg2.isMissing(wml);
+            Predicate<EvaluationContext> anyMissing = wml -> arg1.isMissing(wml) || arg2.isMissing(wml);
+            Predicate<EvaluationContext> bothMissing = wml -> arg1.isMissing(wml) && arg2.isMissing(wml);
 
-            Predicate<WarningMessageListener> value;
+            Predicate<EvaluationContext> value;
             if (arg1 instanceof FloatComputer || arg2 instanceof FloatComputer) {
                 // One is FLOAT -> we do the comparison for FLOAT
                 var a1 = toFloat(arg1);
@@ -317,7 +317,7 @@ final class Evaluation {
 
         private static BooleanComputer equality( // NOSONAR - this method is complex but still clear
             final BinaryOperator op, final Computer arg1, final Computer arg2) {
-            Predicate<WarningMessageListener> valuesEqual;
+            Predicate<EvaluationContext> valuesEqual;
             if (arg1 == MISSING_CONSTANT_COMPUTER || arg2 == MISSING_CONSTANT_COMPUTER) {
                 // One of the values guaranteed to be MISSING -> Only equal if both missing, values are irrelevant
                 valuesEqual = wml -> false;
@@ -337,7 +337,7 @@ final class Evaluation {
                     "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not equality comparable");
             }
 
-            Predicate<WarningMessageListener> equal = //
+            Predicate<EvaluationContext> equal = //
                 wml -> (arg1.isMissing(wml) && arg2.isMissing(wml)) // both missing -> true
                     || (!arg1.isMissing(wml) && !arg2.isMissing(wml) && valuesEqual.test(wml)); // any missing -> false
 
@@ -361,7 +361,7 @@ final class Evaluation {
 
         }
 
-        private static Function<WarningMessageListener, KleenesLogic> toKleenesLogicComputer(final BooleanComputer c) {
+        private static Function<EvaluationContext, KleenesLogic> toKleenesLogicComputer(final BooleanComputer c) {
             return wml -> {
                 if (c.isMissing(wml)) {
                     return KleenesLogic.UNKNOWN;
@@ -374,7 +374,7 @@ final class Evaluation {
         }
 
         private static BooleanComputer
-            fromKleenesLogicSupplier(final Function<WarningMessageListener, KleenesLogic> logicSupplier) {
+            fromKleenesLogicSupplier(final Function<EvaluationContext, KleenesLogic> logicSupplier) {
             return BooleanComputer.of( //
                 wml -> logicSupplier.apply(wml) == KleenesLogic.TRUE, //
                 wml -> logicSupplier.apply(wml) == KleenesLogic.UNKNOWN //
@@ -385,7 +385,7 @@ final class Evaluation {
     private static class Integer {
 
         static IntegerComputer unary(final UnaryOperator op, final IntegerComputer arg) {
-            ToLongFunction<WarningMessageListener> value = switch (op) {
+            ToLongFunction<EvaluationContext> value = switch (op) {
                 case MINUS -> wml -> -arg.compute(wml);
                 default -> throw unsupportedOutputForOpError(op, INTEGER);
             };
@@ -395,20 +395,20 @@ final class Evaluation {
         static IntegerComputer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
             var a1 = (IntegerComputer)arg1;
             var a2 = (IntegerComputer)arg2;
-            ToLongFunction<WarningMessageListener> value = switch (op) {
+            ToLongFunction<EvaluationContext> value = switch (op) {
                 case PLUS -> wml -> a1.compute(wml) + a2.compute(wml);
                 case MINUS -> wml -> a1.compute(wml) - a2.compute(wml);
                 case MULTIPLY -> wml -> a1.compute(wml) * a2.compute(wml);
                 case FLOOR_DIVIDE -> safeFloorDivide(a1, a2);
                 case EXPONENTIAL -> (
-                    final WarningMessageListener wml) -> (long)Math.pow(a1.compute(wml), a2.compute(wml));
+                    final EvaluationContext wml) -> (long)Math.pow(a1.compute(wml), a2.compute(wml));
                 case REMAINDER -> safeRemainder(a1, a2);
                 default -> throw unsupportedOutputForOpError(op, INTEGER);
             };
-            return IntegerComputer.of(value, (final WarningMessageListener w) -> a1.isMissing(w) || a2.isMissing(w));
+            return IntegerComputer.of(value, (final EvaluationContext w) -> a1.isMissing(w) || a2.isMissing(w));
         }
 
-        static ToLongFunction<WarningMessageListener> safeFloorDivide(final IntegerComputer a1,
+        static ToLongFunction<EvaluationContext> safeFloorDivide(final IntegerComputer a1,
             final IntegerComputer a2) {
             return wml -> {
                 var divisor = a2.compute(wml);
@@ -419,7 +419,7 @@ final class Evaluation {
             };
         }
 
-        static ToLongFunction<WarningMessageListener> safeRemainder(final IntegerComputer a1,
+        static ToLongFunction<EvaluationContext> safeRemainder(final IntegerComputer a1,
             final IntegerComputer a2) {
             return wml -> {
                 var divisor = a2.compute(wml);
@@ -434,7 +434,7 @@ final class Evaluation {
     private static class Float {
 
         static FloatComputer unary(final UnaryOperator op, final FloatComputer arg) {
-            ToDoubleFunction<WarningMessageListener> value = switch (op) {
+            ToDoubleFunction<EvaluationContext> value = switch (op) {
                 case MINUS -> wml -> -arg.compute(wml);
                 default -> throw unsupportedOutputForOpError(op, INTEGER);
             };
@@ -442,7 +442,7 @@ final class Evaluation {
         }
 
         static FloatComputer binary(final BinaryOperator op, final FloatComputer arg1, final FloatComputer arg2) {
-            ToDoubleFunction<WarningMessageListener> value = switch (op) {
+            ToDoubleFunction<EvaluationContext> value = switch (op) {
                 case PLUS -> wml -> arg1.compute(wml) + arg2.compute(wml);
                 case MINUS -> wml -> arg1.compute(wml) - arg2.compute(wml);
                 case MULTIPLY -> wml -> arg1.compute(wml) * arg2.compute(wml);
@@ -456,8 +456,8 @@ final class Evaluation {
     }
 
     private static class Strings {
-        static Function<WarningMessageListener, String> stringRepr(final Computer computer) {
-            Function<WarningMessageListener, String> value;
+        static Function<EvaluationContext, String> stringRepr(final Computer computer) {
+            Function<EvaluationContext, String> value;
             if (computer instanceof BooleanComputer c) {
                 value = wml -> c.compute(wml) ? "true" : "false";
             } else if (computer instanceof IntegerComputer c) {

@@ -69,7 +69,7 @@ import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.TestUtils;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.WarningMessageListener;
+import org.knime.core.expressions.EvaluationContext;
 
 /**
  * Builder for dynamic tests for an {@link ExpressionFunction}. Add tests via {@link #typing}, {@link #illegalArgs}, and
@@ -79,7 +79,7 @@ import org.knime.core.expressions.WarningMessageListener;
  */
 public final class FunctionTestBuilder {
 
-    private final WarningMessageListener DUMMY_WML = w -> {
+    private final EvaluationContext DUMMY_WML = w -> {
     };
 
     // == Arguments for testing functions ==
@@ -124,7 +124,7 @@ public final class FunctionTestBuilder {
             }
         }
 
-        private boolean isMissing(final WarningMessageListener wml) {
+        private boolean isMissing(final EvaluationContext wml) {
             return this.isMissing();
         }
 
@@ -414,7 +414,7 @@ public final class FunctionTestBuilder {
             args.forEach(TestingArgument::setOpen);
 
             var warnings = new ArrayList<String>();
-            WarningMessageListener wml = w -> warnings.add(w);
+            EvaluationContext wml = w -> warnings.add(w);
 
             // Compute the computer
             if (!resultComputer.isMissing(wml)) {
