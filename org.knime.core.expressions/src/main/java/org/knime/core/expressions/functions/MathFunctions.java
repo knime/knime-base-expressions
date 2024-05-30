@@ -112,7 +112,7 @@ public final class MathFunctions {
                 * `max(1, 2, 3)` returns 3
                 * `max(1.0, 2.0, 3.0)` returns 3.0
                 * `max(1, 2.0, 3)` returns 3.0
-                * `max(1, MISSING, 3)` returns MISSING
+                * `max(1, MISSING, 3)` returns `MISSING`
                 * `max(1, 2, NaN)` returns `NaN`
                 """) //
         .keywords("maximum") //
@@ -160,7 +160,7 @@ public final class MathFunctions {
                 * `min(1, 2, 3)` returns 1
                 * `min(1.0, 2.0, 3.0)` returns 1.0
                 * `min(1, 2.0, 3)` returns 1.0
-                * `min(1, MISSING, 3)` returns MISSING
+                * `min(1, MISSING, 3)` returns `MISSING`
                 * `min(1, 2, NaN)` returns `NaN`
                 """) //
         .keywords("minimum") //
@@ -211,7 +211,7 @@ public final class MathFunctions {
                 * `argmax(2.0, 4.0, 6.0)` returns 3
                 * `argmax(2, 4.0, 6)` returns 3
                 * `argmax(1, 2, 2)` returns 2
-                * `argmax(1, MISSING, 3)` returns MISSING
+                * `argmax(1, MISSING, 3)` returns `MISSING`
                 * `argmax(1, 2, NaN)` returns 3
                 """) //
         .keywords() //
@@ -278,7 +278,7 @@ public final class MathFunctions {
                 * `argmin(2.0, 4.0, 6.0)` returns 1
                 * `argmin(2, 4.0, 6)` returns 1
                 * `argmin(1, 2, 1)` returns 1
-                * `argmin(1, MISSING, 3)` returns MISSING
+                * `argmin(1, MISSING, 3)` returns `MISSING`
                 * `argmin(1, 2, NaN)` returns 3
                 """) //
         .keywords() //
