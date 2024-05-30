@@ -56,7 +56,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionMapperFactory;
-import org.knime.base.expressions.ExpressionMapperFactory.ExpressionEvaluationContext;
+import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContext;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
 import org.knime.core.data.DataTableSpec;
@@ -177,7 +177,7 @@ class ExpressionNodeModel extends NodeModel {
         ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(), exec);
 
         // Evaluate the expression and materialize the result
-        var exprContext = new NodeExpressionEvaluationContext(this::getAvailableInputFlowVariables);
+        var exprContext = new NodeExpressionMapperContext(this::getAvailableInputFlowVariables);
         var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
             newColumnPosition.columnName(), exec, exprContext, wml);
         var output = ExpressionRunnerUtils.constructOutputTable(inRefTable.getVirtualTable(),
@@ -231,11 +231,11 @@ class ExpressionNodeModel extends NodeModel {
         // nothing to do
     }
 
-    static class NodeExpressionEvaluationContext implements ExpressionEvaluationContext {
+    static class NodeExpressionMapperContext implements ExpressionMapperContext {
 
         private final Function<VariableType<?>[], Map<String, FlowVariable>> m_getFlowVariable;
 
-        public NodeExpressionEvaluationContext(
+        public NodeExpressionMapperContext(
             final Function<VariableType<?>[], Map<String, FlowVariable>> getFlowVariable) {
             m_getFlowVariable = getFlowVariable;
         }
@@ -244,7 +244,7 @@ class ExpressionNodeModel extends NodeModel {
         public Optional<Computer> flowVariableToComputer(final FlowVarAccess flowVariableAccess) {
             return Optional
                 .ofNullable(m_getFlowVariable.apply(SUPPORTED_FLOW_VARIABLE_TYPES).get(flowVariableAccess.name()))
-                .map(NodeExpressionEvaluationContext::computerForFlowVariable);
+                .map(NodeExpressionMapperContext::computerForFlowVariable);
         }
 
         @Override

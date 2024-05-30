@@ -59,7 +59,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
-import org.knime.base.expressions.node.ExpressionNodeModel.NodeExpressionEvaluationContext;
+import org.knime.base.expressions.node.ExpressionNodeModel.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
@@ -232,7 +232,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
             // Evaluate the expression
             var numRows = (int)Math.min(DIALOG_PREVIEW_NUM_ROWS, inputTable.getBufferedTable().size());
-            var exprContext = new NodeExpressionEvaluationContext(this::getAvailableFlowVariables);
+            var exprContext = new NodeExpressionMapperContext(this::getAvailableFlowVariables);
             var expressionResult = ExpressionRunnerUtils.applyExpression( //
                 inputTable.getVirtualTable().slice(0, numRows), //
                 expression, //

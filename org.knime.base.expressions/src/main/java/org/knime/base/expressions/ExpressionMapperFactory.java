@@ -94,7 +94,7 @@ import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 public final class ExpressionMapperFactory implements ColumnarMapperFactory {
 
     /** Context for evaluating expressions. */
-    public interface ExpressionEvaluationContext {
+    public interface ExpressionMapperContext {
 
         /**
          * Returns a computer for the given flow variable access.
@@ -129,7 +129,7 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
      * @param wml
      */
     public ExpressionMapperFactory(final Ast ast, final ColumnarValueSchema inputTableSchema,
-        final String outputColumnName, final ExpressionEvaluationContext exprContext,
+        final String outputColumnName, final ExpressionMapperContext exprContext,
         final EvaluationContext wml) {
         m_outputColumnName = outputColumnName;
 
