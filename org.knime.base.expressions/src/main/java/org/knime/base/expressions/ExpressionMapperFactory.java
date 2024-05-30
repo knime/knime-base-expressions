@@ -73,7 +73,7 @@ import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
-import org.knime.core.expressions.WarningMessageListener;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.WriteAccess;
@@ -130,7 +130,7 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
      */
     public ExpressionMapperFactory(final Ast ast, final ColumnarValueSchema inputTableSchema,
         final String outputColumnName, final ExpressionEvaluationContext exprContext,
-        final WarningMessageListener wml) {
+        final EvaluationContext wml) {
         m_outputColumnName = outputColumnName;
 
         try {

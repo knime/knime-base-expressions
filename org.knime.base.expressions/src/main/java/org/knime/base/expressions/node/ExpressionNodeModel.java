@@ -72,7 +72,7 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.WarningMessageListener;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -162,7 +162,7 @@ class ExpressionNodeModel extends NodeModel {
             m_settings.getActiveOutputColumn());
 
         var messageBuilder = createMessageBuilder();
-        WarningMessageListener wml = messageBuilder::addTextIssue;
+        EvaluationContext wml = messageBuilder::addTextIssue;
 
         var inTable = inData[0];
 

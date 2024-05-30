@@ -71,7 +71,7 @@ import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.WarningMessageListener;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
@@ -216,7 +216,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
             // Apply the expression on the input table using a ColumnarVirtualTable
             List<String> warnings = new ArrayList<>();
-            WarningMessageListener wml = warning -> warnings.add(warning);
+            EvaluationContext wml = warning -> warnings.add(warning);
 
             var inputTable = getInputTable();
 

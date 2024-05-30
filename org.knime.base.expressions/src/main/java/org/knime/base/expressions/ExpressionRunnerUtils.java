@@ -68,7 +68,7 @@ import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Expressions;
-import org.knime.core.expressions.WarningMessageListener;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -270,7 +270,7 @@ public final class ExpressionRunnerUtils {
      */
     public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final Ast expression,
         final String outputColumnName, final ExpressionEvaluationContext exprContext,
-        final WarningMessageListener wml) {
+        final EvaluationContext wml) {
         var expressionMapperFactory =
             new ExpressionMapperFactory(expression, input.getSchema(), outputColumnName, exprContext, wml);
         return input.selectColumns(0)
@@ -297,7 +297,7 @@ public final class ExpressionRunnerUtils {
         final String outputColumnName, //
         final ExecutionContext exec, //
         final ExpressionEvaluationContext exprContext, //
-        final WarningMessageListener wml //
+        final EvaluationContext wml //
     ) throws CanceledExecutionException, VirtualTableIncompatibleException {
         var numRows = refTable.getBufferedTable().size();
         var expressionResultVirtual =
