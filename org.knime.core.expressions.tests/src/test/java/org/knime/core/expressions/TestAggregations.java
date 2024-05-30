@@ -75,9 +75,9 @@ enum TestAggregations implements ColumnAggregation {
             }, //
             call -> {
                 if (ValueType.INTEGER.equals(Typing.getType(call).baseType())) {
-                    return Optional.of(IntegerComputer.of(wml -> 42, wml -> false));
+                    return Optional.of(IntegerComputer.of(ctx -> 42, ctx -> false));
                 } else if (ValueType.FLOAT.equals(Typing.getType(call).baseType())) {
-                    return Optional.of(FloatComputer.of(wml -> 42.0, wml -> false));
+                    return Optional.of(FloatComputer.of(ctx -> 42.0, ctx -> false));
                 } else {
                     return Optional.empty();
                 }
@@ -94,7 +94,7 @@ enum TestAggregations implements ColumnAggregation {
                 return Optional.empty();
             }, //
             call -> {
-                return Optional.of(wml -> true);
+                return Optional.of(ctx -> true);
             } //
         ), //
     ;

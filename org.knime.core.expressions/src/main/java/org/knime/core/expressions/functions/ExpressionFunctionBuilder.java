@@ -111,7 +111,7 @@ public final class ExpressionFunctionBuilder {
      * @return the predicate
      */
     public static Predicate<EvaluationContext> anyMissing(final Collection<Computer> values) {
-        return wml -> values.stream().anyMatch(c -> c.isMissing(wml));
+        return ctx -> values.stream().anyMatch(c -> c.isMissing(ctx));
     }
 
     /**

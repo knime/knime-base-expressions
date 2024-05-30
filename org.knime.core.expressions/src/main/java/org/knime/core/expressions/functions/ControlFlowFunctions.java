@@ -157,9 +157,9 @@ public final class ControlFlowFunctions {
         return ifReturnType(arguments.stream().map(Computer::getReturnTypeFromComputer).toArray(ValueType[]::new));
     }
 
-    private static Computer computeMatchingBranchIf(final List<Computer> arguments, final EvaluationContext wml) {
+    private static Computer computeMatchingBranchIf(final List<Computer> arguments, final EvaluationContext ctx) {
         for (int i = 0; i < arguments.size() - 1; i += 2) {
-            if (((BooleanComputer)arguments.get(i)).compute(wml)) {
+            if (((BooleanComputer)arguments.get(i)).compute(ctx)) {
                 return arguments.get(i + 1);
             }
         }
@@ -167,7 +167,7 @@ public final class ControlFlowFunctions {
     }
 
     private static Computer ifImpl(final List<Computer> arguments) {
-        return Computer.createTypedResultComputer(wml -> computeMatchingBranchIf(arguments, wml),
+        return Computer.createTypedResultComputer(ctx -> computeMatchingBranchIf(arguments, ctx),
             ifReturnType(arguments));
     }
 
@@ -261,43 +261,43 @@ public final class ControlFlowFunctions {
     private static Computer switchImpl(final List<Computer> arguments) {
         var returnType = switchReturnType(arguments);
         if (returnType == null) {
-            return wml -> true;
+            return ctx -> true;
         }
-        return Computer.createTypedResultComputer(wml -> computeMatchingCaseSwitch(arguments, wml),
+        return Computer.createTypedResultComputer(ctx -> computeMatchingCaseSwitch(arguments, ctx),
             returnType.baseType());
     }
 
     private static Computer computeMatchingCaseSwitch(final List<Computer> arguments,
-        final EvaluationContext wml) { // NOSONAR
+        final EvaluationContext ctx) { // NOSONAR
 
         Computer computerToSwitchOn = arguments.get(0);
         final boolean hasDefaultCase = arguments.size() % 2 == 0;
 
-        if (computerToSwitchOn.isMissing(wml)) {
+        if (computerToSwitchOn.isMissing(ctx)) {
             for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing(wml)) {
+                if (arguments.get(i).isMissing(ctx)) {
                     return arguments.get(i + 1);
                 }
             }
         } else if (computerToSwitchOn instanceof StringComputer stringComputer) {
-            String evaluatedSwitchValue = stringComputer.compute(wml);
+            String evaluatedSwitchValue = stringComputer.compute(ctx);
             for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing(wml)) {
+                if (arguments.get(i).isMissing(ctx)) {
                     continue;
                 }
                 if (arguments.get(i) instanceof StringComputer stringComputerToCompare
-                    && evaluatedSwitchValue.equals(stringComputerToCompare.compute(wml))) {
+                    && evaluatedSwitchValue.equals(stringComputerToCompare.compute(ctx))) {
                     return arguments.get(i + 1);
                 }
             }
         } else if (computerToSwitchOn instanceof IntegerComputer integerComputer) {
-            long evaluatedSwitchValue = integerComputer.compute(wml);
+            long evaluatedSwitchValue = integerComputer.compute(ctx);
             for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing(wml)) {
+                if (arguments.get(i).isMissing(ctx)) {
                     continue;
                 }
                 if (arguments.get(i) instanceof IntegerComputer integerComputerToCompare
-                    && integerComputerToCompare.compute(wml) == evaluatedSwitchValue) {
+                    && integerComputerToCompare.compute(ctx) == evaluatedSwitchValue) {
                     return arguments.get(i + 1);
                 }
             }

@@ -68,19 +68,19 @@ import java.util.function.ToLongFunction;
 public interface Computer {
 
     /**
-     * @param wml a {@link EvaluationContext} to report warnings
+     * @param ctx a {@link EvaluationContext} to report warnings
      * @return <code>true</code> if the result is "MISSING"
      */
-    boolean isMissing(EvaluationContext wml);
+    boolean isMissing(EvaluationContext ctx);
 
     /** {@link Computer} for {@link ValueType#BOOLEAN} and {@link ValueType#OPT_BOOLEAN} */
     interface BooleanComputer extends Computer {
 
         /**
-         * @param wml a {@link EvaluationContext} to report warnings
+         * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
          */
-        boolean compute(EvaluationContext wml);
+        boolean compute(EvaluationContext ctx);
 
         /**
          * Helper method to create a {@link BooleanComputer}.
@@ -94,13 +94,13 @@ public interface Computer {
             return new BooleanComputer() {
 
                 @Override
-                public boolean isMissing(final EvaluationContext wml) {
-                    return missing.test(wml);
+                public boolean isMissing(final EvaluationContext ctx) {
+                    return missing.test(ctx);
                 }
 
                 @Override
-                public boolean compute(final EvaluationContext wml) {
-                    return value.test(wml);
+                public boolean compute(final EvaluationContext ctx) {
+                    return value.test(ctx);
                 }
             };
         }
@@ -110,10 +110,10 @@ public interface Computer {
     interface IntegerComputer extends Computer {
 
         /**
-         * @param wml a {@link EvaluationContext} to report warnings
+         * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
          */
-        long compute(EvaluationContext wml);
+        long compute(EvaluationContext ctx);
 
         /**
          * Helper method to create an {@link IntegerComputer}.
@@ -127,13 +127,13 @@ public interface Computer {
             return new IntegerComputer() {
 
                 @Override
-                public boolean isMissing(final EvaluationContext wml) {
-                    return missing.test(wml);
+                public boolean isMissing(final EvaluationContext ctx) {
+                    return missing.test(ctx);
                 }
 
                 @Override
-                public long compute(final EvaluationContext wml) {
-                    return value.applyAsLong(wml);
+                public long compute(final EvaluationContext ctx) {
+                    return value.applyAsLong(ctx);
                 }
             };
         }
@@ -143,10 +143,10 @@ public interface Computer {
     interface FloatComputer extends Computer {
 
         /**
-         * @param wml a {@link EvaluationContext} to report warnings
+         * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
          */
-        double compute(EvaluationContext wml);
+        double compute(EvaluationContext ctx);
 
         /**
          * Helper method to create a {@link FloatComputer}.
@@ -160,13 +160,13 @@ public interface Computer {
             return new FloatComputer() {
 
                 @Override
-                public boolean isMissing(final EvaluationContext wml) {
-                    return missing.test(wml);
+                public boolean isMissing(final EvaluationContext ctx) {
+                    return missing.test(ctx);
                 }
 
                 @Override
-                public double compute(final EvaluationContext wml) {
-                    return value.applyAsDouble(wml);
+                public double compute(final EvaluationContext ctx) {
+                    return value.applyAsDouble(ctx);
                 }
             };
         }
@@ -176,10 +176,10 @@ public interface Computer {
     interface StringComputer extends Computer {
 
         /**
-         * @param wml a {@link EvaluationContext} to report warnings
+         * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
          */
-        String compute(EvaluationContext wml);
+        String compute(EvaluationContext ctx);
 
         /**
          * Helper method to create a {@link StringComputer}.
@@ -193,13 +193,13 @@ public interface Computer {
             return new StringComputer() {
 
                 @Override
-                public boolean isMissing(final EvaluationContext wml) {
-                    return missing.test(wml);
+                public boolean isMissing(final EvaluationContext ctx) {
+                    return missing.test(ctx);
                 }
 
                 @Override
-                public String compute(final EvaluationContext wml) {
-                    return value.apply(wml);
+                public String compute(final EvaluationContext ctx) {
+                    return value.apply(ctx);
                 }
             };
         }
@@ -236,20 +236,20 @@ public interface Computer {
     static Computer createTypedResultComputer(final Function<EvaluationContext, Computer> computerSupplier,
         final ValueType returnType) {
 
-        Predicate<EvaluationContext> isMissing = wml -> computerSupplier.apply(wml).isMissing(wml);
+        Predicate<EvaluationContext> isMissing = ctx -> computerSupplier.apply(ctx).isMissing(ctx);
 
         if (returnType.baseType() == BOOLEAN) {
-            return BooleanComputer.of(wml -> ((BooleanComputer)computerSupplier.apply(wml)).compute(wml), // NOSONAR  - method reference is not possible due to delayed computation
+            return BooleanComputer.of(ctx -> ((BooleanComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR  - method reference is not possible due to delayed computation
                 isMissing);
         }
         if (returnType.baseType()  == INTEGER) {
-            return IntegerComputer.of(wml -> Math.round(toFloat(computerSupplier.apply(wml)).compute(wml)), isMissing);
+            return IntegerComputer.of(ctx -> Math.round(toFloat(computerSupplier.apply(ctx)).compute(ctx)), isMissing);
         }
         if (returnType.baseType()  == FLOAT) {
-            return FloatComputer.of(wml -> toFloat(computerSupplier.apply(wml)).compute(wml), isMissing);
+            return FloatComputer.of(ctx -> toFloat(computerSupplier.apply(ctx)).compute(ctx), isMissing);
         }
         if (returnType.baseType()  == STRING) {
-            return StringComputer.of(wml -> ((StringComputer)computerSupplier.apply(wml)).compute(wml), // NOSONAR - method reference is not possible due to delayed computation
+            return StringComputer.of(ctx -> ((StringComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR - method reference is not possible due to delayed computation
                 isMissing);
         }
 

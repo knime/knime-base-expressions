@@ -124,7 +124,7 @@ public final class FunctionTestBuilder {
             }
         }
 
-        private boolean isMissing(final EvaluationContext wml) {
+        private boolean isMissing(final EvaluationContext ctx) {
             return this.isMissing();
         }
 
@@ -143,15 +143,15 @@ public final class FunctionTestBuilder {
 
         private Computer computer() {
             if (m_value instanceof Boolean) {
-                return BooleanComputer.of(wml -> (Boolean)getValue(), this::isMissing);
+                return BooleanComputer.of(ctx -> (Boolean)getValue(), this::isMissing);
             } else if (m_value instanceof Long) {
-                return IntegerComputer.of(wml -> (Long)getValue(), this::isMissing);
+                return IntegerComputer.of(ctx -> (Long)getValue(), this::isMissing);
             } else if (m_value instanceof Double) {
-                return FloatComputer.of(wml -> (Double)getValue(), this::isMissing);
+                return FloatComputer.of(ctx -> (Double)getValue(), this::isMissing);
             } else if (m_value instanceof String) {
-                return StringComputer.of(wml -> (String)getValue(), this::isMissing);
+                return StringComputer.of(ctx -> (String)getValue(), this::isMissing);
             } else {
-                return wml -> isMissing();
+                return ctx -> isMissing();
             }
         }
     }
@@ -414,18 +414,18 @@ public final class FunctionTestBuilder {
             args.forEach(TestingArgument::setOpen);
 
             var warnings = new ArrayList<String>();
-            EvaluationContext wml = w -> warnings.add(w);
+            EvaluationContext ctx = w -> warnings.add(w);
 
             // Compute the computer
-            if (!resultComputer.isMissing(wml)) {
+            if (!resultComputer.isMissing(ctx)) {
                 if (resultComputer instanceof IntegerComputer ic) {
-                    ic.compute(wml);
+                    ic.compute(ctx);
                 } else if (resultComputer instanceof FloatComputer fc) {
-                    fc.compute(wml);
+                    fc.compute(ctx);
                 } else if (resultComputer instanceof BooleanComputer bc) {
-                    bc.compute(wml);
+                    bc.compute(ctx);
                 } else if (resultComputer instanceof StringComputer sc) {
-                    sc.compute(wml);
+                    sc.compute(ctx);
                 }
             }
 

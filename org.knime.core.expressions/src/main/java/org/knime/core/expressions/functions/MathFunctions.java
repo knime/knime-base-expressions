@@ -132,13 +132,13 @@ public final class MathFunctions {
 
         if (allArgsAreIntegers) {
             return IntegerComputer.of( //
-                wml -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(wml)).max().getAsLong(), //
+                ctx -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(ctx)).max().getAsLong(), //
                 anyMissing(args) //
             );
         } else {
             var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
             return FloatComputer.of( //
-                wml -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(wml)).max().getAsDouble(), //
+                ctx -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(ctx)).max().getAsDouble(), //
                 anyMissing(args) //
             );
         }
@@ -180,13 +180,13 @@ public final class MathFunctions {
 
         if (allArgsAreIntegers) {
             return IntegerComputer.of( //
-                wml -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(wml)).min().getAsLong(), //
+                ctx -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(ctx)).min().getAsLong(), //
                 anyMissing(args) //
             );
         } else {
             var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
             return FloatComputer.of( //
-                wml -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(wml)).min().getAsDouble(), //
+                ctx -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(ctx)).min().getAsDouble(), //
                 anyMissing(args) //
             );
         }
@@ -232,8 +232,8 @@ public final class MathFunctions {
         ToLongFunction<EvaluationContext> supplier;
 
         if (allArgsAreIntegers) {
-            supplier = wml -> {
-                var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
+            supplier = ctx -> {
+                var computedArgs = args.stream().map(c -> toInteger(c).compute(ctx)).toArray(Long[]::new);
 
                 var intStream = IntStream.range(0, computedArgs.length);
 
@@ -244,8 +244,8 @@ public final class MathFunctions {
         } else {
             var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
 
-            supplier = wml -> {
-                var computedArgs = Arrays.stream(floatArgs).map(c -> c.compute(wml)).toArray(Double[]::new);
+            supplier = ctx -> {
+                var computedArgs = Arrays.stream(floatArgs).map(c -> c.compute(ctx)).toArray(Double[]::new);
 
                 var intStream = IntStream.range(0, computedArgs.length);
 
@@ -299,8 +299,8 @@ public final class MathFunctions {
         ToLongFunction<EvaluationContext> supplier;
 
         if (allArgsAreIntegers) {
-            supplier = wml -> {
-                var computedArgs = args.stream().map(c -> toInteger(c).compute(wml)).toArray(Long[]::new);
+            supplier = ctx -> {
+                var computedArgs = args.stream().map(c -> toInteger(c).compute(ctx)).toArray(Long[]::new);
 
                 var intStream = IntStream.range(0, computedArgs.length);
 
@@ -311,8 +311,8 @@ public final class MathFunctions {
         } else {
             var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
 
-            supplier = wml -> {
-                var computedArgs = Arrays.stream(floatArgs).map(c -> c.compute(wml)).toArray(Double[]::new);
+            supplier = ctx -> {
+                var computedArgs = Arrays.stream(floatArgs).map(c -> c.compute(ctx)).toArray(Double[]::new);
 
                 var intStream = IntStream.range(0, computedArgs.length);
 
@@ -349,9 +349,9 @@ public final class MathFunctions {
 
     private static Computer absImpl(final List<Computer> args) {
         if (args.get(0) instanceof IntegerComputer c) {
-            return IntegerComputer.of(wml -> Math.abs(c.compute(wml)), c::isMissing);
+            return IntegerComputer.of(ctx -> Math.abs(c.compute(ctx)), c::isMissing);
         } else if (args.get(0) instanceof FloatComputer c) {
-            return FloatComputer.of(wml -> Math.abs(c.compute(wml)), c::isMissing);
+            return FloatComputer.of(ctx -> Math.abs(c.compute(ctx)), c::isMissing);
         }
         throw FunctionUtils.calledWithIllegalArgs();
     }
@@ -379,7 +379,7 @@ public final class MathFunctions {
 
     private static Computer sinImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> Math.sin(c.compute(wml)), c::isMissing);
+        return FloatComputer.of(ctx -> Math.sin(c.compute(ctx)), c::isMissing);
     }
 
     /** The cosine of one number */
@@ -405,7 +405,7 @@ public final class MathFunctions {
 
     private static Computer cosImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> Math.cos(c.compute(wml)), c::isMissing);
+        return FloatComputer.of(ctx -> Math.cos(c.compute(ctx)), c::isMissing);
     }
 
     /** The tangent of one number */
@@ -431,7 +431,7 @@ public final class MathFunctions {
 
     private static Computer tanImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> Math.tan(c.compute(wml)), c::isMissing);
+        return FloatComputer.of(ctx -> Math.tan(c.compute(ctx)), c::isMissing);
     }
 
     /** The arcsine of one number */
@@ -458,11 +458,11 @@ public final class MathFunctions {
 
     private static Computer asinImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> {
-            var cC = c.compute(wml);
+        return FloatComputer.of(ctx -> {
+            var cC = c.compute(ctx);
 
             if (Math.abs(cC) > 1) {
-                wml.addWarning("invalid argument to asin (|arg| > 1)");
+                ctx.addWarning("invalid argument to asin (|arg| > 1)");
             }
 
             return Math.asin(cC);
@@ -493,11 +493,11 @@ public final class MathFunctions {
 
     private static Computer acosImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> {
-            var cC = c.compute(wml);
+        return FloatComputer.of(ctx -> {
+            var cC = c.compute(ctx);
 
             if (Math.abs(cC) > 1) {
-                wml.addWarning("invalid argument to acos (|arg| > 1)");
+                ctx.addWarning("invalid argument to acos (|arg| > 1)");
             }
 
             return Math.acos(cC);
@@ -527,7 +527,7 @@ public final class MathFunctions {
 
     private static Computer atanImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> Math.atan(c.compute(wml)), c::isMissing);
+        return FloatComputer.of(ctx -> Math.atan(c.compute(ctx)), c::isMissing);
     }
 
     /** The arctan of two numbers */
@@ -564,12 +564,12 @@ public final class MathFunctions {
         var y = toFloat(args.get(0));
         var x = toFloat(args.get(1));
         return FloatComputer.of( //
-            wml -> {
-                var xC = x.compute(wml);
-                var yC = y.compute(wml);
+            ctx -> {
+                var xC = x.compute(ctx);
+                var yC = y.compute(ctx);
 
                 if (isNearZero(xC) && isNearZero(yC)) {
-                    wml.addWarning("invalid argument to atan2 (both args are zero)");
+                    ctx.addWarning("invalid argument to atan2 (both args are zero)");
                     return Float.NaN;
                 }
 
@@ -601,7 +601,7 @@ public final class MathFunctions {
 
     private static Computer sinhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> Math.sinh(c.compute(wml)), c::isMissing);
+        return FloatComputer.of(ctx -> Math.sinh(c.compute(ctx)), c::isMissing);
     }
 
     /** Hyperbolic cosine of one number */
@@ -626,7 +626,7 @@ public final class MathFunctions {
 
     private static Computer coshImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> Math.cosh(c.compute(wml)), c::isMissing);
+        return FloatComputer.of(ctx -> Math.cosh(c.compute(ctx)), c::isMissing);
     }
 
     /** Hyperbolic tangent of one number */
@@ -651,7 +651,7 @@ public final class MathFunctions {
 
     private static Computer tanhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> Math.tanh(c.compute(wml)), c::isMissing);
+        return FloatComputer.of(ctx -> Math.tanh(c.compute(ctx)), c::isMissing);
     }
 
     /** Hyperbolic arcsine of one number */
@@ -677,8 +677,8 @@ public final class MathFunctions {
     private static Computer asinhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        ToDoubleFunction<EvaluationContext> value = wml -> {
-            var cC = c.compute(wml);
+        ToDoubleFunction<EvaluationContext> value = ctx -> {
+            var cC = c.compute(ctx);
 
             return Math.log(cC + Math.sqrt(cC * cC + 1));
         };
@@ -712,11 +712,11 @@ public final class MathFunctions {
     private static Computer acoshImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        ToDoubleFunction<EvaluationContext> value = wml -> {
-            var cC = c.compute(wml);
+        ToDoubleFunction<EvaluationContext> value = ctx -> {
+            var cC = c.compute(ctx);
 
             if (cC < 1) {
-                wml.addWarning("invalid argument to acosh (arg < 1)");
+                ctx.addWarning("invalid argument to acosh (arg < 1)");
                 return Float.NaN;
             }
 
@@ -752,11 +752,11 @@ public final class MathFunctions {
     private static Computer atanhImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
 
-        ToDoubleFunction<EvaluationContext> value = wml -> {
-            var cC = c.compute(wml);
+        ToDoubleFunction<EvaluationContext> value = ctx -> {
+            var cC = c.compute(ctx);
 
             if (Math.abs(cC) >= 1) {
-                wml.addWarning("invalid argument to atanh (|arg| >= 1)");
+                ctx.addWarning("invalid argument to atanh (|arg| >= 1)");
             }
 
             return 0.5 * Math.log((cC + 1.0) / (1.0 - cC));
@@ -790,11 +790,11 @@ public final class MathFunctions {
 
     private static Computer lnImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> {
-            var cC = c.compute(wml);
+        return FloatComputer.of(ctx -> {
+            var cC = c.compute(ctx);
 
             if (cC <= 0) {
-                wml.addWarning("invalid argument to ln (arg <= 0)");
+                ctx.addWarning("invalid argument to ln (arg <= 0)");
             }
 
             return Math.log(cC);
@@ -826,11 +826,11 @@ public final class MathFunctions {
 
     private static Computer log10Impl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> {
-            var cC = c.compute(wml);
+        return FloatComputer.of(ctx -> {
+            var cC = c.compute(ctx);
 
             if (cC <= 0) {
-                wml.addWarning("invalid argument to log10 (arg <= 0)");
+                ctx.addWarning("invalid argument to log10 (arg <= 0)");
             }
 
             return Math.log10(cC);
@@ -862,11 +862,11 @@ public final class MathFunctions {
 
     private static Computer log2Impl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return FloatComputer.of(wml -> {
-            var cC = c.compute(wml);
+        return FloatComputer.of(ctx -> {
+            var cC = c.compute(ctx);
 
             if (cC <= 0) {
-                wml.addWarning("invalid argument to log2 (arg <= 0)");
+                ctx.addWarning("invalid argument to log2 (arg <= 0)");
             }
 
             return Math.log(cC) / Math.log(2);
@@ -908,25 +908,25 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         var b = toFloat(args.get(1));
 
-        ToDoubleFunction<EvaluationContext> value = wml -> {
-            var bC = b.compute(wml);
-            var cC = c.compute(wml);
+        ToDoubleFunction<EvaluationContext> value = ctx -> {
+            var bC = b.compute(ctx);
+            var cC = c.compute(ctx);
 
             if (bC > 0 && isNearZero(cC)) {
-                wml.addWarning("invalid argument to log (n == 0, base > 0)");
+                ctx.addWarning("invalid argument to log (n == 0, base > 0)");
             }
 
             if (bC <= 0) {
-                wml.addWarning("invalid argument to log (base <= 0)");
+                ctx.addWarning("invalid argument to log (base <= 0)");
                 return Float.NaN;
             }
 
             if (Math.abs(bC - 1) < 2 * Double.MIN_VALUE) {
-                wml.addWarning("invalid argument to log (base == 1)");
+                ctx.addWarning("invalid argument to log (base == 1)");
             }
 
             if (cC <= 0) {
-                wml.addWarning("invalid argument to log (number <= 0)");
+                ctx.addWarning("invalid argument to log (number <= 0)");
             }
 
             return Math.log(cC) / Math.log(bC);
@@ -966,11 +966,11 @@ public final class MathFunctions {
     private static Computer log1pImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
-            wml -> {
-                var cC = c.compute(wml);
+            ctx -> {
+                var cC = c.compute(ctx);
 
                 if (cC <= -1) {
-                    wml.addWarning("invalid argument to log1p (arg <= -1)");
+                    ctx.addWarning("invalid argument to log1p (arg <= -1)");
                 }
 
                 return Math.log1p(cC);
@@ -1004,7 +1004,7 @@ public final class MathFunctions {
     private static Computer expImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
-            wml -> Math.exp(c.compute(wml)), //
+            ctx -> Math.exp(c.compute(ctx)), //
             c::isMissing //
         );
     }
@@ -1048,12 +1048,12 @@ public final class MathFunctions {
             var x = toInteger(args.get(0));
             var y = toInteger(args.get(1));
             return IntegerComputer.of( //
-                wml -> {
-                    var xC = x.compute(wml);
-                    var yC = y.compute(wml);
+                ctx -> {
+                    var xC = x.compute(ctx);
+                    var yC = y.compute(ctx);
 
                     if (xC == 0 && yC <= 0) {
-                        wml.addWarning("invalid arguments to pow (pow(0, <=0) is undefined)");
+                        ctx.addWarning("invalid arguments to pow (pow(0, <=0) is undefined)");
                         return 0;
                     }
 
@@ -1064,12 +1064,12 @@ public final class MathFunctions {
             var x = toFloat(args.get(0));
             var y = toFloat(args.get(1));
             return FloatComputer.of( //
-                wml -> {
-                    var xC = x.compute(wml);
-                    var yC = y.compute(wml);
+                ctx -> {
+                    var xC = x.compute(ctx);
+                    var yC = y.compute(ctx);
 
                     if (isNearZero(xC) && (isNearZero(yC) || yC < 0)) {
-                        wml.addWarning("invalid arguments to pow (pow(0, <=0) is undefined)");
+                        ctx.addWarning("invalid arguments to pow (pow(0, <=0) is undefined)");
                         return Float.NaN;
                     }
 
@@ -1105,11 +1105,11 @@ public final class MathFunctions {
     private static Computer sqrtImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
-            wml -> {
-                var cC = c.compute(wml);
+            ctx -> {
+                var cC = c.compute(ctx);
 
                 if (cC < 0) {
-                    wml.addWarning("invalid argument to sqrt (x < 0)");
+                    ctx.addWarning("invalid argument to sqrt (x < 0)");
                 }
 
                 return Math.sqrt(cC); //
@@ -1153,12 +1153,12 @@ public final class MathFunctions {
 
     private static Computer modImpl(final List<Computer> args) {
         if (args.stream().allMatch(IntegerComputer.class::isInstance)) {
-            return IntegerComputer.of(wml -> {
-                var x = toInteger(args.get(0)).compute(wml);
-                var y = toInteger(args.get(1)).compute(wml);
+            return IntegerComputer.of(ctx -> {
+                var x = toInteger(args.get(0)).compute(ctx);
+                var y = toInteger(args.get(1)).compute(ctx);
 
                 if (y == 0) {
-                    wml.addWarning("invalid arguments to mod (y == 0)");
+                    ctx.addWarning("invalid arguments to mod (y == 0)");
                     return 0;
                 }
 
@@ -1166,12 +1166,12 @@ public final class MathFunctions {
             }, anyMissing(args));
         } else {
             return FloatComputer.of( //
-                wml -> {
-                    var x = toFloat(args.get(0)).compute(wml);
-                    var y = toFloat(args.get(1)).compute(wml);
+                ctx -> {
+                    var x = toFloat(args.get(0)).compute(ctx);
+                    var y = toFloat(args.get(1)).compute(ctx);
 
                     if (isNearZero(y)) {
-                        wml.addWarning("invalid arguments to mod (y == 0)");
+                        ctx.addWarning("invalid arguments to mod (y == 0)");
                         return Float.NaN;
                     }
 
@@ -1205,7 +1205,7 @@ public final class MathFunctions {
     private static Computer degreesImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
-            wml -> Math.toDegrees(c.compute(wml)), //
+            ctx -> Math.toDegrees(c.compute(ctx)), //
             c::isMissing //
         );
     }
@@ -1234,7 +1234,7 @@ public final class MathFunctions {
     private static Computer radiansImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
-            wml -> Math.toRadians(c.compute(wml)), //
+            ctx -> Math.toRadians(c.compute(ctx)), //
             c::isMissing //
         );
     }
@@ -1264,12 +1264,12 @@ public final class MathFunctions {
     private static Computer floorImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
-            wml -> (long)Math.floor(c.compute(wml)), //
-            wml -> {
-                if (c.isMissing(wml)) {
+            ctx -> (long)Math.floor(c.compute(ctx)), //
+            ctx -> {
+                if (c.isMissing(ctx)) {
                     return true;
-                } else if (Double.isNaN(c.compute(wml))) {
-                    wml.addWarning("Invalid arguments to floor: arg is `NaN`");
+                } else if (Double.isNaN(c.compute(ctx))) {
+                    ctx.addWarning("Invalid arguments to floor: arg is `NaN`");
                     return true;
                 } else {
                     return false;
@@ -1303,12 +1303,12 @@ public final class MathFunctions {
     private static Computer ceilImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
-            wml -> (int)Math.ceil(c.compute(wml)), //
-            wml -> {
-                if (c.isMissing(wml)) {
+            ctx -> (int)Math.ceil(c.compute(ctx)), //
+            ctx -> {
+                if (c.isMissing(ctx)) {
                     return true;
-                } else if (Double.isNaN(c.compute(wml))) {
-                    wml.addWarning("Invalid arguments to ceil: arg is `NaN`");
+                } else if (Double.isNaN(c.compute(ctx))) {
+                    ctx.addWarning("Invalid arguments to ceil: arg is `NaN`");
                     return true;
                 } else {
                     return false;
@@ -1342,12 +1342,12 @@ public final class MathFunctions {
     private static Computer truncImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
-            wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, RoundingMode.DOWN).longValue(), //
-            wml -> {
-                if (c.isMissing(wml)) {
+            ctx -> BigDecimal.valueOf(c.compute(ctx)).setScale(0, RoundingMode.DOWN).longValue(), //
+            ctx -> {
+                if (c.isMissing(ctx)) {
                     return true;
-                } else if (Double.isNaN(c.compute(wml))) {
-                    wml.addWarning("Invalid arguments to trunc: arg is `NaN`");
+                } else if (Double.isNaN(c.compute(ctx))) {
+                    ctx.addWarning("Invalid arguments to trunc: arg is `NaN`");
                     return true;
                 } else {
                     return false;
@@ -1493,21 +1493,21 @@ public final class MathFunctions {
             if (args.size() == 1) {
                 // Return integer
                 return IntegerComputer.of( //
-                    wml -> BigDecimal.valueOf(c.compute(wml)).setScale(0, mode).longValue(), //
-                    wml -> {
-                        if (anyMissing(args).test(wml)) {
+                    ctx -> BigDecimal.valueOf(c.compute(ctx)).setScale(0, mode).longValue(), //
+                    ctx -> {
+                        if (anyMissing(args).test(ctx)) {
                             return true;
-                        } else if (Double.isNaN(c.compute(wml))) {
-                            wml.addWarning("Invalid arguments to %s: arg is `NaN`".formatted(functionName));
+                        } else if (Double.isNaN(c.compute(ctx))) {
+                            ctx.addWarning("Invalid arguments to %s: arg is `NaN`".formatted(functionName));
                             return true;
                         } else {
                             return false;
                         }
                     });
             } else {
-                return FloatComputer.of(wml -> {
-                    int scale = (int)toInteger(args.get(1)).compute(wml);
-                    double value = c.compute(wml);
+                return FloatComputer.of(ctx -> {
+                    int scale = (int)toInteger(args.get(1)).compute(ctx);
+                    double value = c.compute(ctx);
 
                     if (Double.isNaN(value)) {
                         return Double.NaN;
@@ -1543,12 +1543,12 @@ public final class MathFunctions {
     private static Computer signImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
         return IntegerComputer.of( //
-            wml -> (int)Math.signum(c.compute(wml)), //
-            wml -> {
-                if (c.isMissing(wml)) {
+            ctx -> (int)Math.signum(c.compute(ctx)), //
+            ctx -> {
+                if (c.isMissing(ctx)) {
                     return true;
-                } else if (Double.isNaN(c.compute(wml))) {
-                    wml.addWarning("Invalid arguments to sign: arg is `NaN`");
+                } else if (Double.isNaN(c.compute(ctx))) {
+                    ctx.addWarning("Invalid arguments to sign: arg is `NaN`");
                     return true;
                 } else {
                     return false;
@@ -1587,8 +1587,8 @@ public final class MathFunctions {
         .build();
 
     private static Computer averageImpl(final List<Computer> args) {
-        ToDoubleFunction<EvaluationContext> value = wml -> args.stream() //
-            .map(c -> toFloat(c).compute(wml)) //
+        ToDoubleFunction<EvaluationContext> value = ctx -> args.stream() //
+            .map(c -> toFloat(c).compute(ctx)) //
             .mapToDouble(Double::valueOf) //
             .average() //
             .getAsDouble();
@@ -1629,10 +1629,10 @@ public final class MathFunctions {
         .build();
 
     private static Computer medianImpl(final List<Computer> args) {
-        ToDoubleFunction<EvaluationContext> value = wml -> {
+        ToDoubleFunction<EvaluationContext> value = ctx -> {
             // Because we use ::compute we need to do this inside the DoubleSupplier
             var sortedFloatArgs = args.stream() //
-                .map(c -> toFloat(c).compute(wml)) //
+                .map(c -> toFloat(c).compute(ctx)) //
                 .sorted() //
                 .toArray(Double[]::new); //
 
@@ -1694,9 +1694,9 @@ public final class MathFunctions {
         .build();
 
     private static Computer binomialImpl(final List<Computer> args) {
-        ToLongFunction<EvaluationContext> value = wml -> {
-            long n = toInteger(args.get(0)).compute(wml);
-            long r = toInteger(args.get(1)).compute(wml);
+        ToLongFunction<EvaluationContext> value = ctx -> {
+            long n = toInteger(args.get(0)).compute(ctx);
+            long r = toInteger(args.get(1)).compute(ctx);
 
             // 0c0 needs special handling
             if (n == 0 && r == 0) {
@@ -1704,17 +1704,17 @@ public final class MathFunctions {
             }
 
             if (r > n) {
-                wml.addWarning("invalid arguments to binomial (r > n)");
+                ctx.addWarning("invalid arguments to binomial (r > n)");
                 return 0;
             }
 
             if (r < 0) {
-                wml.addWarning("invalid arguments to binomial (r < 0)");
+                ctx.addWarning("invalid arguments to binomial (r < 0)");
                 return 0;
             }
 
             if (n < 0) {
-                wml.addWarning("invalid arguments to binomial (n < 0)");
+                ctx.addWarning("invalid arguments to binomial (n < 0)");
                 return 0;
             }
 
@@ -1776,13 +1776,13 @@ public final class MathFunctions {
         .build();
 
     private static Computer normalImpl(final List<Computer> args) {
-        return FloatComputer.of(wml -> {
-            var value = toFloat(args.get(0)).compute(wml);
-            var mean = toFloat(args.get(1)).compute(wml);
-            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(wml) : 1.0;
+        return FloatComputer.of(ctx -> {
+            var value = toFloat(args.get(0)).compute(ctx);
+            var mean = toFloat(args.get(1)).compute(ctx);
+            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(ctx) : 1.0;
 
             if (isNearZero(standardDeviation) || standardDeviation < 0) {
-                wml.addWarning("invalid argument to error_function (standard deviation <= 0)");
+                ctx.addWarning("invalid argument to error_function (standard deviation <= 0)");
                 return Float.NaN;
             }
 
@@ -1837,13 +1837,13 @@ public final class MathFunctions {
         .build();
 
     private static Computer errorFunctionImpl(final List<Computer> args) {
-        return FloatComputer.of(wml -> {
-            var value = toFloat(args.get(0)).compute(wml);
-            var mean = toFloat(args.get(1)).compute(wml);
-            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(wml) : (1.0 / Math.sqrt(2));
+        return FloatComputer.of(ctx -> {
+            var value = toFloat(args.get(0)).compute(ctx);
+            var mean = toFloat(args.get(1)).compute(ctx);
+            var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(ctx) : (1.0 / Math.sqrt(2));
 
             if (isNearZero(standardDeviation) || standardDeviation < 0) {
-                wml.addWarning("invalid argument to error_function (standard deviation <= 0)");
+                ctx.addWarning("invalid argument to error_function (standard deviation <= 0)");
                 return Float.NaN;
             }
 
@@ -1898,7 +1898,7 @@ public final class MathFunctions {
 
     private static Computer isNanImpl(final List<Computer> args) {
         var c = toFloat(args.get(0));
-        return BooleanComputer.of(wml -> !c.isMissing(wml) && Double.isNaN(c.compute(wml)), wml -> false);
+        return BooleanComputer.of(ctx -> !c.isMissing(ctx) && Double.isNaN(c.compute(ctx)), ctx -> false);
     }
 
     /** Convert NaN to MISSING */
@@ -1924,7 +1924,7 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         return FloatComputer.of( //
             c::compute, //
-            wml -> c.isMissing(wml) || Double.isNaN(c.compute(wml)) //
+            ctx -> c.isMissing(ctx) || Double.isNaN(c.compute(ctx)) //
         );
     }
 
