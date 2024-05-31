@@ -48,6 +48,7 @@
  */
 package org.knime.core.expressions.aggregations;
 
+import static org.knime.core.expressions.AstTestUtils.BOOL;
 import static org.knime.core.expressions.AstTestUtils.STR;
 import static org.knime.core.expressions.aggregations.ArgumentsBuilder.args;
 
@@ -95,10 +96,134 @@ final class BuiltInAggregationsTests {
             .typing("Integer column named", args().n("column", STR(INT_COL)).build(), ValueType.OPT_INTEGER) //
             .typing("Float column positional", args().p(STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
             .typing("Float column named", args().n("column", STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg positional", args().p(STR(INT_COL)).p(BOOL(false)).build(),
+                ValueType.OPT_INTEGER) //
+            .typing("Specify second arg named", args().n("column", STR(INT_COL)).n("ignore_nan", BOOL(false)).build(),
+                ValueType.OPT_INTEGER) //
             .illegalArgs("No column arg", args().build()) //
             .illegalArgs("String column", args().p(STR(STR_COL)).build()) //
-            .illegalArgs("Missing column", args().p(STR("foo")).build()) //
+            .illegalArgs("No column arg", args().p(STR("foo")).build()) //
+            .illegalArgs("Invalid second arg type", args().p(STR(INT_COL)).p(STR("foo")).build()) //
             .tests();
+    }
 
+    @TestFactory
+    List<DynamicNode> min() {
+        return new ColumnAggregationTestBuilder(BuiltInAggregations.MIN, COLUMN_TYPES) //
+            .typing("Integer column positional", args().p(STR(INT_COL)).build(), ValueType.OPT_INTEGER) //
+            .typing("Integer column named", args().n("column", STR(INT_COL)).build(), ValueType.OPT_INTEGER) //
+            .typing("Float column positional", args().p(STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Float column named", args().n("column", STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg positional", args().p(STR(INT_COL)).p(BOOL(false)).build(),
+                ValueType.OPT_INTEGER) //
+            .typing("Specify second arg named", args().n("column", STR(INT_COL)).n("ignore_nan", BOOL(false)).build(),
+                ValueType.OPT_INTEGER) //
+            .illegalArgs("No column arg", args().build()) //
+            .illegalArgs("String column", args().p(STR(STR_COL)).build()) //
+            .illegalArgs("No column arg", args().p(STR("foo")).build()) //
+            .illegalArgs("Invalid second arg type", args().p(STR(INT_COL)).p(STR("foo")).build()) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> sum() {
+        return new ColumnAggregationTestBuilder(BuiltInAggregations.SUM, COLUMN_TYPES) //
+            .typing("Integer column positional", args().p(STR(INT_COL)).build(), ValueType.OPT_INTEGER) //
+            .typing("Integer column named", args().n("column", STR(INT_COL)).build(), ValueType.OPT_INTEGER) //
+            .typing("Float column positional", args().p(STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Float column named", args().n("column", STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg positional", args().p(STR(INT_COL)).p(BOOL(false)).build(),
+                ValueType.OPT_INTEGER) //
+            .typing("Specify second arg named", args().n("column", STR(INT_COL)).n("ignore_nan", BOOL(false)).build(),
+                ValueType.OPT_INTEGER) //
+            .illegalArgs("No column arg", args().build()) //
+            .illegalArgs("String column", args().p(STR(STR_COL)).build()) //
+            .illegalArgs("No column arg", args().p(STR("foo")).build()) //
+            .illegalArgs("Invalid second arg type", args().p(STR(INT_COL)).p(STR("foo")).build()) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> mean() {
+        return new ColumnAggregationTestBuilder(BuiltInAggregations.MEAN, COLUMN_TYPES) //
+            .typing("Integer column positional", args().p(STR(INT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Integer column named", args().n("column", STR(INT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Float column positional", args().p(STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Float column named", args().n("column", STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg positional", args().p(STR(INT_COL)).p(BOOL(false)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg named", args().n("column", STR(INT_COL)).n("ignore_nan", BOOL(false)).build(),
+                ValueType.OPT_FLOAT) //
+            .illegalArgs("No column arg", args().build()) //
+            .illegalArgs("String column", args().p(STR(STR_COL)).build()) //
+            .illegalArgs("No column arg", args().p(STR("foo")).build()) //
+            .illegalArgs("Invalid second arg type", args().p(STR(INT_COL)).p(STR("foo")).build()) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> median() {
+        return new ColumnAggregationTestBuilder(BuiltInAggregations.MEDIAN, COLUMN_TYPES) //
+            .typing("Integer column positional", args().p(STR(INT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Integer column named", args().n("column", STR(INT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Float column positional", args().p(STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Float column named", args().n("column", STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg positional", args().p(STR(INT_COL)).p(BOOL(false)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg named", args().n("column", STR(INT_COL)).n("ignore_nan", BOOL(false)).build(),
+                ValueType.OPT_FLOAT) //
+            .illegalArgs("No column arg", args().build()) //
+            .illegalArgs("String column", args().p(STR(STR_COL)).build()) //
+            .illegalArgs("No column arg", args().p(STR("foo")).build()) //
+            .illegalArgs("Invalid second arg type", args().p(STR(INT_COL)).p(STR("foo")).build()) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> variance() {
+        return new ColumnAggregationTestBuilder(BuiltInAggregations.VARIANCE, COLUMN_TYPES) //
+            .typing("Integer column positional", args().p(STR(INT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Integer column named", args().n("column", STR(INT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Float column positional", args().p(STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Float column named", args().n("column", STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg positional", args().p(STR(INT_COL)).p(BOOL(false)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg named", args().n("column", STR(INT_COL)).n("ignore_nan", BOOL(false)).build(),
+                ValueType.OPT_FLOAT) //
+            .illegalArgs("No column arg", args().build()) //
+            .illegalArgs("String column", args().p(STR(STR_COL)).build()) //
+            .illegalArgs("No column arg", args().p(STR("foo")).build()) //
+            .illegalArgs("Invalid second arg type", args().p(STR(INT_COL)).p(STR("foo")).build()) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> stddev() {
+        return new ColumnAggregationTestBuilder(BuiltInAggregations.STD_DEV, COLUMN_TYPES) //
+            .typing("Integer column positional", args().p(STR(INT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Integer column named", args().n("column", STR(INT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Float column positional", args().p(STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Float column named", args().n("column", STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg positional", args().p(STR(INT_COL)).p(BOOL(false)).build(), ValueType.OPT_FLOAT) //
+            .typing("Specify second arg named", args().n("column", STR(INT_COL)).n("ignore_nan", BOOL(false)).build(),
+                ValueType.OPT_FLOAT) //
+            .illegalArgs("No column arg", args().build()) //
+            .illegalArgs("String column", args().p(STR(STR_COL)).build()) //
+            .illegalArgs("No column arg", args().p(STR("foo")).build()) //
+            .illegalArgs("Invalid second arg type", args().p(STR(INT_COL)).p(STR("foo")).build()) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> count() {
+        return new ColumnAggregationTestBuilder(BuiltInAggregations.COUNT, COLUMN_TYPES) //
+            .typing("Integer column positional", args().p(STR(INT_COL)).p(BOOL(true)).build(), ValueType.INTEGER) //
+            .typing("Integer column named", args().n("column", STR(INT_COL)).n("ignore_missing", BOOL(true)).build(),
+                ValueType.INTEGER) //
+            .typing("Both positional", args().p(STR(STR_COL)).p(BOOL(true)).build(), ValueType.INTEGER) //
+            .typing("Both named", args().n("column", STR(STR_COL)).n("ignore_missing", BOOL(true)).build(),
+                ValueType.INTEGER) //
+            .typing("String column", args().p(STR(STR_COL)).build(), ValueType.INTEGER) //
+            .illegalArgs("No column arg", args().build()) //
+            .illegalArgs("Invalid column", args().p(STR("foo")).build()) //
+            .illegalArgs("Invalid second arg type", args().p(STR(INT_COL)).p(STR("foo")).build()) //
+            .tests();
     }
 }

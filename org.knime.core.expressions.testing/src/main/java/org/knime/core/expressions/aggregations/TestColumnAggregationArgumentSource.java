@@ -76,7 +76,7 @@ public class TestColumnAggregationArgumentSource implements ArgumentsProvider {
 
     @Override
     public Stream<? extends Arguments> provideArguments(final ExtensionContext context) throws Exception {
-        return BuiltInAggregations.BUILT_IN_AGGREGATIONS.stream()
+        return BuiltInAggregations.BUILT_IN_AGGREGATIONS.stream() //
             .map(TestColumnAggregationArgumentSource::getTestAstFor) //
             .map(Arguments::of);
     }
@@ -95,6 +95,20 @@ public class TestColumnAggregationArgumentSource implements ArgumentsProvider {
     private static org.knime.core.expressions.Arguments<Ast.ConstantAst> getTestArgsFor(final ColumnAggregation call) {
         if (BuiltInAggregations.MAX.equals(call)) {
             return args().p(Ast.stringConstant("INT_COL")).build();
+        } else if (BuiltInAggregations.MIN.equals(call)) {
+            return args().p(Ast.stringConstant("FLOAT_COL")).build();
+        } else if (BuiltInAggregations.SUM.equals(call)) {
+            return args().p(Ast.stringConstant("INT_COL")).build();
+        } else if (BuiltInAggregations.MEAN.equals(call)) {
+            return args().p(Ast.stringConstant("FLOAT_COL")).build();
+        } else if (BuiltInAggregations.COUNT.equals(call)) {
+            return args().p(Ast.stringConstant("STRING_COL")).n("ignore_missing", Ast.booleanConstant(true)).build();
+        } else if (BuiltInAggregations.MEDIAN.equals(call)) {
+            return args().p(Ast.stringConstant("INT_COL")).build();
+        } else if (BuiltInAggregations.STD_DEV.equals(call)) {
+            return args().p(Ast.stringConstant("FLOAT_COL")).build();
+        } else if (BuiltInAggregations.VARIANCE.equals(call)) {
+            return args().p(Ast.stringConstant("FLOAT_COL")).build();
         }
         return fail("No test arguments for aggregation " + call.name());
     }
