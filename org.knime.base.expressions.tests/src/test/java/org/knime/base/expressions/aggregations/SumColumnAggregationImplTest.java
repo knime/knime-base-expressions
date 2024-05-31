@@ -61,25 +61,28 @@ import org.junit.jupiter.api.TestFactory;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("static-method")
-final class MaxColumnAggregationImplTest {
+final class SumColumnAggregationImplTest {
 
     @TestFactory
-    List<DynamicNode> max() {
-        return new AggregationTestUtils.AggregationTestBuilder(MaxColumnAggregationImpl::maxAggregation) //
-            .implInt("int", listOf(1, -10, 10, 5), 10) //
-            .implLong("long", listOf(1L, -10L, 10L, 5L), 10L) //
-            .implLong("longMissing", listOf(1L, null, 5L), 5L) //
+    List<DynamicNode> sum() {
+        return new AggregationTestUtils.AggregationTestBuilder(SumColumnAggregationImpl::sumAggregation) //
+            .implInt("int", listOf(1, -10, 10, 5), 6) //
+            .implInt("2 x intMaxValue", List.of(Integer.MAX_VALUE, Integer.MAX_VALUE), 2L * Integer.MAX_VALUE) //
+            .implLong("long", listOf(1L, -10L, 10L, 5L), 6L) //
+            .implLong("longMissing", listOf(1L, null, 5L), 6L) //
             .implLong("longOnlyMissing", listOf(null, null), null) //
-            .implLong("longMinValue", listOf(Long.MIN_VALUE, Long.MIN_VALUE), Long.MIN_VALUE) //
+            .implLong("longMinValue", listOf(Long.MIN_VALUE, Long.MIN_VALUE), 2 * Long.MIN_VALUE) //
             .implLong("longMaxValue", listOf(Long.MAX_VALUE, 0L), Long.MAX_VALUE) //
-            .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), 2.2) //
-            .implDouble("doubleMissing", listOf(1.0, null, 5.4), 5.4) //
+            .implLong("2 x longMaxValue", List.of(Long.MAX_VALUE, Long.MAX_VALUE), Long.MAX_VALUE + Long.MAX_VALUE) //
+            .setFutureTolerances(1e-10) //
+            .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), 3.2) //
+            .implDouble("doubleMissing", listOf(1.0, null, 5.4), 6.4) //
             .implDouble("doubleOnlyMissing", listOf(null, null), null) //
             .implDouble("doubleNaN", listOf(Double.NaN, 1.0), Double.NaN) //
             .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), Double.NaN) //
             .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 1.0) //
-            .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), Double.NaN) //
-            .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 2.0) //
+            .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), 0.0) //
+            .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 3.0) //
             .unsupportedTypeString("string") //
             .tests();
     }

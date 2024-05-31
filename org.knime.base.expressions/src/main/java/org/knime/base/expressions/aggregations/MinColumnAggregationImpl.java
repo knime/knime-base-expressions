@@ -65,17 +65,18 @@ import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
-final class MaxColumnAggregationImpl {
+final class MinColumnAggregationImpl {
 
     private static final boolean IGNORE_NAN_DEFAULT = false;
 
-    private MaxColumnAggregationImpl() {
+    private MinColumnAggregationImpl() {
     }
 
-    static Aggregation maxAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
-        var matchedArgs = Argument.matchSignature(BuiltInAggregations.MAX.description().arguments(), arguments);
+    static Aggregation minAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
+        var matchedArgs = Argument.matchSignature(BuiltInAggregations.MIN.description().arguments(), arguments) //
+            .filter(args -> args.size() == 1 || args.size() == 2); // must be only 1/2 arguments
 
         var columnIdx = matchedArgs //
             .map(args -> args.get("column")) // type of the column argument
@@ -93,26 +94,26 @@ final class MaxColumnAggregationImpl {
         var columnType = tableSpec.getColumnSpec(columnIdx).getType();
 
         if (columnType.isCompatible(LongValue.class)) {
-            return new MaxIntegerAggregation(columnIdx);
+            return new MinIntegerAggregation(columnIdx);
         } else if (columnType.isCompatible(DoubleValue.class)) {
-            return new MaxFloatAggregation(columnIdx, ignoreNaN);
+            return new MinFloatAggregation(columnIdx, ignoreNaN);
         } else {
             throw new IllegalStateException("Implementation error - unsupported column type: %s".formatted(columnType));
         }
     }
 
     @SuppressWarnings("squid:S3052") // Allow redundant initialisations for clarity
-    private static final class MaxFloatAggregation extends AbstractAggregation {
+    private static final class MinFloatAggregation extends AbstractAggregation {
 
         private final boolean m_ignoreNaN;
 
-        private double m_max = Double.NEGATIVE_INFINITY;
+        private double m_min = Double.POSITIVE_INFINITY;
 
         private boolean m_anyValuesNaN = false;
 
         private boolean m_allValuesNaN = true;
 
-        private MaxFloatAggregation(final int columnIdx, final boolean ignoreNaN) {
+        private MinFloatAggregation(final int columnIdx, final boolean ignoreNaN) {
             super(columnIdx);
 
             this.m_ignoreNaN = ignoreNaN;
@@ -129,8 +130,8 @@ final class MaxColumnAggregationImpl {
                 return;
             }
 
-            if (value > m_max) {
-                m_max = value;
+            if (value < m_min) {
+                m_min = value;
             }
         }
 
@@ -139,30 +140,30 @@ final class MaxColumnAggregationImpl {
             if (m_allValuesNaN || (!m_ignoreNaN && m_anyValuesNaN)) {
                 return Computer.FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
             } else {
-                return Computer.FloatComputer.of(ctx -> m_max, ctx -> m_isMissing);
+                return Computer.FloatComputer.of(ctx -> m_min, ctx -> m_isMissing);
             }
         }
     }
 
-    private static final class MaxIntegerAggregation extends AbstractAggregation {
+    private static final class MinIntegerAggregation extends AbstractAggregation {
 
-        private long m_max = Long.MIN_VALUE;
+        private long m_min = Long.MAX_VALUE;
 
-        private MaxIntegerAggregation(final int columnIdx) {
+        private MinIntegerAggregation(final int columnIdx) {
             super(columnIdx);
         }
 
         @Override
         protected void addNonMissingRow(final RowRead row) {
             var value = ((LongValue)row.getValue(m_columnIdx)).getLongValue();
-            if (value > m_max) {
-                m_max = value;
+            if (value < m_min) {
+                m_min = value;
             }
         }
 
         @Override
         public Computer createResultComputer() {
-            return Computer.IntegerComputer.of(ctx -> m_max, ctx -> m_isMissing);
+            return Computer.IntegerComputer.of(ctx -> m_min, ctx -> m_isMissing);
         }
     }
 }

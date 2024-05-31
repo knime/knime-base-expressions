@@ -54,7 +54,6 @@ import java.util.Optional;
 import org.knime.base.expressions.aggregations.ColumnAggregations.Aggregation;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DoubleValue;
-import org.knime.core.data.LongValue;
 import org.knime.core.data.v2.RowRead;
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
@@ -65,17 +64,17 @@ import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
-final class MaxColumnAggregationImpl {
+final class VarianceColumnAggregationImpl {
 
     private static final boolean IGNORE_NAN_DEFAULT = false;
 
-    private MaxColumnAggregationImpl() {
+    private VarianceColumnAggregationImpl() {
     }
 
-    static Aggregation maxAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
-        var matchedArgs = Argument.matchSignature(BuiltInAggregations.MAX.description().arguments(), arguments);
+    static Aggregation varianceAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
+        var matchedArgs = Argument.matchSignature(BuiltInAggregations.VARIANCE.description().arguments(), arguments);
 
         var columnIdx = matchedArgs //
             .map(args -> args.get("column")) // type of the column argument
@@ -92,30 +91,32 @@ final class MaxColumnAggregationImpl {
 
         var columnType = tableSpec.getColumnSpec(columnIdx).getType();
 
-        if (columnType.isCompatible(LongValue.class)) {
-            return new MaxIntegerAggregation(columnIdx);
-        } else if (columnType.isCompatible(DoubleValue.class)) {
-            return new MaxFloatAggregation(columnIdx, ignoreNaN);
+        if (columnType.isCompatible(DoubleValue.class)) {
+            return new VarianceFloatAggregation(columnIdx, ignoreNaN);
         } else {
             throw new IllegalStateException("Implementation error - unsupported column type: %s".formatted(columnType));
         }
     }
 
     @SuppressWarnings("squid:S3052") // Allow redundant initialisations for clarity
-    private static final class MaxFloatAggregation extends AbstractAggregation {
+    private static final class VarianceFloatAggregation extends AbstractAggregation {
+
+        private double m_runningMean = 0;
+
+        private double m_runningMeanSq = 0;
+
+        private long m_count = 0;
 
         private final boolean m_ignoreNaN;
-
-        private double m_max = Double.NEGATIVE_INFINITY;
 
         private boolean m_anyValuesNaN = false;
 
         private boolean m_allValuesNaN = true;
 
-        private MaxFloatAggregation(final int columnIdx, final boolean ignoreNaN) {
+        private VarianceFloatAggregation(final int columnIdx, final boolean ignoreNaN) {
             super(columnIdx);
 
-            this.m_ignoreNaN = ignoreNaN;
+            m_ignoreNaN = ignoreNaN;
         }
 
         @Override
@@ -129,9 +130,9 @@ final class MaxColumnAggregationImpl {
                 return;
             }
 
-            if (value > m_max) {
-                m_max = value;
-            }
+            m_runningMean = m_runningMean * (m_count / (m_count + 1.0)) + (value / (m_count + 1.0));
+            m_runningMeanSq = m_runningMeanSq * (m_count / (m_count + 1.0)) + value * (value / (m_count + 1.0));
+            m_count++;
         }
 
         @Override
@@ -139,30 +140,9 @@ final class MaxColumnAggregationImpl {
             if (m_allValuesNaN || (!m_ignoreNaN && m_anyValuesNaN)) {
                 return Computer.FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
             } else {
-                return Computer.FloatComputer.of(ctx -> m_max, ctx -> m_isMissing);
+                var variance = m_runningMeanSq - m_runningMean * m_runningMean;
+                return Computer.FloatComputer.of(ctx -> variance, ctx -> m_isMissing);
             }
-        }
-    }
-
-    private static final class MaxIntegerAggregation extends AbstractAggregation {
-
-        private long m_max = Long.MIN_VALUE;
-
-        private MaxIntegerAggregation(final int columnIdx) {
-            super(columnIdx);
-        }
-
-        @Override
-        protected void addNonMissingRow(final RowRead row) {
-            var value = ((LongValue)row.getValue(m_columnIdx)).getLongValue();
-            if (value > m_max) {
-                m_max = value;
-            }
-        }
-
-        @Override
-        public Computer createResultComputer() {
-            return Computer.IntegerComputer.of(ctx -> m_max, ctx -> m_isMissing);
         }
     }
 }

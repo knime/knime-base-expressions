@@ -44,67 +44,86 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 23, 2024 (benjamin): created
+ *   May 24, 2024 (benjamin): created
  */
 package org.knime.base.expressions.aggregations;
 
+import java.util.HashMap;
+import java.util.Optional;
+
+import org.knime.base.expressions.aggregations.ColumnAggregations.Aggregation;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.v2.RowRead;
-import org.knime.core.expressions.Ast.AggregationCall;
+import org.knime.core.expressions.Arguments;
+import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.Expressions;
+import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
- * A collection of column aggregation implementations that operate on {@link RowRead}.
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
-public final class ColumnAggregations {
+final class CountColumnAggregationImpl {
 
-    private ColumnAggregations() {
+    private static final boolean IGNORE_MISSING_DEFAULT = false;
+
+    private CountColumnAggregationImpl() {
     }
 
-    /** Interface for an aggregation implementation that operates on {@link RowRead}. */
-    public interface Aggregation {
+    static Aggregation countAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
+        var matchedArgs = Argument.matchSignature(BuiltInAggregations.COUNT.description().arguments(), arguments);
 
-        /** @param row the next row to add */
-        void addRow(RowRead row);
+        var columnIdx = matchedArgs //
+            .map(args -> args.get("column")) //
+            .map(arg -> ((Ast.StringConstant)arg).value()) // get column name
+            .map(tableSpec::findColumnIndex) // get the column index from name
+            .orElseThrow(() -> new IllegalStateException(
+                "Implementation error - invalid argument for column name (%s).".formatted(arguments)));
 
-        /** @return a computer that returns the result of the aggregation */
-        Computer createResultComputer();
+        var ignoreMissing = matchedArgs //
+            .map(args -> args.get("ignore_missing")) //
+            .or(() -> Optional.of(new Ast.BooleanConstant(IGNORE_MISSING_DEFAULT, new HashMap<>()))) //
+            .map(arg -> ((Ast.BooleanConstant)arg).value()) //
+            .orElseThrow(() -> new IllegalStateException("Implementation error - invalid argument for ignore_missing"));
+
+        return new CountFloatAggregation(columnIdx, ignoreMissing);
     }
 
-    /**
-     * Returns the implementation of the aggregation for the given aggregation call.
-     *
-     * @param aggregationCall the aggregation call
-     * @param tableSpec the table spec of the table
-     * @return the implementation of the aggregation
-     */
-    public static Aggregation getAggregationImplementationFor(final AggregationCall aggregationCall,
-        final DataTableSpec tableSpec) { // NOSONAR the number of returns here is fine
+    @SuppressWarnings("squid:S3052") // Allow redundant initialisations for clarity
+    private static final class CountFloatAggregation extends AbstractAggregation {
 
-        var columnAggregation = Expressions.getResolvedColumnAggregation(aggregationCall);
+        private long m_count = 0;
 
-        if (BuiltInAggregations.MAX.equals(columnAggregation)) {
-            return MaxColumnAggregationImpl.maxAggregation(aggregationCall.args(), tableSpec);
-        } else if (BuiltInAggregations.MIN.equals(columnAggregation)) {
-            return MinColumnAggregationImpl.minAggregation(aggregationCall.args(), tableSpec);
-        } else if (BuiltInAggregations.MEAN.equals(columnAggregation)) {
-            return MeanColumnAggregationImpl.meanAggregation(aggregationCall.args(), tableSpec);
-        } else if (BuiltInAggregations.MEDIAN.equals(columnAggregation)) {
-            return MedianColumnAggregationImpl.medianAggregation(aggregationCall.args(), tableSpec);
-        } else if (BuiltInAggregations.SUM.equals(columnAggregation)) {
-            return SumColumnAggregationImpl.sumAggregation(aggregationCall.args(), tableSpec);
-        } else if (BuiltInAggregations.VARIANCE.equals(columnAggregation)) {
-            return VarianceColumnAggregationImpl.varianceAggregation(aggregationCall.args(), tableSpec);
-        } else if (BuiltInAggregations.STD_DEV.equals(columnAggregation)) {
-            return StdDevColumnAggregationImpl.stddevAggregation(aggregationCall.args(), tableSpec);
-        } else if (BuiltInAggregations.COUNT.equals(columnAggregation)) {
-            return CountColumnAggregationImpl.countAggregation(aggregationCall.args(), tableSpec);
-        } else {
-            throw new UnsupportedOperationException("Aggregation " + columnAggregation.name() + " is not supported.");
+        private final boolean m_ignoreMissing;
+
+        private CountFloatAggregation(final int columnIdx, final boolean ignoreMissing) {
+            super(columnIdx);
+
+            m_ignoreMissing = ignoreMissing;
+
+            // This aggregation is never missing
+            m_isMissing = false;
+        }
+
+        @Override
+        public void addRow(final RowRead row) {
+            if (m_ignoreMissing && row.isMissing(m_columnIdx)) {
+                return;
+            }
+
+            m_count++;
+        }
+
+        @Override
+        protected void addNonMissingRow(final RowRead row) {
+            // do nothing, addRow has this covered
+        }
+
+        @Override
+        public Computer createResultComputer() {
+            return Computer.IntegerComputer.of(ctx -> m_count, ctx -> m_isMissing);
         }
     }
 }

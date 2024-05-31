@@ -54,68 +54,80 @@ import java.util.Optional;
 import org.knime.base.expressions.aggregations.ColumnAggregations.Aggregation;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DoubleValue;
-import org.knime.core.data.LongValue;
 import org.knime.core.data.v2.RowRead;
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
-final class MaxColumnAggregationImpl {
+final class StdDevColumnAggregationImpl {
 
     private static final boolean IGNORE_NAN_DEFAULT = false;
 
-    private MaxColumnAggregationImpl() {
+    private StdDevColumnAggregationImpl() {
     }
 
-    static Aggregation maxAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
-        var matchedArgs = Argument.matchSignature(BuiltInAggregations.MAX.description().arguments(), arguments);
+    static Aggregation stddevAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
 
-        var columnIdx = matchedArgs //
+        var matchedArgs = Argument.matchSignature(BuiltInAggregations.STD_DEV.description().arguments(), arguments);
+
+        int columnIdx = matchedArgs //
             .map(args -> args.get("column")) // type of the column argument
             .map(arg -> ((Ast.StringConstant)arg).value()) // get column name
             .map(tableSpec::findColumnIndex) // get the column index from name
             .orElseThrow(() -> new IllegalStateException(
                 "Implementation error - invalid argument for column name (%s).".formatted(arguments)));
 
-        var ignoreNaN = matchedArgs //
+        boolean ignoreNaN = matchedArgs //
             .map(args -> args.get("ignore_nan")) //
             .or(() -> Optional.of(new Ast.BooleanConstant(IGNORE_NAN_DEFAULT, new HashMap<>()))) //
             .map(arg -> ((Ast.BooleanConstant)arg).value()) //
             .orElseThrow(() -> new IllegalStateException("Implementation error - invalid argument for ignore_nan")); //
 
+        long ddof = matchedArgs //
+            .map(args -> args.get("ddof")) //
+            .or(() -> Optional.of(new Ast.IntegerConstant(0, new HashMap<>()))) //
+            .map(arg -> ((Ast.IntegerConstant)arg).value()) //
+            .orElseThrow(() -> new IllegalStateException("Implementation error - invalid argument for ddof")); //
+
         var columnType = tableSpec.getColumnSpec(columnIdx).getType();
 
-        if (columnType.isCompatible(LongValue.class)) {
-            return new MaxIntegerAggregation(columnIdx);
-        } else if (columnType.isCompatible(DoubleValue.class)) {
-            return new MaxFloatAggregation(columnIdx, ignoreNaN);
+        if (columnType.isCompatible(DoubleValue.class)) {
+            return new StdDevFloatAggregation(columnIdx, ignoreNaN, ddof);
         } else {
             throw new IllegalStateException("Implementation error - unsupported column type: %s".formatted(columnType));
         }
     }
 
     @SuppressWarnings("squid:S3052") // Allow redundant initialisations for clarity
-    private static final class MaxFloatAggregation extends AbstractAggregation {
+    private static final class StdDevFloatAggregation extends AbstractAggregation {
 
         private final boolean m_ignoreNaN;
 
-        private double m_max = Double.NEGATIVE_INFINITY;
+        private final long m_degreesOfFreedom;
+
+        private double m_runningMean = 0;
+
+        private double m_runningMeanSq = 0;
+
+        private long m_count = 0;
 
         private boolean m_anyValuesNaN = false;
 
         private boolean m_allValuesNaN = true;
 
-        private MaxFloatAggregation(final int columnIdx, final boolean ignoreNaN) {
+        private StdDevFloatAggregation(final int columnIdx, final boolean ignoreNaN, final long degreesOfFreedom) {
             super(columnIdx);
 
-            this.m_ignoreNaN = ignoreNaN;
+            m_ignoreNaN = ignoreNaN;
+            m_degreesOfFreedom = degreesOfFreedom;
         }
 
         @Override
@@ -129,40 +141,21 @@ final class MaxColumnAggregationImpl {
                 return;
             }
 
-            if (value > m_max) {
-                m_max = value;
-            }
+            m_runningMean = m_runningMean * (m_count / (m_count + 1.0)) + (value / (m_count + 1.0));
+            m_runningMeanSq = m_runningMeanSq * (m_count / (m_count + 1.0)) + value * (value / (m_count + 1.0));
+            m_count++;
         }
 
         @Override
         public Computer createResultComputer() {
             if (m_allValuesNaN || (!m_ignoreNaN && m_anyValuesNaN)) {
-                return Computer.FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
+                return FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
             } else {
-                return Computer.FloatComputer.of(ctx -> m_max, ctx -> m_isMissing);
+                var variance = m_runningMeanSq - m_runningMean * m_runningMean;
+                var unBiasedVariance = variance * (m_count / ((double)(m_count - m_degreesOfFreedom)));
+
+                return FloatComputer.of(ctx -> Math.sqrt(unBiasedVariance), ctx -> m_isMissing);
             }
-        }
-    }
-
-    private static final class MaxIntegerAggregation extends AbstractAggregation {
-
-        private long m_max = Long.MIN_VALUE;
-
-        private MaxIntegerAggregation(final int columnIdx) {
-            super(columnIdx);
-        }
-
-        @Override
-        protected void addNonMissingRow(final RowRead row) {
-            var value = ((LongValue)row.getValue(m_columnIdx)).getLongValue();
-            if (value > m_max) {
-                m_max = value;
-            }
-        }
-
-        @Override
-        public Computer createResultComputer() {
-            return Computer.IntegerComputer.of(ctx -> m_max, ctx -> m_isMissing);
         }
     }
 }

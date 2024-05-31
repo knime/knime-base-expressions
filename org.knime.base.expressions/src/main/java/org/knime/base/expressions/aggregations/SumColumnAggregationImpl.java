@@ -65,17 +65,18 @@ import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
-final class MaxColumnAggregationImpl {
+final class SumColumnAggregationImpl {
 
     private static final boolean IGNORE_NAN_DEFAULT = false;
 
-    private MaxColumnAggregationImpl() {
+    private SumColumnAggregationImpl() {
     }
 
-    static Aggregation maxAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
-        var matchedArgs = Argument.matchSignature(BuiltInAggregations.MAX.description().arguments(), arguments);
+    static Aggregation sumAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
+        var matchedArgs = Argument.matchSignature(BuiltInAggregations.MIN.description().arguments(), arguments) //
+            .filter(args -> args.size() == 1 || args.size() == 2); // must be only 1/2 arguments
 
         var columnIdx = matchedArgs //
             .map(args -> args.get("column")) // type of the column argument
@@ -93,76 +94,63 @@ final class MaxColumnAggregationImpl {
         var columnType = tableSpec.getColumnSpec(columnIdx).getType();
 
         if (columnType.isCompatible(LongValue.class)) {
-            return new MaxIntegerAggregation(columnIdx);
+            return new SumIntegerAggregation(columnIdx);
         } else if (columnType.isCompatible(DoubleValue.class)) {
-            return new MaxFloatAggregation(columnIdx, ignoreNaN);
+            return new SumFloatAggregation(columnIdx, ignoreNaN);
         } else {
             throw new IllegalStateException("Implementation error - unsupported column type: %s".formatted(columnType));
         }
     }
 
     @SuppressWarnings("squid:S3052") // Allow redundant initialisations for clarity
-    private static final class MaxFloatAggregation extends AbstractAggregation {
+    private static final class SumFloatAggregation extends AbstractAggregation {
+
+        private double m_sum = 0;
 
         private final boolean m_ignoreNaN;
 
-        private double m_max = Double.NEGATIVE_INFINITY;
-
-        private boolean m_anyValuesNaN = false;
-
-        private boolean m_allValuesNaN = true;
-
-        private MaxFloatAggregation(final int columnIdx, final boolean ignoreNaN) {
+        private SumFloatAggregation(final int columnIdx, final boolean ignoreNaN) {
             super(columnIdx);
 
-            this.m_ignoreNaN = ignoreNaN;
+            m_ignoreNaN = ignoreNaN;
         }
 
         @Override
         protected void addNonMissingRow(final RowRead row) {
             var value = ((DoubleValue)row.getValue(m_columnIdx)).getDoubleValue();
 
-            m_anyValuesNaN = m_anyValuesNaN || Double.isNaN(value);
-            m_allValuesNaN = m_allValuesNaN && Double.isNaN(value);
-
             if (m_ignoreNaN && Double.isNaN(value)) {
                 return;
             }
 
-            if (value > m_max) {
-                m_max = value;
-            }
+            m_sum += value;
         }
 
         @Override
         public Computer createResultComputer() {
-            if (m_allValuesNaN || (!m_ignoreNaN && m_anyValuesNaN)) {
-                return Computer.FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
-            } else {
-                return Computer.FloatComputer.of(ctx -> m_max, ctx -> m_isMissing);
-            }
+            return Computer.FloatComputer.of(ctx -> m_sum, ctx -> m_isMissing);
         }
     }
 
-    private static final class MaxIntegerAggregation extends AbstractAggregation {
+    @SuppressWarnings("squid:S3052") // Allow redundant initialisations for clarity
+    private static final class SumIntegerAggregation extends AbstractAggregation {
 
-        private long m_max = Long.MIN_VALUE;
+        private long m_sum = 0;
 
-        private MaxIntegerAggregation(final int columnIdx) {
+        private SumIntegerAggregation(final int columnIdx) {
             super(columnIdx);
         }
 
         @Override
         protected void addNonMissingRow(final RowRead row) {
             var value = ((LongValue)row.getValue(m_columnIdx)).getLongValue();
-            if (value > m_max) {
-                m_max = value;
-            }
+
+            m_sum += value;
         }
 
         @Override
         public Computer createResultComputer() {
-            return Computer.IntegerComputer.of(ctx -> m_max, ctx -> m_isMissing);
+            return Computer.IntegerComputer.of(ctx -> m_sum, ctx -> m_isMissing);
         }
     }
 }
