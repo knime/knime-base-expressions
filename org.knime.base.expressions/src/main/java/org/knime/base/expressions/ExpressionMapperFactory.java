@@ -49,7 +49,6 @@
 package org.knime.base.expressions;
 
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
@@ -71,13 +70,13 @@ import org.knime.core.data.v2.value.LongValueFactory;
 import org.knime.core.data.v2.value.StringValueFactory;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.Expressions;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.Expressions;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.access.WriteAccess;
 import org.knime.core.table.schema.BooleanDataSpec;
+import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
@@ -128,35 +127,22 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
      * @param exprContext
      * @param ctx
      */
-    public ExpressionMapperFactory(final Ast ast, final ColumnarValueSchema inputTableSchema,
-        final String outputColumnName, final ExpressionMapperContext exprContext,
-        final EvaluationContext ctx) {
+    public ExpressionMapperFactory(final Ast ast, final ColumnarSchema inputTableSchema, final String outputColumnName,
+        final ExpressionMapperContext exprContext, final EvaluationContext ctx) {
         m_outputColumnName = outputColumnName;
 
-        try {
-            Function<String, OptionalInt> colNameToIdx = colName -> {
-                var colIdx = inputTableSchema.getSourceSpec().findColumnIndex(colName);
-                return colIdx == -1 ? OptionalInt.empty() : OptionalInt.of(colIdx + 1);
-            };
-            Expressions.resolveColumnIndices(ast, colNameToIdx);
+        final var columns = Exec.RequiredColumns.of(ast);
+        m_columnIndices = columns.columnIndices();
 
-            final var columns = Exec.RequiredColumns.of(ast);
-            m_columnIndices = columns.columnIndices();
+        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory = columnIndex -> {
+            int inputIndex = columns.getInputIndex(columnIndex);
+            Function<ReadAccess, ? extends Computer> createComputer =
+                inputTableSchema.getSpec(columnIndex).accept(Exec.DATA_SPEC_TO_READER_FACTORY);
+            return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
+        };
 
-            final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory =
-                columnIndex -> {
-                    int inputIndex = columns.getInputIndex(columnIndex);
-                    Function<ReadAccess, ? extends Computer> createComputer =
-                        inputTableSchema.getSpec(columnIndex).accept(Exec.DATA_SPEC_TO_READER_FACTORY);
-                    return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
-                };
-
-            m_mapperFactory = Exec.createMapperFactory(ast, columnIndexToComputerFactory,
-                exprContext::flowVariableToComputer, exprContext::aggregationToComputer, ctx);
-
-        } catch (ExpressionCompileException ex) {
-            throw new IllegalArgumentException(ex);
-        }
+        m_mapperFactory = Exec.createMapperFactory(ast, columnIndexToComputerFactory,
+            exprContext::flowVariableToComputer, exprContext::aggregationToComputer, ctx);
     }
 
     @Override

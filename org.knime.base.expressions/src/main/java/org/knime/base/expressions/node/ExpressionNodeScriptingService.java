@@ -162,8 +162,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                 m_inputTable = ExpressionRunnerUtils.createReferenceTable(inTable, executionContext,
                     executionContext.createSubProgress(1), PREVIEW_MAX_ROWS);
             } catch (CanceledExecutionException ex) {
-                throw new IllegalStateException(
-                    "Input table preparation for expression cancelled by the user", ex);
+                throw new IllegalStateException("Input table preparation for expression cancelled by the user", ex);
             }
         }
         return m_inputTable;

@@ -51,13 +51,16 @@ package org.knime.base.expressions;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContext;
 import org.knime.base.expressions.aggregations.ColumnAggregations;
 import org.knime.core.data.columnar.ColumnarTableBackend;
+import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
@@ -69,6 +72,7 @@ import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -191,7 +195,6 @@ public final class ExpressionRunnerUtils {
                 while (readCursor.canForward() && rowIndex < maxRowsToConvert) {
                     rowIndex++;
                     writeCursor.forward().setFrom(readCursor.forward());
-                    rowIndex++;
 
                     progress.setProgress( //
                         rowIndex / (double)table.size(), //
@@ -223,8 +226,8 @@ public final class ExpressionRunnerUtils {
      * @return a {@link ReferenceTable} that can be used for a {@link ColumnarVirtualTable}
      * @throws CanceledExecutionException if the execution was canceled
      */
-    public static ReferenceTable createReferenceTable(final BufferedDataTable table, final ExecutionContext exec, final ExecutionMonitor progress)
-        throws CanceledExecutionException {
+    public static ReferenceTable createReferenceTable(final BufferedDataTable table, final ExecutionContext exec,
+        final ExecutionMonitor progress) throws CanceledExecutionException {
         return ExpressionRunnerUtils.createReferenceTable(table, exec, progress, table.size());
     }
 
@@ -335,10 +338,55 @@ public final class ExpressionRunnerUtils {
      */
     public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final Ast expression,
         final String outputColumnName, final ExpressionMapperContext exprContext, final EvaluationContext ctx) {
+
+        var resolvedInput = resolveColumns(expression, input);
+
         var expressionMapperFactory =
-            new ExpressionMapperFactory(expression, input.getSchema(), outputColumnName, exprContext, ctx);
+            new ExpressionMapperFactory(expression, resolvedInput.getSchema(), outputColumnName, exprContext, ctx);
         return input.selectColumns(0)
-            .append(input.map(expressionMapperFactory, expressionMapperFactory.getInputColumnIndices()));
+            .append(resolvedInput.map(expressionMapperFactory, expressionMapperFactory.getInputColumnIndices()));
+    }
+
+    /**
+     * Add column indices to the given {@code Ast}. Returns the input {@code ColumnarVirtualTable} with additional
+     * columns if required (e.g., ROW_INDEX).
+     */
+    private static ColumnarVirtualTable resolveColumns(final Ast ast, final ColumnarVirtualTable input) {
+        try {
+            final ColumnarValueSchema inputTableSchema = input.getSchema();
+
+            final int numCols = inputTableSchema.numColumns() + 1;
+            Function<ColumnarVirtualTable, ColumnarVirtualTable> inputTableModifier = vt -> vt;
+
+            // append ROW_INDEX if required
+            final OptionalInt rowIndexColIdx;
+            if (Expressions.requiresRowIndexColumn(ast)) {
+                rowIndexColIdx = OptionalInt.of(numCols);
+                inputTableModifier =
+                    inputTableModifier.andThen(vt -> vt.appendRowIndex("row_idx-" + UUID.randomUUID().toString()));
+            } else {
+                rowIndexColIdx = OptionalInt.empty();
+            }
+
+            // TODO (TP) The idea is to put further column augmentations here.
+            //           For example, for windowing support (accessing rows
+            //           before/after the current row), we must append columns
+            //           from the input table sliced according to the windowing
+            //           offset.
+
+            Function<Ast.ColumnId, OptionalInt> columnIdToIndex = columnId -> switch (columnId.type()) {
+                case NAMED -> {
+                    var colIdx = inputTableSchema.getSourceSpec().findColumnIndex(columnId.name());
+                    yield colIdx == -1 ? OptionalInt.empty() : OptionalInt.of(colIdx + 1);
+                }
+                case ROW_ID -> rowIndexColIdx;
+                case ROW_INDEX -> OptionalInt.of(0);
+            };
+            Expressions.resolveColumnIndices(ast, columnIdToIndex);
+            return inputTableModifier.apply(input);
+        } catch (ExpressionCompileException ex) {
+            throw new IllegalArgumentException(ex);
+        }
     }
 
     /**
