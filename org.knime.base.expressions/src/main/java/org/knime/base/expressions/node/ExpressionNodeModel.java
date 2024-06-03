@@ -69,10 +69,10 @@ import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -170,16 +170,17 @@ class ExpressionNodeModel extends NodeModel {
         var expression = getPreparedExpression(inTable.getDataTableSpec());
 
         // Create a reference table for the input table
-        var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec);
+        var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec, exec.createSubProgress(0.33));
 
         // Pre-evaluate the aggregations
         // NB: We use the inRefTable because it is guaranteed to be a columnar table
-        ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(), exec);
+        ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(),
+            exec.createSubProgress(0.33));
 
         // Evaluate the expression and materialize the result
         var exprContext = new NodeExpressionMapperContext(this::getAvailableInputFlowVariables);
         var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
-            newColumnPosition.columnName(), exec, exprContext, ctx);
+            newColumnPosition.columnName(), exec, exec.createSubProgress(0.34), exprContext, ctx);
         var output = ExpressionRunnerUtils.constructOutputTable(inRefTable.getVirtualTable(),
             expressionResult.getVirtualTable(), newColumnPosition);
 

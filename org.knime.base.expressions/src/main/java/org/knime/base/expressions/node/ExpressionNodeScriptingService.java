@@ -138,7 +138,17 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             }
 
             var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
-            m_inputTable = ExpressionRunnerUtils.createReferenceTable(inTable, nodeContainer.createExecutionContext());
+
+            var executionContext = nodeContainer.createExecutionContext();
+
+            try {
+                // Progress isn't used in this context so we can pass whatever and don't expect it to be canceled
+                m_inputTable = ExpressionRunnerUtils.createReferenceTable(inTable, executionContext,
+                    executionContext.createSubProgress(1));
+            } catch (CanceledExecutionException ex) {
+                throw new IllegalStateException(
+                    "Implementation error - this shouldn't happen because we do not cancel the execution", ex);
+            }
         }
         return m_inputTable;
     }

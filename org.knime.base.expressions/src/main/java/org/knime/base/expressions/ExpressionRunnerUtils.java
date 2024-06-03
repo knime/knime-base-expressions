@@ -157,22 +157,37 @@ public final class ExpressionRunnerUtils {
      * @param table
      * @param exec an {@link ExecutionContext} that is used to create a new columnar container if the table is not
      *            columnar
+     * @param progress an {@link ExecutionMonitor} that is used to report progress
      * @return a {@link ReferenceTable} that can be used for a {@link ColumnarVirtualTable}
+     * @throws CanceledExecutionException if the execution was canceled
      */
-    public static ReferenceTable createReferenceTable(final BufferedDataTable table, final ExecutionContext exec) {
+    public static ReferenceTable createReferenceTable(final BufferedDataTable table, final ExecutionContext exec,
+        final ExecutionMonitor progress) throws CanceledExecutionException {
         var uuid = UUID.randomUUID();
         try {
             return ReferenceTables.createReferenceTable(uuid, table);
         } catch (VirtualTableIncompatibleException ex) {
+
             // Fallback for the row-based backend
             LOGGER.debug("Copying table to columnar format to be compatible with expressions", ex);
+
             try (var container =
                 new ColumnarTableBackend().create(exec, table.getDataTableSpec(), DataContainerSettings.getDefault(),
                     Node.invokeGetDataRepository(exec), Node.invokeGetFileStoreHandler(exec));
                     var writeCursor = container.createCursor();
                     var readCursor = table.cursor()) {
+
+                long rowIndex = 0;
                 while (readCursor.canForward()) {
                     writeCursor.forward().setFrom(readCursor.forward());
+                    rowIndex++;
+
+                    progress.setProgress( //
+                        rowIndex / (double)table.size(), //
+                        "Copying row-based table to columnar format (row %d of %d)".formatted(rowIndex, table.size()) //
+                    );
+
+                    progress.checkCanceled();
                 }
                 return ReferenceTables.createReferenceTable(uuid, container.finish());
             } catch (IOException e) {
@@ -181,7 +196,8 @@ public final class ExpressionRunnerUtils {
                 // This cannot happen because we explicitly create a columnar table
                 throw new IllegalStateException(e);
             }
-
+        } finally {
+            progress.setProgress(1);
         }
     }
 
@@ -208,23 +224,24 @@ public final class ExpressionRunnerUtils {
      *
      * @param expression the expression
      * @param table the table to evaluate the aggregations on
-     * @param exec an execution monitor for progress and cancellation checks
+     * @param progress an execution monitor for progress and cancellation checks
      * @throws CanceledExecutionException if the execution was canceled
      */
     public static void evaluateAggregations(final Ast expression, final BufferedDataTable table,
-        final ExecutionMonitor exec) throws CanceledExecutionException {
+        final ExecutionMonitor progress) throws CanceledExecutionException {
         // Collect the aggregations for the expression
         var aggregationCalls = collectAggregations(expression);
+
         if (aggregationCalls.isEmpty()) {
+            progress.setProgress(1);
             return;
         }
+
         var aggregationResults = aggregationCalls.stream().collect(Collectors.toMap(a -> a,
             a -> ColumnAggregations.getAggregationImplementationFor(a, table.getDataTableSpec())));
 
         // Run the aggregations on the table
         var numRows = table.size();
-        var progressMonitor = exec.createSubProgress(0.5);
-        progressMonitor.setMessage("Evaluating aggregations");
 
         var currentRow = 0L;
         try (var cursor = table.cursor()) {
@@ -232,11 +249,14 @@ public final class ExpressionRunnerUtils {
                 currentRow++;
                 var row = cursor.forward();
                 aggregationResults.values().forEach(a -> a.addRow(row));
-                progressMonitor.setProgress(currentRow / (double)numRows);
-                exec.checkCanceled();
+                progress.setProgress( //
+                    currentRow / (double)numRows, //
+                    "Evaluating aggregations (row %d of %d)".formatted(currentRow, numRows) //
+                );
+                progress.checkCanceled();
             }
         }
-        progressMonitor.setProgress(1);
+        progress.setProgress(1);
 
         // Remember the result computer for each aggregation call
         for (var entry : aggregationResults.entrySet()) {
@@ -269,8 +289,7 @@ public final class ExpressionRunnerUtils {
      * @return the result of the expression
      */
     public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final Ast expression,
-        final String outputColumnName, final ExpressionMapperContext exprContext,
-        final EvaluationContext ctx) {
+        final String outputColumnName, final ExpressionMapperContext exprContext, final EvaluationContext ctx) {
         var expressionMapperFactory =
             new ExpressionMapperFactory(expression, input.getSchema(), outputColumnName, exprContext, ctx);
         return input.selectColumns(0)
@@ -296,6 +315,7 @@ public final class ExpressionRunnerUtils {
         final Ast expression, //
         final String outputColumnName, //
         final ExecutionContext exec, //
+        final ExecutionMonitor progress, //
         final ExpressionMapperContext exprContext, //
         final EvaluationContext ctx //
     ) throws CanceledExecutionException, VirtualTableIncompatibleException {
@@ -305,8 +325,10 @@ public final class ExpressionRunnerUtils {
         return ColumnarVirtualTableMaterializer.materializer() //
             .sources(refTable.getSources()) //
             .materializeRowKey(false) //
-            .progress((rowIndex, rowKey) -> exec.setProgress(rowIndex / (double)numRows,
-                () -> "Evaluating expression on row " + (rowIndex + 1) + " of " + numRows)) //
+            .progress( //
+                (rowIndex, rowKey) -> progress.setProgress(rowIndex / (double)numRows, //
+                    () -> "Evaluating expression (row %d of %s)".formatted(rowIndex + 1, numRows)) //
+            ) //
             .executionContext(exec) //
             .tableIdSupplier(Node.invokeGetDataRepository(exec)::generateNewID) //
             .materialize(expressionResultVirtual);
