@@ -92,7 +92,14 @@ public final class ExpressionRunnerUtils {
      * What should happen with new columns, whether they're appended at the end or replace an existing column.
      */
     public enum ColumnInsertionMode {
-            APPEND, REPLACE_EXISTING
+            /**
+             * Append a new column
+             */
+            APPEND,
+            /**
+             * Replace an existing column
+             */
+            REPLACE_EXISTING
     }
 
     /**
@@ -229,6 +236,26 @@ public final class ExpressionRunnerUtils {
      */
     public static void evaluateAggregations(final Ast expression, final BufferedDataTable table,
         final ExecutionMonitor progress) throws CanceledExecutionException {
+
+        evaluateAggregations(expression, table, progress, table.size());
+    }
+
+    /**
+     * Evaluate the aggregations in the given expression on the given table. The result of each aggregation is stored in
+     * the {@link AggregationCall} as a {@link Computer}. The computer can be retrieved using the method
+     * {@link #getAggregationResultComputer}. Must be called after typing and before {@link #applyExpression}.
+     *
+     * @param expression the expression
+     * @param table the table to evaluate the aggregations on
+     * @param progress an execution monitor for progress and cancellation checks
+     * @param numRowsToAggregate the number of rows to aggregate
+     * @throws CanceledExecutionException if the execution was canceled
+     */
+    public static void evaluateAggregations(final Ast expression, final BufferedDataTable table,
+        final ExecutionMonitor progress, long numRowsToAggregate) throws CanceledExecutionException {
+
+        numRowsToAggregate = Math.min(table.size(), numRowsToAggregate);
+
         // Collect the aggregations for the expression
         var aggregationCalls = collectAggregations(expression);
 
@@ -241,17 +268,15 @@ public final class ExpressionRunnerUtils {
             a -> ColumnAggregations.getAggregationImplementationFor(a, table.getDataTableSpec())));
 
         // Run the aggregations on the table
-        var numRows = table.size();
-
         var currentRow = 0L;
         try (var cursor = table.cursor()) {
-            while (cursor.canForward()) {
+            while (cursor.canForward() && currentRow < numRowsToAggregate) {
                 currentRow++;
                 var row = cursor.forward();
                 aggregationResults.values().forEach(a -> a.addRow(row));
                 progress.setProgress( //
-                    currentRow / (double)numRows, //
-                    "Evaluating aggregations (row %d of %d)".formatted(currentRow, numRows) //
+                    currentRow / (double)numRowsToAggregate, //
+                    "Evaluating aggregations (row %d of %d)".formatted(currentRow, numRowsToAggregate) //
                 );
                 progress.checkCanceled();
             }

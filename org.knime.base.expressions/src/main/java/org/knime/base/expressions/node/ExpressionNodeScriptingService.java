@@ -211,11 +211,15 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             }
         }
 
-        public void runExpression(final String script, final int numPreviewRows) {
+        public void runExpression(final String script, int numPreviewRows) {
             // Let's just make sure that we don't get DOSed by the user
             if (numPreviewRows > PREVIEW_MAX_ROWS) {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
+
+            var inputTable = getInputTable();
+
+            numPreviewRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
 
             // Prepare the expression
             final Ast expression;
@@ -233,34 +237,31 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             List<String> warnings = new ArrayList<>();
             EvaluationContext ctx = warning -> warnings.add(warning);
 
-            var inputTable = getInputTable();
-
             // Pre-evaluate the aggregations
             // NB: We use the inRefTable because it is guaranteed to be a columnar table
             try {
                 ExpressionRunnerUtils.evaluateAggregations(expression, inputTable.getBufferedTable(),
-                    new ExecutionMonitor());
+                    new ExecutionMonitor(), numPreviewRows);
             } catch (CanceledExecutionException ex) {
                 // Cannot happen because we do not cancel the execution
                 throw new IllegalStateException(ex);
             }
 
             // Evaluate the expression
-            var numRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
             var exprContext = new NodeExpressionMapperContext(this::getAvailableFlowVariables);
             var expressionResult = ExpressionRunnerUtils.applyExpression( //
-                inputTable.getVirtualTable().slice(0, numRows), //
+                inputTable.getVirtualTable().slice(0, numPreviewRows), //
                 expression, //
                 "result", // column name is irrelevant
                 exprContext, //
                 ctx);
 
-            var result = new String[numRows];
+            var result = new String[numPreviewRows];
             try (var expressionResultTable =
-                new VirtualTableExtensionTable(new ReferenceTable[]{inputTable}, expressionResult, numRows, 0)) {
-                try (var cursor = expressionResultTable.cursor(TableFilter.filterRangeOfRows(0, numRows))) {
+                new VirtualTableExtensionTable(new ReferenceTable[]{inputTable}, expressionResult, numPreviewRows, 0)) {
+                try (var cursor = expressionResultTable.cursor(TableFilter.filterRangeOfRows(0, numPreviewRows))) {
                     var resultIdx = expressionResultTable.getDataTableSpec().getNumColumns() - 1;
-                    for (var i = 0; i < numRows && cursor.canForward(); i++) {
+                    for (var i = 0; i < numPreviewRows && cursor.canForward(); i++) {
                         result[i] = getRowResult(cursor.forward(), resultIdx);
                     }
                 }
