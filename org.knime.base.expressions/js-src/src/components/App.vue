@@ -71,8 +71,8 @@ onMounted(() => {
     }
   });
 
-  const functionCatalogPromise: Promise<FunctionCatalogData> = scriptingService
-    .sendToService("getFunctionCatalog")
+  const functionCatalogPromise = scriptingService
+    .getFunctions()
     .then((data) => {
       functionCatalogData.value = data;
       return data;
@@ -82,6 +82,7 @@ onMounted(() => {
     scriptingService.getInputObjects(),
     scriptingService.getFlowVariableInputs(),
     functionCatalogPromise,
+    scriptingService.getMathsConstants(),
   ]).then((result) => {
     registerKnimeExpressionLanguage({
       columnNamesForCompletion: result[0]?.[0]?.subItems
@@ -90,11 +91,21 @@ onMounted(() => {
       flowVariableNamesForCompletion: result[1]?.subItems
         ? result[1].subItems.map((c) => ({ name: c.name, type: c.type }))
         : [],
-      extraCompletionItems: result[2].functions.map((f) => ({
-        text: `${f.name}(${Array(f.arguments.length).join(", ")})`,
-        kind: monaco.languages.CompletionItemKind.Function,
-        extraDetailForMonaco: { documentation: { value: f.description } },
-      })),
+      extraCompletionItems: [
+        ...result[2].functions.map((f) => ({
+          text: `${f.name}(${Array(f.arguments.length).join(", ")})`,
+          kind: monaco.languages.CompletionItemKind.Function,
+          extraDetailForMonaco: { documentation: { value: f.description } },
+        })),
+        ...result[3].map((c) => ({
+          text: c.name,
+          kind: monaco.languages.CompletionItemKind.Constant,
+          extraDetailForMonaco: {
+            documentation: { value: c.documentation },
+            detail: `Type: ${c.type}`,
+          },
+        })),
+      ],
       languageName: language,
     });
   });

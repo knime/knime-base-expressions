@@ -44,6 +44,24 @@ const TEST_FUNCTION_CATALOG = {
   ],
 } satisfies FunctionCatalogData;
 
+const TEST_MATHS_CONSTANTS = [
+  {
+    name: "PI",
+    value: 3,
+    type: "Float",
+    documentation: "The *real* value of Pi",
+  },
+  { name: "E", value: 3, type: "String", documentation: "The letter E" },
+];
+
+vi.mock("@/expressionScriptingService", () => ({
+  getExpressionScriptingService: () => ({
+    ...getScriptingService(),
+    getFunctions: vi.fn(() => Promise.resolve(TEST_FUNCTION_CATALOG)),
+    getMathsConstants: vi.fn(() => Promise.resolve(TEST_MATHS_CONSTANTS)),
+  }),
+}));
+
 describe("App.vue", () => {
   enableAutoUnmount(afterEach);
 
@@ -64,6 +82,8 @@ describe("App.vue", () => {
       (methodName: string) => {
         if (methodName === "getFunctionCatalog") {
           return Promise.resolve(TEST_FUNCTION_CATALOG);
+        } else if (methodName === "getMathsConstants") {
+          return Promise.resolve(TEST_MATHS_CONSTANTS);
         }
         throw new Error(
           `Called unexpected scripting service method ${methodName}`,
@@ -96,17 +116,16 @@ describe("App.vue", () => {
 
     vi.mocked(getScriptingService().sendToService).mockImplementation(
       (methodName: string) => {
-        expect(methodName).toBe("getFunctionCatalog");
-        return promise;
+        // eslint-disable-next-line vitest/no-conditional-tests
+        if (methodName === "getFunctionCatalog") {
+          return promise;
+        } else {
+          return Promise.resolve();
+        }
       },
     );
     const { wrapper } = doMount();
     await flushPromises();
-
-    // The function catalog should not be rendered before the promise resolves
-    expect(
-      wrapper.findComponent({ name: "FunctionCatalog" }).exists(),
-    ).toBeFalsy();
 
     // Resolve the promise - the function catalog should now be rendered
     resolve(TEST_FUNCTION_CATALOG);

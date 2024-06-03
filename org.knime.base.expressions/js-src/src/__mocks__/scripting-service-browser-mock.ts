@@ -184,6 +184,16 @@ if (import.meta.env.MODE === "development.browser") {
     ],
   };
 
+  const MATHS_CONSTANTS = [
+    {
+      name: "PI",
+      value: 3,
+      type: "Float",
+      documentation: "The *real* value of Pi",
+    },
+    { name: "E", value: "e", type: "String", documentation: "The letter E" },
+  ];
+
   const scriptingService = createScriptingServiceMock({
     sendToServiceMockResponses: {
       runExpression: (options: any[] | undefined) => {
@@ -191,6 +201,7 @@ if (import.meta.env.MODE === "development.browser") {
         return Promise.resolve();
       },
       getFunctionCatalog: () => Promise.resolve(FUNCTION_CATALOG),
+      getMathsConstants: () => Promise.resolve(MATHS_CONSTANTS),
       getDiagnostics: () => Promise.resolve([]),
     },
     inputObjects: INPUT_OBJECTS,

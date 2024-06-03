@@ -49,6 +49,7 @@
 package org.knime.base.expressions.node;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -74,6 +75,7 @@ import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileError;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.MathsConstantValue;
 import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
@@ -197,6 +199,17 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
         public FunctionCatalogData getFunctionCatalog() {
             return FunctionCatalogData.BUILT_IN;
+        }
+
+        public List<Map<String, Serializable>> getMathsConstants() {
+            return Arrays.stream(MathsConstantValue.values()) //
+                .map(e -> Map.of( //
+                    "name", e.name(), //
+                    "type", e.type().toString(), //
+                    "documentation", e.documentation(), //
+                    "value", e.value()) //
+                ) //
+                .toList();
         }
 
         private Map<String, FlowVariable> getAvailableFlowVariables(final VariableType<?>[] types) {
