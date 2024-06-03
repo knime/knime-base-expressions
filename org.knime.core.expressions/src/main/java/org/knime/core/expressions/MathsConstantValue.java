@@ -61,37 +61,43 @@ import org.knime.core.expressions.ValueType.NativeValueType;
 public enum MathsConstantValue {
 
         /** mathematical constant pi. */
-        PI(Math.PI), //
+        PI(Math.PI, "The ratio of a circle's circumference to its diameter"), //
         /** mathematical constant e. */
-        E(Math.E), //
+        E(Math.E, "Euler's constant, the base of the natural logarithm"), //
         /** positive infinity. */
-        INF(Double.POSITIVE_INFINITY), //
+        INF(Double.POSITIVE_INFINITY, "Infinity"), //
         /** not a number */
-        NaN(Double.NaN), // NOSONAR NaN should be written in this way
+        NaN(Double.NaN, "Not a number, indicating that a value has no defined real value, such as 0.0/0.0"), // NOSONAR NaN should be written in this way
         /** the smallest INTEGER number */
-        MIN_INTEGER(Long.MIN_VALUE), //
+        MIN_INTEGER(Long.MIN_VALUE, "Smallest integer representable by this computer"), //
         /** the largest INTEGER number */
-        MAX_INTEGER(Long.MAX_VALUE), //
+        MAX_INTEGER(Long.MAX_VALUE, "Largest integer representable by this computer"), //
         /** the smallest FLOAT number */
-        MIN_FLOAT(-Double.MAX_VALUE), //
+        MIN_FLOAT(-Double.MAX_VALUE, "Smallest float representable by this computer"), //
         /** the largest FLOAT number */
-        MAX_FLOAT(Double.MAX_VALUE), //
+        MAX_FLOAT(Double.MAX_VALUE, "Largest float representable by this computer"), //
         /** the smallest positive normal FLOAT number */
-        TINY_FLOAT(Double.MIN_NORMAL), //
+        TINY_FLOAT(Double.MIN_NORMAL, "Smallest positive float value representable by this computer"), //
     ;
 
     private final Number m_value;
 
     private final NativeValueType m_type;
 
-    MathsConstantValue(final long value) {
-        m_value = value;
-        m_type = NativeValueType.INTEGER;
+    private final String m_documentation;
+
+    MathsConstantValue(final long value, final String documentation) {
+        this(value, NativeValueType.INTEGER, documentation);
     }
 
-    MathsConstantValue(final double value) {
+    MathsConstantValue(final double value, final String documentation) {
+        this(value, NativeValueType.FLOAT, documentation);
+    }
+
+    MathsConstantValue(final Number value, final NativeValueType type, final String documentation) {
         m_value = value;
-        m_type = NativeValueType.FLOAT;
+        m_type = type;
+        m_documentation = documentation;
     }
 
     /**
@@ -110,6 +116,15 @@ public enum MathsConstantValue {
      */
     public NativeValueType type() {
         return m_type;
+    }
+
+    /**
+     * The documentation of the constant.
+     *
+     * @return the documentation of the constant
+     */
+    public String documentation() {
+        return m_documentation;
     }
 
     /**
