@@ -361,7 +361,18 @@ public sealed interface Ast
      * @return the node
      */
     static ColumnAccess columnAccess(final String name) {
-        return columnAccess(name, new HashMap<>());
+        return columnAccess(name, 0, new HashMap<>());
+    }
+
+    /**
+     * Create a new {@link ColumnAccess} for the given column name and windowing offset, and with no data.
+     *
+     * @param name the column name
+     * @param offset windowing offset
+     * @return the node
+     */
+    static ColumnAccess columnAccess(final String name, final long offset) {
+        return columnAccess(name, offset, new HashMap<>());
     }
 
     /**
@@ -371,8 +382,8 @@ public sealed interface Ast
      * @param data
      * @return the node
      */
-    static ColumnAccess columnAccess(final String name, final Map<String, Object> data) {
-        return new ColumnAccess(new ColumnName(name), data);
+    static ColumnAccess columnAccess(final String name, final long offset, final Map<String, Object> data) {
+        return new ColumnAccess(new ColumnName(name), offset, data);
     }
 
     /**
@@ -391,7 +402,7 @@ public sealed interface Ast
      * @return the node
      */
     static ColumnAccess rowIndex(final Map<String, Object> data) {
-        return new ColumnAccess(RowIndex.INSTANCE, data);
+        return new ColumnAccess(RowIndex.INSTANCE, 0, data);
     }
 
     /**
@@ -410,7 +421,7 @@ public sealed interface Ast
      * @return the node
      */
     static ColumnAccess rowId(final Map<String, Object> data) {
-        return new ColumnAccess(RowId.INSTANCE, data);
+        return new ColumnAccess(RowId.INSTANCE, 0, data);
     }
 
     /**
@@ -888,11 +899,11 @@ public sealed interface Ast
      * @param columnId the name of the column
      * @param data attached data
      */
-    record ColumnAccess(ColumnId columnId, Map<String, Object> data) implements Ast {
+    record ColumnAccess(ColumnId columnId, long offset, Map<String, Object> data) implements Ast {
 
         @Override
         public String toExpression() {
-            return "$[" + columnId.toExpression() + "]";
+            return "$[" + columnId.toExpression() + (offset != 0 ? (", " + offset) : "") + "]";
         }
 
         @Override

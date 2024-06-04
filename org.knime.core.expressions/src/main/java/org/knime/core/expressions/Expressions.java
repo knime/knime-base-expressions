@@ -50,6 +50,8 @@ package org.knime.core.expressions;
 
 import static org.knime.core.expressions.Ast.ColumnId.ColumnIdType.ROW_INDEX;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -99,8 +101,9 @@ public final class Expressions {
      * @throws ExpressionCompileException if the expression accesses a column that is not available
      */
     public static void resolveColumnIndices(final Ast expression,
-        final Function<Ast.ColumnId, OptionalInt> columnNameToIdx) throws ExpressionCompileException {
-        ColumnIdxResolve.resolveColumnIndices(expression, columnNameToIdx);
+        final Function<Ast.ColumnAccess, OptionalInt> columnNameToIdx) throws ExpressionCompileException {
+
+        ColumnIdxResolve.resolveColumnAccessIndices(expression, columnNameToIdx);
     }
 
     /**
@@ -190,6 +193,35 @@ public final class Expressions {
                 @Override
                 public Boolean visit(final Ast.ColumnAccess node) {
                     return node.columnId().type() == ROW_INDEX;
+                }
+            });
+    }
+
+    /**
+     * Collect all {@code ColumnAccess} nodes in the given {@code expression}
+     *
+     * @param expression the expression to process
+     * @return list of all all {@code ColumnAccess} nodes in the given {@code expression}
+     */
+    public static List<Ast.ColumnAccess> collectColumnAccesses(final Ast expression) {
+        // TODO (TP) This should be rewritten to collect-style operation instead of reduce, once the AstVisitor API has been sorted out
+        // TODO (TP) The above requiresRowIndexColumn() could use this and check whether the returned set contains(Ast.rowIndex())
+        return expression.accept( //
+            new AstVisitors.ReducingAstVisitor<List<Ast.ColumnAccess>, RuntimeException>(Collections.emptyList(),
+                (s1, s2) -> {
+                    if (s1.isEmpty()) {
+                        return s2;
+                    } else if (s2.isEmpty()) {
+                        return s1;
+                    } else {
+                        var s = new ArrayList<>(s1);
+                        s.addAll(s2);
+                        return s;
+                    }
+                }) {
+                @Override
+                public List<Ast.ColumnAccess> visit(final Ast.ColumnAccess node) {
+                    return Collections.singletonList(node);
                 }
             });
     }

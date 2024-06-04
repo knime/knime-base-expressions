@@ -241,7 +241,12 @@ final class Parser {
         @Override
         public Ast visitColAccess(final ColAccessContext ctx) {
             var col = ctx.shortName != null ? ctx.shortName.getText().substring(1) : parseStringLiteral(ctx.longName);
-            return columnAccess(col, createData(getLocation(ctx)));
+
+            var offsetSign = ctx.minus == null ? 1 : -1;
+            var offsetValue = ctx.offset != null ? Long.parseLong(ctx.offset.getText()) : 0;
+            var offset = offsetSign * offsetValue;
+
+            return columnAccess(col, offset, createData(getLocation(ctx)));
         }
 
         @Override

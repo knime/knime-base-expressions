@@ -20,15 +20,15 @@ atom:
 
 // Any valid expression
 expr:
-    (shortName = FLOW_VAR_IDENTIFIER | '$$['+ longName = STRING ']')  # flowVarAccess
-    | (shortName = COLUMN_IDENTIFIER | '$['+ longName = STRING ']')   # colAccess
-    | name = FUNCTION_IDENTIFIER '(' functionArgs? ')'                # functionCall
-    | name = AGGREGATION_IDENTIFIER '(' aggregationArgs ')'           # aggregationCall
-    | expr op = MISSING_FALLBACK expr                                 # binaryOp
-    | <assoc = right> expr op = EXPONENTIATE expr                     # binaryOp
-    | op = MINUS expr                                                 # unaryOp
-    | expr op = (MULTIPLY | DIVIDE | MODULO | FLOOR_DIVIDE) expr      # binaryOp
-    | expr op = (PLUS | MINUS) expr                                   # binaryOp
+    (shortName = FLOW_VAR_IDENTIFIER | '$$['+ longName = STRING ']')                                              # flowVarAccess
+    | (shortName = COLUMN_IDENTIFIER | '$['+ longName = STRING (',' + (minus = MINUS)? offset = INTEGER )? ']')   # colAccess
+    | name = FUNCTION_IDENTIFIER '(' functionArgs? ')'                                                            # functionCall
+    | name = AGGREGATION_IDENTIFIER '(' aggregationArgs ')'                                                       # aggregationCall
+    | expr op = MISSING_FALLBACK expr                                                                             # binaryOp
+    | <assoc = right> expr op = EXPONENTIATE expr                                                                 # binaryOp
+    | op = MINUS expr                                                                                             # unaryOp
+    | expr op = (MULTIPLY | DIVIDE | MODULO | FLOOR_DIVIDE) expr                                                  # binaryOp
+    | expr op = (PLUS | MINUS) expr                                                                               # binaryOp
     | expr op = (
         LESS_THAN
         | LESS_THAN_EQUAL

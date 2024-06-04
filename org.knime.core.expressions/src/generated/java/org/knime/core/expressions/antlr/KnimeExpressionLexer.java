@@ -49,7 +49,7 @@ public class KnimeExpressionLexer extends Lexer {
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'$$['", "']'", "'$['", "'('", "')'", "','", null, null, null, 
+			null, "'$$['", "']'", "'$['", "','", "'('", "')'", null, null, null, 
 			null, null, null, "'MISSING'", null, "'$[ROW_INDEX]'", "'$[ROW_NUMBER]'", 
 			"'$[ROW_ID]'", "'+'", "'-'", "'*'", "'/'", "'//'", "'**'", "'%'", "'<'", 
 			"'<='", "'>'", "'>='", null, null, "'and'", "'or'", "'not'", "'??'"
@@ -237,9 +237,9 @@ public class KnimeExpressionLexer extends Lexer {
 		"\u0001\u0000\u0000\u0000a\u01a0\u0001\u0000\u0000\u0000cd\u0005$\u0000"+
 		"\u0000de\u0005$\u0000\u0000ef\u0005[\u0000\u0000f\u0002\u0001\u0000\u0000"+
 		"\u0000gh\u0005]\u0000\u0000h\u0004\u0001\u0000\u0000\u0000ij\u0005$\u0000"+
-		"\u0000jk\u0005[\u0000\u0000k\u0006\u0001\u0000\u0000\u0000lm\u0005(\u0000"+
-		"\u0000m\b\u0001\u0000\u0000\u0000no\u0005)\u0000\u0000o\n\u0001\u0000"+
-		"\u0000\u0000pq\u0005,\u0000\u0000q\f\u0001\u0000\u0000\u0000rv\u0005#"+
+		"\u0000jk\u0005[\u0000\u0000k\u0006\u0001\u0000\u0000\u0000lm\u0005,\u0000"+
+		"\u0000m\b\u0001\u0000\u0000\u0000no\u0005(\u0000\u0000o\n\u0001\u0000"+
+		"\u0000\u0000pq\u0005)\u0000\u0000q\f\u0001\u0000\u0000\u0000rv\u0005#"+
 		"\u0000\u0000su\b\u0000\u0000\u0000ts\u0001\u0000\u0000\u0000ux\u0001\u0000"+
 		"\u0000\u0000vt\u0001\u0000\u0000\u0000vw\u0001\u0000\u0000\u0000wy\u0001"+
 		"\u0000\u0000\u0000xv\u0001\u0000\u0000\u0000yz\u0006\u0006\u0000\u0000"+
