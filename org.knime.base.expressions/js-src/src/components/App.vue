@@ -10,7 +10,7 @@ import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import SplitButton from "webapps-common/ui/components/SplitButton.vue";
 import DropdownIcon from "webapps-common/ui/assets/img/icons/arrow-dropdown.svg";
 import SubMenu from "webapps-common/ui/components/SubMenu.vue";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
   type ColumnSelectorState,
@@ -26,8 +26,6 @@ import { useStore } from "@/store";
 
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 
-// Register language - but bear in mind we'll have to re-register it once we have
-// column names, so that we can add autocompletion of columns.
 const language = "knime-expression";
 
 const MIN_WIDTH_FUNCTION_CATALOG = 280;
@@ -176,6 +174,10 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
     runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN);
   }
 });
+
+const runButtonEnabled = computed(() => {
+  return inputsAvailable.value && store.expressionValid;
+});
 </script>
 
 <template>
@@ -220,7 +222,7 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
           <Button
             primary
             compact
-            :disabled="!inputsAvailable || !store.expressionValid"
+            :disabled="!runButtonEnabled"
             @click="runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN)"
           >
             <PlayIcon />Evaluate first
@@ -231,9 +233,9 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
               { text: 'Evaluate first 100 rows', metadata: 100 },
               { text: 'Evaluate first 1000 rows', metadata: 1000 },
             ]"
-            class="submenu"
-            button-title="Open my submenu with icons"
-            orientation="left"
+            button-title="Run more rows"
+            orientation="top"
+            :disabled="!runButtonEnabled"
             @item-click="
               (_evt: any, item: any) => runExpressions(item.metadata)
             "
