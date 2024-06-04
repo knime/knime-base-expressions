@@ -12,7 +12,11 @@ atom:
     | FLOAT
     | STRING
     | MISSING
-    | MATH_CONSTANT;
+    | MATH_CONSTANT
+    | ROW_INDEX
+    | ROW_NUMBER
+    | ROW_ID;
+
 
 // Any valid expression
 expr:
@@ -83,6 +87,11 @@ MISSING: 'MISSING';
 
 // MATH_CONSTANT literal
 MATH_CONSTANT: 'E' | 'PI' | 'INF' | 'NaN' | 'MIN_INTEGER' | 'MAX_INTEGER' | 'MIN_FLOAT' | 'MAX_FLOAT' | 'TINY_FLOAT';
+
+// literals for accessing "special" columns
+ROW_INDEX: '$[ROW_INDEX]';
+ROW_NUMBER: '$[ROW_NUMBER]';
+ROW_ID: '$[ROW_ID]';
 
 // Operators
 

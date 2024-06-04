@@ -74,6 +74,8 @@ import static org.knime.core.expressions.AstTestUtils.FUN;
 import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
+import static org.knime.core.expressions.AstTestUtils.ROW_ID;
+import static org.knime.core.expressions.AstTestUtils.ROW_INDEX;
 import static org.knime.core.expressions.AstTestUtils.STR;
 import static org.knime.core.expressions.TestAggregations.TEST_AGGREGATIONS;
 import static org.knime.core.expressions.ValueType.BOOLEAN;
@@ -128,6 +130,8 @@ final class TypingTest {
 
             INTEGER_COLUMN(COL("i"), INTEGER), //
             OPTIONAL_STRING_COLUMN(COL("s?"), OPT_STRING), //
+            ROW_INDEX(ROW_INDEX(), INTEGER), //
+            ROW_ID(ROW_ID(), STRING), //
 
             // === Flow variable access
 

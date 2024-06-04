@@ -85,8 +85,8 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
         return new ExpressionCompileError(message, CompileErrorType.TYPING, location);
     }
 
-    static ExpressionCompileError missingColumnError(final String columnName, final TextRange location) {
-        return new ExpressionCompileError("The column '" + columnName + "' is not available",
+    static ExpressionCompileError missingColumnError(final Ast.ColumnId column, final TextRange location) {
+        return new ExpressionCompileError("The column " + column.toExpression() + " is not available",
             CompileErrorType.MISSING_COLUMN, location);
     }
 
@@ -101,7 +101,7 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
     }
 
     static ExpressionCompileError missingColumnError(final ColumnAccess node) {
-        return missingColumnError(node.name(), Parser.getTextLocation(node));
+        return missingColumnError(node.columnId(), Parser.getTextLocation(node));
     }
 
     static ExpressionCompileError missingFlowVariableError(final FlowVarAccess node) {

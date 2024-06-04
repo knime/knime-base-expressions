@@ -57,6 +57,8 @@ import static org.knime.core.expressions.Ast.flowVarAccess;
 import static org.knime.core.expressions.Ast.functionCall;
 import static org.knime.core.expressions.Ast.integerConstant;
 import static org.knime.core.expressions.Ast.missingConstant;
+import static org.knime.core.expressions.Ast.rowId;
+import static org.knime.core.expressions.Ast.rowIndex;
 import static org.knime.core.expressions.Ast.stringConstant;
 import static org.knime.core.expressions.Ast.unaryOp;
 
@@ -317,6 +319,12 @@ final class Parser {
                         stringConstant(parseStringLiteral(symbol), data);
                 case KnimeExpressionParser.MISSING -> //
                         missingConstant(data);
+                case KnimeExpressionParser.ROW_INDEX -> //
+                        rowIndex(data);
+                case KnimeExpressionParser.ROW_NUMBER -> //
+                        binaryOp(BinaryOperator.PLUS, rowIndex(data), integerConstant(1));
+                case KnimeExpressionParser.ROW_ID -> //
+                        rowId(data);
                 case KnimeExpressionParser.MATH_CONSTANT -> {
                     try {
                         yield MathConstantValue.valueOf(symbol.getText()).toAst(data);

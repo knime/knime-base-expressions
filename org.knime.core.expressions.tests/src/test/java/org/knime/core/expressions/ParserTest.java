@@ -74,6 +74,8 @@ import static org.knime.core.expressions.AstTestUtils.FUN;
 import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
+import static org.knime.core.expressions.AstTestUtils.ROW_ID;
+import static org.knime.core.expressions.AstTestUtils.ROW_INDEX;
 import static org.knime.core.expressions.AstTestUtils.STR;
 
 import java.util.List;
@@ -130,6 +132,8 @@ final class ParserTest {
             COL_SHORTHAND_2("$col_name12_", COL("col_name12_")), //
             COL_LONG_1("$[\"col\"]", COL("col")), //
             COL_LONG_2("$[\"my 'very\\\" special column\"]", COL("my 'very\" special column")), //
+            COL_ROW_INDEX( "$[ROW_INDEX]", ROW_INDEX()), //
+            COL_ROW_ID( "$[ROW_ID]", ROW_ID()), //
 
             // Flow Variable Access
             FLOW_SHORTHAND_1("$$varname", FLOW("varname")), //

@@ -109,6 +109,20 @@ public final class AstTestUtils {
     }
 
     /**
+     * @return a {@link Ast.ColumnAccess}
+     */
+    public static Ast.ColumnAccess ROW_INDEX() { // NOSONAR - name useful for visual clarity
+        return Ast.rowIndex();
+    }
+
+    /**
+     * @return a {@link Ast.ColumnAccess}
+     */
+    public static Ast.ColumnAccess ROW_ID() { // NOSONAR - name useful for visual clarity
+        return Ast.rowId();
+    }
+
+    /**
      * @param name
      * @return a {@link Ast.FlowVarAccess}
      */

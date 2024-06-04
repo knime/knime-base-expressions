@@ -400,16 +400,14 @@ final class Evaluation {
                 case MINUS -> ctx -> a1.compute(ctx) - a2.compute(ctx);
                 case MULTIPLY -> ctx -> a1.compute(ctx) * a2.compute(ctx);
                 case FLOOR_DIVIDE -> safeFloorDivide(a1, a2);
-                case EXPONENTIAL -> (
-                    final EvaluationContext ctx) -> (long)Math.pow(a1.compute(ctx), a2.compute(ctx));
+                case EXPONENTIAL -> (final EvaluationContext ctx) -> (long)Math.pow(a1.compute(ctx), a2.compute(ctx));
                 case REMAINDER -> safeRemainder(a1, a2);
                 default -> throw unsupportedOutputForOpError(op, INTEGER);
             };
             return IntegerComputer.of(value, (final EvaluationContext w) -> a1.isMissing(w) || a2.isMissing(w));
         }
 
-        static ToLongFunction<EvaluationContext> safeFloorDivide(final IntegerComputer a1,
-            final IntegerComputer a2) {
+        static ToLongFunction<EvaluationContext> safeFloorDivide(final IntegerComputer a1, final IntegerComputer a2) {
             return ctx -> {
                 var divisor = a2.compute(ctx);
                 if (divisor == 0) {
@@ -419,8 +417,7 @@ final class Evaluation {
             };
         }
 
-        static ToLongFunction<EvaluationContext> safeRemainder(final IntegerComputer a1,
-            final IntegerComputer a2) {
+        static ToLongFunction<EvaluationContext> safeRemainder(final IntegerComputer a1, final IntegerComputer a2) {
             return ctx -> {
                 var divisor = a2.compute(ctx);
                 if (divisor == 0) {

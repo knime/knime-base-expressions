@@ -74,7 +74,7 @@ final class ColumnIdxResolve {
      * @param columnNameToIdx map a column name to the index. Should return {@link OptionalInt#empty()} for column names
      *            that do not exist in the table.
      */
-    static void resolveColumnIndices(final Ast root, final Function<String, OptionalInt> columnNameToIdx)
+    static void resolveColumnIndices(final Ast root, final Function<Ast.ColumnId, OptionalInt> columnNameToIdx)
         throws ExpressionCompileException {
         Ast.putDataRecursive(root, COLUMN_IDX_DATA_KEY, new ColumnIdxVisitor(columnNameToIdx));
     }
@@ -85,15 +85,15 @@ final class ColumnIdxResolve {
 
     private static final class ColumnIdxVisitor extends Ast.OptionalAstVisitor<Integer, ExpressionCompileException> {
 
-        private final Function<String, OptionalInt> m_colIdx;
+        private final Function<Ast.ColumnId, OptionalInt> m_colIdx;
 
-        public ColumnIdxVisitor(final Function<String, OptionalInt> colIdx) {
+        public ColumnIdxVisitor(final Function<Ast.ColumnId, OptionalInt> colIdx) {
             m_colIdx = colIdx;
         }
 
         @Override
         public Optional<Integer> visit(final ColumnAccess node) throws ExpressionCompileException {
-            return Optional.of(m_colIdx.apply(node.name())
+            return Optional.of(m_colIdx.apply(node.columnId())
                 .orElseThrow(() -> new ExpressionCompileException(ExpressionCompileError.missingColumnError(node))));
         }
     }

@@ -61,7 +61,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.Ast.ColumnId;
 import org.knime.core.expressions.Ast.FlowVarAccess;
+import org.knime.core.expressions.Ast.RowId;
+import org.knime.core.expressions.Ast.RowIndex;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
@@ -77,8 +80,20 @@ public final class TestUtils {
     private static final EvaluationContext DUMMY_WML = w -> {
     };
 
-    /** Function that maps from a {@link ColumnAccess} to its name */
-    public static Function<ColumnAccess, String> COLUMN_NAME = ColumnAccess::name;
+    /** Function that maps from a {@link ColumnId} to its {{@link ColumnId}} */
+    public static Function<ColumnAccess, ColumnId> COLUMN_ID = ColumnAccess::columnId;
+
+    /**
+     * Function that maps from a {@link ColumnId} to its name. The names For the
+     * (un-named) {@link RowId} and {@link RowIndex} columns, "ROW_INDEX" and
+     * "ROW_ID" are returned, respectively.
+     */
+    public static final Function<ColumnId, String> COLUMN_NAME = columnId -> switch(columnId.type()) {
+        case NAMED -> columnId.name();
+        case ROW_INDEX -> "ROW_INDEX";
+        case ROW_ID -> "ROW_ID";
+    };
+
 
     /** Function that maps from a {@link FlowVarAccess} to its name */
     public static Function<FlowVarAccess, String> FLOW_VAR_NAME = FlowVarAccess::name;

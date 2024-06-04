@@ -52,6 +52,7 @@ import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
+import static org.knime.core.expressions.ValueType.OPT_FLOAT;
 import static org.knime.core.expressions.ValueType.STRING;
 
 import java.util.ArrayList;
@@ -187,7 +188,12 @@ final class Typing {
 
         @Override
         public ValueType visit(final ColumnAccess node) {
-            return m_columnType.apply(node.name()).orElseGet(() -> ErrorValueType.missingColumn(node));
+            final Ast.ColumnId id = node.columnId();
+            return switch (id.type()) {
+                case NAMED -> m_columnType.apply(id.name()).orElseGet(() -> ErrorValueType.missingColumn(node));
+                case ROW_ID -> STRING;
+                case ROW_INDEX -> INTEGER;
+            };
         }
 
         @Override
@@ -336,8 +342,8 @@ final class Typing {
 
                 // Handle the special case where we have integers and floats
                 return (typeA.isOptional() && typeB.isOptional()) //
-                    ? ValueType.OPT_FLOAT //
-                    : ValueType.FLOAT;
+                    ? OPT_FLOAT //
+                    : FLOAT;
             } else {
                 return ErrorValueType.nullishOpNotApplicable(node, typeA, typeB);
             }

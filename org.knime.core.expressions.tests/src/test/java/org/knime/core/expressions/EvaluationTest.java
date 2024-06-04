@@ -71,8 +71,11 @@ import static org.knime.core.expressions.AstTestUtils.FUN;
 import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
+import static org.knime.core.expressions.AstTestUtils.ROW_ID;
+import static org.knime.core.expressions.AstTestUtils.ROW_INDEX;
 import static org.knime.core.expressions.AstTestUtils.STR;
 import static org.knime.core.expressions.TestAggregations.TEST_AGGREGATIONS;
+import static org.knime.core.expressions.TestUtils.COLUMN_ID;
 import static org.knime.core.expressions.TestUtils.COLUMN_NAME;
 import static org.knime.core.expressions.TestUtils.computerResultChecker;
 
@@ -111,7 +114,7 @@ final class EvaluationTest {
             TEST_FUNCTIONS, TEST_AGGREGATIONS);
         var result = Evaluation.evaluate( //
             ast, //
-            COLUMN_NAME.andThen(FIND_TEST_COLUMN).andThen(c -> c.map(TestColumn::computer)), //
+            COLUMN_ID.andThen(COLUMN_NAME).andThen(FIND_TEST_COLUMN).andThen(c -> c.map(TestColumn::computer)), //
             TestUtils.FLOW_VAR_NAME.andThen(FIND_TEST_FLOW_VARIABLE).andThen(c -> c.map(TestFlowVariable::computer)), //
             TestAggregations.TEST_AGGREGATIONS_COMPUTER);
         assertNotNull(result, "should output result");
@@ -149,6 +152,8 @@ final class EvaluationTest {
             COLUMN_FLOAT(COL("FLOAT"), 10.5), //
             COLUMN_STRING(COL("STRING"), "column value"), //
             COLUMN_MISSING(COL("INTEGER_MISSING")), //
+            COLUMN_ROW_INDEX(ROW_INDEX(), 99), //
+            COLUMN_ROW_ID(ROW_ID(), "Row99"), //
 
             // === FlowVariable Access
 
@@ -421,6 +426,8 @@ final class EvaluationTest {
             INTEGER_MISSING(ValueType.OPT_INTEGER, IntegerComputer.of(THROWING_LONG_SUPPLIER, ctx -> true)), //
             FLOAT_MISSING(ValueType.OPT_FLOAT, FloatComputer.of(THROWING_DOUBLE_SUPPLIER, ctx -> true)), //
             STRING_MISSING(ValueType.OPT_STRING, StringComputer.of(THROWING_STRING_SUPPLIER, ctx -> true)), //
+            ROW_INDEX(ValueType.INTEGER, IntegerComputer.of(ctx -> 99, ctx -> false)), //
+            ROW_ID(ValueType.STRING, StringComputer.of(ctx -> "Row99", ctx -> false)), //
         ;
 
         private final Computer m_computer;

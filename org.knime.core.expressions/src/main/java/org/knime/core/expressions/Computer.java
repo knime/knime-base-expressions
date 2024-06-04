@@ -86,7 +86,7 @@ public interface Computer {
          * Helper method to create a {@link BooleanComputer}.
          *
          * @param value a supplier for the {@link #compute(EvaluationContext)} result
-         * @param missing a supplier that returns if the result {@link #isMissing(EvaluationContext)}
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link BooleanComputer}
          */
         static BooleanComputer of(final Predicate<EvaluationContext> value,
@@ -119,7 +119,7 @@ public interface Computer {
          * Helper method to create an {@link IntegerComputer}.
          *
          * @param value a supplier for the {@link #compute(EvaluationContext)} result
-         * @param missing a supplier that returns if the result {@link #isMissing(EvaluationContext)}
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return an {@link IntegerComputer}
          */
         static IntegerComputer of(final ToLongFunction<EvaluationContext> value,
@@ -152,7 +152,7 @@ public interface Computer {
          * Helper method to create a {@link FloatComputer}.
          *
          * @param value a supplier for the {@link #compute(EvaluationContext)} result
-         * @param missing a supplier that returns if the result {@link #isMissing(EvaluationContext)}
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link FloatComputer}
          */
         static FloatComputer of(final ToDoubleFunction<EvaluationContext> value,
@@ -185,7 +185,7 @@ public interface Computer {
          * Helper method to create a {@link StringComputer}.
          *
          * @param value a supplier for the {@link #compute(EvaluationContext)} result
-         * @param missing a supplier that returns if the result {@link #isMissing(EvaluationContext)}
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link StringComputer}
          */
         static StringComputer of(final Function<EvaluationContext, String> value,
@@ -242,13 +242,13 @@ public interface Computer {
             return BooleanComputer.of(ctx -> ((BooleanComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR  - method reference is not possible due to delayed computation
                 isMissing);
         }
-        if (returnType.baseType()  == INTEGER) {
+        if (returnType.baseType() == INTEGER) {
             return IntegerComputer.of(ctx -> Math.round(toFloat(computerSupplier.apply(ctx)).compute(ctx)), isMissing);
         }
-        if (returnType.baseType()  == FLOAT) {
+        if (returnType.baseType() == FLOAT) {
             return FloatComputer.of(ctx -> toFloat(computerSupplier.apply(ctx)).compute(ctx), isMissing);
         }
-        if (returnType.baseType()  == STRING) {
+        if (returnType.baseType() == STRING) {
             return StringComputer.of(ctx -> ((StringComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR - method reference is not possible due to delayed computation
                 isMissing);
         }

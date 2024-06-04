@@ -192,7 +192,7 @@ public sealed interface Ast
      * visit it is guaranteed that the children have been processed already.
      *
      * @param <O> the type of the data
-     * @param <E> the type of an exception that might be thrown
+     * @param <E> the type of exception that might be thrown
      * @param node the AST
      * @param key the key of the data
      * @param visitor a visitor which returns the appropriate data for each type of node
@@ -215,7 +215,7 @@ public sealed interface Ast
      * visit it is guaranteed that the children have been processed already.
      *
      * @param <O> the type of the data
-     * @param <E> the type of an exception that might be thrown
+     * @param <E> the type of exception that might be thrown
      * @param node the AST
      * @param key the key of the data
      * @param visitor a visitor which returns the appropriate data for each type of node
@@ -254,7 +254,6 @@ public sealed interface Ast
     /**
      * Create a new {@link MissingConstant} with no data.
      *
-     * @param value
      * @return the node
      */
     static MissingConstant missingConstant() {
@@ -373,7 +372,45 @@ public sealed interface Ast
      * @return the node
      */
     static ColumnAccess columnAccess(final String name, final Map<String, Object> data) {
-        return new ColumnAccess(name, data);
+        return new ColumnAccess(new ColumnName(name), data);
+    }
+
+    /**
+     * Create a new {@code RowIndex} {@link ColumnAccess} with no data.
+     *
+     * @return the node
+     */
+    static ColumnAccess rowIndex() {
+        return rowIndex(new HashMap<>());
+    }
+
+    /**
+     * Create a new {@code RowIndex} {@link ColumnAccess} for the given data.
+     *
+     * @param data
+     * @return the node
+     */
+    static ColumnAccess rowIndex(final Map<String, Object> data) {
+        return new ColumnAccess(RowIndex.INSTANCE, data);
+    }
+
+    /**
+     * Create a new {@code RowId} {@link ColumnAccess} with no data.
+     *
+     * @return the node
+     */
+    static ColumnAccess rowId() {
+        return rowId(new HashMap<>());
+    }
+
+    /**
+     * Create a new {@code RowId} {@link ColumnAccess} for the given data.
+     *
+     * @param data
+     * @return the node
+     */
+    static ColumnAccess rowId(final Map<String, Object> data) {
+        return new ColumnAccess(RowId.INSTANCE, data);
     }
 
     /**
@@ -403,7 +440,6 @@ public sealed interface Ast
      * @param op the operator
      * @param arg1 the argument on the left
      * @param arg2 the argument on the right
-     * @param data
      * @return the node
      */
     static BinaryOp binaryOp(final BinaryOperator op, final Ast arg1, final Ast arg2) {
@@ -428,7 +464,6 @@ public sealed interface Ast
      *
      * @param op the operator
      * @param arg the argument
-     * @param data
      * @return the node
      */
     static UnaryOp unaryOp(final UnaryOperator op, final Ast arg) {
@@ -595,7 +630,7 @@ public sealed interface Ast
      */
     interface AstVisitor<O, E extends Exception> {
 
-        O visit(MissingConstant missingConstant) throws E;
+        O visit(MissingConstant node) throws E;
 
         O visit(BooleanConstant node) throws E;
 
@@ -615,7 +650,7 @@ public sealed interface Ast
 
         O visit(FunctionCall node) throws E;
 
-        O visit(AggregationCall aggregationCall) throws E;
+        O visit(AggregationCall node) throws E;
     }
 
     /**
@@ -791,17 +826,73 @@ public sealed interface Ast
         }
     }
 
-    /**
-     * {@link Ast} representing a data column access.
-     *
-     * @param name the name of the column
-     * @param data attached data
-     */
-    record ColumnAccess(String name, Map<String, Object> data) implements Ast {
+    sealed interface ColumnId permits ColumnName, RowIndex, RowId {
+
+        /**
+         * @return the part of the expression which is represented by this ColumnId
+         */
+        String toExpression();
+
+        default String name() {
+            throw new UnsupportedOperationException();
+        }
+
+        enum ColumnIdType {
+                NAMED, ROW_ID, ROW_INDEX
+        }
+
+        default ColumnIdType type() {
+            if (this instanceof ColumnName) {
+                return ColumnIdType.NAMED;
+            } else if (this instanceof RowId) {
+                return ColumnIdType.ROW_ID;
+            } else if (this instanceof RowIndex) {
+                return ColumnIdType.ROW_INDEX;
+            } else {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
+    record ColumnName(String name) implements ColumnId {
 
         @Override
         public String toExpression() {
-            return "$[\"" + name + "\"]";
+            return "\"" + name + "\"";
+        }
+    }
+
+    record RowIndex() implements ColumnId {
+
+        public static final RowIndex INSTANCE = new RowIndex();
+
+        @Override
+        public String toExpression() {
+            return "ROW_INDEX";
+        }
+    }
+
+    record RowId() implements ColumnId {
+
+        public static final RowId INSTANCE = new RowId();
+
+        @Override
+        public String toExpression() {
+            return "ROW_ID";
+        }
+    }
+
+    /**
+     * {@link Ast} representing a data column access.
+     *
+     * @param columnId the name of the column
+     * @param data attached data
+     */
+    record ColumnAccess(ColumnId columnId, Map<String, Object> data) implements Ast {
+
+        @Override
+        public String toExpression() {
+            return "$[" + columnId.toExpression() + "]";
         }
 
         @Override

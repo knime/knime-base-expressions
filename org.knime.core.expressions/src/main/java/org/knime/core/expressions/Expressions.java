@@ -48,6 +48,8 @@
  */
 package org.knime.core.expressions;
 
+import static org.knime.core.expressions.Ast.ColumnId.ColumnIdType.ROW_INDEX;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -96,8 +98,8 @@ public final class Expressions {
      *            should return <code>Optional.empty()</code> if the column is not available.
      * @throws ExpressionCompileException if the expression accesses a column that is not available
      */
-    public static void resolveColumnIndices(final Ast expression, final Function<String, OptionalInt> columnNameToIdx)
-        throws ExpressionCompileException {
+    public static void resolveColumnIndices(final Ast expression,
+        final Function<Ast.ColumnId, OptionalInt> columnNameToIdx) throws ExpressionCompileException {
         ColumnIdxResolve.resolveColumnIndices(expression, columnNameToIdx);
     }
 
@@ -174,6 +176,22 @@ public final class Expressions {
      */
     public static ColumnAggregation getResolvedColumnAggregation(final AggregationCall aggregationCall) {
         return Typing.getAggregationImpl(aggregationCall);
+    }
+
+    /**
+     * Returns {@code true} if the given {@code expression} uses the ROW_INDEX column.
+     *
+     * @param expression the expression to check
+     * @return {@code true} if {@code expression} uses the ROW_INDEX column.
+     */
+    public static boolean requiresRowIndexColumn(final Ast expression) {
+        return expression.accept( //
+            new AstVisitors.ReducingAstVisitor<Boolean, RuntimeException>(false, Boolean::logicalOr) {
+                @Override
+                public Boolean visit(final Ast.ColumnAccess node) {
+                    return node.columnId().type() == ROW_INDEX;
+                }
+            });
     }
 
     // EXCEPTIONS
