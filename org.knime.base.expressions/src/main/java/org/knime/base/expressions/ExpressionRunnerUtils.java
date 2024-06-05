@@ -48,10 +48,18 @@
  */
 package org.knime.base.expressions;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -61,6 +69,7 @@ import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContex
 import org.knime.base.expressions.aggregations.ColumnAggregations;
 import org.knime.core.data.columnar.ColumnarTableBackend;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
+import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
@@ -69,6 +78,8 @@ import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.AggregationCall;
+import org.knime.core.expressions.Ast.ColumnAccess;
+import org.knime.core.expressions.Ast.ColumnId;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
@@ -330,16 +341,18 @@ public final class ExpressionRunnerUtils {
      * table and the expression result.
      *
      * @param input the input table
+     * @param numRows number of rows in the input table
      * @param expression the expression. Must have {@link Expressions#inferTypes inferred types}.
      * @param outputColumnName the name of the column that will contain the result of the expression
      * @param exprContext a context for the {@link ExpressionMapperFactory}
      * @param ctx the {@link EvaluationContext}
      * @return the result of the expression
      */
-    public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final Ast expression,
-        final String outputColumnName, final ExpressionMapperContext exprContext, final EvaluationContext ctx) {
+    public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final long numRows,
+        final Ast expression, final String outputColumnName, final ExpressionMapperContext exprContext,
+        final EvaluationContext ctx) {
 
-        var resolvedInput = resolveColumns(expression, input);
+        var resolvedInput = resolveColumns(expression, input, numRows);
 
         var expressionMapperFactory =
             new ExpressionMapperFactory(expression, resolvedInput.getSchema(), outputColumnName, exprContext, ctx);
@@ -348,33 +361,44 @@ public final class ExpressionRunnerUtils {
     }
 
     /**
-     * Add column indices to the given {@code Ast}. Returns the input {@code ColumnarVirtualTable} with additional
-     * columns if required (e.g., ROW_INDEX).
+     * Add column indices to the given {@code expression}. Returns the input {@code ColumnarVirtualTable} with
+     * additional columns if required (e.g., ROW_INDEX).
+     *
+     * @param expression the expression
+     * @param input the input table
+     * @param numRows number of rows in the input table
+     * @return the input {@code ColumnarVirtualTable} with additional columns if required (ROW_INDEX, offset columns,
+     *         etc).
      */
-    private static ColumnarVirtualTable resolveColumns(final Ast ast, final ColumnarVirtualTable input) {
+    private static ColumnarVirtualTable resolveColumns(final Ast expression, final ColumnarVirtualTable input,
+        final long numRows) {
+
         try {
             final ColumnarValueSchema inputTableSchema = input.getSchema();
 
-            final int numCols = inputTableSchema.numColumns() + 1;
-            Function<ColumnarVirtualTable, ColumnarVirtualTable> inputTableModifier = vt -> vt;
+            int numCols = inputTableSchema.numColumns();
+            ColumnarVirtualTable modifiedInputTable = input;
 
-            // append ROW_INDEX if required
+            // -- append ROW_INDEX if required --
+            // ----------------------------------
+
             final OptionalInt rowIndexColIdx;
-            if (Expressions.requiresRowIndexColumn(ast)) {
-                rowIndexColIdx = OptionalInt.of(numCols);
-                inputTableModifier =
-                    inputTableModifier.andThen(vt -> vt.appendRowIndex("row_idx-" + UUID.randomUUID().toString()));
+            if (Expressions.requiresRowIndexColumn(expression)) {
+                rowIndexColIdx = OptionalInt.of(numCols++);
+                modifiedInputTable = modifiedInputTable.appendRowIndex("row_idx-" + UUID.randomUUID().toString());
             } else {
                 rowIndexColIdx = OptionalInt.empty();
             }
 
-            // TODO (TP) The idea is to put further column augmentations here.
-            //           For example, for windowing support (accessing rows
-            //           before/after the current row), we must append columns
-            //           from the input table sliced according to the windowing
-            //           offset.
+            // -- append (windowing) offset columns if required --
+            // ---------------------------------------------------
 
-            Function<Ast.ColumnId, OptionalInt> columnIdToIndex = columnId -> switch (columnId.type()) {
+            // We resolveColumnIndices here to be sure that ExpressionCompileException related to
+            // missing columns are thrown.
+            //
+            // This assigns column indices to ColumnAccess nodes with windowing offset != 0, too.
+            // These are wrong and will be fixed below.
+            final Function<ColumnId, OptionalInt> columnIdToIndex = columnId -> switch (columnId.type()) {
                 case NAMED -> {
                     var colIdx = inputTableSchema.getSourceSpec().findColumnIndex(columnId.name());
                     yield colIdx == -1 ? OptionalInt.empty() : OptionalInt.of(colIdx + 1);
@@ -382,8 +406,62 @@ public final class ExpressionRunnerUtils {
                 case ROW_ID -> rowIndexColIdx;
                 case ROW_INDEX -> OptionalInt.of(0);
             };
-            Expressions.resolveColumnIndices(ast, columnIdToIndex);
-            return inputTableModifier.apply(input);
+            Expressions.resolveColumnIndices(expression, c -> columnIdToIndex.apply(c.columnId()));
+
+            // Maps each windowing offset to a column index resolution function
+            final Map<Long, Function<ColumnId, OptionalInt>> offsetToColumnIdToIndex = new HashMap<>();
+            // for offset==0, it's just the "normal" columnIdToIndex from above
+            offsetToColumnIdToIndex.put(0L, columnIdToIndex);
+
+            // Maps windowing offset to set of ColumnIds occurring with this offset
+            final Map<Long, Set<ColumnId>> offsetToColumnId = Expressions.collectColumnAccesses(expression).stream()
+                .collect(groupingBy(ColumnAccess::offset, mapping(ColumnAccess::columnId, toSet())));
+
+            // For each occurring windowing offset ...
+            for (var entry : offsetToColumnId.entrySet()) {
+                long offset = entry.getKey();
+                if (offset == 0) {
+                    continue;
+                }
+
+                // ColumnIds occurring with offset, and indices of the corresponding non-offset input column
+                final ColumnId[] columnIds = entry.getValue().toArray(ColumnId[]::new);
+                final int[] columnIndices = new int[columnIds.length];
+                Arrays.setAll(columnIndices, i -> columnIdToIndex.apply(columnIds[i]).orElseThrow());
+
+                // TODO (TP) Offsets further than the numRows() in either direction will always be completely missing.
+                //           That case should be handled with a simple MissingColumn.
+                if (offset > 0) {
+                    modifiedInputTable = modifiedInputTable
+                        .append(input.selectColumns(columnIndices).renameToRandomColumnNames().slice(offset, numRows));
+                } else {
+                    ColumnarVirtualTable appendedTable =
+                        input.selectColumns(0)
+                            .appendMissingValueColumns(
+                                ColumnarValueSchemaUtils.selectColumns(input.getSchema(), columnIndices))
+                            .dropColumns(0);
+
+                    modifiedInputTable = modifiedInputTable.append( //
+                        appendedTable.slice(0, -offset).concatenate( //
+                            input.selectColumns(columnIndices).slice(0, numRows + offset) //
+                        ).renameToRandomColumnNames() //
+                    );
+                }
+
+                // Record appended column indices into Map<ColumnId, OptionalInt>
+                final Map<ColumnId, OptionalInt> appendedColumnIdToIndex = new HashMap<>();
+                for (var columnId : columnIds) {
+                    appendedColumnIdToIndex.put(columnId, OptionalInt.of(numCols++));
+                }
+                offsetToColumnIdToIndex.put(offset,
+                    id -> appendedColumnIdToIndex.getOrDefault(id, OptionalInt.empty()));
+            }
+            // resolveColumnIndices again, this time including offset() handling
+            final Function<ColumnAccess, OptionalInt> columnAccessToIndex =
+                c -> offsetToColumnIdToIndex.get(c.offset()).apply(c.columnId());
+            Expressions.resolveColumnIndices(expression, columnAccessToIndex);
+
+            return modifiedInputTable;
         } catch (ExpressionCompileException ex) {
             throw new IllegalArgumentException(ex);
         }
@@ -397,6 +475,8 @@ public final class ExpressionRunnerUtils {
      * @param expression the expression. Must have {@link Expressions#inferTypes inferred types}.
      * @param outputColumnName the name of the column that will contain the result of the expression
      * @param exec the execution context
+     * @param progress an execution monitor for progress and cancellation checks. Could be a subprogress monitor, since
+     *            it will go from 0-1 over the course of the execution here.
      * @param exprContext a context for the {@link ExpressionMapperFactory}
      * @param ctx the {@link EvaluationContext}
      * @return the materialized result of the expression
@@ -414,7 +494,7 @@ public final class ExpressionRunnerUtils {
     ) throws CanceledExecutionException, VirtualTableIncompatibleException {
         var numRows = refTable.getBufferedTable().size();
         var expressionResultVirtual =
-            applyExpression(refTable.getVirtualTable(), expression, outputColumnName, exprContext, ctx);
+            applyExpression(refTable.getVirtualTable(), numRows, expression, outputColumnName, exprContext, ctx);
         return ColumnarVirtualTableMaterializer.materializer() //
             .sources(refTable.getSources()) //
             .materializeRowKey(false) //

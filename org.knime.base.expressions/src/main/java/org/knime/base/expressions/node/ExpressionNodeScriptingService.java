@@ -235,7 +235,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             }
         }
 
-        public void runExpression(final String script, final int numPreviewRows, final String columnInsertionModeString,
+        public void runExpression(final String script, int numPreviewRows, final String columnInsertionModeString,
             final String columnName) {
 
             if (numPreviewRows > PREVIEW_MAX_ROWS) {
@@ -266,20 +266,20 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
             List<String> warnings = new ArrayList<>();
             EvaluationContext evaluationContext = warnings::add;
+            numPreviewRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
             var exprContext = new NodeExpressionMapperContext(this::getAvailableFlowVariables);
-
-            var numRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
-            var slicedInputTable = inputTable.getVirtualTable().slice(0, numRows);
+            var slicedInputTable = inputTable.getVirtualTable().slice(0, numPreviewRows);
 
             var expressionResult = ExpressionRunnerUtils.applyExpression( //
                 slicedInputTable, //
+                numPreviewRows, //
                 expression, //
                 columnName, //
                 exprContext, //
                 evaluationContext);
 
             updateTablePreview(inputTable, slicedInputTable, expressionResult, columnName, columnInsertionModeString,
-                numRows);
+                numPreviewRows);
 
             for (var warning : warnings) {
                 addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));
