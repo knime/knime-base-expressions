@@ -47,79 +47,82 @@ const columnSectorState = ref<ColumnSelectorState>({
 });
 
 const multiEditorComponentRef = ref<MultiEditorPaneExposes | null>(null);
-
 const functionCatalogData = ref<FunctionCatalogData>();
-
 const inputsAvailable = ref(false);
-onMounted(() => {
-  scriptingService.inputsAvailable().then((result) => {
-    inputsAvailable.value = result;
-    if (!result) {
-      consoleHandler.writeln({
-        warning: "No input available. Connect an executed node.",
-      });
-    }
-  });
 
-  scriptingService.getInputObjects().then((result) => {
-    if (result && result.length > 0 && result[0].subItems) {
-      allowedReplacementColumns.value = result[0].subItems.map(
-        (c: { name: string }) => {
-          return { id: c.name, text: c.name };
-        },
-      );
-    }
-  });
-
-  const functionCatalogPromise = scriptingService
-    .getFunctions()
-    .then((data) => {
-      functionCatalogData.value = data;
-      return data;
-    });
-
-  Promise.all([
+onMounted(async () => {
+  const [
+    initialSettings,
+    availableInputs,
+    inputObjects,
+    flowVariableInputs,
+    functions,
+    mathsConstants,
+  ] = await Promise.all([
+    scriptingService.getInitialSettings(),
+    scriptingService.inputsAvailable(),
     scriptingService.getInputObjects(),
     scriptingService.getFlowVariableInputs(),
-    functionCatalogPromise,
+    scriptingService.getFunctions(),
     scriptingService.getMathsConstants(),
-  ]).then((result) => {
-    registerKnimeExpressionLanguage({
-      columnNamesForCompletion: result[0]?.[0]?.subItems
-        ? result[0][0].subItems.map((c) => ({ name: c.name, type: c.type }))
-        : [],
-      flowVariableNamesForCompletion: result[1]?.subItems
-        ? result[1].subItems.map((c) => ({ name: c.name, type: c.type }))
-        : [],
-      extraCompletionItems: [
-        ...result[2].functions.map((f) => ({
-          text: `${f.name}(${Array(f.arguments.length).join(", ")})`,
-          kind: monaco.languages.CompletionItemKind.Function,
-          extraDetailForMonaco: { documentation: { value: f.description } },
-        })),
-        ...result[3].map((c) => ({
-          text: c.name,
-          kind: monaco.languages.CompletionItemKind.Constant,
-          extraDetailForMonaco: {
-            documentation: { value: c.documentation },
-            detail: `Type: ${c.type}`,
-          },
-        })),
-      ],
-      languageName: language,
+  ]);
+
+  multiEditorComponentRef.value
+    ?.getEditorState()
+    .setInitialText(initialSettings.script);
+
+  columnSectorState.value = {
+    outputMode: initialSettings.columnOutputMode,
+    createColumn: initialSettings.createdColumn,
+    replaceColumn: initialSettings.replacedColumn,
+  };
+
+  inputsAvailable.value = availableInputs;
+  if (!availableInputs) {
+    consoleHandler.writeln({
+      warning: "No input available. Connect an executed node.",
     });
-  });
+  }
 
-  scriptingService.getInitialSettings().then((settings) => {
-    multiEditorComponentRef.value
-      ?.getEditorState()
-      .setInitialText(settings.script);
+  functionCatalogData.value = functions;
 
-    columnSectorState.value = {
-      outputMode: settings.columnOutputMode,
-      createColumn: settings.createdColumn,
-      replaceColumn: settings.replacedColumn,
-    };
+  if (inputObjects && inputObjects.length > 0 && inputObjects[0].subItems) {
+    allowedReplacementColumns.value = inputObjects[0]?.subItems?.map(
+      (c: { name: string }) => {
+        return { id: c.name, text: c.name };
+      },
+    );
+  }
+
+  registerKnimeExpressionLanguage({
+    columnNamesForCompletion: inputObjects?.[0]?.subItems
+      ? inputObjects[0].subItems.map((column) => ({
+          name: column.name,
+          type: column.type,
+        }))
+      : [],
+    flowVariableNamesForCompletion: flowVariableInputs?.subItems
+      ? flowVariableInputs.subItems.map((flowVariable) => ({
+          name: flowVariable.name,
+          type: flowVariable.type,
+        }))
+      : [],
+    extraCompletionItems: [
+      ...functions.functions.map((func) => ({
+        text: `${func.name}(${Array(func.arguments.length).join(", ")})`,
+        kind: monaco.languages.CompletionItemKind.Function,
+        extraDetailForMonaco: { documentation: { value: func.description } },
+      })),
+      ...mathsConstants.map((constant) => ({
+        text: constant.name,
+        kind: monaco.languages.CompletionItemKind.Constant,
+        extraDetailForMonaco: {
+          documentation: { value: constant.documentation },
+          detail: `Type: ${constant.type}`,
+        },
+      })),
+    ],
+    languageName: language,
   });
 
   setActiveEditorStoreForAi(multiEditorComponentRef.value?.getEditorState());

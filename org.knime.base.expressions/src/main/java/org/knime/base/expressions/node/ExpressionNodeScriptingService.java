@@ -203,11 +203,11 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
         public List<Map<String, Serializable>> getMathsConstants() {
             return Arrays.stream(MathsConstantValue.values()) //
-                .map(e -> Map.of( //
-                    "name", e.name(), //
-                    "type", e.type().toString(), //
-                    "documentation", e.documentation(), //
-                    "value", e.value()) //
+                .map(constant -> Map.of( //
+                    "name", constant.name(), //
+                    "type", constant.type().toString(), //
+                    "documentation", constant.documentation(), //
+                    "value", constant.value()) //
                 ) //
                 .toList();
         }
