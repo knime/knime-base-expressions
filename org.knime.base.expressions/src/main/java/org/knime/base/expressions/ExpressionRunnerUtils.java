@@ -196,9 +196,12 @@ public final class ExpressionRunnerUtils {
             // Fallback for the row-based backend
             LOGGER.debug("Copying table to columnar format to be compatible with expressions", ex);
 
-            try (var container =
-                new ColumnarTableBackend().create(exec, table.getDataTableSpec(), DataContainerSettings.getDefault(),
-                    Node.invokeGetDataRepository(exec), Node.invokeGetFileStoreHandler(exec));
+            try (var container = new ColumnarTableBackend().create(exec, table.getDataTableSpec(),
+                DataContainerSettings.builder() //
+                    .withInitializedDomain(true) //
+                    .withCheckDuplicateRowKeys(false) //
+                    .withDomainUpdate(false).build(), //
+                Node.invokeGetDataRepository(exec), Node.invokeGetFileStoreHandler(exec));
                     var writeCursor = container.createCursor();
                     var readCursor = table.cursor()) {
 
