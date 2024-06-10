@@ -267,7 +267,10 @@ describe("FunctionCatalog", () => {
     await functionList.trigger("keydown", { key: " " });
     expect(wrapper.emitted("functionInsertionEvent")?.length).toBe(3);
     for (const e of wrapper.emitted("functionInsertionEvent")!) {
-      expect((e[0] as any).text).toContain(function1.name);
+      expect((e[0] as any).functionName).toContain(function1.name);
+      expect((e[0] as any).functionArgs.length).toEqual(
+        function1.arguments.length,
+      );
     }
 
     // Fire three more events
@@ -278,7 +281,10 @@ describe("FunctionCatalog", () => {
     await functionList.trigger("keydown", { key: " " });
     expect(wrapper.emitted("functionInsertionEvent")?.length).toBe(3 + 3);
     for (const e of wrapper.emitted("functionInsertionEvent")!.slice(3)) {
-      expect((e[0] as any).text).toContain(function2.name);
+      expect((e[0] as any).functionName).toContain(function2.name);
+      expect((e[0] as any).functionArgs.length).toEqual(
+        function2.arguments.length,
+      );
     }
   });
 

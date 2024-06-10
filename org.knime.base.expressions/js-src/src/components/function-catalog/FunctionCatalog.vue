@@ -17,6 +17,7 @@ import type {
 import CategoryDescription from "@/components/function-catalog/CategoryDescription.vue";
 import { createDragGhosts } from "webapps-common/ui/components/FileExplorer/dragGhostHelpers";
 import { EMPTY_DRAG_IMAGE } from "webapps-common/ui/components/FileExplorer/useItemDragging";
+import { useDraggedFunctionStore } from "@/draggedFunctionStore";
 
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
 const FUNCTION_CATALOG_WIDTH = "250px";
@@ -46,6 +47,8 @@ const categories = ref(
 
 const removeGhostsRef = ref<() => void>(() => {});
 
+const draggedFunctionStore = useDraggedFunctionStore();
+
 const onDragStart = (e: DragEvent, f: FunctionData) => {
   const { removeGhosts } = createDragGhosts({
     badgeCount: null, // don't show a badge at all
@@ -60,11 +63,19 @@ const onDragStart = (e: DragEvent, f: FunctionData) => {
 
   removeGhostsRef.value = removeGhosts;
 
-  e.dataTransfer?.setData(
-    "text",
-    `${f.name}(${Array(f.arguments.length).join(", ")})`,
-  );
+  // We only insert the function name, not the arguments, as the arguments are
+  // inserted as a snippet when the function is dropped. The snippet will be
+  // handled by the editor.
+  e.dataTransfer?.setData("text", f.name);
   e.dataTransfer?.setData("eventSource", "function-catalog");
+
+  // Chrome doesn't let you use e.dataTransfer, so we have to use a global store
+  // instead to pass the extra data.
+  draggedFunctionStore.draggedFunctionData = {
+    name: f.name,
+    arguments: f.arguments.map((arg) => arg.name),
+  };
+
   e.dataTransfer?.setDragImage(EMPTY_DRAG_IMAGE, 0, 0);
 };
 
@@ -75,7 +86,8 @@ const onDragEnd = () => {
 const emit = defineEmits(["functionInsertionEvent"]);
 const triggerFunctionInsertionEvent = (evt: Event, f: FunctionData) => {
   emit("functionInsertionEvent", {
-    text: `${f.name}(${Array(f.arguments.length).join(", ")})`,
+    functionName: f.name,
+    functionArgs: f.arguments.map((arg) => arg.name),
     eventSource: "function-catalog",
   });
 };

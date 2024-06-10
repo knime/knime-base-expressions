@@ -2,7 +2,11 @@
 import { registerExpressionDiagnostics } from "../expressionDiagnostics";
 import { editor, type UseCodeEditorReturn } from "@knime/scripting-editor";
 import { onKeyStroke } from "@vueuse/core";
-import { ref } from "vue";
+import { ref, watch } from "vue";
+import {
+  useDraggedFunctionStore,
+  resetDraggedFunctionStore,
+} from "@/draggedFunctionStore";
 
 export type MultiEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;
@@ -35,6 +39,31 @@ onKeyStroke("Escape", () => {
   }
 });
 
+const draggedFunctionStore = useDraggedFunctionStore();
+
+const onDropEvent = (e: DragEvent) => {
+  if (e.dataTransfer?.getData("eventSource") === "function-catalog") {
+    // The text changes once the browser has processed the drop event
+    // (which includes only the function name), so we watch the text
+    // here and then put the arguments in.
+    const unwatch = watch(editorState.text, () => {
+      if (draggedFunctionStore.draggedFunctionData) {
+        const functionArguments =
+          draggedFunctionStore.draggedFunctionData?.arguments;
+
+        // We pass an empty function name here, as the function name is
+        // inserted by the browser on drop. Hence we're only inserting
+        // the arguments, with monaco snippet behavior.
+        editorState.insertFunctionReference("", functionArguments);
+
+        resetDraggedFunctionStore();
+      }
+
+      unwatch();
+    });
+  }
+};
+
 // register undo changes from outside the editor
 onKeyStroke("z", (e) => {
   const key = navigator.userAgent.toLowerCase().includes("mac")
@@ -53,7 +82,7 @@ onKeyStroke("z", (e) => {
     <span class="editor-title-bar">
       {{ props.title }}
     </span>
-    <div ref="editorContainer" class="code-editor" />
+    <div ref="editorContainer" class="code-editor" @drop="onDropEvent" />
     <span class="editor-control-bar">
       <slot name="multi-editor-controls" />
     </span>

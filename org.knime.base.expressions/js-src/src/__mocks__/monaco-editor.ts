@@ -5,6 +5,9 @@ export const languages = {
   CompletionItemKind: {
     Snippet: 0,
   },
+  CompletionItemInsertTextRule: {
+    InsertAsSnippet: 0,
+  },
   registerCompletionItemProvider: vi.fn(),
   register: vi.fn(),
   setMonarchTokensProvider: vi.fn(),

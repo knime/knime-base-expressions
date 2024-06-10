@@ -21,7 +21,7 @@ import * as monaco from "monaco-editor";
 import MultiEditorPane, {
   type MultiEditorPaneExposes,
 } from "./MultiEditorPane.vue";
-import type { FunctionCatalogData } from "./functionCatalogTypes";
+import type { FunctionCatalogData, FunctionData } from "./functionCatalogTypes";
 import { useStore } from "@/store";
 
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
@@ -47,6 +47,33 @@ const columnSectorState = ref<ColumnSelectorState>({
 const multiEditorComponentRef = ref<MultiEditorPaneExposes | null>(null);
 const functionCatalogData = ref<FunctionCatalogData>();
 const inputsAvailable = ref(false);
+
+const convertFunctionsToInsertionItems = (functions: FunctionData[]) => {
+  return functions.map((func) => {
+    // closest we can get to a list comprehension over a range in JS
+    const listOfIndices = [...Array(func.arguments.length).keys()];
+
+    // This snippet syntax is used to allow for tabbing through the arguments
+    // when the function is inserted.
+    const argumentsWithSnippetSyntax = listOfIndices
+      .map((i) => `$\{${i + 1}:${func.arguments[i].name}}`)
+      .join(", ");
+
+    const argumentsWithoutSnippetSyntax =
+      func.arguments.length > 0 ? "..." : "";
+
+    return {
+      text: `${func.name}(${argumentsWithSnippetSyntax})`,
+      kind: monaco.languages.CompletionItemKind.Function,
+      extraDetailForMonaco: {
+        documentation: { value: func.description },
+        insertTextRules:
+          monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        label: `${func.name}(${argumentsWithoutSnippetSyntax})`,
+      },
+    };
+  });
+};
 
 onMounted(async () => {
   const [
@@ -106,11 +133,7 @@ onMounted(async () => {
         }))
       : [],
     extraCompletionItems: [
-      ...functions.functions.map((func) => ({
-        text: `${func.name}(${Array(func.arguments.length).join(", ")})`,
-        kind: monaco.languages.CompletionItemKind.Function,
-        extraDetailForMonaco: { documentation: { value: func.description } },
-      })),
+      ...convertFunctionsToInsertionItems(functions.functions),
       ...mathsConstants.map((constant) => ({
         text: constant.name,
         kind: monaco.languages.CompletionItemKind.Constant,
@@ -151,12 +174,18 @@ scriptingService.registerSettingsGetterForApply(() => {
 
 const onFunctionInsertionTriggered = (payload: {
   eventSource: string;
-  text: string;
+  functionName: string;
+  functionArgs: string[];
 }) => {
-  multiEditorComponentRef.value?.getEditorState().insertText(payload.text);
+  multiEditorComponentRef.value?.getEditorState().editor.value?.focus();
+  multiEditorComponentRef.value
+    ?.getEditorState()
+    .insertFunctionReference(payload.functionName, payload.functionArgs);
 };
 
 const onInputOutputItemInsertionTriggered = (codeToInsert: string) => {
+  multiEditorComponentRef.value?.getEditorState().editor.value?.focus();
+
   // Note that we're ignoring requiredImport, because the expression editor
   // doesn't need imports.
   multiEditorComponentRef.value
