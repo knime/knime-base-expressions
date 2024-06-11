@@ -87,7 +87,7 @@ const registerKnimeExpressionLanguage = ({
 
       comments: [[/(^#.*$)/, "comment"]],
 
-      // Recognize negatives, positives, decimals, ints
+      // Recognize decimals, exponents and ints
       numbers: [
         [/-?\.[0-9_]+(e-?\d+)?/, "number.float"], // no pre-decimal
         [/-?[0-9_]+\.(e-?\d+)?/, "number.float"], // no post-decimal
@@ -112,12 +112,12 @@ const registerKnimeExpressionLanguage = ({
       ],
       columnAccess: [
         [
-          /\${1,2}\["/,
+          /\${1,2}\[\s*"/,
           "string.colname.escape",
           "@columnAccessBodyDoubleQuotes",
         ],
         [
-          /\${1,2}\['/,
+          /\${1,2}\[\s*'/,
           "string.colname.escape",
           "@columnAccessBodySingleQuotes",
         ],
@@ -127,17 +127,26 @@ const registerKnimeExpressionLanguage = ({
         // seems like we have to make this a type of string in order to override bracket colouration
         [/[^\\']+/, "string.colname"],
         [/\\([bfnrt"']|u[A-Za-z0-9]{4,8})/, "string.colname"],
-        [/']/, "string.colname.escape", "@popall"],
+        // Match an end quote iff it is followed by a comma, and jump to the column offset rule
+        [/'(?=\s*,)/, "string.colname.escape", "@columnOffsetSeparator"],
+        // Otherwise, match an end quote followed by a bracket
+        [/'\s*]/, "string.colname.escape", "@popall"],
       ],
       columnAccessBodyDoubleQuotes: [
         [/[^\\"]+/, "string.colname"],
         [/\\([bfnrt"']|u[A-Za-z0-9]{4,8})/, "string.colname"],
-        [/"]/, "string.colname.escape", "@popall"],
+        // Match an end quote iff it is followed by a comma, and jump to the column offset rule
+        [/"(?=\s*,)/, "string.colname.escape", "@columnOffsetSeparator"],
+        // Otherwise, match an end quote followed by a bracket
+        [/"\s*]/, "string.colname.escape", "@popall"],
       ],
       columnAccessBodyNoQuotes: [
         [/[A-Za-z_]\w*/, "string.colname", "@popall"],
         [/./, "", "@popall"],
       ],
+      columnOffsetSeparator: [[/\s*,\s*/, "", "@columnOffset"]],
+      columnOffset: [[/\d+/, "number.coloffset", "@columnAccessTerminator"]],
+      columnAccessTerminator: [[/\s*\]/, "string.colname.escape", "@popall"]],
     },
   });
 
@@ -166,6 +175,7 @@ const registerKnimeExpressionLanguage = ({
     rules: [
       { token: "string.colname.escape", foreground: "3289ac" },
       { token: "string.colname", foreground: "af01db" },
+      { token: "number.coloffset", foreground: "af01db" },
     ],
     colors: {},
   });
