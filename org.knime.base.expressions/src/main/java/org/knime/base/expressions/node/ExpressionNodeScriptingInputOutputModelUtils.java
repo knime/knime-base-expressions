@@ -80,7 +80,7 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
             .map(f -> new InputOutputModelSubItem(f.getName(), f.getVariableType().toString())) //
             .toArray(InputOutputModelSubItem[]::new);
         return new InputOutputModel( //
-            "Flow Variables", //
+            "Flow variables", //
             null, //
             FLOWVAR_ALIAS_TEMPLATE, //
             null, // no required import
@@ -95,7 +95,7 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
         if (spec != null) {
             Preconditions.checkArgument(spec instanceof DataTableSpec, "expected data table spec");
             return List.of(InputOutputModel.createFromTableSpec( //
-                "Input Table", //
+                "Input table", //
                 (DataTableSpec)spec, //
                 null, //
                 COLUMN_ALIAS_TEMPLATE, //
@@ -104,7 +104,7 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
             ));
         } else {
             return List.of(new InputOutputModel( //
-                "Input Table", //
+                "Input table", //
                 null, //
                 COLUMN_ALIAS_TEMPLATE, //
                 null, // no required import
@@ -115,6 +115,6 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
     }
 
     static List<InputOutputModel> getOutputObjects() {
-        return List.of(new InputOutputModel("Output Table", null, null, null, false, null));
+        return List.of(new InputOutputModel("Output table", null, null, null, false, null));
     }
 }
