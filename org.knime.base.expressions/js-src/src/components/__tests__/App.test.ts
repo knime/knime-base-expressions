@@ -44,7 +44,7 @@ const TEST_FUNCTION_CATALOG = {
   ],
 } satisfies FunctionCatalogData;
 
-const TEST_MATHS_CONSTANTS = [
+const TEST_MATH_CONSTANTS = [
   {
     name: "PI",
     value: 3,
@@ -58,7 +58,7 @@ vi.mock("@/expressionScriptingService", () => ({
   getExpressionScriptingService: () => ({
     ...getScriptingService(),
     getFunctions: vi.fn(() => Promise.resolve(TEST_FUNCTION_CATALOG)),
-    getMathsConstants: vi.fn(() => Promise.resolve(TEST_MATHS_CONSTANTS)),
+    getMathConstants: vi.fn(() => Promise.resolve(TEST_MATH_CONSTANTS)),
   }),
 }));
 
@@ -82,8 +82,8 @@ describe("App.vue", () => {
       (methodName: string) => {
         if (methodName === "getFunctionCatalog") {
           return Promise.resolve(TEST_FUNCTION_CATALOG);
-        } else if (methodName === "getMathsConstants") {
-          return Promise.resolve(TEST_MATHS_CONSTANTS);
+        } else if (methodName === "getMathConstants") {
+          return Promise.resolve(TEST_MATH_CONSTANTS);
         }
         throw new Error(
           `Called unexpected scripting service method ${methodName}`,

@@ -12,7 +12,7 @@ export type ExpressionNodeSettings = NodeSettings & {
   replacedColumn: string;
 };
 
-export type MathsConstant = {
+export type MathConstant = {
   name: string;
   value: number;
   type: string;
@@ -31,9 +31,9 @@ const expressionScriptingService = {
     scriptingService.sendToService(
       "getFunctionCatalog",
     ) as Promise<FunctionCatalogData>,
-  getMathsConstants: () =>
-    scriptingService.sendToService("getMathsConstants") as Promise<
-      MathsConstant[]
+  getMathConstants: () =>
+    scriptingService.sendToService("getMathConstants") as Promise<
+      MathConstant[]
     >,
 };
 

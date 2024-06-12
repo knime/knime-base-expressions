@@ -64,7 +64,7 @@ onMounted(async () => {
     scriptingService.getInputObjects(),
     scriptingService.getFlowVariableInputs(),
     scriptingService.getFunctions(),
-    scriptingService.getMathsConstants(),
+    scriptingService.getMathConstants(),
   ]);
 
   multiEditorComponentRef.value

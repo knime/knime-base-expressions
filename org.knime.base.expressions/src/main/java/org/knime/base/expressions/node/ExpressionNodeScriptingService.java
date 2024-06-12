@@ -75,7 +75,7 @@ import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileError;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
-import org.knime.core.expressions.MathsConstantValue;
+import org.knime.core.expressions.MathConstantValue;
 import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
@@ -201,8 +201,8 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             return FunctionCatalogData.BUILT_IN;
         }
 
-        public List<Map<String, Serializable>> getMathsConstants() {
-            return Arrays.stream(MathsConstantValue.values()) //
+        public List<Map<String, Serializable>> getMathConstants() {
+            return Arrays.stream(MathConstantValue.values()) //
                 .map(constant -> Map.of( //
                     "name", constant.name(), //
                     "type", constant.type().toString(), //

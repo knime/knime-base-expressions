@@ -184,7 +184,7 @@ if (import.meta.env.MODE === "development.browser") {
     ],
   };
 
-  const MATHS_CONSTANTS = [
+  const MATH_CONSTANTS = [
     {
       name: "PI",
       value: 3,
@@ -201,7 +201,7 @@ if (import.meta.env.MODE === "development.browser") {
         return Promise.resolve();
       },
       getFunctionCatalog: () => Promise.resolve(FUNCTION_CATALOG),
-      getMathsConstants: () => Promise.resolve(MATHS_CONSTANTS),
+      getMathConstants: () => Promise.resolve(MATH_CONSTANTS),
       getDiagnostics: () => Promise.resolve([]),
     },
     inputObjects: INPUT_OBJECTS,
