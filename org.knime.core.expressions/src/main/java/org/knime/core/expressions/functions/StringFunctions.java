@@ -1038,8 +1038,8 @@ public final class StringFunctions {
         );
     }
 
-    public static final ExpressionFunction SUBSTR = functionBuilder() //
-        .name("substr") //
+    public static final ExpressionFunction SUBSTRING = functionBuilder() //
+        .name("substring") //
         .description("""
                 Get a substring of the string. If the length is unspecified or
                 bigger than the remaining characters in the string after the start
@@ -1049,10 +1049,10 @@ public final class StringFunctions {
                 If any of the arguments are `MISSING`, the result is also `MISSING`.
 
                 Examples:
-                * `substr("OpenAI", 2, 4)` returns "penA"
-                * `substr("abcdef", 2, 10)` returns "bcdef"\\
+                * `substring("OpenAI", 2, 4)` returns "penA"
+                * `substring("abcdef", 2, 10)` returns "bcdef"\\
                   Length is greater than the remaining characters, so returns the rest of the string.
-                * `substr("substring", 5)` returns "tring"\\
+                * `substring("substring", 5)` returns "tring"\\
                   No length provided, so returns everything after the 5th character
                 """) //
         .keywords("extract") //
@@ -1063,7 +1063,7 @@ public final class StringFunctions {
             optarg("length", "length - if unspecified, or bigger than the string, get entire string after the start",
                 isInteger()) //
         ) //
-        .returnType("substring", "STRING?", //
+        .returnType("the substring", "STRING?", //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::substrImpl) //
         .build();

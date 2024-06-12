@@ -135,7 +135,7 @@ public final class BuiltInFunctions {
         StringFunctions.PAD_START, //
         StringFunctions.PAD_END, //
         StringFunctions.JOIN, //
-        StringFunctions.SUBSTR, //
+        StringFunctions.SUBSTRING, //
         StringFunctions.FIRST_CHARS, //
         StringFunctions.LAST_CHARS, //
         StringFunctions.REMOVE_CHARS, //

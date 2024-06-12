@@ -361,7 +361,7 @@ final class StringFunctionTests {
 
     @TestFactory
     List<DynamicNode> substr() {
-        return new FunctionTestBuilder(StringFunctions.SUBSTR) //
+        return new FunctionTestBuilder(StringFunctions.SUBSTRING) //
             .typing("STRING + start", List.of(STRING, INTEGER), STRING) //
             .typing("STRING?", List.of(OPT_STRING, INTEGER), OPT_STRING) //
             .typing("STRING + start + len", List.of(STRING, INTEGER, INTEGER), STRING) //
