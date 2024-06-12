@@ -71,15 +71,15 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
             # for each. Here are some usage examples:
             #
             # 1. Calculate the sine of all column values:
-            # sin($["My Column"])
-            #
+            #  sin($["My Column"])
             # 2. Divide column values by a flow variable:
-            # $["My Column"] / $$["My Flow Variable"]
-            #
+            #  $["My Column"] / $$["My Flow Variable"]
             # 3. String manipulation:
-            # substring($["firstname"], 1, 4) + $["lastname"]
+            #  substring($["firstname"], 1, 4) + $["lastname"]
+            # 4. Difference between adjacent rows:
+            #  $["My Column"] - $["My Column", -1]
             #
-            # If you need help, try the K-AI button!
+            # If you need help, try the "Ask K-AI" button!
             """;
 
     public static final String DEFAULT_CREATED_COLUMN = "New Column";
