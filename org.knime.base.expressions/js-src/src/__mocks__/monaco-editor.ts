@@ -9,6 +9,7 @@ export const languages = {
     InsertAsSnippet: 0,
   },
   registerCompletionItemProvider: vi.fn(),
+  registerHoverProvider: vi.fn(),
   register: vi.fn(),
   setMonarchTokensProvider: vi.fn(),
   setLanguageConfiguration: vi.fn(),

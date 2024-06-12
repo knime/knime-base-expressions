@@ -1,4 +1,6 @@
 import * as monaco from "monaco-editor";
+import { functionDataToMarkdown } from "@/components/function-catalog/functionDescriptionToMarkdown";
+import type { FunctionData } from "@/components/functionCatalogTypes";
 
 export type CompletionItemWithType = {
   text: string;
@@ -34,11 +36,13 @@ const registerKnimeExpressionLanguage = ({
   columnNamesForCompletion = [],
   flowVariableNamesForCompletion = [],
   extraCompletionItems = [],
+  functionData = [],
   languageName = "knime-expression",
 }: {
   columnNamesForCompletion?: Array<ColumnWithDType>;
   flowVariableNamesForCompletion?: Array<ColumnWithDType>;
   extraCompletionItems?: Array<CompletionItemWithType>;
+  functionData?: FunctionData[];
   languageName?: string;
 } = {}) => {
   monaco.languages.register({ id: languageName });
@@ -167,9 +171,8 @@ const registerKnimeExpressionLanguage = ({
   });
   monaco.editor.setTheme("knime-expression");
 
-  const { dispose } = monaco.languages.registerCompletionItemProvider(
-    languageName,
-    {
+  const completionItemProvider =
+    monaco.languages.registerCompletionItemProvider(languageName, {
       triggerCharacters: ["$"],
       provideCompletionItems: (model, position) => {
         // Suggestion that is provided iff the characters before the start of
@@ -210,37 +213,35 @@ const registerKnimeExpressionLanguage = ({
         const escapeRegex = (text: string) =>
           text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 
-        const mapColumnNameReducerFactory = (prefix: string) => {
-          const ret = (ar: OptionalSuggestion[], e: ColumnWithDType) => {
+        const mapColumnNameReducerFactory =
+          (prefix: string) =>
+          (aggregation: OptionalSuggestion[], column: ColumnWithDType) => {
             // Add column shorthand as an option if we can
-            if (/^[_a-zA-Z]\w*$/.test(e.name)) {
-              ar.push({
-                text: `${prefix}${e.name}`,
+            if (/^[_a-zA-Z]\w*$/.test(column.name)) {
+              aggregation.push({
+                text: `${prefix}${column.name}`,
                 requirePrefixMatches: RegExp(
                   `^.*${escapeRegex(prefix)}([A-Za-z_]\\w*)?$`,
                 ),
-                extraDetailForMonaco: { detail: `Type: ${e.type}` },
+                extraDetailForMonaco: { detail: `Type: ${column.type}` },
               });
             }
             // Add the longhand methods (single and double quotes both)
-            ar.push({
-              text: `${prefix}['${e.name}']`,
+            aggregation.push({
+              text: `${prefix}['${column.name}']`,
               requirePrefixMatches: RegExp(`^.*${escapeRegex(prefix)}\\['.*$`),
-              extraDetailForMonaco: { detail: `Type: ${e.type}` },
+              extraDetailForMonaco: { detail: `Type: ${column.type}` },
             });
-            ar.push({
-              text: `${prefix}["${e.name}"]`,
+            aggregation.push({
+              text: `${prefix}["${column.name}"]`,
               requirePrefixMatches: RegExp(
                 `^.*${escapeRegex(prefix)}($|(\\[("?).*$))`,
               ),
-              extraDetailForMonaco: { detail: `Type: ${e.type}` },
+              extraDetailForMonaco: { detail: `Type: ${column.type}` },
             });
 
-            return ar;
+            return aggregation;
           };
-
-          return ret;
-        };
 
         const columnAndFlowVariableNames = [
           ...columnNamesForCompletion.reduce(
@@ -315,10 +316,56 @@ const registerKnimeExpressionLanguage = ({
               : staticSuggestions,
         };
       },
-    },
-  );
+    });
 
-  return dispose;
+  const hoverProvider = monaco.languages.registerHoverProvider(languageName, {
+    provideHover: (model, position) => {
+      const isIdentifierOrKeyword = () => {
+        const lineContent = model.getLineContent(position.lineNumber);
+        const tokens = monaco.editor.tokenize(lineContent, languageName);
+        if (!tokens || tokens.length === 0) {
+          return false;
+        }
+
+        let token = null;
+        for (const currentToken of tokens[0]) {
+          if (currentToken.offset >= position.column) {
+            break;
+          }
+          token = currentToken;
+        }
+
+        return (
+          token !== null &&
+          (token.type.includes("identifier") || token.type.includes("keyword"))
+        );
+      };
+
+      if (!isIdentifierOrKeyword()) {
+        return null;
+      }
+
+      const word = model.getWordAtPosition(position);
+      if (!word) {
+        return null;
+      }
+
+      const func = functionData.find((f) => f.name === word.word);
+      if (func) {
+        const markdownContent = functionDataToMarkdown(func);
+        return {
+          contents: [{ value: markdownContent }],
+        };
+      }
+
+      return null;
+    },
+  });
+
+  return () => {
+    completionItemProvider.dispose();
+    hoverProvider.dispose();
+  };
 };
 
 export default registerKnimeExpressionLanguage;

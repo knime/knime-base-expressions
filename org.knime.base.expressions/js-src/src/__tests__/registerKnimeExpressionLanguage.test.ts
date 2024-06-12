@@ -4,13 +4,18 @@ import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 
 vi.mock("monaco-editor");
 
-const dispose = vi.fn();
+const disposeOfCompletionProvider = vi.fn();
+const disposeOfHoverprovider = vi.fn();
 
 beforeAll(() => {
   vi.restoreAllMocks();
 
   vi.spyOn(monaco.languages, "registerCompletionItemProvider").mockReturnValue({
-    dispose,
+    dispose: disposeOfCompletionProvider,
+  });
+
+  vi.spyOn(monaco.languages, "registerHoverProvider").mockReturnValue({
+    dispose: disposeOfHoverprovider,
   });
 });
 
@@ -57,8 +62,19 @@ describe("registerKnimeExpressionLanguage", () => {
     ).toHaveBeenCalledWith("knime-expression", expect.anything());
   });
 
-  it("returns a disposal function", () => {
-    const out = registerKnimeExpressionLanguage();
-    expect(out).toEqual(dispose);
+  it("registers hover", () => {
+    registerKnimeExpressionLanguage();
+
+    expect(monaco.languages.registerHoverProvider).toHaveBeenCalledWith(
+      "knime-expression",
+      expect.anything(),
+    );
+  });
+
+  it("returns a disposal function that disposes registered providers", () => {
+    const dispose = registerKnimeExpressionLanguage();
+    dispose();
+    expect(disposeOfCompletionProvider).toHaveBeenCalled();
+    expect(disposeOfHoverprovider).toHaveBeenCalled();
   });
 });

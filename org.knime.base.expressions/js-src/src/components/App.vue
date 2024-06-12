@@ -13,8 +13,8 @@ import SubMenu from "webapps-common/ui/components/SubMenu.vue";
 import { computed, onMounted, ref } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
-  type ColumnSelectorState,
   type AllowedDropDownValue,
+  type ColumnSelectorState,
 } from "@/components/ColumnOutputSelector.vue";
 import { onKeyStroke } from "@vueuse/core";
 import * as monaco from "monaco-editor";
@@ -25,6 +25,7 @@ import type { FunctionCatalogData, FunctionData } from "./functionCatalogTypes";
 import { useStore } from "@/store";
 
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
+import { functionDataToMarkdown } from "@/components/function-catalog/functionDescriptionToMarkdown";
 
 const language = "knime-expression";
 
@@ -66,7 +67,7 @@ const convertFunctionsToInsertionItems = (functions: FunctionData[]) => {
       text: `${func.name}(${argumentsWithSnippetSyntax})`,
       kind: monaco.languages.CompletionItemKind.Function,
       extraDetailForMonaco: {
-        documentation: { value: func.description },
+        documentation: { value: functionDataToMarkdown(func) },
         insertTextRules:
           monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
         label: `${func.name}(${argumentsWithoutSnippetSyntax})`,
@@ -81,7 +82,7 @@ onMounted(async () => {
     availableInputs,
     inputObjects,
     flowVariableInputs,
-    functions,
+    functionCatalog,
     mathsConstants,
   ] = await Promise.all([
     scriptingService.getInitialSettings(),
@@ -109,7 +110,7 @@ onMounted(async () => {
     });
   }
 
-  functionCatalogData.value = functions;
+  functionCatalogData.value = functionCatalog;
 
   if (inputObjects && inputObjects.length > 0 && inputObjects[0].subItems) {
     allowedReplacementColumns.value = inputObjects[0]?.subItems?.map(
@@ -133,7 +134,7 @@ onMounted(async () => {
         }))
       : [],
     extraCompletionItems: [
-      ...convertFunctionsToInsertionItems(functions.functions),
+      ...convertFunctionsToInsertionItems(functionCatalog.functions),
       ...mathsConstants.map((constant) => ({
         text: constant.name,
         kind: monaco.languages.CompletionItemKind.Constant,
@@ -143,6 +144,7 @@ onMounted(async () => {
         },
       })),
     ],
+    functionData: functionCatalog.functions,
     languageName: language,
   });
 
