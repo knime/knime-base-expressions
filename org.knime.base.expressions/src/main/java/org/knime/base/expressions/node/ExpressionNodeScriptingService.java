@@ -160,10 +160,10 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             try {
                 // Progress isn't used in this context so we can pass whatever and don't expect it to be canceled
                 m_inputTable = ExpressionRunnerUtils.createReferenceTable(inTable, executionContext,
-                    executionContext.createSubProgress(1));
+                    executionContext.createSubProgress(1), PREVIEW_MAX_ROWS);
             } catch (CanceledExecutionException ex) {
                 throw new IllegalStateException(
-                    "Implementation error - this shouldn't happen because we do not cancel the execution", ex);
+                    "Input table preparation for expression cancelled by the user", ex);
             }
         }
         return m_inputTable;
