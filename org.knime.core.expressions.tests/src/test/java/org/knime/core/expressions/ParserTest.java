@@ -110,16 +110,16 @@ final class ParserTest {
 
     enum ValidExpr {
 
-            // Maths constants
-            MATHS_CONSTANT_E("E", FLOAT(Math.E)), //
-            MATHS_CONSTANT_PI("PI", FLOAT(Math.PI)), //
-            MATHS_CONSTANT_NaN("NaN", FLOAT(Double.NaN)), //
-            MATHS_CONSTANT_INF("INF", FLOAT(Double.POSITIVE_INFINITY)), //
-            MATHS_CONSTANT_MIN_INT("MIN_INTEGER", INT(Long.MIN_VALUE)), //
-            MATHS_CONSTANT_MAX_INT("MAX_INTEGER", INT(Long.MAX_VALUE)), //
-            MATHS_CONSTANT_MIN_FLOAT("MIN_FLOAT", FLOAT(-Double.MAX_VALUE)), //
-            MATHS_CONSTANT_MAX_FLOAT("MAX_FLOAT", FLOAT(Double.MAX_VALUE)), //
-            MATHS_CONSTANT_TINY_FLOAT("TINY_FLOAT", FLOAT(Double.MIN_NORMAL)), //
+            // Mathematical constants
+            MATH_CONSTANT_E("E", FLOAT(Math.E)), //
+            MATH_CONSTANT_PI("PI", FLOAT(Math.PI)), //
+            MATH_CONSTANT_NaN("NaN", FLOAT(Double.NaN)), //
+            MATH_CONSTANT_INF("INF", FLOAT(Double.POSITIVE_INFINITY)), //
+            MATH_CONSTANT_MIN_INT("MIN_INTEGER", INT(Long.MIN_VALUE)), //
+            MATH_CONSTANT_MAX_INT("MAX_INTEGER", INT(Long.MAX_VALUE)), //
+            MATH_CONSTANT_MIN_FLOAT("MIN_FLOAT", FLOAT(-Double.MAX_VALUE)), //
+            MATH_CONSTANT_MAX_FLOAT("MAX_FLOAT", FLOAT(Double.MAX_VALUE)), //
+            MATH_CONSTANT_TINY_FLOAT("TINY_FLOAT", FLOAT(Double.MIN_NORMAL)), //
 
             // Comments
             COMMENT_AT_START("# some comment\n1\n#some other comment", INT(1)),

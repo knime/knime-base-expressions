@@ -317,14 +317,14 @@ final class Parser {
                         stringConstant(parseStringLiteral(symbol), data);
                 case KnimeExpressionParser.MISSING -> //
                         missingConstant(data);
-                case KnimeExpressionParser.MATHS_CONSTANT -> {
+                case KnimeExpressionParser.MATH_CONSTANT -> {
                     try {
-                        yield MathsConstantValue.valueOf(symbol.getText()).toAst(data);
+                        yield MathConstantValue.valueOf(symbol.getText()).toAst(data);
                     } catch (IllegalArgumentException e) {
                         // This should only happen if our grammar doesn't match our list of constants,
                         // i.e. is an implementation error
                         throw new IllegalStateException(
-                            "Implementation error - invalid maths constant: " + symbol.getText(), e);
+                            "Implementation error - invalid mathematical constant: " + symbol.getText(), e);
                     }
                 }
                 default -> throw syntaxError("Unexpected terminal value: " + symbol.getText(), getLocation(symbol));

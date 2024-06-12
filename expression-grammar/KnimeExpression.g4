@@ -12,7 +12,7 @@ atom:
     | FLOAT
     | STRING
     | MISSING
-    | MATHS_CONSTANT;
+    | MATH_CONSTANT;
 
 // Any valid expression
 expr:
@@ -81,8 +81,8 @@ fragment HEX_DIGIT: [0-9a-fA-F];
 // MISSING literal
 MISSING: 'MISSING';
 
-// MATHS_CONSTANT literal
-MATHS_CONSTANT: 'E' | 'PI' | 'INF' | 'NaN' | 'MIN_INTEGER' | 'MAX_INTEGER' | 'MIN_FLOAT' | 'MAX_FLOAT' | 'TINY_FLOAT';
+// MATH_CONSTANT literal
+MATH_CONSTANT: 'E' | 'PI' | 'INF' | 'NaN' | 'MIN_INTEGER' | 'MAX_INTEGER' | 'MIN_FLOAT' | 'MAX_FLOAT' | 'TINY_FLOAT';
 
 // Operators
 

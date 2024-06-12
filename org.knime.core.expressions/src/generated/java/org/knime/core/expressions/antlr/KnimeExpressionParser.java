@@ -18,7 +18,7 @@ public class KnimeExpressionParser extends Parser {
 		new PredictionContextCache();
 	public static final int
 		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, LINE_COMMENT=7, WHITESPACE=8, 
-		BOOLEAN=9, INTEGER=10, FLOAT=11, STRING=12, MISSING=13, MATHS_CONSTANT=14, 
+		BOOLEAN=9, INTEGER=10, FLOAT=11, STRING=12, MISSING=13, MATH_CONSTANT=14, 
 		PLUS=15, MINUS=16, MULTIPLY=17, DIVIDE=18, FLOOR_DIVIDE=19, EXPONENTIATE=20, 
 		MODULO=21, LESS_THAN=22, LESS_THAN_EQUAL=23, GREATER_THAN=24, GREATER_THAN_EQUAL=25, 
 		EQUAL=26, NOT_EQUAL=27, AND=28, OR=29, NOT=30, MISSING_FALLBACK=31, AGGREGATION_IDENTIFIER=32, 
@@ -48,7 +48,7 @@ public class KnimeExpressionParser extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, null, null, null, null, null, null, "LINE_COMMENT", "WHITESPACE", 
-			"BOOLEAN", "INTEGER", "FLOAT", "STRING", "MISSING", "MATHS_CONSTANT", 
+			"BOOLEAN", "INTEGER", "FLOAT", "STRING", "MISSING", "MATH_CONSTANT", 
 			"PLUS", "MINUS", "MULTIPLY", "DIVIDE", "FLOOR_DIVIDE", "EXPONENTIATE", 
 			"MODULO", "LESS_THAN", "LESS_THAN_EQUAL", "GREATER_THAN", "GREATER_THAN_EQUAL", 
 			"EQUAL", "NOT_EQUAL", "AND", "OR", "NOT", "MISSING_FALLBACK", "AGGREGATION_IDENTIFIER", 
@@ -161,7 +161,7 @@ public class KnimeExpressionParser extends Parser {
 		public TerminalNode FLOAT() { return getToken(KnimeExpressionParser.FLOAT, 0); }
 		public TerminalNode STRING() { return getToken(KnimeExpressionParser.STRING, 0); }
 		public TerminalNode MISSING() { return getToken(KnimeExpressionParser.MISSING, 0); }
-		public TerminalNode MATHS_CONSTANT() { return getToken(KnimeExpressionParser.MATHS_CONSTANT, 0); }
+		public TerminalNode MATH_CONSTANT() { return getToken(KnimeExpressionParser.MATH_CONSTANT, 0); }
 		public AtomContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -596,7 +596,7 @@ public class KnimeExpressionParser extends Parser {
 			case FLOAT:
 			case STRING:
 			case MISSING:
-			case MATHS_CONSTANT:
+			case MATH_CONSTANT:
 				{
 				_localctx = new AtomExprContext(_localctx);
 				_ctx = _localctx;
@@ -869,7 +869,7 @@ public class KnimeExpressionParser extends Parser {
 			case FLOAT:
 			case STRING:
 			case MISSING:
-			case MATHS_CONSTANT:
+			case MATH_CONSTANT:
 				enterOuterAlt(_localctx, 1);
 				{
 				{

@@ -58,7 +58,7 @@ import org.knime.core.expressions.ValueType.NativeValueType;
  *
  * @author David Hickey, TNG Technology Consulting GmbH
  */
-public enum MathsConstantValue {
+public enum MathConstantValue {
 
         /** mathematical constant pi. */
         PI(Math.PI, "The ratio of a circle's circumference to its diameter"), //
@@ -86,15 +86,15 @@ public enum MathsConstantValue {
 
     private final String m_documentation;
 
-    MathsConstantValue(final long value, final String documentation) {
+    MathConstantValue(final long value, final String documentation) {
         this(value, NativeValueType.INTEGER, documentation);
     }
 
-    MathsConstantValue(final double value, final String documentation) {
+    MathConstantValue(final double value, final String documentation) {
         this(value, NativeValueType.FLOAT, documentation);
     }
 
-    MathsConstantValue(final Number value, final NativeValueType type, final String documentation) {
+    MathConstantValue(final Number value, final NativeValueType type, final String documentation) {
         m_value = value;
         m_type = type;
         m_documentation = documentation;
