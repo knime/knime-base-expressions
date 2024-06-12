@@ -78,7 +78,7 @@ final class MinColumnAggregationImplTest {
             .implDouble("doubleNaN", listOf(Double.NaN, 1.0), Double.NaN) //
             .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), Double.NaN) //
             .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 1.0) //
-            .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), Double.NaN) //
+            .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
             .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 1.0) //
             .unsupportedTypeString("string") //
             .tests();

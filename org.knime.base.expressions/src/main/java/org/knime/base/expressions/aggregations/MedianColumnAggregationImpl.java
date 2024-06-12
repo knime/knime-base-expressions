@@ -61,6 +61,7 @@ import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
@@ -127,24 +128,25 @@ final class MedianColumnAggregationImpl {
             m_allNumbers.sort(Double::compareTo);
 
             if (m_allNumbers.isEmpty()) {
-                // Either all values were NaN, or all missing.
-                return Computer.FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
+                // Either all values were NaN and ignored, or all missing. So
+                // we return a missing value.
+                return FloatComputer.of(ctx -> Double.NaN, ctx -> true);
             } else if (Double.isNaN(m_allNumbers.get(m_allNumbers.size() - 1))) {
                 // sort puts NaN at the end, so we can check if there's >=1 NaN by checking the last value.
-                return Computer.FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
+                return FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
             } else if (m_allNumbers.size() % 2 == 0) {
 
                 double firstMiddleElement = m_allNumbers.get(m_allNumbers.size() / 2 - 1);
                 double secondMiddleElement = m_allNumbers.get(m_allNumbers.size() / 2);
 
-                return Computer.FloatComputer.of( //
+                return FloatComputer.of( //
                     ctx -> (firstMiddleElement + secondMiddleElement) / 2, //
                     ctx -> m_isMissing //
                 );
             } else {
                 double middleElement = m_allNumbers.get(m_allNumbers.size() / 2);
 
-                return Computer.FloatComputer.of(ctx -> middleElement, ctx -> m_isMissing);
+                return FloatComputer.of(ctx -> middleElement, ctx -> m_isMissing);
             }
         }
     }

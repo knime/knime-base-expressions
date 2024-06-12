@@ -137,10 +137,10 @@ final class MinColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
-            if (m_allValuesNaN || (!m_ignoreNaN && m_anyValuesNaN)) {
+            if (!m_ignoreNaN && m_anyValuesNaN) {
                 return Computer.FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
             } else {
-                return Computer.FloatComputer.of(ctx -> m_min, ctx -> m_isMissing);
+                return Computer.FloatComputer.of(ctx -> m_min, ctx -> m_isMissing || m_allValuesNaN);
             }
         }
     }

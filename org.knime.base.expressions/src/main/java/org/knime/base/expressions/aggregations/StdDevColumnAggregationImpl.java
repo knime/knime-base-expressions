@@ -148,13 +148,13 @@ final class StdDevColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
-            if (m_allValuesNaN || (!m_ignoreNaN && m_anyValuesNaN)) {
+            if (!m_ignoreNaN && m_anyValuesNaN) {
                 return FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
             } else {
                 var variance = m_runningMeanSq - m_runningMean * m_runningMean;
                 var unBiasedVariance = variance * (m_count / ((double)(m_count - m_degreesOfFreedom)));
 
-                return FloatComputer.of(ctx -> Math.sqrt(unBiasedVariance), ctx -> m_isMissing);
+                return FloatComputer.of(ctx -> Math.sqrt(unBiasedVariance), ctx -> m_isMissing || m_allValuesNaN);
             }
         }
     }

@@ -137,11 +137,11 @@ final class VarianceColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
-            if (m_allValuesNaN || (!m_ignoreNaN && m_anyValuesNaN)) {
+            if (!m_ignoreNaN && m_anyValuesNaN) {
                 return Computer.FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
             } else {
                 var variance = m_runningMeanSq - m_runningMean * m_runningMean;
-                return Computer.FloatComputer.of(ctx -> variance, ctx -> m_isMissing);
+                return Computer.FloatComputer.of(ctx -> variance, ctx -> m_isMissing || m_allValuesNaN);
             }
         }
     }
