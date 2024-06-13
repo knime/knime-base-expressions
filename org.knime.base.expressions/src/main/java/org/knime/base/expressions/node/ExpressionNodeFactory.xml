@@ -1,19 +1,137 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- TODO(node-description) add an icon -->
-<knimeNode icon="expressioneditor.png" type="Manipulator" xmlns="http://knime.org/node/v4.1"
+<knimeNode icon="expressioneditor.png" type="Manipulator"
+	xmlns="http://knime.org/node/v4.1"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
-	<name>Expression (Labs)</name>
+	<name>Expression</name>
 	<shortDescription>
-		Allows executing custom expressions on the data table.
+		Allows executing custom expressions on the data
+		table.
 	</shortDescription>
 	<fullDescription>
 		<intro>
-			TODO(node-description)
+			<p>
+				The KNIME Expression Node enables generic data manipulation within
+				KNIME workflows through its dedicated expression language.
+			</p>
+			<p>
+				<b>Data Access: </b>
+				Data is accessed row-wise, indicated by the dollar sign, i.e., the
+				given expression is evaluated for each row in the input table and
+				the result is stored in the output table. To access table data, you
+				can use the following methods:
+				<ul>
+					<li>
+						<tt>$["column name"]</tt>
+						to access the value in the current row of the column with the
+						given name. When the name does not contain special characters or
+						spaces, you can use the shorthand notation: <tt>$column_name</tt>.
+					</li>
+					<li>
+						<tt>$["column_name", offset]</tt>
+						to reference rows relative to the current one, where the offset is
+						a static value.
+					</li>
+					<li>
+						<tt>$[ROW_INDEX]</tt>
+						to get the current row index, starting at 0.
+					</li>
+					<li>
+						<tt>$[ROW_NUMBER]</tt>
+						to get the current row number, starting at 1.
+					</li>
+					<li>
+						<tt>$[ROW_ID]</tt>
+						to get the RowID, such as "Row99".
+					</li>
+				</ul>
+			</p>
+			<p>
+				Flow variables can be accessed via
+				<tt>$$["flow_var_name"]</tt>
+				.
+			</p>
+			<p>
+				<b>Operators :</b>
+				For simple data manipulation, the expression language supports a
+				wide range of operators. A comprehensive list of operators includes
+				arithmetic (
+				<tt>+</tt>
+				,
+				<tt>-</tt>
+				,
+				<tt>*</tt>
+				,
+				<tt>/</tt>
+				float division,
+				<tt>//</tt>
+				integer division,
+				<tt>**</tt>
+				exponentiation,
+				<tt>%</tt>
+				modulo), comparison (
+				<tt>&lt;</tt>
+				,
+				<tt>&lt;=</tt>
+				,
+				<tt>&gt;</tt>
+				,
+				<tt>&gt;=</tt>
+				,
+				<tt>=</tt>
+				,
+				<tt>!=</tt>
+				), logical (
+				<tt>and</tt>
+				,
+				<tt>or</tt>
+				,
+				<tt>not</tt>
+				), string concatenation (
+				<tt>+</tt>
+				) and a special 'missing coalescing' operator
+				<tt>??</tt>
+				which sets a default value if the left operand is missing.
+			</p>
+			<p>
+				<b>Functions: </b>
+				The expression node supports a wide range of functions which are
+				available in a catalog on the right side of the editor. Expanding
+				the catalog will provide comprehensive documentation for each
+				function.
+			</p>
+			<p>
+				<b>Aggregations: </b>
+				A special set of functions prefixed with
+				<tt>COLUMN_</tt>
+				allows you to access aggregations over the whole column, such as the
+				minimum, maximum, or mean value. Note that these take a "column
+				name" instead of a value from a row ($["column name"]) as input.
+			</p>
+			<p>
+				<b>AI Expression Assistance (Labs):</b>
+				If the KNIME AI Assistant (Labs) extension is installed, the button
+				on the lower left of the code editor provides access to AI assisted
+				expression generation and modification. Here you can enter commands
+				in natural language and our expression assistant will replace or
+				modify your current expression according to your prompt. The more
+				precisely you describe what results you expect, the better the
+				results will be. The AI will suggest modifications and show them to
+				you in a
+				<i>diff-view</i>
+				(differences between your current expression on the left and the
+				suggested expression on the right) which you can apply or query
+				another response by entering a new or refined prompt.
+			</p>
 		</intro>
+		<link href="https://knime-com.atlassian.net/wiki/x/AYD-6Q">Expression language specification</link>
 	</fullDescription>
 	<ports>
-		<inPort index="0" name="Input table">TODO(node-description)</inPort>
-		<outPort index="0" name="Output table">TODO(node-description)</outPort>
+		<inPort index="0" name="Input table">The tabular input data which will be
+			used.
+		</inPort>
+		<outPort index="0" name="Output table">The resulting table after applying the
+			expression.
+		</outPort>
 	</ports>
 </knimeNode>
