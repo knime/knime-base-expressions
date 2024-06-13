@@ -71,9 +71,12 @@ enum TestAggregations implements ColumnAggregation {
             (args, columnType) -> {
                 if (args.positionalArguments().size() == 1 && args.namedArguments().size() == 0
                     && args.positionalArguments().get(0) instanceof Ast.StringConstant colName) {
-                    return columnType.apply(colName.value()).filter(ValueType::isNumericOrOpt);
+
+                    var ret = columnType.apply(colName.value()).filter(ValueType::isNumericOrOpt);
+
+                    return ReturnResult.fromOptional(ret, "some error message");
                 }
-                return Optional.empty();
+                return new ReturnResult.Failure<ValueType>("Invalid arguments to aggregation RETURN_42_WITH_COL_TYPE");
             }, //
             call -> {
                 if (ValueType.INTEGER.equals(Typing.getType(call).baseType())) {
@@ -91,17 +94,18 @@ enum TestAggregations implements ColumnAggregation {
                 if (args.positionalArguments().size() == 1 && args.namedArguments().size() == 1
                     && args.positionalArguments().get(0) instanceof Ast.IntegerConstant
                     && args.namedArguments().get("named_arg_id") instanceof Ast.FloatConstant) {
-                    return Optional.of(ValueType.MISSING);
+
+                    return new ReturnResult.Success<>(ValueType.MISSING);
                 }
-                return Optional.empty();
+                return new ReturnResult.Failure<ValueType>("Invalid arguments to aggregation EXPECT_POS_AND_NAMED_ARG");
             }, //
             call -> {
                 return Optional.of(ctx -> true);
             } //
         ), //
         /** Exists only to check that error message for unknown aggregation suggests similar aggregation names */
-        RETURN_42_WITH_COL_TXXX((args, columnType) -> Optional.empty(), call -> Optional.empty());
-    ;
+        RETURN_42_WITH_COL_TXXX((args, columnType) -> new ReturnResult.Failure<ValueType>("some error"),
+            call -> Optional.empty());
 
     public static final Map<String, ColumnAggregation> TEST_AGGREGATIONS =
         TestUtils.enumFinderAsMap(TestAggregations.values(), ColumnAggregation.class);
@@ -109,19 +113,19 @@ enum TestAggregations implements ColumnAggregation {
     public static final Function<AggregationCall, Optional<Computer>> TEST_AGGREGATIONS_COMPUTER = agg -> TestUtils
         .enumFinderAsFunction(TestAggregations.values()).apply(agg.name()).flatMap(t -> t.computer(agg));
 
-    private final BiFunction<Arguments<ConstantAst>, Function<String, Optional<ValueType>>, Optional<ValueType>> m_returnType;
+    private final BiFunction<Arguments<ConstantAst>, Function<String, Optional<ValueType>>, ReturnResult<ValueType>> m_returnType;
 
     private final Function<AggregationCall, Optional<Computer>> m_computer;
 
     private TestAggregations(
-        final BiFunction<Arguments<ConstantAst>, Function<String, Optional<ValueType>>, Optional<ValueType>> returnType,
+        final BiFunction<Arguments<ConstantAst>, Function<String, Optional<ValueType>>, ReturnResult<ValueType>> returnType,
         final Function<AggregationCall, Optional<Computer>> computer) {
         m_returnType = returnType;
         m_computer = computer;
     }
 
     @Override
-    public Optional<ValueType> returnType(final Arguments<ConstantAst> arguments,
+    public ReturnResult<ValueType> returnType(final Arguments<ConstantAst> arguments,
         final Function<String, Optional<ValueType>> columnType) {
         return m_returnType.apply(arguments, columnType);
     }

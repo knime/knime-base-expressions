@@ -61,6 +61,7 @@ import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.OperatorDescription.Argument;
+import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -92,6 +93,13 @@ public final class BuiltInAggregations {
 
     /** The name of the argument which holds the column name */
     private static final String COLUMN_ARG_ID = "column";
+
+    // Some error messages that we reuse a lot
+    private static final String COLUMN_DOES_NOT_EXIST_ERR = "Column does not exist";
+
+    private static final String COLUMN_ARG_MUST_BE_STRING_ERR = "Column argument must be a string";
+
+    private static final String ARGUMENTS_NOT_MATCHED_ERR = "Invalid arguments provided to aggregation";
 
     // Aggregation implementations
 
@@ -125,21 +133,21 @@ public final class BuiltInAggregations {
         .returnType("The maximum value of the column", "INTEGER? | FLOAT?", BuiltInAggregations::maxReturnType) //
         .build();
 
-    private static Optional<ValueType> maxReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnType) {
+    private static ReturnResult<ValueType> maxReturnType(final Arguments<ConstantAst> arguments,
+        final Function<String, Optional<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(MAX.description().arguments(), arguments) //
-            .filter(hasNtoMArguments(1, 2)); // must be only 1/2 arguments
+        var matchedArgs = Argument.matchSignature(MAX.description().arguments(), arguments);
 
-        Optional<ValueType> columnArgType = matchedArgs //
-            .map(args -> args.get(COLUMN_ARG_ID)) // type of the column argument
-            .map(arg -> arg instanceof Ast.StringConstant colName ? colName.value() : null) // get the column name
-            .flatMap(columnType::apply) // get the type of the column
-            .filter(ValueType::isNumericOrOpt); // must be numeric
-
-        boolean ignoreNaNArgValid = optionalArgumentIsValid(matchedArgs, "ignore_nan", Ast.BooleanConstant.class);
-
-        return ignoreNaNArgValid ? columnArgType : Optional.empty();
+        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+            .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
+            .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
+            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
+            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .map(args -> args.get(COLUMN_ARG_ID)) //
+            .map(Ast.StringConstant.class::cast) //
+            .map(Ast.StringConstant::value) //
+            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .filter(ValueType::isNumericOrOpt, "Column must be numeric");
     }
 
     /** Aggregation that returns the minimum value of a column. */
@@ -172,18 +180,21 @@ public final class BuiltInAggregations {
         .returnType("The minimum value of the column", "INTEGER? | FLOAT?", BuiltInAggregations::minReturnType) //
         .build();
 
-    private static Optional<ValueType> minReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnType) {
+    private static ReturnResult<ValueType> minReturnType(final Arguments<ConstantAst> arguments,
+        final Function<String, Optional<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(MIN.description().arguments(), arguments) //
-            .filter(hasNtoMArguments(1, 2)); // must be only 1/2 arguments
+        var matchedArgs = Argument.matchSignature(MIN.description().arguments(), arguments);
 
-        Optional<ValueType> columnArgType = extractColumnType(matchedArgs, columnType) //
-            .filter(ValueType::isNumericOrOpt); // must be numeric
-
-        boolean ignoreNaNArgValid = optionalArgumentIsValid(matchedArgs, "ignore_nan", Ast.BooleanConstant.class);
-
-        return ignoreNaNArgValid ? columnArgType : Optional.empty();
+        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+            .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
+            .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
+            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
+            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .map(args -> args.get(COLUMN_ARG_ID)) //
+            .map(Ast.StringConstant.class::cast) //
+            .map(Ast.StringConstant::value) //
+            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .filter(ValueType::isNumericOrOpt, "Column must be numeric");
     }
 
     /** Aggregation that returns the mean value of a column. */
@@ -215,21 +226,22 @@ public final class BuiltInAggregations {
         .returnType("The mean value of the column", "FLOAT?", BuiltInAggregations::meanReturnType) //
         .build();
 
-    private static Optional<ValueType> meanReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnType) {
+    private static ReturnResult<ValueType> meanReturnType(final Arguments<ConstantAst> arguments,
+        final Function<String, Optional<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(MEAN.description().arguments(), arguments) //
-            .filter(hasNtoMArguments(1, 2));
+        var matchedArgs = Argument.matchSignature(MEAN.description().arguments(), arguments);
 
-        var columnArgValid = extractColumnType(matchedArgs, columnType) //
-            .filter(ValueType::isNumericOrOpt) // must be numeric
-            .isPresent();
-
-        boolean ignoreNaNArgValid = optionalArgumentIsValid(matchedArgs, "ignore_nan", Ast.BooleanConstant.class);
-
-        return (ignoreNaNArgValid && columnArgValid) //
-            ? Optional.of(ValueType.OPT_FLOAT) //
-            : Optional.empty();
+        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+            .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
+            .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
+            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
+            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .map(args -> args.get(COLUMN_ARG_ID)) //
+            .map(Ast.StringConstant.class::cast) //
+            .map(Ast.StringConstant::value) //
+            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
+            .map(type -> ValueType.OPT_FLOAT);
     }
 
     /** Aggregation that returns the median value of a column. */
@@ -261,21 +273,22 @@ public final class BuiltInAggregations {
         .returnType("The median value of the column", "FLOAT", BuiltInAggregations::medianReturnType) //
         .build();
 
-    private static Optional<ValueType> medianReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnType) {
+    private static ReturnResult<ValueType> medianReturnType(final Arguments<ConstantAst> arguments,
+        final Function<String, Optional<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(MEDIAN.description().arguments(), arguments) //
-            .filter(hasNtoMArguments(1, 2));
+        var matchedArgs = Argument.matchSignature(MEDIAN.description().arguments(), arguments);
 
-        var columnArgValid = extractColumnType(matchedArgs, columnType) //
-            .filter(ValueType::isNumericOrOpt) // must be numeric
-            .isPresent();
-
-        boolean ignoreNaNArgValid = optionalArgumentIsValid(matchedArgs, "ignore_nan", Ast.BooleanConstant.class);
-
-        return (ignoreNaNArgValid && columnArgValid) //
-            ? Optional.of(ValueType.OPT_FLOAT) //
-            : Optional.empty();
+        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+            .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
+            .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
+            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
+            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .map(args -> args.get(COLUMN_ARG_ID)) //
+            .map(Ast.StringConstant.class::cast) //
+            .map(Ast.StringConstant::value) //
+            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
+            .map(type -> ValueType.OPT_FLOAT);
     }
 
     /** Aggregation that returns the sum of a column. */
@@ -308,18 +321,21 @@ public final class BuiltInAggregations {
         .returnType("The sum of the column", "INTEGER | FLOAT", BuiltInAggregations::sumReturnType) //
         .build();
 
-    private static Optional<ValueType> sumReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnType) {
+    private static ReturnResult<ValueType> sumReturnType(final Arguments<ConstantAst> arguments,
+        final Function<String, Optional<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(SUM.description().arguments(), arguments) //
-            .filter(hasNtoMArguments(1, 2));
+        var matchedArgs = Argument.matchSignature(SUM.description().arguments(), arguments);
 
-        Optional<ValueType> columnArgType = extractColumnType(matchedArgs, columnType) //
-            .filter(ValueType::isNumericOrOpt); // must be numeric
-
-        boolean ignoreNaNArgValid = optionalArgumentIsValid(matchedArgs, "ignore_nan", Ast.BooleanConstant.class);
-
-        return ignoreNaNArgValid ? columnArgType : Optional.empty();
+        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+            .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
+            .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
+            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
+            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .map(args -> args.get(COLUMN_ARG_ID)) //
+            .map(Ast.StringConstant.class::cast) //
+            .map(Ast.StringConstant::value) //
+            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .filter(ValueType::isNumericOrOpt, "Column must be numeric");
     }
 
     /** Aggregation that returns the variance of a column. */
@@ -351,21 +367,22 @@ public final class BuiltInAggregations {
         .returnType("The variance of the column", "FLOAT?", BuiltInAggregations::varianceReturnType) //
         .build();
 
-    private static Optional<ValueType> varianceReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnType) {
+    private static ReturnResult<ValueType> varianceReturnType(final Arguments<ConstantAst> arguments,
+        final Function<String, Optional<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(VARIANCE.description().arguments(), arguments) //
-            .filter(hasNtoMArguments(1, 2));
+        var matchedArgs = Argument.matchSignature(VARIANCE.description().arguments(), arguments);
 
-        var columnArgValid = extractColumnType(matchedArgs, columnType) //
-            .filter(ValueType::isNumericOrOpt) // must be numeric
-            .isPresent();
-
-        boolean ignoreNaNArgValid = optionalArgumentIsValid(matchedArgs, "ignore_nan", Ast.BooleanConstant.class);
-
-        return (ignoreNaNArgValid && columnArgValid) //
-            ? Optional.of(ValueType.OPT_FLOAT) //
-            : Optional.empty();
+        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+            .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
+            .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
+            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
+            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .map(args -> args.get(COLUMN_ARG_ID)) //
+            .map(Ast.StringConstant.class::cast) //
+            .map(Ast.StringConstant::value) //
+            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
+            .map(type -> ValueType.OPT_FLOAT);
     }
 
     /** Aggregation that returns the standard deviation of a column. */
@@ -406,21 +423,23 @@ public final class BuiltInAggregations {
         .returnType("The variance of the column", "FLOAT?", BuiltInAggregations::stddevReturnType) //
         .build();
 
-    private static Optional<ValueType> stddevReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnType) {
+    private static ReturnResult<ValueType> stddevReturnType(final Arguments<ConstantAst> arguments,
+        final Function<String, Optional<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(STD_DEV.description().arguments(), arguments) //
-            .filter(hasNtoMArguments(1, 2));
+        var matchedArgs = Argument.matchSignature(STD_DEV.description().arguments(), arguments); //
 
-        var columnArgValid = extractColumnType(matchedArgs, columnType) //
-            .filter(ValueType::isNumericOrOpt) // must be numeric
-            .isPresent();
-
-        boolean ignoreNaNArgValid = optionalArgumentIsValid(matchedArgs, "ignore_nan", Ast.BooleanConstant.class);
-
-        return (ignoreNaNArgValid && columnArgValid) //
-            ? Optional.of(ValueType.OPT_FLOAT) //
-            : Optional.empty();
+        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+            .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
+            .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
+            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
+            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .filter(optArgHasType("ddof", Ast.IntegerConstant.class), "ddof must be an integer") //
+            .map(args -> args.get(COLUMN_ARG_ID)) //
+            .map(Ast.StringConstant.class::cast) //
+            .map(Ast.StringConstant::value) //
+            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
+            .map(type -> ValueType.OPT_FLOAT);
     }
 
     /** Aggregation that counts the values in a column. */
@@ -450,73 +469,37 @@ public final class BuiltInAggregations {
         .returnType("The number of values in the column", "INTEGER", BuiltInAggregations::countReturnType) //
         .build();
 
-    private static Optional<ValueType> countReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnType) {
+    private static ReturnResult<ValueType> countReturnType(final Arguments<ConstantAst> arguments,
+        final Function<String, Optional<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(COUNT.description().arguments(), arguments) //
-            .filter(hasNtoMArguments(1, 2));
+        var matchedArgs = Argument.matchSignature(COUNT.description().arguments(), arguments); //
 
-        var columnArgValid = extractColumnType(matchedArgs, columnType).isPresent();
-
-        boolean ignoreMissingArgValid =
-            optionalArgumentIsValid(matchedArgs, "ignore_missing", Ast.BooleanConstant.class);
-
-        return (ignoreMissingArgValid && columnArgValid) //
-            ? Optional.of(ValueType.INTEGER) //
-            : Optional.empty();
+        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+            .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
+            .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
+            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
+            .filter(optArgHasType("ignore_missing", Ast.BooleanConstant.class), "ignore_missing must be a boolean") //
+            .map(arg -> ValueType.INTEGER); //
     }
 
-    /**
-     * Extracts the column type from the given arguments. If the column name argument is missing, has the wrong type, or
-     * the given column doesn't exist, the result is an empty optional. Otherwise the optional contains the type of the
-     * column.
-     *
-     * @param matchedArgs the arguments that have been matched to the call signature using
-     *            {@link Argument#matchSignature}.
-     * @param columnTypeMapper a function that maps a column name to the column type.
-     * @return an optional containing the column type if everything about the column argument is valid, otherwise an
-     *         empty optional.
-     */
-    private static Optional<ValueType> extractColumnType(final Optional<Map<String, ConstantAst>> matchedArgs, // NOSONAR - optional here is needed
-        final Function<String, Optional<ValueType>> columnTypeMapper) { // as we're handling an optional from elsewhere
-
-        return matchedArgs //
-            .map(args -> args.get(COLUMN_ARG_ID)) // type of the column argument
-            .filter(Ast.StringConstant.class::isInstance) // must be a string literal
-            .map(Ast.StringConstant.class::cast) // cast to string literal Ast node
-            .map(Ast.StringConstant::value) // get the column name
-            .flatMap(columnTypeMapper::apply); // get the type of the column
-    }
-
-    /**
-     * Checks if an optional argument is valid. If the argument isn't provided, it's considered to be valid. If the
-     * argument is present, it must be of the given type.
-     *
-     * @param matchedArgs the arguments that have been matched to the call signature using
-     *            {@link Argument#matchSignature}.
-     * @param argName the name of the argument to check.
-     * @param argType the class of the argument type (e.g. Ast.BooleanConstant.class for a boolean).
-     * @return true if the argument is missing or of the correct type, false otherwise.
-     */
-    private static <T extends Ast.ConstantAst> boolean optionalArgumentIsValid(
-        final Optional<Map<String, ConstantAst>> matchedArgs, final String argName, final Class<T> argType) { // NOSONAR - optional here is needed
-        // because we're processing an optional from elsewhere
-
-        var arg = matchedArgs //
-            .map(args -> args.get(argName)); //
-
-        if (arg.isEmpty()) {
-            return true;
-        }
-
-        return arg //
-            .filter(argType::isInstance) //
-            .isPresent();
-    }
-
-    /** Returns a predicate that checks if the number of arguments is between n and m. */
     private static Predicate<Map<String, ConstantAst>> hasNtoMArguments(final int n, final int m) {
         return args -> args.size() >= n && args.size() <= m;
+    }
+
+    private static Predicate<Map<String, ConstantAst>> columnArgumentIsString() {
+        return args -> args.get(COLUMN_ARG_ID) instanceof Ast.StringConstant;
+    }
+
+    private static Predicate<Map<String, ConstantAst>>
+        columnExists(final Function<String, Optional<ValueType>> columnTypeMapper) {
+
+        return args -> columnTypeMapper.apply(((Ast.StringConstant)args.get(COLUMN_ARG_ID)).value()).isPresent();
+    }
+
+    private static Predicate<Map<String, ConstantAst>> optArgHasType(final String argName,
+        final Class<? extends ConstantAst> argType) {
+
+        return args -> args.get(argName) == null || argType.isInstance(args.get(argName));
     }
 
     /** Built-in aggregations */
@@ -531,6 +514,7 @@ public final class BuiltInAggregations {
         COUNT //
     );
 
+    /** Map of built-in aggregations by name */
     public static final Map<String, ColumnAggregation> BUILT_IN_AGGREGATIONS_MAP = Collections.unmodifiableMap( //
         BUILT_IN_AGGREGATIONS.stream().collect(Collectors.toMap(ColumnAggregation::name, f -> f)) //
     );

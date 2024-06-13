@@ -89,6 +89,7 @@ import static org.knime.core.expressions.ValueType.OPT_STRING;
 import static org.knime.core.expressions.ValueType.STRING;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -254,7 +255,7 @@ final class TypingTest {
                 TEST_FLOWVARIABLE_TO_TYPE, TEST_FUNCTIONS, TEST_AGGREGATIONS), "should fail type inferrence");
         var errorMessage = typingError.getMessage();
         for (var expectedSubstring : params.m_expectedErrorSubstrings) {
-            assertTrue(errorMessage.contains(expectedSubstring),
+            assertTrue(errorMessage.toLowerCase(Locale.ROOT).contains(expectedSubstring.toLowerCase(Locale.ROOT)),
                 "error should contain '" + expectedSubstring + "', got '" + errorMessage + "'");
         }
     }
@@ -302,7 +303,7 @@ final class TypingTest {
 
             // === Aggregation calls
             AGG_CALL_UNKNOWN_ID(AGG("NOT_AN_AGG", STR("i")), "NOT_AN_AGG"), //
-            AGG_CALL_WRONG_ARG_TYPES(AGG("RETURN_42_WITH_COL_TYPE", INT(1)), "RETURN_42_WITH_COL_TYPE", "(1)"), //
+            AGG_CALL_WRONG_ARG_TYPES(AGG("RETURN_42_WITH_COL_TYPE", INT(1)), "RETURN_42_WITH_COL_TYPE", "invalid"), //
             AGG_CALL_UNKNOWN_ID_SUGGESTIONS_ANOTHER(AGG("RETURN_42_WITH_COL_TYPP"), "RETURN_42_WITH_COL_TYPE"), //
             AGG_CALL_UNKNOWN_ID_SUGGESTIONS_MULTIPLE(AGG("RETURN_42_WITH_COL_ZZZZ"), "RETURN_42_WITH_COL_TXXX",
                 "RETURN_42_WITH_COL_TYPE"), //
@@ -325,11 +326,14 @@ final class TypingTest {
         var exception = assertThrows(ExpressionCompileException.class, () -> Typing.inferTypes(ast, TEST_COLUMN_TO_TYPE,
             TEST_FLOWVARIABLE_TO_TYPE, TEST_FUNCTIONS, TEST_AGGREGATIONS), "should fail type inferrence");
         var errors = exception.getErrors();
+
+        System.out.println(errors);
+
         assertEquals(1, errors.size(), "should be one error");
         assertEquals(ExpressionCompileError.CompileErrorType.MISSING_COLUMN, errors.get(0).type(),
             "should be missing column error type");
         var errorMessage = errors.get(0).message();
-        assertTrue(errorMessage.contains(colName),
+        assertTrue(errorMessage.toLowerCase(Locale.ROOT).contains(colName.toLowerCase(Locale.ROOT)),
             "error message should contain column name '" + colName + "', was '" + errorMessage + "'");
     }
 

@@ -66,7 +66,6 @@ import org.knime.core.expressions.Ast.BinaryOp;
 import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.Ast.BooleanConstant;
 import org.knime.core.expressions.Ast.ColumnAccess;
-import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Ast.FloatConstant;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Ast.FunctionCall;
@@ -278,8 +277,14 @@ final class Typing {
             node.putData(AGGREGATION_IMPL_DATA_KEY, resolvedAggregation.get());
 
             var args = node.args();
-            return resolvedAggregation.get().returnType(args, m_columnType)
-                .orElseGet(() -> ErrorValueType.aggregationNotApplicable(node, args));
+
+            var ret = resolvedAggregation.get().returnType(args, m_columnType);
+
+            if (ret.isOk()) {
+                return ret.getValue();
+            } else {
+                return ErrorValueType.aggregationNotApplicable(node, ret.getErrorMessage());
+            }
         }
 
         private static ValueType arithmeticType(final BinaryOp node, final ValueType typeA, final ValueType typeB) {
@@ -425,9 +430,8 @@ final class Typing {
                 getMissingExpressionOperatorErrorMessage(node.name(), "aggregation", similarAggregationNames), node);
         }
 
-        static ErrorValueType aggregationNotApplicable(final AggregationCall node, final Arguments<ConstantAst> args) {
-            return typingError("The aggregation " + node.name() + " is not applicable to the arguments "
-                + args.renderArgumentList(Ast::toExpression), node);
+        static ErrorValueType aggregationNotApplicable(final AggregationCall node, final String errorMessage) {
+            return typingError(errorMessage, node);
         }
 
         static ErrorValueType nullishOpNotApplicable(final BinaryOp node, final ValueType t1, final ValueType t2) {

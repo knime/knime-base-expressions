@@ -1,6 +1,7 @@
 package org.knime.core.expressions.aggregations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -62,8 +63,8 @@ public final class ColumnAggregationTestBuilder {
         final ValueType expectedReturn) {
         m_typingTests.add(DynamicTest.dynamicTest(name, () -> {
             var returnType = m_aggregation.returnType(arguments, this::columnType);
-            assertTrue(returnType.isPresent(), "should fit arguments");
-            assertEquals(expectedReturn, returnType.get(), "should return correct type for " + arguments);
+            assertTrue(returnType.isOk(), "should fit arguments");
+            assertEquals(expectedReturn, returnType.getValue(), "should return correct type for " + arguments);
         }));
         return this;
     }
@@ -79,7 +80,7 @@ public final class ColumnAggregationTestBuilder {
     public ColumnAggregationTestBuilder illegalArgs(final String name, final Arguments<Ast.ConstantAst> arguments) {
         m_illegalArgsTests.add(DynamicTest.dynamicTest(name, () -> {
             var returnType = m_aggregation.returnType(arguments, this::columnType);
-            assertTrue(returnType.isEmpty(), "should not fit arguments");
+            assertFalse(returnType.isOk(), "should not fit arguments");
         }));
         return this;
     }

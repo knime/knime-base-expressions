@@ -57,6 +57,7 @@ import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.OperatorDescription;
 import org.knime.core.expressions.OperatorDescription.Argument;
+import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -127,10 +128,10 @@ public class AggregationBuilder {
          * @param arguments the arguments of the aggregation. The value of the arguments can be considered because all
          *            arguments are constant.
          * @param columnType a function that can be used to look up the type of a column by its name
-         * @return the return type or <code>Optional.empty()</code> if the aggregation is not applicable to the
-         *         arguments
+         * @return the return type as a {@link ReturnResult}, either success or failure depending on whether the
+         *         arguments are valid.
          */
-        Optional<ValueType> returnType(Arguments<ConstantAst> arguments,
+        ReturnResult<ValueType> returnType(Arguments<ConstantAst> arguments,
             Function<String, Optional<ValueType>> columnType);
     }
 
@@ -186,8 +187,9 @@ public class AggregationBuilder {
         }
 
         @Override
-        public Optional<ValueType> returnType(final Arguments<ConstantAst> arguments,
+        public ReturnResult returnType(final Arguments<ConstantAst> arguments,
             final Function<String, Optional<ValueType>> columnType) {
+
             return m_returnTypeMapping.returnType(arguments, columnType);
         }
     }

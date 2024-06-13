@@ -55,6 +55,7 @@ import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.NamedExpressionOperator;
 import org.knime.core.expressions.OperatorDescription;
+import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -86,5 +87,6 @@ public interface ColumnAggregation extends NamedExpressionOperator {
      * @param columnType a function that can be used to look up the type of a column by its name
      * @return the return type or <code>Optional.empty()</code> if the aggregation is not applicable to the arguments
      */
-    Optional<ValueType> returnType(Arguments<ConstantAst> arguments, Function<String, Optional<ValueType>> columnType);
+    ReturnResult<ValueType> returnType(Arguments<ConstantAst> arguments,
+        Function<String, Optional<ValueType>> columnType);
 }
