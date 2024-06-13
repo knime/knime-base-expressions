@@ -100,29 +100,31 @@ public final class MathFunctions {
     public static final ExpressionFunction MAX = functionBuilder() //
         .name("max") //
         .description("""
-                The maximum value of a list of numbers. If all inputs are integers,
-                the output will be an integer. If any of the inputs is a float, the
-                output will be a float. If any argument is `MISSING`, the result is
-                also `MISSING`. At least two arguments are required, but beyond that
-                you can supply as many as you like.
+                The maximum value of the `input` numbers. At least two arguments are required, but
+                beyond that you can supply as many as you like.
 
-                If any argument is `NaN` the result will be `NaN`.
+                If all inputs are integers, the output is an integer. If any of the inputs
+                is a float, the output is a float.
+
+                If any `input` is `MISSING`, the result is also `MISSING`.
+                If any `input` is `NaN` the result is `NaN`.
+
 
                 Examples:
-                * `max(1, 2, 3)` returns 3
-                * `max(1.0, 2.0, 3.0)` returns 3.0
-                * `max(1, 2.0, 3)` returns 3.0
+                * `max(1, 2, 3)` returns `3`
+                * `max(1.0, 2.0, 3.0)` returns `3.0`
+                * `max(1, 2.0, 3)` returns `3.0`
                 * `max(1, MISSING, 3)` returns `MISSING`
                 * `max(1, 2, NaN)` returns `NaN`
                 """) //
         .keywords("maximum") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("input1", "first number", isNumericOrOpt()), //
-            arg("input2", "second number", isNumericOrOpt()), //
-            vararg("more", "additional numbers", isNumericOrOpt()) //
+            arg("input_1", "First number", isNumericOrOpt()), //
+            arg("input_2", "Second number", isNumericOrOpt()), //
+            vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("the largest number of the arguments", "INTEGER? | FLOAT?",
+        .returnType("The largest number of the `input` arguments", "INTEGER? | FLOAT?",
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(MathFunctions::maxImpl) //
         .build();
@@ -148,27 +150,28 @@ public final class MathFunctions {
     public static final ExpressionFunction MIN = functionBuilder() //
         .name("min") //
         .description("""
-                The minimum value of a list of numbers. If all inputs are integers,
-                the output will be an integer. If any of the inputs is a float, the
-                output will be a float. If any argument is `MISSING`, the result is
-                also `MISSING`. At least two arguments are required, but beyond that
-                you can supply as many as you like.
+                The minimum value of the `input` numbers. At least two arguments are required, but
+                beyond that you can supply as many as you like.
 
-                If any argument is `NaN` the result will be `NaN`.
+                If all inputs are integers, the output is an integer. If any of the inputs
+                is a float, the output is a float.
+
+                If any `input` is `MISSING`, the result is also `MISSING`.
+                If any `input` is `NaN` the result is `NaN`.
 
                 Examples:
-                * `min(1, 2, 3)` returns 1
-                * `min(1.0, 2.0, 3.0)` returns 1.0
-                * `min(1, 2.0, 3)` returns 1.0
+                * `min(1, 2, 3)` returns `1`
+                * `min(1.0, 2.0, 3.0)` returns `1.0`
+                * `min(1, 2.0, 3)` returns `1.0`
                 * `min(1, MISSING, 3)` returns `MISSING`
                 * `min(1, 2, NaN)` returns `NaN`
                 """) //
         .keywords("minimum") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("input1", "first number", isNumericOrOpt()), //
-            arg("input2", "second number", isNumericOrOpt()), //
-            vararg("more", "additional numbers", isNumericOrOpt()) //
+            arg("input_1", "First number", isNumericOrOpt()), //
+            arg("input_2", "Second number", isNumericOrOpt()), //
+            vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
         .returnType("The smallest number of the arguments", "INTEGER? | FLOAT?",
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
@@ -195,33 +198,31 @@ public final class MathFunctions {
     /** Index of the maximum of multiple numbers */
     public static final ExpressionFunction ARGMAX = functionBuilder() //
         .name("argmax") //
-        .description("""
-                The index of the maximum value of a list of numbers, starting at 1.
-                If any argument is `MISSING`, the result is also `MISSING`. At least
-                two arguments are required, but beyond that you can supply as many
-                as you like.
+        .description(
+            """
+                    The position of the maximum value of the `input` numbers, starting at 1. At least two arguments are required, but
+                    beyond that you can supply as many as you like. If there are multiple copies of the maximum value, the position of
+                    the first one is returned.
 
-                If there are multiple copies of the max value, returns the index of
-                the first one.
+                    If any `input` is `MISSING`, the result is also `MISSING`.
+                    If any `input` is `NaN` the result is the position of the first `NaN`.
 
-                If any argument is `NaN` the result will be the index of the first `NaN`.
-
-                Examples:
-                * `argmax(2, 4, 6)` returns 3
-                * `argmax(2.0, 4.0, 6.0)` returns 3
-                * `argmax(2, 4.0, 6)` returns 3
-                * `argmax(1, 2, 2)` returns 2
-                * `argmax(1, MISSING, 3)` returns `MISSING`
-                * `argmax(1, 2, NaN)` returns 3
-                """) //
+                    Examples:
+                    * `argmax(2, 4, 6)` returns `3`
+                    * `argmax(2.0, 4.0, 6.0)` returns `3`
+                    * `argmax(2, 4.0, 6)` returns `3`
+                    * `argmax(1, 2, 2)` returns `2`
+                    * `argmax(1, MISSING, 3)` returns `MISSING`
+                    * `argmax(1, 2, NaN)` returns `3`
+                    """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
-            arg("input1", "first number", isNumericOrOpt()), //
-            arg("input2", "second number", isNumericOrOpt()), //
-            vararg("more", "additional numbers", isNumericOrOpt()) //
+            arg("input_1", "First number", isNumericOrOpt()), //
+            arg("input_2", "Second number", isNumericOrOpt()), //
+            vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("the index of the largest number in the arguments", //
+        .returnType("The position of the largest number in the arguments", //
             "INTEGER?", args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::argmaxImpl) //
         .build();
@@ -262,33 +263,31 @@ public final class MathFunctions {
     /** Index of the minimum of multiple numbers */
     public static final ExpressionFunction ARGMIN = functionBuilder() //
         .name("argmin") //
-        .description("""
-                The index of the minimum value of a list of numbers, starting at 1.
-                If any argument is `MISSING`, the result is also `MISSING`. At least
-                two arguments are required, but beyond that you can supply as many
-                as you like.
+        .description(
+            """
+                    The position of the minimum value of the `input` numbers, starting at 1. At least two arguments are required, but
+                    beyond that you can supply as many as you like. If there are multiple copies of the minimum value, the position of
+                    the first one is returned.
 
-                If there are multiple copies of the min value, returns the index of
-                the first one.
+                    If any `input` is `MISSING`, the result is also `MISSING`.
+                    If any `input` is `NaN` the result is the position of the first `NaN`.
 
-                If any argument is `NaN` the result will be the index of the first `NaN`.
-
-                Examples:
-                * `argmin(2, 4, 6)` returns 1
-                * `argmin(2.0, 4.0, 6.0)` returns 1
-                * `argmin(2, 4.0, 6)` returns 1
-                * `argmin(1, 2, 1)` returns 1
-                * `argmin(1, MISSING, 3)` returns `MISSING`
-                * `argmin(1, 2, NaN)` returns 3
-                """) //
+                    Examples:
+                    * `argmin(2, 4, 6)` returns `1`
+                    * `argmin(2.0, 4.0, 6.0)` returns `1`
+                    * `argmin(2, 4.0, 6)` returns `1`
+                    * `argmin(1, 2, 1)` returns `1`
+                    * `argmin(1, MISSING, 3)` returns `MISSING`
+                    * `argmin(1, 2, NaN)` returns `3`
+                    """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
-            arg("input1", "first number", isNumericOrOpt()), //
-            arg("input2", "second number", isNumericOrOpt()), //
-            vararg("more", "additional numbers", isNumericOrOpt()) //
+            arg("input_1", "First number", isNumericOrOpt()), //
+            arg("input_2", "Second number", isNumericOrOpt()), //
+            vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("the index of the smallest number in the arguments", //
+        .returnType("The position of the smallest number in the arguments", //
             "INTEGER?", args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::argminImpl) //
         .build();
@@ -330,20 +329,22 @@ public final class MathFunctions {
     public static final ExpressionFunction ABS = functionBuilder() //
         .name("abs") //
         .description("""
-                The absolute value of a number. If the input is `MISSING`, the
-                output will also be `MISSING`.
+                The absolute value of a number.
 
-                `abs(NaN)` returns `NaN`.
+                If the input `x` is `MISSING`, the output is `MISSING`.
+                If the input `x` is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `abs(1)` returns 1
-                * `abs(-2)` returns 2
-                * `abs(-3.0)` returns 3.0
+                * `abs(1)` returns `1`
+                * `abs(-2)` returns `2`
+                * `abs(-3.0)` returns `3.0`
+                * `abs(MISSING)` returns `MISSING`
+                * `abs(NaN)` returns `NaN`
                 """) //
         .keywords("absolute") //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the absolute value of x", "INTEGER? | FLOAT?", args -> args[0]) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The absolute value of x", "INTEGER? | FLOAT?", args -> args[0]) //
         .impl(MathFunctions::absImpl) //
         .build();
 
@@ -360,20 +361,23 @@ public final class MathFunctions {
     public static final ExpressionFunction SIN = functionBuilder() //
         .name("sin") //
         .description("""
-                The sine of a number, with the input in radians. If the input is
-                `MISSING`, the output will also be `MISSING`.
+                The sine of a number, with the input `x` in radians.
 
-                `sin(NaN)` returns `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
+
 
                 Examples:
                 * `sin(0)` returns 0.0
                 * `sin(PI)` returns 0.0
                 * `sin(PI/2)` returns 1.0
+                * `sin(MISSING)` returns `MISSING`
+                * `sin(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the sine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "An angle in radians", isNumericOrOpt())) //
+        .returnType("The sine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::sinImpl) //
         .build();
 
@@ -386,20 +390,22 @@ public final class MathFunctions {
     public static final ExpressionFunction COS = functionBuilder() //
         .name("cos") //
         .description("""
-                The cosine of a number, with the input in radians. If the input is
-                `MISSING`, the output will also be `MISSING`.
+                The cosine of a number, with the input `x` in radians.
 
-                `cos(NaN)` returns `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `cos(0)` returns 1.0
-                * `cos(PI)` returns -1.0
-                * `cos(PI/2)` returns 0.0
+                * `cos(0)` returns `1.0`
+                * `cos(PI)` returns `-1.0`
+                * `cos(PI/2)` returns `0.0`
+                * `cos(MISSING)` returns `MISSING`
+                * `cos(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the cosine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "An angle in radians", isNumericOrOpt())) //
+        .returnType("The cosine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::cosImpl) //
         .build();
 
@@ -412,20 +418,22 @@ public final class MathFunctions {
     public static final ExpressionFunction TAN = functionBuilder() //
         .name("tan") //
         .description("""
-                The tangent of a number, with the input in radians. If the input is
-                `MISSING`, the output will also be `MISSING`.
+                The tangent of a number, with the input `x` in radians.
 
-                `tan(NaN)` returns `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `tan(0)` returns 0.0
-                * `tan(PI)` returns 0.0
-                * `tan(PI/2)` returns +Infinity
+                * `tan(0)` returns `0.0`
+                * `tan(PI)` returns `0.0`
+                * `tan(PI/2)` returns `+Infinity`
+                * `tan(MISSING)` returns `MISSING`
+                * `tan(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the tangent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "An angle in radians", isNumericOrOpt())) //
+        .returnType("The tangent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::tanImpl) //
         .build();
 
@@ -438,21 +446,22 @@ public final class MathFunctions {
     public static final ExpressionFunction ASIN = functionBuilder() //
         .name("asin") //
         .description("""
-                The arcsine of a number, with the output in radians. If the input is
-                `MISSING`, the output will also be `MISSING`. If the input is
-                outside the range [-1, 1], a warning will be issued and the result
-                will be `NaN`.
+                The arcsine of a number, with the output in radians.
 
-                `asin(NaN)` returns `NaN`.
+                If the input is outside the range [-1, 1], a warning is issued and the result is `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `asin(0)` returns 0.0
-                * `asin(1)` returns 1.570796... (approx. PI/2)
+                * `asin(0)` returns `0.0`
+                * `asin(1)` returns `1.570796…` (approx. `PI/2`)
+                * `asin(MISSING)` returns `MISSING`
+                * `asin(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the arcsine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The arcsine of x in radians", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::asinImpl) //
         .build();
 
@@ -462,7 +471,7 @@ public final class MathFunctions {
             var cC = c.compute(ctx);
 
             if (Math.abs(cC) > 1) {
-                ctx.addWarning("invalid argument to asin (|arg| > 1)");
+                ctx.addWarning("Invalid argument to asin (|x| > 1).");
             }
 
             return Math.asin(cC);
@@ -474,20 +483,22 @@ public final class MathFunctions {
         .name("acos") //
         .description("""
                 The arccosine of a number, with the output in radians between -PI
-                and +PI. If the input is `MISSING`, the output will also be
-                `MISSING`. If the input is outside the range [-1, 1], a warning will
-                be issued and the result will be `NaN`.
+                and +PI.
 
-                `acos(NaN)` returns `NaN`.
+                If the input is outside the range [-1, 1], a warning is issued and the result is `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `acos(0)` returns 1.570796... (approx. PI/2)
-                * `acos(1)` returns 0.0
+                * `acos(0)` returns `1.570796…` (approx. `PI/2`)
+                * `acos(1)` returns `0.0`
+                * `asin(MISSING)` returns `MISSING`
+                * `asin(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the arccosine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The arccosine of x in radians", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::acosImpl) //
         .build();
 
@@ -497,7 +508,7 @@ public final class MathFunctions {
             var cC = c.compute(ctx);
 
             if (Math.abs(cC) > 1) {
-                ctx.addWarning("invalid argument to acos (|arg| > 1)");
+                ctx.addWarning("Invalid argument to acos (|x| > 1).");
             }
 
             return Math.acos(cC);
@@ -509,19 +520,21 @@ public final class MathFunctions {
         .name("atan") //
         .description("""
                 The arctangent of a number, with the output in radians between -PI/2
-                and +PI/2. If the input is `MISSING`, the output will also be
-                `MISSING`.
+                and +PI/2.
 
-                `atan(NaN)` returns `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
                 * `atan(0)` returns 0.0
                 * `atan(1)` returns 0.785398... (approx. PI/4)
+                * `atan(MISSING)` returns `MISSING`
+                * `atan(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the arctangent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The arctangent of x in radians", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::atanImpl) //
         .build();
 
@@ -534,29 +547,30 @@ public final class MathFunctions {
     public static final ExpressionFunction ATAN2 = functionBuilder() //
         .name("atan2") //
         .description("""
-                The arctangent of two numbers, with the output in radians between
-                -PI and +PI.
+                The arctangent defined be a point (x, y) on a cartesian plane, with the output in radians between
+                -PI and +PI. This differs from the atan function in that it knows the sign of both coordinates,
+                so it returns the correct quadrant for the angle. For example,
+                `atan2(-1, -1)` returns `-3*PI/4`, while `atan(-1/-1)` returns `PI/4`.
 
-                This differs from atan in that it knows the sign of both arguments,
-                so it can return the correct quadrant for the angle. For example,
-                `atan2(-1, -1)` returns -3PI/4, while `atan(-1/-1)` returns PI/4.
-
-                If both arguments are zero, the result is `NaN` and a warning is
-                issued. If the input is `MISSING`, the output will also be `MISSING`.
-
-                If any argument is `NaN` the function returns `NaN`.
+                If both inputs are zero, the result is `NaN` and a warning is
+                issued.
+                If any input is `MISSING`, the output is `MISSING`.
+                If any input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `atan2(1, 1)` returns 0.785398... (approx. PI/4)
-                * `atan2(-1, -1)` returns -2.356194... (approx. -3PI/4)
+                * `atan2(1, 1)` returns `0.785398…` (approx. `PI/4`)
+                * `atan2(-1, -1)` returns `-2.356194…` (approx. `-3*PI/4`)
+                * `atan2(0, 0)` returns `NaN`
+                * `atan2(MISSING, …)` returns `MISSING`
+                * `atan2(NaN, …)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
-            arg("y", "the number", isNumericOrOpt()), //
-            arg("x", "the number", isNumericOrOpt()) //
+            arg("y", "The coordinate on the y axis", isNumericOrOpt()), //
+            arg("x", "The coordinate on the x axis", isNumericOrOpt()) //
         ) //
-        .returnType("the arctangent of y and x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("The arctangent of point (x, y) in radians", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::atan2Impl) //
         .build();
 
@@ -569,7 +583,7 @@ public final class MathFunctions {
                 var yC = y.compute(ctx);
 
                 if (isNearZero(xC) && isNearZero(yC)) {
-                    ctx.addWarning("invalid argument to atan2 (both args are zero)");
+                    ctx.addWarning("Invalid arguments to atan2. Both inputs, y and x, are zero.");
                     return Float.NaN;
                 }
 
@@ -583,19 +597,21 @@ public final class MathFunctions {
     public static final ExpressionFunction SINH = functionBuilder() //
         .name("sinh") //
         .description("""
-                The hyperbolic sine of a number. If the input is `MISSING`, the
-                output will also be `MISSING`.
+                The hyperbolic sine of a number.
 
-                `sinh(NaN)` returns `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `sinh(0)` returns 0.0
-                * `sinh(1)` returns 1.175201...
+                * `sinh(0)` returns `0.0`
+                * `sinh(1)` returns `1.175201…`
+                * `sinh(MISSING)` returns `MISSING`
+                * `sinh(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the hyerbolic sine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The hyerbolic sine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::sinhImpl) //
         .build();
 
@@ -608,19 +624,21 @@ public final class MathFunctions {
     public static final ExpressionFunction COSH = functionBuilder() //
         .name("cosh") //
         .description("""
-                The hyperbolic cosine of a number. If the input is `MISSING`, the
-                output will also be `MISSING`.
+                The hyperbolic cosine of a number.
 
-                `cosh(NaN)` returns `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `cosh(0)` returns 1.0
-                * `cosh(1)` returns 1.543080...
+                * `cosh(0)` returns `1.0`
+                * `cosh(1)` returns `1.543080…`
+                * `cosh(MISSING)` returns `MISSING`
+                * `cosh(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the hyerbolic cosine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The hyerbolic cosine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::coshImpl) //
         .build();
 
@@ -633,19 +651,21 @@ public final class MathFunctions {
     public static final ExpressionFunction TANH = functionBuilder() //
         .name("tanh") //
         .description("""
-                The hyperbolic tangent of a number. If the input is `MISSING`, the
-                output will also be `MISSING`.
+                The hyperbolic tangent of a number.
 
-                `tanh(NaN)` returns `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `tanh(0)` returns 0.0
-                * `tanh(1)` returns 0.761594...
+                * `tanh(0)` returns `0.0`
+                * `tanh(1)` returns `0.761594…`
+                * `tanh(MISSING)` returns `MISSING`
+                * `tanh(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the hyerbolic tangent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The hyerbolic tangent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::tanhImpl) //
         .build();
 
@@ -658,19 +678,21 @@ public final class MathFunctions {
     public static final ExpressionFunction ASINH = functionBuilder() //
         .name("asinh") //
         .description("""
-                The hyperbolic arcsine of a number. If the input is `MISSING`, the
-                output will also be `MISSING`.
+                The hyperbolic arcsine of a number.
 
-                `asinh(NaN)` returns `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `asinh(0)` returns 0.0
-                * `asinh(1)` returns 1.570796...
+                * `asinh(0)` returns `0.0`
+                * `asinh(1)` returns `1.570796…`
+                * `asinh(MISSING)` returns `MISSING`
+                * `asinh(NaN)` returns `NaN`
                 """) //
         .keywords("arcsinh", "arsinh") //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the hyerbolic arcsine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The hyerbolic arcsine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::asinhImpl) //
         .build();
 
@@ -692,20 +714,22 @@ public final class MathFunctions {
         .description("""
                 The hyperbolic arccosine of a number.
 
-                If the input is `MISSING`, the output will also be `MISSING`. If
-                the input is less than 1, a warning will be issued and the
-                result will be `NaN`.
-
-                `acosh(NaN)` returns `NaN`.
+                If the input is less than 1, a warning is issued and the
+                result is `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `acosh(1)` returns 0.0
-                * `acosh(2)` returns 1.316957...
+                * `acosh(1)` returns `0.0`
+                * `acosh(2)` returns `1.316957…`
+                * `acosh(.5)` returns `NaN`
+                * `acosh(MISSING)` returns `MISSING`
+                * `acosh(NaN)` returns `NaN`
                 """) //
         .keywords("arccosh", "arcosh") //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the hyerbolic arccosine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The hyerbolic arccosine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::acoshImpl) //
         .build();
 
@@ -716,7 +740,7 @@ public final class MathFunctions {
             var cC = c.compute(ctx);
 
             if (cC < 1) {
-                ctx.addWarning("invalid argument to acosh (arg < 1)");
+                ctx.addWarning("Invalid argument to acosh (x < 1).");
                 return Float.NaN;
             }
 
@@ -732,20 +756,22 @@ public final class MathFunctions {
         .description("""
                 The hyperbolic arctangent of a number.
 
-                If the input is `MISSING`, the output will also be `MISSING`. If the
-                input is outside the range [-1, 1], a warning will be issued and the
-                result will be `NaN`.
-
-                `atanh(NaN)` returns `NaN`.
+                If the input is outside the range [-1, 1], a warning is issued and the
+                result is `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
                 * `atanh(0)` returns 0.0
                 * `atanh(0.5)` returns 0.549306...
+                * `atanh(.5)` returns `NaN`
+                * `atanh(MISSING)` returns `MISSING`
+                * `atanh(NaN)` returns `NaN`
                 """) //
         .keywords("arctanh", "artanh") //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the hyerbolic arctangent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The hyerbolic arctangent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::atanhImpl) //
         .build();
 
@@ -755,8 +781,10 @@ public final class MathFunctions {
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             var cC = c.compute(ctx);
 
-            if (Math.abs(cC) >= 1) {
-                ctx.addWarning("invalid argument to atanh (|arg| >= 1)");
+            if (Math.abs(cC) <= 1) {
+                ctx.addWarning("Invalid argument to atanh (|x| <= 1).");
+            } else if (Math.abs(cC) >= 1) {
+                ctx.addWarning("Invalid argument to atanh (|x| >= 1).");
             }
 
             return 0.5 * Math.log((cC + 1.0) / (1.0 - cC));
@@ -771,20 +799,24 @@ public final class MathFunctions {
         .description("""
                 The natural logarithm of a number.
 
-                If the input is `MISSING`, the output will also be `MISSING`. If the
-                input is less than or equal to 0, a warning will be issued and the
-                result will be `NaN`.
-
-                `ln(NaN)` returns `NaN`.
+                If the input is 0, a warning is issued and the
+                result is `-Infinity`.
+                If the input is less than 0, a warning is issued and the
+                result is `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `ln(1)` returns 0.0
-                * `ln(E)` returns 1.0
+                * `ln(1)` returns `0.0`
+                * `ln(E)` returns `1.0`
+                * `ln(0)` returns `-Infinity`
+                * `ln(MISSING)` returns `MISSING`
+                * `ln(NaN)` returns `NaN`
                 """) //
         .keywords("natural log") //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the natural logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The natural logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::lnImpl) //
         .build();
 
@@ -793,8 +825,10 @@ public final class MathFunctions {
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
 
-            if (cC <= 0) {
-                ctx.addWarning("invalid argument to ln (arg <= 0)");
+            if (cC == 0) {
+                ctx.addWarning("Invalid argument to ln (x = 0).");
+            } else if (cC < 0) {
+                ctx.addWarning("Invalid argument to ln (x < 0).");
             }
 
             return Math.log(cC);
@@ -807,20 +841,24 @@ public final class MathFunctions {
         .description("""
                 The base-10 logarithm of a number.
 
-                If the input is `MISSING`, the output will also be `MISSING`. If the
-                input is less than or equal to 0, a warning will be issued and the
-                result will be `NaN`.
-
-                `log10(NaN)` returns `NaN`.
+                If the input is 0, a warning is issued and the
+                result is `-Infinity`.
+                If the input is less than 0, a warning is issued and the
+                result is `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `log10(1)` returns 0.0
-                * `log10(10)` returns 1.0
+                * `log10(1)` returns `0.0`
+                * `log10(10)` returns `1.0`
+                * `log10(0)` returns `-Infinity`
+                * `log10(MISSING)` returns `MISSING`
+                * `log10(NaN)` returns `NaN`
                 """) //
         .keywords("common log", "decimal log") //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the base-10 logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args)))
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The base-10 logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args)))
         .impl(MathFunctions::log10Impl) //
         .build();
 
@@ -829,8 +867,10 @@ public final class MathFunctions {
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
 
-            if (cC <= 0) {
-                ctx.addWarning("invalid argument to log10 (arg <= 0)");
+            if (cC == 0) {
+                ctx.addWarning("Invalid argument to log10 (x = 0).");
+            } else if (cC < 0) {
+                ctx.addWarning("Invalid argument to log10 (x < 0).");
             }
 
             return Math.log10(cC);
@@ -843,20 +883,24 @@ public final class MathFunctions {
         .description("""
                 The base-2 logarithm of a number.
 
-                If the input is `MISSING`, the output will also be `MISSING`. If the
-                input is less than or equal to 0, a warning will be issued and the
-                result will be `NaN`.
-
-                `log2(NaN)` returns `NaN`.
+                If the input is 0, a warning is issued and the
+                result is `-Infinity`.
+                If the input is less than 0, a warning is issued and the
+                result is `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `log2(1)` returns 0.0
-                * `log2(2)` returns 1.0
+                * `log2(1)` returns ´0.0´
+                * `log2(2)` returns ´1.0´
+                * `log2(0)` returns `-Infinity`
+                * `log2(MISSING)` returns `MISSING`
+                * `log2(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("the base-2 logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args)))
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("The base-2 logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args)))
         .impl(MathFunctions::log2Impl) //
         .build();
 
@@ -865,8 +909,10 @@ public final class MathFunctions {
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
 
-            if (cC <= 0) {
-                ctx.addWarning("invalid argument to log2 (arg <= 0)");
+            if (cC == 0) {
+                ctx.addWarning("Invalid argument to log2 (x = 0).");
+            } else if (cC < 0) {
+                ctx.addWarning("Invalid argument to log2 (x < 0).");
             }
 
             return Math.log(cC) / Math.log(2);
@@ -876,31 +922,34 @@ public final class MathFunctions {
     /** The base-n logarithm of one number */
     public static final ExpressionFunction LOG_BASE = functionBuilder() //
         .name("log") //
-        .description("""
-                The logarithm of a number, with the given base.
+        .description(
+            """
+                    The logarithm of a number `x`, with the given `base` > 0.
+                    This is mathematically equivalent to `ln(x) / ln(base)`.
 
-                If the input is `MISSING`, the output will also be `MISSING`. If
-                either of the number or the base are less than or equal to 0,
-                or the base is 1, a warning will be issued and the result will be
-                `NaN`.
+                    If either `x` is less than 0 or the `base` is less than or equal to 0, a warning is issued and the result is `NaN`.
+                    If `x` is zero, a warning is issued and the result is `-Infinity`.
+                    If the `base` is 1, a warning is issued and the result is `Infinity`.
+                    If any input is `MISSING`, the output is `MISSING`.
+                    If any input is `NaN`, the output is `NaN`.
 
-                This is mathematically equivalent to `ln(x) / ln(b)`.
-
-                If any argument is `NaN` the function returns `NaN`.
-
-                Examples:
-                * `log(1, 10)` returns 0.0
-                * `log(1000, 10)` returns 3.0
-                * `log(64, 2)` returns 6.0
-                * `log(0, 10)` returns -Infinity (and a warning)
-                """) //
+                    Examples:
+                    * `log(1, 10)` returns `0.0`
+                    * `log(1000, 10)` returns `3.0`
+                    * `log(64, 2)` returns `6.0`
+                    * `log(…, 0)` returns `NaN`
+                    * `log(0, …)` returns `-Infinity`
+                    * `log(…, 1)` returns `Infinity`
+                    * `log(MISSING, …)` returns `MISSING`
+                    * `log(NaN, …)` returns `NaN`
+                    """) // TODO I get a syntax error for log(NaN,MISSING)
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
-            arg("x", "the number", isNumericOrOpt()), //
-            arg("b", "the base", isNumericOrOpt()) //
+            arg("x", "A number", isNumericOrOpt()), //
+            arg("base", "The base number", isNumericOrOpt()) //
         ) //
-        .returnType("the base logarithm of x base b", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args)))
+        .returnType("The logarithm of x with the given base", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args)))
         .impl(MathFunctions::logBaseImpl) //
         .build();
 
@@ -913,20 +962,20 @@ public final class MathFunctions {
             var cC = c.compute(ctx);
 
             if (bC > 0 && isNearZero(cC)) {
-                ctx.addWarning("invalid argument to log (n == 0, base > 0)");
+                ctx.addWarning("Invalid argument to log (x = 0, base > 0).");
             }
 
             if (bC <= 0) {
-                ctx.addWarning("invalid argument to log (base <= 0)");
+                ctx.addWarning("Invalid argument to log (base <= 0).");
                 return Float.NaN;
             }
 
             if (Math.abs(bC - 1) < 2 * Double.MIN_VALUE) {
-                ctx.addWarning("invalid argument to log (base == 1)");
+                ctx.addWarning("Invalid argument to log (base = 1).");
             }
 
             if (cC <= 0) {
-                ctx.addWarning("invalid argument to log (number <= 0)");
+                ctx.addWarning("Invalid argument to log (x <= 0).");
             }
 
             return Math.log(cC) / Math.log(bC);
@@ -940,26 +989,29 @@ public final class MathFunctions {
         .name("log1p") //
         .description("""
                 The natural logarithm of one plus a number.
-
                 This is a more accurate way to compute the natural logarithm of
                 numbers close to 1, as it avoids the loss of precision that can
                 occur when adding 1 to a number close to 0 before taking the
                 logarithm.
 
-                If the input is `MISSING`, the output will also be `MISSING`. If
-                the input is less than or equal to -1, a warning will be issued
-                and the result will be `NaN`.
-
-                `log1p(NaN)` returns `NaN`.
+                If the input is equal to -1, a warning is issued
+                and the result is `-Infinity`.
+                If the input is less than -1, a warning is issued
+                and the result is `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `log1p(0)` returns 0.0
-                * `log1p(1)` returns 0.693147...
+                * `log1p(0)` returns `0.0`
+                * `log1p(1)` returns `0.693147…`
+                * `log1p(0)` returns `-Infinity`
+                * `log1p(MISSING)` returns `MISSING`
+                * `log1p(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("natural log of (1+x)", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("Natural logarithm of (1+x)", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::log1pImpl) //
         .build();
 
@@ -969,8 +1021,10 @@ public final class MathFunctions {
             ctx -> {
                 var cC = c.compute(ctx);
 
-                if (cC <= -1) {
-                    ctx.addWarning("invalid argument to log1p (arg <= -1)");
+                if (cC == -1) {
+                    ctx.addWarning("Invalid argument to log1p (x = -1).");
+                } else if (cC < -1) {
+                    ctx.addWarning("Invalid argument to log1p (x < -1).");
                 }
 
                 return Math.log1p(cC);
@@ -984,20 +1038,20 @@ public final class MathFunctions {
         .name("exp") //
         .description("""
                 The exponent of a number, i.e. Euler's constant e raised to the
-                power of the number. If the input is `MISSING`, the output will also
-                be `MISSING`.
+                power of the number.
 
-                `exp(NaN)` returns `NaN`.
+                If the input is `MISSING`, the output is `MISSING`.
+                If the input is `NaN`, the output is `NaN`.
 
                 Examples:
-                * `exp(0)` returns 1.0
-                * `exp(1)` returns 2.718281... (approx. e)
-                * `exp(-1)` returns 0.367879... (approx. 1/e)
+                * `exp(0)` returns `1.0`
+                * `exp(1)` returns `2.718281…` (approx. `E`)
+                * `exp(-1)` returns `0.367879…` (approx. `1/E`)
                 """) //
         .keywords("exponent") //
         .category(CATEGORY.name()) //
-        .args(arg("x", "the number", isNumericOrOpt())) //
-        .returnType("exponent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .args(arg("x", "A number", isNumericOrOpt())) //
+        .returnType("Exponent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::expImpl) //
         .build();
 
