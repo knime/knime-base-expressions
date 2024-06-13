@@ -103,7 +103,7 @@ public final class StringFunctions {
 
     /** The "String Manipulation" category */
     public static final OperatorCategory CATEGORY =
-        new OperatorCategory("String Manipulation", "Functions that operate on strings");
+        new OperatorCategory("String manipulation", "Functions that operate on strings");
 
     public static final ExpressionFunction COMPARE = functionBuilder() //
         .name("compare") //
