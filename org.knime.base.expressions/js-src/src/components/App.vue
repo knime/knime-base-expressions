@@ -221,7 +221,7 @@ const runButtonEnabled = computed(() => {
       <template #editor>
         <MultiEditorPane
           ref="multiEditorComponentRef"
-          title="Expression Editor"
+          title="Expression editor"
           file-name="_1.knexp"
           :language="language"
         >
