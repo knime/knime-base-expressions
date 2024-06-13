@@ -135,6 +135,10 @@ class ExpressionNodeModel extends NodeModel {
 
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
+        if (ExpressionNodeSettings.DEFAULT_SCRIPT.equals(m_settings.getScript())) {
+            throw new InvalidSettingsException(
+                "The expression node has not been configured yet, please enter your expression.");
+        }
         try {
             var ast = getPreparedExpression(inSpecs[0]);
             var outputType = Expressions.getInferredType(ast);
