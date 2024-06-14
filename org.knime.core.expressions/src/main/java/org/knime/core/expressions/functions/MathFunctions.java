@@ -114,7 +114,7 @@ public final class MathFunctions {
                 * `max(1, 2, 3)` returns `3`
                 * `max(1.0, 2.0, 3.0)` returns `3.0`
                 * `max(1, 2.0, 3)` returns `3.0`
-                * `max(1, MISSING, 3)` returns `MISSING`
+                * `max(1, $["Missing Column"], 3)` returns `MISSING`
                 * `max(1, 2, NaN)` returns `NaN`
                 """) //
         .keywords("maximum") //
@@ -163,7 +163,7 @@ public final class MathFunctions {
                 * `min(1, 2, 3)` returns `1`
                 * `min(1.0, 2.0, 3.0)` returns `1.0`
                 * `min(1, 2.0, 3)` returns `1.0`
-                * `min(1, MISSING, 3)` returns `MISSING`
+                * `min(1, $["Missing Column"], 3)` returns `MISSING`
                 * `min(1, 2, NaN)` returns `NaN`
                 """) //
         .keywords("minimum") //
@@ -212,7 +212,7 @@ public final class MathFunctions {
                     * `argmax(2.0, 4.0, 6.0)` returns `3`
                     * `argmax(2, 4.0, 6)` returns `3`
                     * `argmax(1, 2, 2)` returns `2`
-                    * `argmax(1, MISSING, 3)` returns `MISSING`
+                    * `argmax(1, $["Missing Column"], 3)` returns `MISSING`
                     * `argmax(1, 2, NaN)` returns `3`
                     """) //
         .keywords() //
@@ -277,7 +277,7 @@ public final class MathFunctions {
                     * `argmin(2.0, 4.0, 6.0)` returns `1`
                     * `argmin(2, 4.0, 6)` returns `1`
                     * `argmin(1, 2, 1)` returns `1`
-                    * `argmin(1, MISSING, 3)` returns `MISSING`
+                    * `argmin(1, $["Missing Column"], 3)` returns `MISSING`
                     * `argmin(1, 2, NaN)` returns `3`
                     """) //
         .keywords() //
@@ -338,7 +338,7 @@ public final class MathFunctions {
                 * `abs(1)` returns `1`
                 * `abs(-2)` returns `2`
                 * `abs(-3.0)` returns `3.0`
-                * `abs(MISSING)` returns `MISSING`
+                * `abs($["Missing Column"])` returns `MISSING`
                 * `abs(NaN)` returns `NaN`
                 """) //
         .keywords("absolute") //
@@ -371,7 +371,7 @@ public final class MathFunctions {
                 * `sin(0)` returns 0.0
                 * `sin(PI)` returns 0.0
                 * `sin(PI/2)` returns 1.0
-                * `sin(MISSING)` returns `MISSING`
+                * `sin($["Missing Column"])` returns `MISSING`
                 * `sin(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -399,7 +399,7 @@ public final class MathFunctions {
                 * `cos(0)` returns `1.0`
                 * `cos(PI)` returns `-1.0`
                 * `cos(PI/2)` returns `0.0`
-                * `cos(MISSING)` returns `MISSING`
+                * `cos($["Missing Column"])` returns `MISSING`
                 * `cos(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -427,7 +427,7 @@ public final class MathFunctions {
                 * `tan(0)` returns `0.0`
                 * `tan(PI)` returns `0.0`
                 * `tan(PI/2)` returns `+Infinity`
-                * `tan(MISSING)` returns `MISSING`
+                * `tan($["Missing Column"])` returns `MISSING`
                 * `tan(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -455,7 +455,7 @@ public final class MathFunctions {
                 Examples:
                 * `asin(0)` returns `0.0`
                 * `asin(1)` returns `1.570796…` (approx. `PI/2`)
-                * `asin(MISSING)` returns `MISSING`
+                * `asin($["Missing Column"])` returns `MISSING`
                 * `asin(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -492,7 +492,7 @@ public final class MathFunctions {
                 Examples:
                 * `acos(0)` returns `1.570796…` (approx. `PI/2`)
                 * `acos(1)` returns `0.0`
-                * `asin(MISSING)` returns `MISSING`
+                * `asin($["Missing Column"])` returns `MISSING`
                 * `asin(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -528,7 +528,7 @@ public final class MathFunctions {
                 Examples:
                 * `atan(0)` returns 0.0
                 * `atan(1)` returns 0.785398... (approx. PI/4)
-                * `atan(MISSING)` returns `MISSING`
+                * `atan($["Missing Column"])` returns `MISSING`
                 * `atan(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -561,7 +561,7 @@ public final class MathFunctions {
                 * `atan2(1, 1)` returns `0.785398…` (approx. `PI/4`)
                 * `atan2(-1, -1)` returns `-2.356194…` (approx. `-3*PI/4`)
                 * `atan2(0, 0)` returns `NaN`
-                * `atan2(MISSING, …)` returns `MISSING`
+                * `atan2($["Missing Column"], …)` returns `MISSING`
                 * `atan2(NaN, …)` returns `NaN`
                 """) //
         .keywords() //
@@ -605,7 +605,7 @@ public final class MathFunctions {
                 Examples:
                 * `sinh(0)` returns `0.0`
                 * `sinh(1)` returns `1.175201…`
-                * `sinh(MISSING)` returns `MISSING`
+                * `sinh($["Missing Column"])` returns `MISSING`
                 * `sinh(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -632,7 +632,7 @@ public final class MathFunctions {
                 Examples:
                 * `cosh(0)` returns `1.0`
                 * `cosh(1)` returns `1.543080…`
-                * `cosh(MISSING)` returns `MISSING`
+                * `cosh($["Missing Column"])` returns `MISSING`
                 * `cosh(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -659,7 +659,7 @@ public final class MathFunctions {
                 Examples:
                 * `tanh(0)` returns `0.0`
                 * `tanh(1)` returns `0.761594…`
-                * `tanh(MISSING)` returns `MISSING`
+                * `tanh($["Missing Column"])` returns `MISSING`
                 * `tanh(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -686,7 +686,7 @@ public final class MathFunctions {
                 Examples:
                 * `asinh(0)` returns `0.0`
                 * `asinh(1)` returns `1.570796…`
-                * `asinh(MISSING)` returns `MISSING`
+                * `asinh($["Missing Column"])` returns `MISSING`
                 * `asinh(NaN)` returns `NaN`
                 """) //
         .keywords("arcsinh", "arsinh") //
@@ -723,7 +723,7 @@ public final class MathFunctions {
                 * `acosh(1)` returns `0.0`
                 * `acosh(2)` returns `1.316957…`
                 * `acosh(.5)` returns `NaN`
-                * `acosh(MISSING)` returns `MISSING`
+                * `acosh($["Missing Column"])` returns `MISSING`
                 * `acosh(NaN)` returns `NaN`
                 """) //
         .keywords("arccosh", "arcosh") //
@@ -765,7 +765,7 @@ public final class MathFunctions {
                 * `atanh(0)` returns 0.0
                 * `atanh(0.5)` returns 0.549306...
                 * `atanh(.5)` returns `NaN`
-                * `atanh(MISSING)` returns `MISSING`
+                * `atanh($["Missing Column"])` returns `MISSING`
                 * `atanh(NaN)` returns `NaN`
                 """) //
         .keywords("arctanh", "artanh") //
@@ -810,7 +810,7 @@ public final class MathFunctions {
                 * `ln(1)` returns `0.0`
                 * `ln(E)` returns `1.0`
                 * `ln(0)` returns `-Infinity`
-                * `ln(MISSING)` returns `MISSING`
+                * `ln($["Missing Column"])` returns `MISSING`
                 * `ln(NaN)` returns `NaN`
                 """) //
         .keywords("natural log") //
@@ -852,7 +852,7 @@ public final class MathFunctions {
                 * `log10(1)` returns `0.0`
                 * `log10(10)` returns `1.0`
                 * `log10(0)` returns `-Infinity`
-                * `log10(MISSING)` returns `MISSING`
+                * `log10($["Missing Column"])` returns `MISSING`
                 * `log10(NaN)` returns `NaN`
                 """) //
         .keywords("common log", "decimal log") //
@@ -894,7 +894,7 @@ public final class MathFunctions {
                 * `log2(1)` returns ´0.0´
                 * `log2(2)` returns ´1.0´
                 * `log2(0)` returns `-Infinity`
-                * `log2(MISSING)` returns `MISSING`
+                * `log2($["Missing Column"])` returns `MISSING`
                 * `log2(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -940,9 +940,9 @@ public final class MathFunctions {
                     * `log(…, 0)` returns `NaN`
                     * `log(0, …)` returns `-Infinity`
                     * `log(…, 1)` returns `Infinity`
-                    * `log(MISSING, …)` returns `MISSING`
+                    * `log($["Missing Column"], …)` returns `MISSING`
                     * `log(NaN, …)` returns `NaN`
-                    """) // TODO I get a syntax error for log(NaN,MISSING)
+                    """)
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
@@ -1005,7 +1005,7 @@ public final class MathFunctions {
                 * `log1p(0)` returns `0.0`
                 * `log1p(1)` returns `0.693147…`
                 * `log1p(0)` returns `-Infinity`
-                * `log1p(MISSING)` returns `MISSING`
+                * `log1p($["Missing Column"])` returns `MISSING`
                 * `log1p(NaN)` returns `NaN`
                 """) //
         .keywords() //
@@ -1627,7 +1627,7 @@ public final class MathFunctions {
                 Examples:
                 * `average(2, 4, 6)` returns 4.0
                 * `average(1, 2, 3, 4, 5)` returns 3.0
-                * `average(1, 2, MISSING, 4, 5)` returns `MISSING`
+                * `average(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
                 """) //
         .keywords("mean") //
         .category(CATEGORY.name()) //
@@ -1669,7 +1669,7 @@ public final class MathFunctions {
                 Examples:
                 * `median(2, 4, 6)` returns 4.0
                 * `median(2, 4, 6, 1000)` returns 5.0
-                * `median(1, 2, MISSING, 4, 5)` returns `MISSING`
+                * `median(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
                 """) //
         .keywords() //
         .category(CATEGORY.name()) //
@@ -1941,7 +1941,7 @@ public final class MathFunctions {
                 Examples:
                 * `is_nan(0)` returns `false`
                 * `is_nan(sqrt(-1))` returns `true`
-                * `is_nan(MISSING)` returns `false`
+                * `is_nan($["Missing Column"])` returns `false`
                 """) //
         .keywords("NaN") //
         .category(CATEGORY.name()) //
@@ -1965,7 +1965,7 @@ public final class MathFunctions {
                 Examples:
                 * `nan_to_missing(0)` returns 0
                 * `nan_to_missing(sqrt(-1))` returns `MISSING`
-                * `nan_to_missing(MISSING)` returns `MISSING`
+                * `nan_to_missing($["Missing Column"])` returns `MISSING`
                 """) //
         .keywords("NaN") //
         .category(CATEGORY.name()) //

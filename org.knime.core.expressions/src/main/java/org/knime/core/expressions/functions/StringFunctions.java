@@ -1370,7 +1370,7 @@ public final class StringFunctions {
                 processing.
 
                 Examples:
-                * `missing_to_empty(MISSING)` returns ""
+                * `missing_to_empty($["Missing Column"])` returns ""
                 * `missing_to_empty("Hello")` returns "Hello"\\
                   Any non-missing string is unchanged.
                 """) //
@@ -1400,7 +1400,7 @@ public final class StringFunctions {
                 Examples:
                 * `empty_to_missing("")` returns `MISSING`
                 * `empty_to_missing("Hello")` returns "Hello"
-                * `empty_to_missing(MISSING)` returns `MISSING`\\
+                * `empty_to_missing($["Missing Column"])` returns `MISSING`\\
                   Leaves `MISSING` unchanged.
                 """) //
         .keywords("default", "null") //
