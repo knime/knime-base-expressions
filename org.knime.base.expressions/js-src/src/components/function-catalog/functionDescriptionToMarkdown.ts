@@ -11,12 +11,12 @@ export const functionDataToMarkdown = (func: FunctionData): string => {
 
   return (
     `## ${func.name}` +
-    "\n\n### Arguments: " +
+    "\n\n### Arguments " +
     `\n${args}` +
-    "\n\n### Returns:  " +
+    "\n\n### Return value " +
     `\n${func.returnType}` +
     `${returnDescription}` +
-    "\n\n### Description:" +
+    "\n\n### Description " +
     `${description}`
   );
 };

@@ -19,7 +19,7 @@ const markdownHTMLContent = computed(() =>
 <template>
   <div class="function-description-panel">
     <h4 class="function-header">{{ functionData.name }}</h4>
-    <h5 class="function-subtitle">Arguments:</h5>
+    <h5 class="function-subtitle">Arguments</h5>
     <ul class="function-arg-list has-left-indent">
       <li v-for="arg in functionData.arguments" :key="arg.name">
         <span style="font-weight: bold; padding-left: -20px">{{
@@ -30,8 +30,10 @@ const markdownHTMLContent = computed(() =>
       </li>
     </ul>
     <div style="margin-top: 10px">
-      <h5 class="function-subtitle" style="display: inline">Returns:</h5>
-      <span class="return-type">{{ functionData.returnType }}</span>
+      <h5 class="function-subtitle" style="display: inline">Return Value</h5>
+    </div>
+    <div class="markdown-function-desc has-left-indent">
+      {{ functionData.returnType }}
     </div>
     <div
       v-if="functionData.returnDescription"
@@ -39,7 +41,7 @@ const markdownHTMLContent = computed(() =>
     >
       {{ functionData.returnDescription }}
     </div>
-    <h5 class="function-subtitle">Description:</h5>
+    <h5 class="function-subtitle">Description</h5>
     <!-- eslint-disable vue/no-v-html -->
     <div
       class="markdown-function-desc has-left-indent"
