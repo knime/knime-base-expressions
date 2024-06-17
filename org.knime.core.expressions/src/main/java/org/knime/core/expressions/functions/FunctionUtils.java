@@ -58,6 +58,20 @@ final class FunctionUtils {
     private FunctionUtils() {
     }
 
+    public static final String RETURN_STRING = "STRING";
+
+    public static final String RETURN_BOOLEAN = "BOOLEAN";
+
+    public static final String RETURN_BOOLEAN_MISSING = "BOOLEAN | MISSING";
+
+    public static final String RETURN_INTEGER_MISSING = "INTEGER | MISSING";
+
+    public static final String RETURN_FLOAT_MISSING = "FLOAT | MISSING";
+
+    public static final String RETURN_STRING_MISSING = "STRING | MISSING";
+
+    public static final String RETURN_FLOAT_INTEGER_MISSING = "INTEGER | FLOAT | MISSING";
+
     /** @return an {@link IllegalStateException} that indicates an implementation error */
     static IllegalStateException calledWithIllegalArgs() {
         return new IllegalStateException("Implementation error: called function with unsupported arguments");

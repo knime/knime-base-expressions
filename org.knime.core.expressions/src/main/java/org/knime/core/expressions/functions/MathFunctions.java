@@ -62,6 +62,10 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isI
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isNumericOrOpt;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.optarg;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.vararg;
+import static org.knime.core.expressions.functions.FunctionUtils.RETURN_BOOLEAN;
+import static org.knime.core.expressions.functions.FunctionUtils.RETURN_FLOAT_INTEGER_MISSING;
+import static org.knime.core.expressions.functions.FunctionUtils.RETURN_FLOAT_MISSING;
+import static org.knime.core.expressions.functions.FunctionUtils.RETURN_INTEGER_MISSING;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -87,8 +91,6 @@ import org.knime.core.expressions.OperatorCategory;
  * @author David Hickey, TNG Technology Consulting GmbH
  */
 public final class MathFunctions {
-
-    private static final String OPTIONAL_FLOAT = "FLOAT?";
 
     private MathFunctions() {
     }
@@ -124,7 +126,7 @@ public final class MathFunctions {
             arg("input_2", "Second number", isNumericOrOpt()), //
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("Largest number of the `input` arguments", "INTEGER? | FLOAT?",
+        .returnType("Largest number of the `input` arguments", RETURN_FLOAT_INTEGER_MISSING,
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(MathFunctions::maxImpl) //
         .build();
@@ -173,7 +175,7 @@ public final class MathFunctions {
             arg("input_2", "Second number", isNumericOrOpt()), //
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("Smallest number of the arguments", "INTEGER? | FLOAT?",
+        .returnType("Smallest number of the arguments", RETURN_FLOAT_INTEGER_MISSING,
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(MathFunctions::minImpl) //
         .build();
@@ -223,7 +225,7 @@ public final class MathFunctions {
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
         .returnType("Position of the largest number in the arguments", //
-            "INTEGER?", args -> INTEGER(anyOptional(args))) //
+            RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::argmaxImpl) //
         .build();
 
@@ -288,7 +290,7 @@ public final class MathFunctions {
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
         .returnType("Position of the smallest number in the arguments", //
-            "INTEGER?", args -> INTEGER(anyOptional(args))) //
+            RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::argminImpl) //
         .build();
 
@@ -344,7 +346,7 @@ public final class MathFunctions {
         .keywords("absolute") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Absolute value of x", "INTEGER? | FLOAT?", args -> args[0]) //
+        .returnType("Absolute value of x", RETURN_FLOAT_INTEGER_MISSING, args -> args[0]) //
         .impl(MathFunctions::absImpl) //
         .build();
 
@@ -377,7 +379,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "An angle in radians", isNumericOrOpt())) //
-        .returnType("Sine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Sine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::sinImpl) //
         .build();
 
@@ -405,7 +407,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "Angle in radians", isNumericOrOpt())) //
-        .returnType("Cosine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Cosine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::cosImpl) //
         .build();
 
@@ -433,7 +435,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "Angle in radians", isNumericOrOpt())) //
-        .returnType("Tangent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Tangent of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::tanImpl) //
         .build();
 
@@ -461,7 +463,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Arcsine of x in radians", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Arcsine of x in radians", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::asinImpl) //
         .build();
 
@@ -498,7 +500,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Arccosine of x in radians", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Arccosine of x in radians", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::acosImpl) //
         .build();
 
@@ -534,7 +536,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Arctangent of x in radians", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Arctangent of x in radians", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::atanImpl) //
         .build();
 
@@ -570,7 +572,7 @@ public final class MathFunctions {
             arg("y", "Coordinate on the y axis", isNumericOrOpt()), //
             arg("x", "Coordinate on the x axis", isNumericOrOpt()) //
         ) //
-        .returnType("Arctangent of point (x, y) in radians", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Arctangent of point (x, y) in radians", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::atan2Impl) //
         .build();
 
@@ -611,7 +613,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Hyerbolic sine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Hyerbolic sine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::sinhImpl) //
         .build();
 
@@ -638,7 +640,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Hyerbolic cosine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Hyerbolic cosine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::coshImpl) //
         .build();
 
@@ -665,7 +667,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Hyerbolic tangent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Hyerbolic tangent of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::tanhImpl) //
         .build();
 
@@ -692,7 +694,7 @@ public final class MathFunctions {
         .keywords("arcsinh", "arsinh") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Hyerbolic arcsine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Hyerbolic arcsine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::asinhImpl) //
         .build();
 
@@ -729,7 +731,7 @@ public final class MathFunctions {
         .keywords("arccosh", "arcosh") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Hyerbolic arccosine of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Hyerbolic arccosine of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::acoshImpl) //
         .build();
 
@@ -771,7 +773,7 @@ public final class MathFunctions {
         .keywords("arctanh", "artanh") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Hyerbolic arctangent of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Hyerbolic arctangent of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::atanhImpl) //
         .build();
 
@@ -816,7 +818,7 @@ public final class MathFunctions {
         .keywords("natural log") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Natural logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Natural logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::lnImpl) //
         .build();
 
@@ -858,7 +860,7 @@ public final class MathFunctions {
         .keywords("common log", "decimal log") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Base-10 logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args)))
+        .returnType("Base-10 logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))
         .impl(MathFunctions::log10Impl) //
         .build();
 
@@ -900,7 +902,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Base-2 logarithm of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args)))
+        .returnType("Base-2 logarithm of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))
         .impl(MathFunctions::log2Impl) //
         .build();
 
@@ -949,7 +951,7 @@ public final class MathFunctions {
             arg("x", "A number", isNumericOrOpt()), //
             arg("base", "The base number", isNumericOrOpt()) //
         ) //
-        .returnType("Logarithm of x with the given base", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args)))
+        .returnType("Logarithm of x with the given base", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args)))
         .impl(MathFunctions::logBaseImpl) //
         .build();
 
@@ -1011,7 +1013,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Natural logarithm of (1+x)", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Natural logarithm of (1+x)", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::log1pImpl) //
         .build();
 
@@ -1051,7 +1053,7 @@ public final class MathFunctions {
         .keywords("exponent") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Eulers contant to the power of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Eulers contant to the power of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::expImpl) //
         .build();
 
@@ -1092,7 +1094,7 @@ public final class MathFunctions {
             arg("x", "The base", isNumericOrOpt()), //
             arg("y", "The exponent", isNumericOrOpt()) //
         ) //
-        .returnType("x to the power of y", "INTEGER? | FLOAT?",
+        .returnType("x to the power of y", RETURN_FLOAT_INTEGER_MISSING,
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(MathFunctions::powImpl) //
         .build();
@@ -1152,7 +1154,7 @@ public final class MathFunctions {
         .keywords("squareroot") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Square root of x", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Square root of x", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::sqrtImpl) //
         .build();
 
@@ -1200,7 +1202,7 @@ public final class MathFunctions {
             arg("x", "The numerator", isNumericOrOpt()), //
             arg("y", "The divisor", isNumericOrOpt()) //
         ) //
-        .returnType("x modulo y", "INTEGER? | FLOAT?",
+        .returnType("x modulo y", RETURN_FLOAT_INTEGER_MISSING,
             args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(MathFunctions::modImpl) //
         .build();
@@ -1252,7 +1254,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("x in degrees", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("x in degrees", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::degreesImpl) //
         .build();
 
@@ -1281,7 +1283,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("x in radians", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("x in radians", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::radiansImpl) //
         .build();
 
@@ -1311,7 +1313,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Nearest integer less than x", "INTEGER?", args -> INTEGER(anyOptional(args))) //
+        .returnType("Nearest integer less than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::floorImpl) //
         .build();
 
@@ -1350,7 +1352,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Nearest integer greater than x", "INTEGER?", args -> INTEGER(anyOptional(args))) //
+        .returnType("Nearest integer greater than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::ceilImpl) //
         .build();
 
@@ -1389,7 +1391,7 @@ public final class MathFunctions {
         .keywords("rounddown") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Nearest integer closer to zero than x", "INTEGER?", args -> INTEGER(anyOptional(args))) //
+        .returnType("Nearest integer closer to zero than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::truncImpl) //
         .build();
 
@@ -1445,7 +1447,7 @@ public final class MathFunctions {
             arg("x", "A number", isNumericOrOpt()), //
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
-        .returnType("Nearest integer to x", "INTEGER? | FLOAT?",
+        .returnType("Nearest integer to x", RETURN_FLOAT_INTEGER_MISSING,
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(roundImplFactory(RoundingMode.HALF_DOWN, "roundhalfdown")) //
         .build();
@@ -1483,9 +1485,9 @@ public final class MathFunctions {
         .category(CATEGORY.name()) //
         .args( //
             arg("x", "A number", isNumericOrOpt()), //
-                optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
+            optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
-        .returnType("Nearest integer to x", "INTEGER? | FLOAT?",
+        .returnType("Nearest integer to x", RETURN_FLOAT_INTEGER_MISSING,
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(roundImplFactory(RoundingMode.HALF_UP, "roundhalfup")) //
         .build();
@@ -1526,9 +1528,9 @@ public final class MathFunctions {
         .category(CATEGORY.name()) //
         .args( //
             arg("x", "A number", isNumericOrOpt()), //
-                optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
+            optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
-        .returnType("Nearest integer to x", "INTEGER? | FLOAT?",
+        .returnType("Nearest integer to x", RETURN_FLOAT_INTEGER_MISSING,
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(roundImplFactory(RoundingMode.HALF_EVEN, "round")) //
         .build();
@@ -1590,7 +1592,7 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
-        .returnType("Sign of x", "INTEGER?", args -> INTEGER(anyOptional(args))) //
+        .returnType("Sign of x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::signImpl) //
         .build();
 
@@ -1636,7 +1638,7 @@ public final class MathFunctions {
             arg("input_2", "Second number", isNumericOrOpt()), //
             vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("Mean of the arguments", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Mean of the arguments", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::averageImpl) //
         .build();
 
@@ -1674,11 +1676,11 @@ public final class MathFunctions {
         .keywords() //
         .category(CATEGORY.name()) //
         .args( //
-                arg("input_1", "First number", isNumericOrOpt()), //
-                arg("input_2", "Second number", isNumericOrOpt()), //
-                vararg("…", "Additional numbers", isNumericOrOpt()) //
+            arg("input_1", "First number", isNumericOrOpt()), //
+            arg("input_2", "Second number", isNumericOrOpt()), //
+            vararg("…", "Additional numbers", isNumericOrOpt()) //
         ) //
-        .returnType("Median of the arguments", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Median of the arguments", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::medianImpl) //
         .build();
 
@@ -1743,7 +1745,7 @@ public final class MathFunctions {
             arg("n", "n", isIntegerOrOpt()), //
             arg("r", "r", isIntegerOrOpt()) //
         ) //
-        .returnType("Binomial coefficient", "INTEGER?", args -> INTEGER(anyOptional(args))) //
+        .returnType("Binomial coefficient", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
         .impl(MathFunctions::binomialImpl) //
         .build();
 
@@ -1824,7 +1826,7 @@ public final class MathFunctions {
             arg("mean", "Mean value of the normal distribution", isNumericOrOpt()), //
             optarg("standard_deviation", "Standard deviation of the normal distribution", isNumericOrOpt()) //
         ) //
-        .returnType("Probability of the random variable for the given normal distribution.", OPTIONAL_FLOAT,
+        .returnType("Probability of the random variable for the given normal distribution.", RETURN_FLOAT_MISSING,
             args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::normalImpl) //
         .build();
@@ -1886,7 +1888,7 @@ public final class MathFunctions {
                 "Standard deviation of the underlying normal distribution. If unspecified, defaults to 1/√2.",
                 isNumericOrOpt()) //
         ) //
-        .returnType("Probability of getting at least the value", OPTIONAL_FLOAT, args -> FLOAT(anyOptional(args))) //
+        .returnType("Probability of getting at least the value", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::errorFunctionImpl) //
         .build();
 
@@ -1946,7 +1948,7 @@ public final class MathFunctions {
         .keywords("NaN") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isFloatOrOpt())) //
-        .returnType("`true` if x is `NaN`, `false` otherwise", "BOOLEAN", args -> BOOLEAN) //
+        .returnType("`true` if x is `NaN`, `false` otherwise", RETURN_BOOLEAN, args -> BOOLEAN) //
         .impl(MathFunctions::isNanImpl) //
         .build();
 
@@ -1970,7 +1972,8 @@ public final class MathFunctions {
         .keywords("NaN") //
         .category(CATEGORY.name()) //
         .args(arg("x", "A number", isFloatOrOpt())) //
-        .returnType("x if x is not `NaN`, `MISSING` otherwise", "NUMBER?", args -> FLOAT(anyOptional(args))) //
+        .returnType("x if x is not `NaN`, `MISSING` otherwise", RETURN_FLOAT_INTEGER_MISSING,
+            args -> FLOAT(anyOptional(args))) //
         .impl(MathFunctions::nanToMissingImpl) //
         .build();
 

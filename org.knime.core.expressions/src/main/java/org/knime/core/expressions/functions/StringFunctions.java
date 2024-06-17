@@ -48,8 +48,6 @@
  */
 package org.knime.core.expressions.functions;
 
-import static org.knime.core.expressions.ValueType.BOOLEAN;
-import static org.knime.core.expressions.ValueType.STRING;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.arg;
@@ -63,6 +61,11 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isS
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isStringOrOpt;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.optarg;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.vararg;
+import static org.knime.core.expressions.functions.FunctionUtils.RETURN_BOOLEAN_MISSING;
+import static org.knime.core.expressions.functions.FunctionUtils.RETURN_FLOAT_MISSING;
+import static org.knime.core.expressions.functions.FunctionUtils.RETURN_INTEGER_MISSING;
+import static org.knime.core.expressions.functions.FunctionUtils.RETURN_STRING;
+import static org.knime.core.expressions.functions.FunctionUtils.RETURN_STRING_MISSING;
 
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -89,6 +92,8 @@ import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.ValueType;
 
+
+
 /**
  * Implementation of built-in functions that manipulate strings.
  *
@@ -108,7 +113,7 @@ public final class StringFunctions {
     public static final ExpressionFunction COMPARE = functionBuilder() //
         .name("compare") //
         .description("""
-                Compares two strings lexicographically, returning the lexographical
+                Compares two strings lexicographically, returning the lexicographical
                 distance between them. The function returns a negative number, zero,
                 or a positive number when string_1 is less than, equal to, or greater
                 than string_2 respectively.
@@ -129,7 +134,7 @@ public final class StringFunctions {
             arg("string_1", "First string", isStringOrOpt()), //
             arg("string_2", "Second string", isStringOrOpt()) //
         ) //
-        .returnType("Lexicographical distance `x - y`; if the strings are equal this is 0", "INTEGER?",
+        .returnType("Lexicographical distance `x - y`; if the strings are equal this is 0", RETURN_INTEGER_MISSING,
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::compareImpl) //
         .build();
@@ -166,7 +171,7 @@ public final class StringFunctions {
             arg("search", "Term to search for", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" case-insensitive match (root locale)", isString()) //
         ) //
-        .returnType("`true` if string contains the search term, `false` otherwise", "BOOLEAN?",
+        .returnType("`true` if string contains the search term, `false` otherwise", RETURN_BOOLEAN_MISSING,
             args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::containsImpl) //
         .build();
@@ -212,8 +217,8 @@ public final class StringFunctions {
             arg("string", "String to check", isStringOrOpt()), //
             arg("prefix", "Prefix to check", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString())) //
-        .returnType("`true` if the string starts with prefix, `false` otherwise", "BOOLEAN?", //
-            args -> BOOLEAN(anyOptional(args))) //
+        .returnType("`true` if the string starts with prefix, `false` otherwise", RETURN_BOOLEAN_MISSING, //
+            args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::startsWithImpl) //
         .build();
 
@@ -259,8 +264,8 @@ public final class StringFunctions {
             arg("suffix", "Suffix to check", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
-        .returnType("`true` if the string ends with suffix, `false` otherwise", "BOOLEAN?", //
-            args -> BOOLEAN(anyOptional(args))) //
+        .returnType("`true` if the string ends with suffix, `false` otherwise", RETURN_BOOLEAN_MISSING, //
+            args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::endsWithImpl) //
         .build();
 
@@ -316,8 +321,8 @@ public final class StringFunctions {
             arg("string", "String to check", isStringOrOpt()), //
             arg("pattern", "Matching rule", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString())) //
-        .returnType("`true` if the string matches the pattern, `false` otherwise", "BOOLEAN?", //
-            args -> BOOLEAN(anyOptional(args))) //
+        .returnType("`true` if the string matches the pattern, `false` otherwise", RETURN_BOOLEAN_MISSING, //
+            args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::likeImpl) //
         .build();
 
@@ -390,8 +395,8 @@ public final class StringFunctions {
             arg("pattern", "Regular expression pattern to match", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
-        .returnType("`true` if the string matches the pattern, `false` otherwise", "BOOLEAN?", //
-            args -> BOOLEAN(anyOptional(args))) //
+        .returnType("`true` if the string matches the pattern, `false` otherwise", RETURN_BOOLEAN_MISSING, //
+            args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::regexMatchImpl) //
         .build();
 
@@ -441,8 +446,8 @@ public final class StringFunctions {
             arg("pattern", "Regular expression pattern to match", isStringOrOpt()), //
             arg("group", "Index of the group to extract", isIntegerOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString())) //
-        .returnType("Extracted group", "STRING?", //
-            args -> STRING(anyOptional(args))) //
+        .returnType("Extracted group", RETURN_STRING_MISSING, //
+            args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::regexExtractImpl) //
         .build();
 
@@ -510,7 +515,7 @@ public final class StringFunctions {
             arg("replace", "Replacement text", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
-        .returnType("String with pattern replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String with pattern replaced", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::regexReplaceImpl) //
         .build();
 
@@ -562,7 +567,7 @@ public final class StringFunctions {
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (root locale), " //
                 + "\"w\" to match whole words only", isString()) //
         ) //
-        .returnType("String with pattern replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String with pattern replaced", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::replaceImpl) //
         .build();
 
@@ -621,7 +626,7 @@ public final class StringFunctions {
             arg("new_chars", "Characters to replace with", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (root locale)", isString()) //
         ) //
-        .returnType("String with (old) characters replaced by (new) characters", "STRING?",
+        .returnType("String with (old) characters replaced by (new) characters", RETURN_STRING_MISSING,
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::replaceCharsImpl) //
         .build();
@@ -692,7 +697,7 @@ public final class StringFunctions {
             arg("no_e", "If `true`, e.g. ö->o. If `false`, o->oe", isBooleanOrOpt()), //
             optarg("replace_eszett", "If `true`, also replace ß with ss (default `true`)", isBoolean()) //
         ) //
-        .returnType("String with umlauts replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String with umlauts replaced", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::replaceUmlautsImpl) //
         .build();
 
@@ -752,7 +757,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String with diacritics replaced", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String with diacritics replaced", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::replaceDiacriticsImpl) //
         .build();
 
@@ -788,7 +793,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String in lower case", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String in lower case", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::lowerCaseImpl) //
         .build();
 
@@ -817,7 +822,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String in upper case", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String in upper case", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::upperCaseImpl) //
         .build();
 
@@ -848,7 +853,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String in title case", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String in title case", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::titleCaseImpl) //
         .build();
 
@@ -911,7 +916,7 @@ public final class StringFunctions {
             arg("length", "Desired length", isIntegerOrOpt()), //
             optarg("char", "Char with which to pad (default: space)", isString()) //
         ) //
-        .returnType("String padded to specified length", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String padded to specified length", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::padEndImpl) //
         .build();
 
@@ -970,7 +975,7 @@ public final class StringFunctions {
             arg("length", "Desired length", isIntegerOrOpt()), //
             optarg("char", "Char with which to pad (default: space)", isString()) //
         ) //
-        .returnType("String padded to specified length", "STRING?", args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String padded to specified length", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::padStartImpl) //
         .build();
 
@@ -1015,7 +1020,7 @@ public final class StringFunctions {
             arg("string_1", "First string", isStringOrOpt()), //
             vararg("strings...", "More strings", isStringOrOpt()) //
         ) //
-        .returnType("Strings joined with the specified separator", "STRING?", //
+        .returnType("Strings joined with the specified separator", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::joinImpl) //
         .build();
@@ -1063,7 +1068,7 @@ public final class StringFunctions {
             optarg("length", "Length - if unspecified, or bigger than the string, get entire string after the start",
                 isInteger()) //
         ) //
-        .returnType("Extracted substring", "STRING?", //
+        .returnType("Extracted substring", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::substrImpl) //
         .build();
@@ -1112,7 +1117,7 @@ public final class StringFunctions {
             arg("string", "Input string", isStringOrOpt()), //
             arg("n", "Number of characters to get from start", isIntegerOrOpt()) //
         ) //
-        .returnType("Substring with only the first `n` chars", "STRING?", //
+        .returnType("Substring with only the first `n` chars", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::firstCharsImpl) //
         .build();
@@ -1156,7 +1161,7 @@ public final class StringFunctions {
             arg("string", "Input string", isStringOrOpt()), //
             arg("n", "Number of characters to get from end", isIntegerOrOpt()) //
         ) //
-        .returnType("Substring with only the last `n` chars\"", "STRING?", //
+        .returnType("Substring with only the last `n` chars\"", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::lastCharsImpl) //
         .build();
@@ -1200,7 +1205,7 @@ public final class StringFunctions {
             arg("chars", "Characters to delete", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (root locale)", isString()) //)
         ) //
-        .returnType("String with characters removed", "STRING?", //
+        .returnType("String with characters removed", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::removeCharsImpl) //
         .build();
@@ -1251,7 +1256,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String with leading/trailing whitespace removed", "STRING?", //
+        .returnType("String with leading/trailing whitespace removed", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::stripImpl) //
         .build();
@@ -1282,7 +1287,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String with leading whitespace removed", "STRING?", //
+        .returnType("String with leading whitespace removed", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::stripstartImpl) //
         .build();
@@ -1313,7 +1318,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String with trailing whitespace removed", "STRING?", //
+        .returnType("String with trailing whitespace removed", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::stripEndImpl) //
         .build();
@@ -1347,7 +1352,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to clean up", isStringOrOpt()) //
         ) //
-        .returnType("String with all repeated spaces replaced", "STRING?", //
+        .returnType("String with all repeated spaces replaced", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::removeDuplicateSpacesImpl) //
         .build();
@@ -1379,7 +1384,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to check for `MISSING`", isStringOrOpt()) //
         ) //
-        .returnType("Input string or empty when input was `MISSING`", "STRING", //
+        .returnType("Input string or empty when input was `MISSING`", RETURN_STRING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::nullToEmptyImpl) //
         .build();
@@ -1408,7 +1413,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("Input string or `MISSING` when string was empty", "STRING?", //
+        .returnType("Input string or `MISSING` when string was empty", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::emptyToNull) //
         .build();
@@ -1436,7 +1441,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to reverse", isStringOrOpt()) //
         ) //
-        .returnType("Reversed string", "STRING?", //
+        .returnType("Reversed string", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::reverseImpl) //
         .build();
@@ -1463,7 +1468,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to count chars for", isStringOrOpt()) //
         ) //
-        .returnType("Length of the string", "INTEGER?", //
+        .returnType("Length of the string", RETURN_INTEGER_MISSING, //
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::lengthImpl) //
         .build();
@@ -1510,7 +1515,7 @@ public final class StringFunctions {
             optarg("modifiers", "(optional), \"i\" case-insensitive matching, " //
                 + "\"w\" to match only whole words", isString()) //
         ) //
-        .returnType("Number of occurences", "INTEGER?", //
+        .returnType("Number of occurences", RETURN_INTEGER_MISSING, //
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::countImpl) //
         .build();
@@ -1579,7 +1584,7 @@ public final class StringFunctions {
             optarg("modifiers", "(optional), \"i\" case-insensitive matching" //
                 + "\"v\" to count all chars except those provided", isString()) //
         ) //
-        .returnType("Number of occurences", "INTEGER?", //
+        .returnType("Number of occurences", RETURN_INTEGER_MISSING, //
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::countCharsImpl) //
         .build();
@@ -1642,7 +1647,7 @@ public final class StringFunctions {
                 + "\"w\" to match whole words, " //
                 + "\"b\" to search backwards", isString()) //
         ) //
-        .returnType("Index (1-based) of the first occurence (or `MISSING` if not found)", "INTEGER?", //
+        .returnType("Index (1-based) of the first occurence (or `MISSING` if not found)", RETURN_INTEGER_MISSING, //
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::findImpl) //
         .build();
@@ -1725,7 +1730,7 @@ public final class StringFunctions {
                 + "\"v\" to match all characters not provided, " //
                 + "\"b\" to search backwards", isString()) //
         ) //
-        .returnType("Index (1-based!) of the first occurence (or `MISSING` if not found)", "INTEGER?", //
+        .returnType("Index (1-based!) of the first occurence (or `MISSING` if not found)", RETURN_INTEGER_MISSING, //
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::findCharsImpl) //
         .build();
@@ -1783,7 +1788,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to compute the MD5 checksum for", isStringOrOpt()) //
         ) //
-        .returnType("MD5 hash of the string", "STRING?", //
+        .returnType("MD5 hash of the string", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::checksumMd5Impl) //
         .build();
@@ -1837,7 +1842,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String with XML special characters escaped", "STRING?", //
+        .returnType("String with XML special characters escaped", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::xmlEncodeImpl) //
         .build();
@@ -1878,7 +1883,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String with forbidden characters escaped", "STRING?", //
+        .returnType("String with forbidden characters escaped", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::urlEncodeImpl) //
         .build();
@@ -1907,7 +1912,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String with escaped URL-specific chars", isStringOrOpt()) //
         ) //
-        .returnType("Original URL, with encoding undone", "STRING?", //
+        .returnType("Original URL, with encoding undone", RETURN_STRING_MISSING, //
             args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::urlDecodeImpl) //
         .build();
@@ -1945,7 +1950,7 @@ public final class StringFunctions {
         .args( //
             arg("input", "Input to convert to a string", isAnything()) //
         ) //
-        .returnType("Input as string", "STRING", args -> ValueType.STRING) //
+        .returnType("Input as string", RETURN_STRING, args -> ValueType.STRING) //
         .impl(StringFunctions::toStringImpl) //
         .build();
 
@@ -1991,7 +1996,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to parse as float", isStringOrOpt()) //
         ) //
-        .returnType("Float representation of the string, or `MISSING`", "FLOAT?", //
+        .returnType("Float representation of the string, or `MISSING`", RETURN_FLOAT_MISSING, //
             args -> ValueType.FLOAT(anyOptional(args))) //
         .impl(StringFunctions::parseFloatImpl) //
         .build();
@@ -2034,7 +2039,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to parse as integer", isStringOrOpt()) //
         ) //
-        .returnType("Integer representation of the string, or `MISSING`", "INTEGER?", //
+        .returnType("Integer representation of the string, or `MISSING`", RETURN_INTEGER_MISSING, //
             args -> ValueType.INTEGER(anyOptional(args))) //
         .impl(StringFunctions::parseIntImpl) //
         .build();
@@ -2079,7 +2084,7 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to parse as boolean", isStringOrOpt()) //
         ) //
-        .returnType("Boolean representation of the string, or `MISSING`", "BOOLEAN?", //
+        .returnType("Boolean representation of the string, or `MISSING`", RETURN_BOOLEAN_MISSING, //
             args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::parseBoolImpl) //
         .build();
