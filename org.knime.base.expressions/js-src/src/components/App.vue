@@ -4,7 +4,10 @@ import {
   ScriptingEditor,
   setActiveEditorStoreForAi,
 } from "@knime/scripting-editor";
-import { getExpressionScriptingService } from "@/expressionScriptingService";
+import {
+  type ExpressionVersion,
+  getExpressionScriptingService,
+} from "@/expressionScriptingService";
 import Button from "webapps-common/ui/components/Button.vue";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import SplitButton from "webapps-common/ui/components/SplitButton.vue";
@@ -43,6 +46,13 @@ const columnSectorState = ref<ColumnSelectorState>({
   outputMode: "APPEND",
   createColumn: "",
   replaceColumn: "",
+});
+
+// Overwritten by the initial settings
+const expressionVersion = ref<ExpressionVersion>({
+  languageVersion: 0,
+  builtinFunctionsVersion: 0,
+  builtinAggregationsVersion: 0,
 });
 
 const multiEditorComponentRef = ref<MultiEditorPaneExposes | null>(null);
@@ -101,6 +111,12 @@ onMounted(async () => {
     outputMode: initialSettings.columnOutputMode,
     createColumn: initialSettings.createdColumn,
     replaceColumn: initialSettings.replacedColumn,
+  };
+
+  expressionVersion.value = {
+    languageVersion: initialSettings.languageVersion,
+    builtinFunctionsVersion: initialSettings.builtinFunctionsVersion,
+    builtinAggregationsVersion: initialSettings.builtinAggregationsVersion,
   };
 
   inputsAvailable.value = availableInputs;
@@ -167,6 +183,7 @@ const runExpressions = (rows: number) => {
 
 scriptingService.registerSettingsGetterForApply(() => {
   return {
+    ...expressionVersion.value,
     script: multiEditorComponentRef.value?.getEditorState().text.value ?? "",
     columnOutputMode: columnSectorState.value?.outputMode,
     createdColumn: columnSectorState.value?.createColumn,

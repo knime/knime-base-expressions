@@ -6,11 +6,21 @@ import type { FunctionCatalogData } from "./components/functionCatalogTypes";
 
 export type OutputInsertionMode = "APPEND" | "REPLACE_EXISTING";
 
-export type ExpressionNodeSettings = NodeSettings & {
+export type ExpressionVersion = {
+  languageVersion: number;
+  builtinFunctionsVersion: number;
+  builtinAggregationsVersion: number;
+};
+
+export type ColumnSettings = {
   columnOutputMode: OutputInsertionMode;
   createdColumn: string;
   replacedColumn: string;
 };
+
+export type ExpressionNodeSettings = NodeSettings &
+  ExpressionVersion &
+  ColumnSettings;
 
 export type MathConstant = {
   name: string;

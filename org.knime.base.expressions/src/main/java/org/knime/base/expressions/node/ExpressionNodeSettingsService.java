@@ -87,6 +87,13 @@ public class ExpressionNodeSettingsService extends ScriptingNodeSettingsService 
             modelSettings.addString(ExpressionNodeSettings.CFG_KEY_OUTPUT_MODE, columnOutputMode);
             modelSettings.addString(ExpressionNodeSettings.CFG_KEY_CREATED_COLUMN, outputNewColumn);
             modelSettings.addString(ExpressionNodeSettings.CFG_KEY_REPLACED_COLUMN, outputReplacementColumn);
+
+            modelSettings.addInt(ExpressionNodeSettings.CFG_KEY_LANGUAGE_VERSION,
+                settingsJson.get(ExpressionNodeSettings.CFG_KEY_LANGUAGE_VERSION).asInt());
+            modelSettings.addInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_FUNCTIONS_VERSION,
+                settingsJson.get(ExpressionNodeSettings.CFG_KEY_BUILTIN_FUNCTIONS_VERSION).asInt());
+            modelSettings.addInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION,
+                settingsJson.get(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION).asInt());
         } catch (NullPointerException ex) { // NOSONAR this is nicer than 3 separate null checks
             // Can happen if we're given invalid settings by the frontend
             throw new IllegalStateException(
@@ -110,6 +117,13 @@ public class ExpressionNodeSettingsService extends ScriptingNodeSettingsService 
                 modelSettings.getString(ExpressionNodeSettings.CFG_KEY_CREATED_COLUMN));
             settingsJson.put(ExpressionNodeSettings.CFG_KEY_REPLACED_COLUMN,
                 modelSettings.getString(ExpressionNodeSettings.CFG_KEY_REPLACED_COLUMN));
+
+            settingsJson.put(ExpressionNodeSettings.CFG_KEY_LANGUAGE_VERSION,
+                modelSettings.getInt(ExpressionNodeSettings.CFG_KEY_LANGUAGE_VERSION));
+            settingsJson.put(ExpressionNodeSettings.CFG_KEY_BUILTIN_FUNCTIONS_VERSION,
+                modelSettings.getInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_FUNCTIONS_VERSION));
+            settingsJson.put(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION,
+                modelSettings.getInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION));
         } catch (InvalidSettingsException ex) {
             throw new IllegalStateException("Error loading expression settings. This is an implementation error", ex);
         }

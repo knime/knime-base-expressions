@@ -216,6 +216,9 @@ if (import.meta.env.MODE === "development.browser") {
         columnOutputMode: "APPEND",
         createdColumn: "mocked output col",
         replacedColumn: INPUT_OBJECTS[0].subItems[1].name,
+        languageVersion: 1,
+        builtinFunctionsVersion: 1,
+        builtinAggregationsVersion: 1,
       } satisfies ExpressionNodeSettings);
 
       log("Called expressionScriptingService.getInitialSettings ->", ret);

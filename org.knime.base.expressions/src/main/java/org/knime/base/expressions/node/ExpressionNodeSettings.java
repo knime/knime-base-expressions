@@ -49,6 +49,9 @@
 package org.knime.base.expressions.node;
 
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
+import org.knime.core.expressions.Expressions;
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
+import org.knime.core.expressions.functions.BuiltInFunctions;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -94,11 +97,23 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
 
     public static final String CFG_KEY_OUTPUT_MODE = "columnOutputMode";
 
+    public static final String CFG_KEY_LANGUAGE_VERSION = "languageVersion";
+
+    public static final String CFG_KEY_BUILTIN_FUNCTIONS_VERSION = "builtinFunctionsVersion";
+
+    public static final String CFG_KEY_BUILTIN_AGGREGATIONS_VERSION = "builtinAggregationsVersion";
+
     private ColumnInsertionMode m_outputMode;
 
     private String m_createdColumn;
 
     private String m_replacedColumn;
+
+    private int m_languageVersion;
+
+    private int m_builtinFunctionsVersion;
+
+    private int m_builtinAggregationsVersion;
 
     ExpressionNodeSettings() {
         this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, DEFAULT_REPLACED_COLUMN);
@@ -111,6 +126,12 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
         this.m_outputMode = outputMode;
         this.m_createdColumn = createdColumn;
         this.m_replacedColumn = replacedColumn;
+
+        // Set to the latest version by default
+        // The version will be overwritten if we load an older version from the model settings
+        this.m_languageVersion = Expressions.LANGUAGE_VERSION;
+        this.m_builtinFunctionsVersion = BuiltInFunctions.FUNCTIONS_VERSION;
+        this.m_builtinAggregationsVersion = BuiltInAggregations.AGGREGATIONS_VERSION;
     }
 
     static void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -125,6 +146,10 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
         m_outputMode = ColumnInsertionMode.valueOf(settings.getString(CFG_KEY_OUTPUT_MODE));
         m_createdColumn = settings.getString(CFG_KEY_CREATED_COLUMN);
         m_replacedColumn = settings.getString(CFG_KEY_REPLACED_COLUMN);
+
+        m_languageVersion = settings.getInt(CFG_KEY_LANGUAGE_VERSION);
+        m_builtinFunctionsVersion = settings.getInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION);
+        m_builtinAggregationsVersion = settings.getInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION);
     }
 
     public ColumnInsertionMode getColumnInsertionMode() {
@@ -150,6 +175,10 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
         settings.addString(CFG_KEY_OUTPUT_MODE, m_outputMode.name());
         settings.addString(CFG_KEY_CREATED_COLUMN, m_createdColumn);
         settings.addString(CFG_KEY_REPLACED_COLUMN, m_replacedColumn);
+
+        settings.addInt(CFG_KEY_LANGUAGE_VERSION, m_languageVersion);
+        settings.addInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, m_builtinFunctionsVersion);
+        settings.addInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION, m_builtinAggregationsVersion);
     }
 
     static NodeSettingsService createNodeSettingsService() {
