@@ -70,6 +70,14 @@ import org.knime.core.expressions.ValueType;
  */
 public final class BuiltInAggregations {
 
+    /**
+     * The major version of the built-in aggregations. This version number should be incremented whenever incompatible
+     * changes are introduced to the built-in aggregations. Incompatible changes include, but are not limited to,
+     * removing aggregations, changing signatures (while not supporting the old signature), or altering aggregation
+     * behaviors in a way that could break existing expressions.
+     */
+    public static final int AGGREGATIONS_VERSION = 1;
+
     private BuiltInAggregations() {
     }
 

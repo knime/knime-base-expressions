@@ -63,6 +63,14 @@ import org.knime.core.expressions.OperatorCategory;
  */
 public final class BuiltInFunctions {
 
+    /**
+     * The major version of the built-in functions. This version number should be incremented whenever incompatible
+     * changes are introduced to the built-in functions. Incompatible changes include, but are not limited to, removing
+     * functions, changing signatures (while not supporting the old signature), or altering function behaviors in a way
+     * that could break existing expressions.
+     */
+    public static final int FUNCTIONS_VERSION = 1;
+
     private BuiltInFunctions() {
     }
 

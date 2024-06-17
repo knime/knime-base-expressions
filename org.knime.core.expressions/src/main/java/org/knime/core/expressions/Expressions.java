@@ -72,6 +72,14 @@ import org.knime.core.expressions.functions.BuiltInFunctions;
  */
 public final class Expressions {
 
+    /**
+     * The current major version number of the KNIME Expression Language. This constant is used to track the versioning
+     * of the expression language syntax and functionality. It should be incremented when there are changes that break
+     * backward compatibility. Such changes include modifications that alter the execution behavior of existing
+     * expressions or the introduction of new syntax that is not backward compatible.
+     */
+    public static final int LANGUAGE_VERSION = 1;
+
     private Expressions() {
     }
 
