@@ -89,11 +89,11 @@ const registerKnimeExpressionLanguage = ({
 
       // Recognize decimals, exponents and ints
       numbers: [
-        [/-?\.[0-9_]+(e-?\d+)?/, "number.float"], // no pre-decimal
-        [/-?[0-9_]+\.(e-?\d+)?/, "number.float"], // no post-decimal
-        [/-?[0-9_]+\.[0-9_]+(e-?\d+)?/, "number.float"], // pre+post decimal
-        [/-?[0-9_]+(e-?\d+)?/, "number.float"], // scientific notation w/o deceimal point
-        [/-?[0-9_]+/, "number.int"], // int
+        [/\.[0-9_]+(e-?\d+)?/, "number.float"], // no pre-decimal
+        [/[0-9_]+\.(e-?\d+)?/, "number.float"], // no post-decimal
+        [/[0-9_]+\.[0-9_]+(e-?\d+)?/, "number.float"], // pre+post decimal
+        [/[0-9_]+(e-?\d+)?/, "number.float"], // scientific notation w/o deceimal point
+        [/[0-9_]+/, "number.int"], // int
       ],
 
       strings: [
