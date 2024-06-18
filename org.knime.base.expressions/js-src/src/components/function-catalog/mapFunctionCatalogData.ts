@@ -11,11 +11,17 @@ export type CatalogData = Record<string, FunctionCatalogEntryData[]>;
 export const mapFunctionCatalogData = (
   data: FunctionCatalogData,
   mathConstants: MathConstantData,
+  maxArgs: number = 2,
 ): CatalogData => {
   const functionData = data.functions.reduce((catalog, func) => {
     const ellipseOrNot = func.arguments.length > 2 ? ", ..." : "";
     const firstTwoArgs = func.arguments
-      .slice(0, 2)
+      .slice(0, maxArgs)
+      .map((value) => {
+        return value.vararg ? `${value.name}...` : value.name;
+      })
+      .join(", ");
+    const fullArgs = func.arguments
       .map((value) => {
         return value.vararg ? `${value.name}...` : value.name;
       })
@@ -24,6 +30,7 @@ export const mapFunctionCatalogData = (
       ...func,
       displayName: `${func.name}(${firstTwoArgs}${ellipseOrNot})`,
       entryType: "function",
+      displayNameWithFullArgs: `${func.name}(${fullArgs})`,
     } satisfies FunctionCatalogEntryData;
     if (catalog[functionData.category]) {
       catalog[functionData.category].push(functionData);

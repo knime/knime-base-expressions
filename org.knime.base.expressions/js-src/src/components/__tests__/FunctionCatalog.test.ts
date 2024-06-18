@@ -10,7 +10,7 @@ import type {
 } from "@/expressionScriptingService";
 
 // Beware: This constant is duplicated in the component and the test
-const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
+const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 600;
 
 const mocks = vi.hoisted(() => {
   return {

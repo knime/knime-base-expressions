@@ -27,20 +27,25 @@ const functionDataAsHTML = computed(() =>
 .markdown-function-desc {
   & h3 {
     line-height: 18px;
-    margin-bottom: 5px;
-    margin-top: 0;
     font-size: 15px;
 
     &:first-child {
       margin-top: 0;
-      margin-bottom: 10px;
+      margin-bottom: -12px;
     }
   }
 
   & h4 {
     line-height: 16px;
     margin: 0;
+    margin-top: 32px;
+    margin-bottom: 4px;
     font-size: 13px;
+  }
+
+  & ul {
+    margin: 0;
+    padding-left: 20px;
   }
 }
 </style>
@@ -54,20 +59,24 @@ const functionDataAsHTML = computed(() =>
 
   & .description {
     font-size: 13px;
-    line-height: 18px;
+    line-height: 16px;
   }
 
   /* Style refinement for Code */
-  & :deep(tt),
   & :deep(pre),
-  & :deep(code),
-  & :deep(samp) {
+  & :deep(code) {
     font-size: 11px;
     line-height: 16px;
   }
 
+  & pre {
+    overflow-y: scroll;
+    text-wrap: nowrap;
+  }
+
   & :deep(pre code) {
     border: none;
+    overflow: hidden scroll;
   }
 }
 </style>

@@ -33,8 +33,7 @@ import { functionDataToMarkdown } from "@/components/function-catalog/functionDe
 
 const language = "knime-expression";
 
-const MIN_WIDTH_FUNCTION_CATALOG = 280;
-
+const MIN_WIDTH_FUNCTION_CATALOG = 300;
 const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
 
 const scriptingService = getExpressionScriptingService();
@@ -291,7 +290,7 @@ const runButtonEnabled = computed(() => {
           <FunctionCatalog
             :function-catalog-data="functionCatalogData"
             :constant-data="mathConstantData!"
-            :initially-expanded="true"
+            :initially-expanded="false"
             @function-insertion-event="onFunctionInsertionTriggered"
           />
         </template>

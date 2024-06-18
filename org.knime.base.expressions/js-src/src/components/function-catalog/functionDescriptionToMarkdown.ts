@@ -22,7 +22,7 @@ export const functionDataToMarkdown = (
     const description = `\n\n${func.description}`;
 
   return (
-    `### ${func.name}` +
+    `### ${func.displayNameWithFullArgs}` +
     "\n\n#### Arguments " +
     `\n${args}` +
     "\n\n#### Return value " +

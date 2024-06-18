@@ -20,8 +20,8 @@ import { useDraggedFunctionStore } from "@/draggedFunctionStore";
 import type { MathConstantData } from "@/expressionScriptingService";
 import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
 
-const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
-const FUNCTION_CATALOG_WIDTH = "250px";
+const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 600;
+const FUNCTION_CATALOG_WIDTH = "300px";
 
 const props = defineProps<{
   functionCatalogData: FunctionCatalogData;
@@ -284,7 +284,11 @@ const grabFocus = () => {
 </script>
 
 <template>
-  <div ref="catalogRoot" class="function-catalog-container">
+  <div
+    ref="catalogRoot"
+    class="function-catalog-container"
+    :class="isSlimMode ? 'slim-mode' : ''"
+  >
     <div
       class="function-catalog"
       :class="isSlimMode ? 'slim-mode' : ''"
@@ -410,28 +414,34 @@ const grabFocus = () => {
   height: 100%;
 }
 
+.function-catalog-container.slim-mode {
+  flex-direction: column;
+}
+
 .sticky-search {
   background-color: white;
+  padding: 4px;
   padding-bottom: 10px;
 }
 
 .function-catalog {
-  --function-catalog-width: 250px;
+  --function-catalog-width: 300px;
 
   width: var(--function-catalog-width);
-  padding: 10px;
+  padding: 4px;
   background-color: white;
   display: flex;
   flex-direction: column;
 }
 
 .function-catalog.slim-mode {
-  flex: 1;
+  width: 100%;
+  height: 60%;
 }
 
 .function-list {
   overflow: hidden auto;
-  padding-top: 5px;
+  padding-top: 4px;
   flex: 1;
 }
 
@@ -441,14 +451,17 @@ const grabFocus = () => {
 
 .info-panel {
   flex: 1;
-  padding: 10px;
+  padding: 8px;
   font-size: x-small;
   overflow-y: auto;
-  border-left: 1px solid var(--knime-masala);
+  border-left: 1px solid var(--knime-silver-sand);
 }
 
 .info-panel.slim-mode {
-  display: none;
+  border-left: none;
+  border-top: 1px solid var(--knime-silver-sand);
+  width: 100%;
+  height: 40%;
 }
 
 .category-header {
@@ -457,7 +470,7 @@ const grabFocus = () => {
   align-items: center;
   font-size: small;
   font-weight: bold;
-  margin-top: 5px;
+  margin-top: 4px;
 }
 
 .category-header:focus {
@@ -465,8 +478,8 @@ const grabFocus = () => {
 }
 
 .category-icon {
-  width: 13px;
-  margin-right: 7px;
+  width: 17px;
+  margin-right: 8px;
   stroke: var(--knime-masala);
   transition: transform 0.3s ease;
   translate: 0 1px;
@@ -499,12 +512,13 @@ const grabFocus = () => {
 }
 
 .category-functions {
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 
 .function-header {
-  font-size: small;
+  font-size: 13px;
   font-weight: normal;
+  line-height: 16px;
   margin-left: 20px;
   cursor: pointer;
   color: var(--knime-dove-gray);

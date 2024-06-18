@@ -3,6 +3,7 @@ export type FunctionData = {
   category: string;
   keywords: string[];
   displayName?: string;
+  displayNameWithFullArgs?: string;
   description: string;
   arguments: {
     name: string;
