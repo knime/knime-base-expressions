@@ -76,7 +76,7 @@ enum TestAggregations implements ColumnAggregation {
 
                     return ReturnResult.fromOptional(ret, "some error message");
                 }
-                return new ReturnResult.Failure<ValueType>("Invalid arguments to aggregation RETURN_42_WITH_COL_TYPE");
+                return ReturnResult.failure("Invalid arguments to aggregation RETURN_42_WITH_COL_TYPE");
             }, //
             call -> {
                 if (ValueType.INTEGER.equals(Typing.getType(call).baseType())) {
@@ -95,17 +95,16 @@ enum TestAggregations implements ColumnAggregation {
                     && args.positionalArguments().get(0) instanceof Ast.IntegerConstant
                     && args.namedArguments().get("named_arg_id") instanceof Ast.FloatConstant) {
 
-                    return new ReturnResult.Success<>(ValueType.MISSING);
+                    return ReturnResult.success(ValueType.MISSING);
                 }
-                return new ReturnResult.Failure<ValueType>("Invalid arguments to aggregation EXPECT_POS_AND_NAMED_ARG");
+                return ReturnResult.failure("Invalid arguments to aggregation EXPECT_POS_AND_NAMED_ARG");
             }, //
             call -> {
                 return Optional.of(ctx -> true);
             } //
         ), //
         /** Exists only to check that error message for unknown aggregation suggests similar aggregation names */
-        RETURN_42_WITH_COL_TXXX((args, columnType) -> new ReturnResult.Failure<ValueType>("some error"),
-            call -> Optional.empty());
+        RETURN_42_WITH_COL_TXXX((args, columnType) -> ReturnResult.failure("some error"), call -> Optional.empty());
 
     public static final Map<String, ColumnAggregation> TEST_AGGREGATIONS =
         TestUtils.enumFinderAsMap(TestAggregations.values(), ColumnAggregation.class);

@@ -122,7 +122,7 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
     ReturnResult<T> or(Supplier<T> otherSupplier);
 
     /**
-     * Return result that contains a return value.
+     * Return result that contains a return value. Use {@link ReturnResult#success} to create a new {@link Success}.
      *
      * @param <T>
      */
@@ -130,7 +130,7 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
 
         private final T m_returnValue;
 
-        public Success(final T returnValue) {
+        private Success(final T returnValue) {
             m_returnValue = Objects.requireNonNull(returnValue);
         }
 
@@ -166,7 +166,7 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
     }
 
     /**
-     * Return result that contains an error message.
+     * Return result that contains an error message. Use {@link ReturnResult#failure} to create a new {@link Failure}.
      *
      * @param <T>
      */
@@ -174,7 +174,7 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
 
         private final String m_errorMessage;
 
-        public Failure(final String errorMessage) {
+        private Failure(final String errorMessage) {
             m_errorMessage = errorMessage;
         }
 
@@ -210,6 +210,26 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
     }
 
     /**
+     * Create a successful return result with the given value.
+     *
+     * @param value the return value
+     * @return the new successful return result
+     */
+    static <T> ReturnResult<T> success(final T value) {
+        return new Success<>(value);
+    }
+
+    /**
+     * Create a failure return result with the given error message.
+     *
+     * @param errorMessage the error message
+     * @return the new failure return result
+     */
+    static <T> ReturnResult<T> failure(final String errorMessage) {
+        return new Failure<>(errorMessage);
+    }
+
+    /**
      * Create a return result from an optional value. If the optional value is present, return a successful return
      * result. Otherwise, return a failure return result with the given error message.
      *
@@ -219,7 +239,7 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
      * @return the new return result. Successful if the optional is present, otherwise a failure
      */
     static <T> ReturnResult<T> fromOptional(final Optional<T> optional, final String errorMessage) { // NOSONAR optional here is ok
-        return optional.isPresent() ? new Success<>(optional.get()) : new Failure<>(errorMessage);
+        return optional.isPresent() ? success(optional.get()) : failure(errorMessage);
     }
 
     /**
@@ -232,6 +252,6 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
      * @return the new return result. Successful if the value is not null, otherwise a failure
      */
     static <T> ReturnResult<T> fromNullable(final T value, final String errorMessage) {
-        return value != null ? new Success<>(value) : new Failure<>(errorMessage);
+        return value != null ? success(value) : failure(errorMessage);
     }
 }
