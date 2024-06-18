@@ -1,4 +1,5 @@
 import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
+import MarkdownIt from "markdown-it";
 
 export const functionDataToMarkdown = (
   func: FunctionCatalogEntryData,
@@ -20,15 +21,18 @@ export const functionDataToMarkdown = (
       : "";
     const description = `\n\n${func.description}`;
 
-    return (
-      `## ${func.name}` +
-      "\n\n### Arguments" +
-      `\n${args}` +
-      "\n\n### Return value" +
-      `\n${func.returnType}` +
-      `${returnDescription}` +
-      "\n\n### Description" +
-      `${description}`
-    );
-  }
+  return (
+    `### ${func.name}` +
+    "\n\n#### Arguments " +
+    `\n${args}` +
+    "\n\n#### Return value " +
+    `\n${func.returnType}` +
+    `${returnDescription}` +
+    "\n\n#### Description " +
+    `${description}`
+  );
+}
 };
+
+export const functionDataToHtml = (functionData: FunctionCatalogEntryData): string =>
+  new MarkdownIt().render(functionDataToMarkdown(functionData));

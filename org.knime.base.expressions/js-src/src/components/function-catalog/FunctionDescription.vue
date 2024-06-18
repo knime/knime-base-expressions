@@ -1,114 +1,73 @@
 <script setup lang="ts">
-import MarkdownIt from "markdown-it";
 import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
 import { computed } from "vue";
-
-// https://stackoverflow.com/questions/66514253/ignore-specified-html-blocks-in-markdown-it
-// html rendering is disabled by default
-const markdown = new MarkdownIt();
+import { functionDataToHtml } from "@/components/function-catalog/functionDescriptionToMarkdown";
+import Description from "webapps-common/ui/components/Description.vue";
 
 const props = defineProps<{
   functionData: FunctionCatalogEntryData;
 }>();
 
-const markdownHTMLContent = computed(() =>
-  markdown.render(props.functionData.description),
+const functionDataAsHTML = computed(() =>
+  functionDataToHtml(props.functionData),
 );
 </script>
 
 <template>
-  <div class="function-description-panel">
-    <h4 class="function-header">{{ functionData.name }}</h4>
-    <template v-if="functionData.entryType === 'function'">
-      <h5 class="function-subtitle">Arguments:</h5>
-      <ul class="function-arg-list has-left-indent">
-        <li v-for="arg in functionData.arguments" :key="arg.name">
-          <span style="font-weight: bold; padding-left: -20px">{{
-            arg.name
-          }}</span
-          >:
-          {{ arg.description }}
-        </li>
-      </ul>
-    </template>
-    <div style="margin-top: 10px">
-      <h5 class="function-subtitle" style="display: inline">Return Value</h5>
-    </div>
-    <div class="markdown-function-desc has-left-indent">
-      {{ functionData.returnType }}
-    </div>
-    <div
-      v-if="functionData.entryType === 'function'"
-      class="markdown-function-desc has-left-indent"
-    >
-      {{ functionData.returnDescription }}
-    </div>
-    <h5 class="function-subtitle">Description</h5>
-    <!-- eslint-disable vue/no-v-html -->
-    <div
-      class="markdown-function-desc has-left-indent"
-      v-html="markdownHTMLContent"
+  <div class="node-description">
+    <Description
+      :text="functionDataAsHTML"
+      render-as-html
+      class="markdown-function-desc"
     />
   </div>
 </template>
 
-<style>
-.markdown-function-desc h1,
-.markdown-function-desc h2,
-.markdown-function-desc h3,
-.markdown-function-desc h4,
-.markdown-function-desc h5 {
-  font-size: small;
-  line-height: normal;
-}
-
-.markdown-function-desc h6 {
-  font-size: small;
-  margin-top: 0;
-}
-
-.markdown-function-desc p {
-  font-size: small;
-  margin-top: 0;
-}
-
+<style lang="postcss">
 .markdown-function-desc {
-  padding-top: 5px;
-  overflow: auto;
-  margin: 0 auto;
-  padding-left: 0;
+  & h3 {
+    line-height: 18px;
+    margin-bottom: 5px;
+    margin-top: 0;
+    font-size: 15px;
+
+    &:first-child {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+  }
+
+  & h4 {
+    line-height: 16px;
+    margin: 0;
+    font-size: 13px;
+  }
 }
 </style>
 
 <style scoped>
-.function-header {
-  font-size: x-large;
-  margin: 0 auto auto 0;
-  text-align: left;
-}
+.node-description {
+  height: 100%;
+  padding-right: 8px;
+  padding-bottom: 8px;
+  overflow: auto;
 
-.function-subtitle {
-  font-size: medium;
-  margin-bottom: 0;
-  margin-top: 10px;
-}
+  & .description {
+    font-size: 13px;
+    line-height: 18px;
+  }
 
-.has-left-indent {
-  border-left: 5px solid var(--knime-silver-sand-semi);
-  padding-left: 25px;
-}
+  /* Style refinement for Code */
+  & :deep(tt),
+  & :deep(pre),
+  & :deep(code),
+  & :deep(samp) {
+    font-size: 11px;
+    line-height: 16px;
+  }
 
-.return-type {
-  font-size: small;
-  margin-left: 1em;
-}
-
-.function-description-panel {
-  font-size: small;
-}
-
-.function-description-panel ul {
-  margin: 0 auto;
-  list-style-type: none;
+  & :deep(pre code) {
+    border: none;
+  }
 }
 </style>

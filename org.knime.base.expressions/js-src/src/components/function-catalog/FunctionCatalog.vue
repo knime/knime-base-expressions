@@ -4,7 +4,6 @@ import SearchInput from "../../../webapps-common/ui/components/forms/SearchInput
 import NextIcon from "../../../webapps-common/ui/assets/img/icons/arrow-next.svg";
 import { useElementBounding } from "@vueuse/core";
 import { mapFunctionCatalogData } from "@/components/function-catalog/mapFunctionCatalogData";
-import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
 import type {
   FunctionCatalogData,
   FunctionCatalogEntryData,
@@ -19,6 +18,7 @@ import { createDragGhosts } from "webapps-common/ui/components/FileExplorer/drag
 import { EMPTY_DRAG_IMAGE } from "webapps-common/ui/components/FileExplorer/useItemDragging";
 import { useDraggedFunctionStore } from "@/draggedFunctionStore";
 import type { MathConstantData } from "@/expressionScriptingService";
+import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
 
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
 const FUNCTION_CATALOG_WIDTH = "250px";
