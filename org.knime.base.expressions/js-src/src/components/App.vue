@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   consoleHandler,
+  getScriptingService,
   ScriptingEditor,
   setActiveEditorStoreForAi,
 } from "@knime/scripting-editor";
@@ -149,6 +150,10 @@ onMounted(async () => {
   });
 
   setActiveEditorStoreForAi(multiEditorComponentRef.value?.getEditorState());
+
+  getScriptingService()
+    .sendToService("getDocumentationContext")
+    .then((res) => console.log(res));
 });
 
 const runExpressions = (rows: number) => {

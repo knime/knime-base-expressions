@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,8 +75,11 @@ import org.knime.core.expressions.ExpressionCompileError;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.MathConstantValue;
+import org.knime.core.expressions.NamedExpressionOperator;
 import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
+import org.knime.core.expressions.functions.BuiltInFunctions;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
@@ -284,6 +288,75 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             for (var warning : warnings) {
                 addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));
             }
+        }
+
+        public String getDocumentationContext() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("# Available math constants\n");
+
+            for (var constant : MathConstantValue.values()) {
+                sb.append("\n## " + constant.name() + "\n");
+                sb.append("### Type\n");
+                sb.append(constant.type() + "\n");
+                sb.append("### Description\n");
+                sb.append(constant.documentation() + "\n");
+            }
+
+            sb.append("\n# Available functions\n\n");
+
+            sb.append("In general, except where otherwise stated, any function that "
+                + "is given a `MISSING` value as an argument should return `MISSING`.\n\n");
+
+            sb.append("You can ONLY use these functions listed here:\n\n");
+
+            sb.append("# Functions");
+
+            sb.append(generateSubdocumentation(BuiltInFunctions.BUILT_IN_FUNCTIONS, "Function"));
+
+            sb.append("\n# Column aggregations\n\n");
+            sb.append(
+                "The column argument is always required and must be a column name formatted as a string literal.\n");
+            sb.append("All other arguments are optional and have default values, which can be passed positionally\n");
+            sb.append("or by their name in the format `argname=value`. Optional arguments must be literals.\n\n");
+            sb.append("You can ONLY use these aggregations listed here:\n\n");
+
+            sb.append(generateSubdocumentation(BuiltInAggregations.BUILT_IN_AGGREGATIONS, "Aggregation"));
+
+            return applyIndent(sb.toString(), 4);
+        }
+
+        private static String generateSubdocumentation(final Collection<? extends NamedExpressionOperator> operators,
+            final String typeName) {
+            StringBuilder sb = new StringBuilder();
+
+            for (var operator : operators) {
+                sb.append("").append("\n");
+                sb.append("## " + typeName + " `" + operator.name() + "(" + operator.description().arguments().stream()
+                    .map(arg -> arg.name()).collect(Collectors.joining(", ")) + ")`\n");
+                sb.append("### Arguments\n");
+                for (var arg : operator.description().arguments()) {
+                    sb.append("- " + arg.name() + " [" + arg.type() + "]: " + arg.description() + "\n");
+                }
+                sb.append("### Returns\n");
+                sb.append("[" + operator.description().returnType() + "] " + operator.description().returnDescription()
+                    + "\n");
+                sb.append("### Description\n");
+                sb.append(getShortDescription(operator.description().description()) + "\n");
+            }
+
+            return sb.toString();
+        }
+
+        private static String getShortDescription(final String description) {
+            // We basically want to extract the first paragraph of the description
+
+            return description.split("\n\n")[0];
+        }
+
+        private static String applyIndent(final String s, final int indent) {
+            return Arrays.stream(s.split("\n")).map(line -> " ".repeat(indent) + line)
+                .collect(Collectors.joining("\n"));
         }
 
         /**
