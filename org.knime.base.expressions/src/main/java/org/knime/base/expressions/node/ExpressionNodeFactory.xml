@@ -11,34 +11,36 @@
 	<fullDescription>
 		<intro>
 			<p>
-				The KNIME Expression Node enables generic data manipulation within
-				KNIME workflows through its dedicated expression language.
+				The KNIME Expression node enables generic row-by-row data
+				manipulation within KNIME workflows.
 			</p>
 			<p>
 				<b>Data Access: </b>
-				Data is accessed row-wise, indicated by the dollar sign, i.e., the
-				given expression is evaluated for each row in the input table and
-				the result is stored in the output table. To access table data, you
-				can use the following methods:
+				The expression is evaluated for each row in the input table and the
+				result is stored in the output table. To access table data, you can
+				use the following methods:
 				<ul>
 					<li>
 						<tt>$["column name"]</tt>
 						to access the value in the current row of the column with the
 						given name. When the name does not contain special characters or
-						spaces, you can use the shorthand notation: <tt>$column_name</tt>.
+						spaces, you can use the shorthand notation:
+						<tt>$column_name</tt>
+						.
 					</li>
 					<li>
 						<tt>$["column_name", offset]</tt>
-						to reference rows relative to the current one, where the offset is
-						a static value.
-					</li>
-					<li>
-						<tt>$[ROW_INDEX]</tt>
-						to get the current row index, starting at 0.
+						to reference previous or next rows relative to the current one.
+						The offset is a static number. Negative offsets point to previous
+						rows, positive offsets to rows below the current row.
 					</li>
 					<li>
 						<tt>$[ROW_NUMBER]</tt>
 						to get the current row number, starting at 1.
+					</li>
+					<li>
+						<tt>$[ROW_INDEX]</tt>
+						to get the current row index, starting at 0.
 					</li>
 					<li>
 						<tt>$[ROW_ID]</tt>
@@ -48,14 +50,16 @@
 			</p>
 			<p>
 				Flow variables can be accessed via
-				<tt>$$["flow_var_name"]</tt>
+				<tt>$$["Flow Variable Name"]</tt>
+				, As with column names, you can use the shorthand
+				$$flow_variable_name, if the name does not contain any special
+				characters nor spaces.
 				.
 			</p>
 			<p>
 				<b>Operators :</b>
-				For simple data manipulation, the expression language supports a
-				wide range of operators. A comprehensive list of operators includes
-				arithmetic (
+				The expression language supports basic operators, namely arithmetic
+				(
 				<tt>+</tt>
 				,
 				<tt>-</tt>
@@ -96,17 +100,18 @@
 			<p>
 				<b>Functions: </b>
 				The expression node supports a wide range of functions which are
-				available in a catalog on the right side of the editor. Expanding
-				the catalog will provide comprehensive documentation for each
-				function.
+				available in a catalog on the right side of the editor.
 			</p>
 			<p>
-				<b>Aggregations: </b>
+				<b>Column Aggregations: </b>
 				A special set of functions prefixed with
 				<tt>COLUMN_</tt>
-				allows you to access aggregations over the whole column, such as the
-				minimum, maximum, or mean value. Note that these take a "column
-				name" instead of a value from a row ($["column name"]) as input.
+				calculate aggregations over whole columns, such as their minimum,
+				maximum, or mean values, for example,
+				<tt> COLUMN_MIN("Column Name") </tt>
+				. Note that these take a "Column
+				name" instead of a value from a row
+				($["column name"]) as input.
 			</p>
 			<p>
 				<b>AI Expression Assistance (Labs):</b>
