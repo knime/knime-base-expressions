@@ -138,9 +138,9 @@ class ExpressionNodeModel extends NodeModel {
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
         if (ExpressionNodeSettings.DEFAULT_SCRIPT.equals(m_settings.getScript())) {
-            throw new InvalidSettingsException(
-                "The expression node has not been configured yet, please enter your expression.");
+            throw new InvalidSettingsException("The expression node has not yet been configured. Enter an expression.");
         }
+
         try {
             var ast = getPreparedExpression(inSpecs[0]);
             var outputType = Expressions.getInferredType(ast);
@@ -149,12 +149,20 @@ class ExpressionNodeModel extends NodeModel {
                 m_settings.getActiveOutputColumn());
 
             if (m_settings.getColumnInsertionMode() == ColumnInsertionMode.REPLACE_EXISTING) {
-                return new DataTableSpec[]{new DataTableSpecCreator(inSpecs[0])
-                    .replaceColumn(inSpecs[0].findColumnIndex(m_settings.getActiveOutputColumn()), outputColumnSpec)
-                    .createSpec()};
+                return new DataTableSpec[]{ //
+                    new DataTableSpecCreator(inSpecs[0]) //
+                        .replaceColumn(inSpecs[0].findColumnIndex(m_settings.getActiveOutputColumn()), outputColumnSpec) //
+                        .createSpec() //
+                };
+            } else if (!inSpecs[0].containsName(m_settings.getActiveOutputColumn())) {
+                return new DataTableSpec[]{ //
+                    new DataTableSpecCreator(inSpecs[0]).addColumns(outputColumnSpec) //
+                        .createSpec() //
+                };
             } else {
-                return new DataTableSpec[]{
-                    new DataTableSpecCreator(inSpecs[0]).addColumns(outputColumnSpec).createSpec()};
+                throw new InvalidSettingsException(
+                    "The output column '%s' exists in the input table. Choose another column name."
+                        .formatted(m_settings.getActiveOutputColumn()));
             }
         } catch (final ExpressionCompileException e) {
             throw new InvalidSettingsException(e.getMessage(), e);

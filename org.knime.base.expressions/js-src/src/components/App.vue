@@ -43,7 +43,7 @@ const store = useStore();
 const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
 
 // These should be immediately overridden by the scripting service
-const columnSectorState = ref<ColumnSelectorState>({
+const columnSelectorState = ref<ColumnSelectorState>({
   outputMode: "APPEND",
   createColumn: "",
   replaceColumn: "",
@@ -109,7 +109,7 @@ onMounted(async () => {
     ?.getEditorState()
     .setInitialText(initialSettings.script);
 
-  columnSectorState.value = {
+  columnSelectorState.value = {
     outputMode: initialSettings.columnOutputMode,
     createColumn: initialSettings.createdColumn,
     replaceColumn: initialSettings.replacedColumn,
@@ -177,10 +177,10 @@ const runExpressions = (rows: number) => {
     scriptingService.sendToService("runExpression", [
       multiEditorComponentRef.value?.getEditorState().text.value,
       rows,
-      columnSectorState.value.outputMode,
-      columnSectorState.value.outputMode === "APPEND"
-        ? columnSectorState.value.createColumn
-        : columnSectorState.value.replaceColumn,
+      columnSelectorState.value.outputMode,
+      columnSelectorState.value.outputMode === "APPEND"
+        ? columnSelectorState.value.createColumn
+        : columnSelectorState.value.replaceColumn,
     ]);
   }
 };
@@ -189,9 +189,9 @@ scriptingService.registerSettingsGetterForApply(() => {
   return {
     ...expressionVersion.value,
     script: multiEditorComponentRef.value?.getEditorState().text.value ?? "",
-    columnOutputMode: columnSectorState.value?.outputMode,
-    createdColumn: columnSectorState.value?.createColumn,
-    replacedColumn: columnSectorState.value?.replaceColumn,
+    columnOutputMode: columnSelectorState.value?.outputMode,
+    createdColumn: columnSelectorState.value?.createColumn,
+    replacedColumn: columnSelectorState.value?.replaceColumn,
   };
 });
 
@@ -234,8 +234,28 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
   }
 });
 
+const columnExists = (columnName: string) =>
+  allowedReplacementColumns.value.findIndex(
+    (column) => column.id === columnName,
+  ) !== -1;
+
+const columnSelectorStateValid = computed(() => {
+  const createColExists = columnExists(columnSelectorState.value.createColumn);
+  const outputMode = columnSelectorState.value.outputMode;
+  return (
+    (outputMode === "APPEND" &&
+      !createColExists &&
+      columnSelectorState.value.createColumn) ||
+    outputMode === "REPLACE_EXISTING"
+  );
+});
+
 const runButtonEnabled = computed(() => {
-  return inputsAvailable.value && store.expressionValid;
+  return (
+    inputsAvailable.value &&
+    store.expressionValid &&
+    columnSelectorStateValid.value
+  );
 });
 </script>
 
@@ -259,7 +279,7 @@ const runButtonEnabled = computed(() => {
           <template #multi-editor-controls>
             <div class="editor-controls">
               <ColumnOutputSelector
-                v-model="columnSectorState"
+                v-model="columnSelectorState"
                 :allowed-replacement-columns="allowedReplacementColumns"
               />
             </div>
