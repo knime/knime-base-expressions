@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.eclipse.core.runtime.Platform;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.port.PortObjectSpec;
@@ -66,6 +67,14 @@ import org.knime.scripting.editor.ai.HubConnection;
  */
 final class ExpressionCodeAssistant {
     private ExpressionCodeAssistant() {
+    }
+
+    private static final String EXPRESSION_CORE_PLUGIN_VERSION = getExpressionBundleVersion();
+
+    private static String getExpressionBundleVersion() {
+        var version = Platform.getBundle("org.knime.core.expressions").getVersion();
+        // NB: version.toString() contains the qualifier which we do not want
+        return version.getMajor() + "." + version.getMinor() + "." + version.getMicro();
     }
 
     /**
@@ -91,7 +100,9 @@ final class ExpressionCodeAssistant {
                 0, //
                 toFlowVariableList(flowVariables) //
             ), //
-            new Outputs(0, 0, 0, false));
+            new Outputs(0, 0, 0, false), //
+            EXPRESSION_CORE_PLUGIN_VERSION //
+        );
 
         return HubConnection.INSTANCE.sendRequest("/code_generation/knime_expression", request);
     }
@@ -122,6 +133,7 @@ final class ExpressionCodeAssistant {
     private record Inputs(NameAndType[][] tables, long num_objects, NameAndType[] flow_variables) { // NOSONAR: we don't need hash or equals here
     }
 
-    private record CodeGenerationRequest(String code, String user_query, Inputs inputs, Outputs outputs) {
+    private record CodeGenerationRequest(String code, String user_query, Inputs inputs, Outputs outputs,
+        String version) {
     }
 }
