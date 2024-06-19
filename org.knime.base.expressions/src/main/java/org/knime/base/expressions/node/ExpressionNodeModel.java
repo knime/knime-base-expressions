@@ -62,6 +62,7 @@ import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
+import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.data.v2.ValueFactoryUtils;
@@ -85,6 +86,7 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.table.virtual.expression.Exec;
+import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 /**
  * The node model for the Expression node.
@@ -185,8 +187,16 @@ class ExpressionNodeModel extends NodeModel {
         var exprContext = new NodeExpressionMapperContext(this::getAvailableInputFlowVariables);
         var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
             newColumnPosition.columnName(), exec, exec.createSubProgress(0.34), exprContext, ctx);
-        var output = ExpressionRunnerUtils.constructOutputTable(inRefTable.getVirtualTable(),
-            expressionResult.getVirtualTable(), newColumnPosition);
+
+        // We must avoid using inRefTable.getVirtualTable() directly. Doing so would result in building upon the
+        // transformation of the input table, instead of initiating a new fragment. This approach leads to complications
+        // when loading the virtual table, as it would attempt to resolve the sources of the input table. By creating a
+        // new ColumnarVirtualTable, we establish a new SourceTableTransform that references the input table. This
+        // ensures that the input table itself acts as the source, providing a clean slate for transformations.
+        // Note that the CursorType is irrelevant because the transform gets re-sourced for running the comp graph.
+        var inputVirtualTable = new ColumnarVirtualTable(inRefTable.getId(), inRefTable.getSchema(), CursorType.BASIC);
+        var output = ExpressionRunnerUtils.constructOutputTable(inputVirtualTable, expressionResult.getVirtualTable(),
+            newColumnPosition);
 
         var issueCount = messageBuilder.getIssueCount();
         if (issueCount > 0) {
