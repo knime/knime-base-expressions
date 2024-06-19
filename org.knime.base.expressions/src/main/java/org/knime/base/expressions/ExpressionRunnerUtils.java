@@ -406,8 +406,8 @@ public final class ExpressionRunnerUtils {
                     var colIdx = inputTableSchema.getSourceSpec().findColumnIndex(columnId.name());
                     yield colIdx == -1 ? OptionalInt.empty() : OptionalInt.of(colIdx + 1);
                 }
-                case ROW_ID -> rowIndexColIdx;
-                case ROW_INDEX -> OptionalInt.of(0);
+                case ROW_ID -> OptionalInt.of(0);
+                case ROW_INDEX -> rowIndexColIdx;
             };
             Expressions.resolveColumnIndices(expression, c -> columnIdToIndex.apply(c.columnId()));
 
