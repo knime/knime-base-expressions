@@ -83,7 +83,11 @@ public final class ControlFlowFunctions {
     }
 
     /** The "Control flow" category */
-    public static final OperatorCategory CATEGORY = new OperatorCategory("Control", "Control flow functions");
+    public static final OperatorCategory CATEGORY = new OperatorCategory("Condition", """
+            The "Condition" category in KNIME Expression language provides functions that enable conditional logic
+            within expressions. These functions allow users to define conditions and return specific values based on
+            those conditions, thus making expressions more dynamic and context-sensitive.
+            """);
 
     /** The "if*" function */
     public static final ExpressionFunction IF = functionBuilder() //

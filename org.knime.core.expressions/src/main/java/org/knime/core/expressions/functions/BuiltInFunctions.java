@@ -76,17 +76,55 @@ public final class BuiltInFunctions {
 
     /** Built-in function categories */
     public static final List<OperatorCategory> BUILT_IN_CATEGORIES = List.of( //
-        MathFunctions.CATEGORY, //
-        StringFunctions.CATEGORY //
+        ControlFlowFunctions.CATEGORY, //
+        MathFunctions.CATEGORY_GENERAL, //
+        MathFunctions.CATEGORY_ROUND, //
+        MathFunctions.CATEGORY_AGGREGATE, //
+        MathFunctions.CATEGORY_TRIGONOMETRY, //
+        MathFunctions.CATEGORY_DISTRIBUTIONS, //
+        StringFunctions.CATEGORY_GENERAL, //
+        StringFunctions.CATEGORY_MATCH_COMPARE, //
+        StringFunctions.CATEGORY_EXTRACT_REPLACE, //
+        StringFunctions.CATEGORY_CLEAN, //
+        StringFunctions.CATEGORY_ENCODE //
     );
 
     /** Built-in functions */
     public static final List<ExpressionFunction> BUILT_IN_FUNCTIONS = List.of( //
-        MathFunctions.MAX, //
-        MathFunctions.MIN, //
-        MathFunctions.ARGMAX, //
-        MathFunctions.ARGMIN, //
+        // Condition
+        ControlFlowFunctions.IF, //
+        ControlFlowFunctions.SWITCH, //
+        // Math – General
+        MathFunctions.POW, //
+        MathFunctions.SQRT, //
+        MathFunctions.MOD, //
         MathFunctions.ABS, //
+        MathFunctions.SIGN, //
+        MathFunctions.EXP, //
+        MathFunctions.LN, //
+        MathFunctions.LOG10, //
+        MathFunctions.LOG2, //
+        MathFunctions.LOG_BASE, //
+        MathFunctions.LOG1P, //
+        MathFunctions.IS_NAN, //
+        MathFunctions.NAN_TO_MISSING, //
+        // Math – Round
+        MathFunctions.ROUNDHALFUP, //
+        MathFunctions.ROUNDHALFDOWN, //
+        MathFunctions.ROUNDHALFEVEN, //
+        MathFunctions.TRUNC, //
+        MathFunctions.CEIL, //
+        MathFunctions.FLOOR, //
+        // Math – Aggregate
+        MathFunctions.AVERAGE, //
+        MathFunctions.MEDIAN, //
+        MathFunctions.MIN, //
+        MathFunctions.MAX, //
+        MathFunctions.ARGMIN, //
+        MathFunctions.ARGMAX, //
+        // Math – Trigonometry
+        MathFunctions.DEGREES, //
+        MathFunctions.RADIANS, //
         MathFunctions.SIN, //
         MathFunctions.COS, //
         MathFunctions.TAN, //
@@ -100,76 +138,56 @@ public final class BuiltInFunctions {
         MathFunctions.ASINH, //
         MathFunctions.ACOSH, //
         MathFunctions.ATANH, //
-        MathFunctions.LN, //
-        MathFunctions.LOG10, //
-        MathFunctions.LOG2, //
-        MathFunctions.LOG_BASE, //
-        MathFunctions.LOG1P, //
-        MathFunctions.EXP, //
-        MathFunctions.POW, //
-        MathFunctions.SQRT, //
-        MathFunctions.MOD, //
-        MathFunctions.DEGREES, //
-        MathFunctions.RADIANS, //
-        MathFunctions.FLOOR, //
-        MathFunctions.CEIL, //
-        MathFunctions.TRUNC, //
-        MathFunctions.ROUNDHALFDOWN, //
-        MathFunctions.ROUNDHALFUP, //
-        MathFunctions.ROUNDHALFEVEN, //
-        MathFunctions.SIGN, //
-        MathFunctions.AVERAGE, //
-        MathFunctions.MEDIAN, //
+        // Math – Distributions
         MathFunctions.BINOMIAL, //
         MathFunctions.NORMAL, //
         MathFunctions.ERROR_FUNCTION, //
-        MathFunctions.IS_NAN, //
-        MathFunctions.NAN_TO_MISSING, //
-        StringFunctions.COMPARE, //
-        StringFunctions.CONTAINS, //
-        StringFunctions.STARTS_WITH, //
-        StringFunctions.ENDS_WITH, //
-        StringFunctions.LIKE, //
-        StringFunctions.REGEX_MATCH, //
-        StringFunctions.REGEX_EXTRACT, //
-        StringFunctions.REGEX_REPLACE, //
-        StringFunctions.REPLACE, //
-        StringFunctions.REPLACE_CHARS, //
-        StringFunctions.REPLACE_UMLAUTS, //
-        StringFunctions.REPLACE_DIACRITICS, //
+        // String – General
         StringFunctions.LOWER_CASE, //
         StringFunctions.UPPER_CASE, //
         StringFunctions.CAPITALIZE, //
         StringFunctions.PAD_START, //
         StringFunctions.PAD_END, //
         StringFunctions.JOIN, //
-        StringFunctions.SUBSTRING, //
-        StringFunctions.FIRST_CHARS, //
-        StringFunctions.LAST_CHARS, //
-        StringFunctions.REMOVE_CHARS, //
-        StringFunctions.STRIP, //
-        StringFunctions.STRIP_START, //
-        StringFunctions.STRIP_END, //
-        StringFunctions.REMOVE_DUPLICATE_SPACES, //
         StringFunctions.REVERSE, //
         StringFunctions.EMPTY_TO_MISSING, //
         StringFunctions.MISSING_TO_EMPTY, //
-        StringFunctions.LENGTH, //
-        StringFunctions.COUNT, //
-        StringFunctions.COUNT_CHARS, //
-        StringFunctions.FIND, //
-        StringFunctions.FIND_CHARS, //
-        StringFunctions.CHECKSUM_MD5, //
-        StringFunctions.XML_ENCODE, //
-        StringFunctions.URL_ENCODE, //
-        StringFunctions.URL_DECODE, //
         StringFunctions.TO_STRING, //
+        StringFunctions.PARSE_BOOL, //
         StringFunctions.PARSE_FLOAT, //
         StringFunctions.PARSE_INT, //
-        StringFunctions.PARSE_BOOL, //
-        ControlFlowFunctions.IF, //
-        ControlFlowFunctions.SWITCH //
-
+        // String – Match & Compare
+        StringFunctions.STARTS_WITH, //
+        StringFunctions.ENDS_WITH, //
+        StringFunctions.CONTAINS, //
+        StringFunctions.LIKE, //
+        StringFunctions.REGEX_MATCH, //
+        StringFunctions.COMPARE, //
+        // String – Extract & Replace
+        StringFunctions.FIRST_CHARS, //
+        StringFunctions.LAST_CHARS, //
+        StringFunctions.SUBSTRING, //
+        StringFunctions.REGEX_EXTRACT, //
+        StringFunctions.REPLACE, //
+        StringFunctions.REGEX_REPLACE, //
+        StringFunctions.FIND, //
+        StringFunctions.FIND_CHARS, //
+        StringFunctions.COUNT, //
+        StringFunctions.COUNT_CHARS, //
+        StringFunctions.LENGTH, //
+        // String – Clean
+        StringFunctions.REPLACE_CHARS, //
+        StringFunctions.REPLACE_DIACRITICS, //
+        StringFunctions.REPLACE_UMLAUTS, //
+        StringFunctions.REMOVE_CHARS, //
+        StringFunctions.REMOVE_DUPLICATE_SPACES, //
+        StringFunctions.STRIP, //
+        StringFunctions.STRIP_START, //
+        StringFunctions.STRIP_END, //
+        // String – Encode
+        StringFunctions.XML_ENCODE, //
+        StringFunctions.URL_ENCODE, //
+        StringFunctions.URL_DECODE //
     );
 
     /** Built-in functions as map */
