@@ -585,21 +585,6 @@ final class StringFunctionTests {
     }
 
     @TestFactory
-    List<DynamicNode> checksumMd5() {
-        return new FunctionTestBuilder(StringFunctions.CHECKSUM_MD5) //
-            .typing("STRING", List.of(STRING), STRING) //
-            .typing("STRING?", List.of(OPT_STRING), OPT_STRING) //
-            .illegalArgs("INTEGER", List.of(INTEGER)) //
-            .illegalArgs("2 STRING", List.of(STRING, STRING)) //
-            .illegalArgs("BOOLEAN", List.of(BOOLEAN)) //
-            .illegalArgs("MISSING", List.of(MISSING)) //
-            .impl("'hello'", List.of(arg("hello")), "5d41402abc4b2a76b9719d911017c592") //
-            .impl("empty string", List.of(arg("")), "d41d8cd98f00b204e9800998ecf8427e") //
-            .impl("missing STRING", List.of(misString())) //
-            .tests();
-    }
-
-    @TestFactory
     List<DynamicNode> xmlEncode() {
         return new FunctionTestBuilder(StringFunctions.XML_ENCODE) //
             .typing("STRING", List.of(STRING), STRING) //

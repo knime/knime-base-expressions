@@ -70,8 +70,6 @@ import static org.knime.core.expressions.functions.FunctionUtils.RETURN_STRING_M
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
@@ -1799,57 +1797,6 @@ public final class StringFunctions {
         return IntegerComputer.of( //
             value, //
             ctx -> anyMissing(args).test(ctx) || value.applyAsLong(ctx) < 0//
-        );
-    }
-
-    public static final ExpressionFunction CHECKSUM_MD5 = functionBuilder() //
-        .name("checksum_md5") //
-        .description("""
-                Get the MD5 checksum of the string.
-
-                *Note that MD5 is prone to hash collisions and is not safe for
-                hashing passwords.*
-
-                If the input string is `MISSING`, the result is also `MISSING`.
-
-                Examples:
-                * `checksum_md5("hello")` returns "5d41402abc4b2a76b9719d911017c592"
-                * `checksum_md5("") returns "d41d8cd98f00b204e9800998ecf8427e"
-                """) //
-        .keywords("hash") //
-        .category(CATEGORY_ENCODE.name()) //
-        .args( //
-            arg("string", "String to compute the MD5 checksum for", isStringOrOpt()) //
-        ) //
-        .returnType("MD5 hash of the string", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
-        .impl(StringFunctions::checksumMd5Impl) //
-        .build();
-
-    private static Computer checksumMd5Impl(final List<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-
-            try {
-                var digest = MessageDigest.getInstance("MD5") //
-                    .digest(str.getBytes(StandardCharsets.UTF_8));
-
-                var md5String = new StringBuilder(32);
-
-                for (byte b : digest) {
-                    md5String.append(String.format("%02x", b));
-                }
-
-                return md5String.toString();
-            } catch (NoSuchAlgorithmException ex) {
-                throw new IllegalStateException("this should never happen", ex);
-            }
-
-        };
-
-        return StringComputer.of( //
-            value, //
-            anyMissing(args) //
         );
     }
 
