@@ -1,8 +1,11 @@
 import type { CatalogData } from "@/components/function-catalog/mapFunctionCatalogData";
-import type { FunctionData } from "@/components/functionCatalogTypes";
+import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
 import type { SelectableItem } from "@/components/function-catalog/catalogTypes";
 
-const filterBySearchTerm = (datum: FunctionData, searchTerm: string): boolean =>
+const filterBySearchTerm = (
+  datum: FunctionCatalogEntryData,
+  searchTerm: string,
+): boolean =>
   datum.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
   datum.keywords.some((keyword) =>
     keyword.toLowerCase().includes(searchTerm.toLowerCase()),

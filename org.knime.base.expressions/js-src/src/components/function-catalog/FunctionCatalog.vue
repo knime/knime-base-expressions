@@ -7,7 +7,7 @@ import { mapFunctionCatalogData } from "@/components/function-catalog/mapFunctio
 import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
 import type {
   FunctionCatalogData,
-  FunctionData,
+  FunctionCatalogEntryData,
 } from "@/components/functionCatalogTypes";
 import { filterCatalogData } from "@/components/function-catalog/filterCatalogData";
 import type {
@@ -18,16 +18,21 @@ import CategoryDescription from "@/components/function-catalog/CategoryDescripti
 import { createDragGhosts } from "webapps-common/ui/components/FileExplorer/dragGhostHelpers";
 import { EMPTY_DRAG_IMAGE } from "webapps-common/ui/components/FileExplorer/useItemDragging";
 import { useDraggedFunctionStore } from "@/draggedFunctionStore";
+import type { MathConstant } from "@/expressionScriptingService";
 
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
 const FUNCTION_CATALOG_WIDTH = "250px";
 
 const props = defineProps<{
   functionCatalogData: FunctionCatalogData;
+  constantData: MathConstant[];
   initiallyExpanded: boolean;
 }>();
 
-const catalogData = mapFunctionCatalogData(props.functionCatalogData);
+const catalogData = mapFunctionCatalogData(
+  props.functionCatalogData,
+  props.constantData,
+);
 const categoryNames = Object.keys(catalogData);
 const categories = ref(
   Object.fromEntries(
@@ -49,7 +54,7 @@ const removeGhostsRef = ref<() => void>(() => {});
 
 const draggedFunctionStore = useDraggedFunctionStore();
 
-const onDragStart = (e: DragEvent, f: FunctionData) => {
+const onDragStart = (e: DragEvent, f: FunctionCatalogEntryData) => {
   const { removeGhosts } = createDragGhosts({
     badgeCount: null, // don't show a badge at all
     dragStartEvent: e,
@@ -73,7 +78,10 @@ const onDragStart = (e: DragEvent, f: FunctionData) => {
   // instead to pass the extra data.
   draggedFunctionStore.draggedFunctionData = {
     name: f.name,
-    arguments: f.arguments.map((arg) => arg.name),
+    arguments:
+      f.entryType === "mathConstant"
+        ? null
+        : f.arguments?.map((arg) => arg.name)!,
   };
 
   e.dataTransfer?.setDragImage(EMPTY_DRAG_IMAGE, 0, 0);
@@ -84,10 +92,16 @@ const onDragEnd = () => {
 };
 
 const emit = defineEmits(["functionInsertionEvent"]);
-const triggerFunctionInsertionEvent = (evt: Event, f: FunctionData) => {
+const triggerFunctionInsertionEvent = (
+  evt: Event,
+  f: FunctionCatalogEntryData,
+) => {
   emit("functionInsertionEvent", {
     functionName: f.name,
-    functionArgs: f.arguments.map((arg) => arg.name),
+    functionArgs:
+      f.entryType === "mathConstant"
+        ? null
+        : f.arguments?.map((arg) => arg.name),
     eventSource: "function-catalog",
   });
 };
@@ -364,7 +378,11 @@ const grabFocus = () => {
                   (event) => triggerFunctionInsertionEvent(event, functionData)
                 "
               >
-                {{ functionData.displayName || functionData.name }}
+                {{
+                  functionData.entryType === "function"
+                    ? functionData.displayName || functionData.name
+                    : functionData.name
+                }}
               </div>
             </div>
           </div>

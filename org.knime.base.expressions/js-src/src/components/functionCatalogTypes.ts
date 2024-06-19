@@ -12,7 +12,20 @@ export type FunctionData = {
   }[];
   returnType: string;
   returnDescription?: string;
+  entryType: "function";
 };
+
+export type MathConstantData = {
+  name: string;
+  value: number;
+  category: string;
+  keywords: string[];
+  description: string;
+  returnType: string;
+  entryType: "mathConstant";
+};
+
+export type FunctionCatalogEntryData = FunctionData | MathConstantData;
 
 export type CategoryData = {
   name: string;

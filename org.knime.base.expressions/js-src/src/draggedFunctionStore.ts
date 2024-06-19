@@ -8,7 +8,7 @@ import { reactive } from "vue";
  */
 
 export type StoreType = {
-  draggedFunctionData: { name: string; arguments: string[] } | null;
+  draggedFunctionData: { name: string; arguments: string[] | null } | null;
 };
 
 const store = reactive<StoreType>({

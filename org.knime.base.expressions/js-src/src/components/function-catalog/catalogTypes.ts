@@ -1,4 +1,4 @@
-import type { FunctionData } from "@/components/functionCatalogTypes";
+import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
 
 export type SelectableCategory = {
   type: "category";
@@ -7,7 +7,7 @@ export type SelectableCategory = {
 
 export type SelectableFunction = {
   type: "function";
-  functionData: FunctionData;
+  functionData: FunctionCatalogEntryData;
 };
 
 export type SelectableItem = SelectableCategory | SelectableFunction;

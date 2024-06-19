@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import MarkdownIt from "markdown-it";
-import type { FunctionData } from "@/components/functionCatalogTypes";
+import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
 import { computed } from "vue";
 
 // https://stackoverflow.com/questions/66514253/ignore-specified-html-blocks-in-markdown-it
@@ -8,7 +8,7 @@ import { computed } from "vue";
 const markdown = new MarkdownIt();
 
 const props = defineProps<{
-  functionData: FunctionData;
+  functionData: FunctionCatalogEntryData;
 }>();
 
 const markdownHTMLContent = computed(() =>
@@ -19,16 +19,18 @@ const markdownHTMLContent = computed(() =>
 <template>
   <div class="function-description-panel">
     <h4 class="function-header">{{ functionData.name }}</h4>
-    <h5 class="function-subtitle">Arguments</h5>
-    <ul class="function-arg-list has-left-indent">
-      <li v-for="arg in functionData.arguments" :key="arg.name">
-        <span style="font-weight: bold; padding-left: -20px">{{
-          arg.name
-        }}</span
-        >:
-        {{ arg.description }}
-      </li>
-    </ul>
+    <template v-if="functionData.entryType === 'function'">
+      <h5 class="function-subtitle">Arguments:</h5>
+      <ul class="function-arg-list has-left-indent">
+        <li v-for="arg in functionData.arguments" :key="arg.name">
+          <span style="font-weight: bold; padding-left: -20px">{{
+            arg.name
+          }}</span
+          >:
+          {{ arg.description }}
+        </li>
+      </ul>
+    </template>
     <div style="margin-top: 10px">
       <h5 class="function-subtitle" style="display: inline">Return Value</h5>
     </div>
@@ -36,7 +38,7 @@ const markdownHTMLContent = computed(() =>
       {{ functionData.returnType }}
     </div>
     <div
-      v-if="functionData.returnDescription"
+      v-if="functionData.entryType === 'function'"
       class="markdown-function-desc has-left-indent"
     >
       {{ functionData.returnDescription }}

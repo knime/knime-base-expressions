@@ -40,6 +40,7 @@ const TEST_FUNCTION_CATALOG = {
       ],
       returnType: "string",
       returnDescription: "Return value",
+      entryType: "function",
     },
   ],
 } satisfies FunctionCatalogData;

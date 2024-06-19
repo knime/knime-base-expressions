@@ -54,8 +54,9 @@ const onDropEvent = (e: DragEvent) => {
         // We pass an empty function name here, as the function name is
         // inserted by the browser on drop. Hence we're only inserting
         // the arguments, with monaco snippet behavior.
-        editorState.insertFunctionReference("", functionArguments);
-
+        if (functionArguments !== null) {
+          editorState.insertFunctionReference("", functionArguments);
+        }
         resetDraggedFunctionStore();
       }
 

@@ -7,6 +7,7 @@ import {
 import {
   type ExpressionVersion,
   getExpressionScriptingService,
+  type MathConstant,
 } from "@/expressionScriptingService";
 import Button from "webapps-common/ui/components/Button.vue";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
@@ -57,21 +58,22 @@ const expressionVersion = ref<ExpressionVersion>({
 
 const multiEditorComponentRef = ref<MultiEditorPaneExposes | null>(null);
 const functionCatalogData = ref<FunctionCatalogData>();
+const mathConstantData = ref<MathConstant[]>();
 const inputsAvailable = ref(false);
 
 const convertFunctionsToInsertionItems = (functions: FunctionData[]) => {
   return functions.map((func) => {
     // closest we can get to a list comprehension over a range in JS
-    const listOfIndices = [...Array(func.arguments.length).keys()];
+    const listOfIndices = [...Array(func.arguments!.length).keys()];
 
     // This snippet syntax is used to allow for tabbing through the arguments
     // when the function is inserted.
     const argumentsWithSnippetSyntax = listOfIndices
-      .map((i) => `$\{${i + 1}:${func.arguments[i].name}}`)
+      .map((i) => `$\{${i + 1}:${func.arguments![i].name}}`)
       .join(", ");
 
     const argumentsWithoutSnippetSyntax =
-      func.arguments.length > 0 ? "..." : "";
+      func.arguments!.length > 0 ? "..." : "";
 
     return {
       text: `${func.name}(${argumentsWithSnippetSyntax})`,
@@ -127,6 +129,7 @@ onMounted(async () => {
   }
 
   functionCatalogData.value = functionCatalog;
+  mathConstantData.value = mathsConstants;
 
   if (inputObjects && inputObjects.length > 0 && inputObjects[0].subItems) {
     allowedReplacementColumns.value = inputObjects[0]?.subItems?.map(
@@ -194,12 +197,19 @@ scriptingService.registerSettingsGetterForApply(() => {
 const onFunctionInsertionTriggered = (payload: {
   eventSource: string;
   functionName: string;
-  functionArgs: string[];
+  functionArgs: string[] | null;
 }) => {
   multiEditorComponentRef.value?.getEditorState().editor.value?.focus();
-  multiEditorComponentRef.value
-    ?.getEditorState()
-    .insertFunctionReference(payload.functionName, payload.functionArgs);
+
+  if (payload.functionArgs === null) {
+    multiEditorComponentRef.value
+      ?.getEditorState()
+      .insertFunctionReference(payload.functionName, null);
+  } else {
+    multiEditorComponentRef.value
+      ?.getEditorState()
+      .insertFunctionReference(payload.functionName, payload.functionArgs);
+  }
 };
 
 const onInputOutputItemInsertionTriggered = (codeToInsert: string) => {
@@ -259,6 +269,7 @@ const runButtonEnabled = computed(() => {
         <template v-if="functionCatalogData">
           <FunctionCatalog
             :function-catalog-data="functionCatalogData"
+            :constant-data="mathConstantData!"
             :initially-expanded="true"
             @function-insertion-event="onFunctionInsertionTriggered"
           />

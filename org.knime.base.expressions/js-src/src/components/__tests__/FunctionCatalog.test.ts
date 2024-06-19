@@ -4,6 +4,7 @@ import FunctionCatalog from "../function-catalog/FunctionCatalog.vue";
 import type { FunctionData } from "../functionCatalogTypes";
 import { useElementBounding } from "@vueuse/core";
 import { ref } from "vue";
+import type { MathConstant } from "@/expressionScriptingService";
 
 // Beware: This constant is duplicated in the component and the test
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
@@ -50,6 +51,7 @@ describe("FunctionCatalog", () => {
       "# Markdown\nDescription\n ## Example:\n`function1('arg1', 'arg2')`",
     keywords: ["keyWord1", "join", "merge"],
     returnType: "returnType1",
+    entryType: "function",
   };
   const function2: FunctionData = {
     name: "function2",
@@ -62,6 +64,7 @@ describe("FunctionCatalog", () => {
       "# Markdown\nDescription\n ## Example:\n`function2('arg1', 'arg2')`",
     keywords: ["keyWord2"],
     returnType: "returnType2",
+    entryType: "function",
   };
   const functionCatalogData = {
     categories: [
@@ -70,6 +73,20 @@ describe("FunctionCatalog", () => {
     ],
     functions: [function1, function2],
   };
+  const mathConstants = [
+    {
+      name: "PI",
+      documentation: "The constant PI",
+      type: "number",
+      value: Math.PI,
+    },
+    {
+      name: "E",
+      documentation: "The constant E",
+      type: "number",
+      value: Math.E,
+    },
+  ] satisfies MathConstant[];
 
   const doMount = (
     args: {
@@ -83,7 +100,12 @@ describe("FunctionCatalog", () => {
     },
   ) => {
     const wrapper = mount(FunctionCatalog, {
-      props: { functionCatalogData, initiallyExpanded: true, ...args.props },
+      props: {
+        functionCatalogData,
+        constantData: mathConstants,
+        initiallyExpanded: true,
+        ...args.props,
+      },
       slots: args.slots,
       attachTo: document.body,
     });
@@ -143,10 +165,13 @@ describe("FunctionCatalog", () => {
     });
 
     const categories = wrapper.findAll(".category-container");
-    expect(categories).toHaveLength(functionCatalogData.categories.length);
+
+    // +1 for the math constants which have their own category
+    expect(categories).toHaveLength(functionCatalogData.categories.length + 1);
 
     await Promise.all(
-      categories.map(async (categoryContainer, index) => {
+      // We also slice to remove the math constants category
+      categories.slice(0, -1).map(async (categoryContainer, index) => {
         expect(categoryContainer.text()).toContain(
           functionCatalogData.categories[index].name,
         );
@@ -229,6 +254,10 @@ describe("FunctionCatalog", () => {
 
     expect(firstCategory.classes()).not.toContain("selected");
     await functionList.trigger("keydown", { key: "ArrowDown" });
+
+    for (let i = 0; i < 1 + mathConstants.length; i++) {
+      await functionList.trigger("keydown", { key: "ArrowDown" });
+    }
     expect(firstCategory.classes()).toContain("selected");
   });
 
@@ -237,10 +266,12 @@ describe("FunctionCatalog", () => {
 
     const categoryFunctions = wrapper.findAll(".function-header");
     expect(categoryFunctions).toHaveLength(
-      functionCatalogData.functions.length,
+      functionCatalogData.functions.length + mathConstants.length,
     );
 
-    for (const [index, categoryFunction] of categoryFunctions.entries()) {
+    for (const [index, categoryFunction] of [
+      ...categoryFunctions.entries(),
+    ].slice(0, -mathConstants.length)) {
       expect(categoryFunction.text()).toContain(
         functionCatalogData.functions[index].name,
       );
@@ -251,6 +282,11 @@ describe("FunctionCatalog", () => {
   });
 
   it("fires an event when functions are double-clicked or spacebar/enter is pressed", async () => {
+    type FunctionInsertionEvent = {
+      functionName: string;
+      functionArgs: string[];
+    };
+
     const { wrapper } = doMount();
     const functionList = wrapper.find(".function-list");
     await functionList.trigger("focus");
@@ -267,8 +303,10 @@ describe("FunctionCatalog", () => {
     await functionList.trigger("keydown", { key: " " });
     expect(wrapper.emitted("functionInsertionEvent")?.length).toBe(3);
     for (const e of wrapper.emitted("functionInsertionEvent")!) {
-      expect((e[0] as any).functionName).toContain(function1.name);
-      expect((e[0] as any).functionArgs.length).toEqual(
+      expect((e[0] as FunctionInsertionEvent).functionName).toContain(
+        function1.name,
+      );
+      expect((e[0] as FunctionInsertionEvent).functionArgs.length).toEqual(
         function1.arguments.length,
       );
     }
@@ -281,8 +319,10 @@ describe("FunctionCatalog", () => {
     await functionList.trigger("keydown", { key: " " });
     expect(wrapper.emitted("functionInsertionEvent")?.length).toBe(3 + 3);
     for (const e of wrapper.emitted("functionInsertionEvent")!.slice(3)) {
-      expect((e[0] as any).functionName).toContain(function2.name);
-      expect((e[0] as any).functionArgs.length).toEqual(
+      expect((e[0] as FunctionInsertionEvent).functionName).toContain(
+        function2.name,
+      );
+      expect((e[0] as FunctionInsertionEvent).functionArgs.length).toEqual(
         function2.arguments.length,
       );
     }
@@ -301,7 +341,7 @@ describe("FunctionCatalog", () => {
 
       const allCategoryFunctions = wrapper.findAll(".function-header");
       expect(allCategoryFunctions).toHaveLength(
-        functionCatalogData.functions.length,
+        functionCatalogData.functions.length + mathConstants.length,
       );
 
       const searchBar = wrapper.findComponent({
