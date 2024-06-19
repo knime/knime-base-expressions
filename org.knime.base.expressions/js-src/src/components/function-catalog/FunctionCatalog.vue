@@ -408,6 +408,8 @@ const grabFocus = () => {
 </template>
 
 <style scoped>
+@import "webapps-common/ui/css/variables/spacings.css";
+
 .function-catalog-container {
   display: flex;
   flex-direction: row;
@@ -420,15 +422,15 @@ const grabFocus = () => {
 
 .sticky-search {
   background-color: white;
-  padding: 4px;
-  padding-bottom: 10px;
+  padding: var(--space-4);
+  padding-bottom: var(--space-8);
 }
 
 .function-catalog {
   --function-catalog-width: 300px;
 
   width: var(--function-catalog-width);
-  padding: 4px;
+  padding: var(--space-4);
   background-color: white;
   display: flex;
   flex-direction: column;
@@ -441,7 +443,7 @@ const grabFocus = () => {
 
 .function-list {
   overflow: hidden auto;
-  padding-top: 4px;
+  padding-top: var(--space-4);
   flex: 1;
 }
 
@@ -451,7 +453,7 @@ const grabFocus = () => {
 
 .info-panel {
   flex: 1;
-  padding: 8px;
+  padding: var(--space-8);
   font-size: x-small;
   overflow-y: auto;
   border-left: 1px solid var(--knime-silver-sand);
@@ -470,7 +472,7 @@ const grabFocus = () => {
   align-items: center;
   font-size: small;
   font-weight: bold;
-  margin-top: 4px;
+  margin-top: var(--space-4);
 }
 
 .category-header:focus {
@@ -478,8 +480,8 @@ const grabFocus = () => {
 }
 
 .category-icon {
-  width: 17px;
-  margin-right: 8px;
+  width: 16px;
+  margin-right: var(--space-8);
   stroke: var(--knime-masala);
   transition: transform 0.3s ease;
   translate: 0 1px;
@@ -512,17 +514,17 @@ const grabFocus = () => {
 }
 
 .category-functions {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-8);
 }
 
 .function-header {
   font-size: 13px;
   font-weight: normal;
-  line-height: 16px;
-  margin-left: 20px;
+  line-height: 20px;
+  margin-left: var(--space-24);
   cursor: pointer;
   color: var(--knime-dove-gray);
-  word-wrap: anywhere;
+  word-wrap: normal;
   box-decoration-break: clone;
 }
 

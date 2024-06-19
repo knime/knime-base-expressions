@@ -24,6 +24,8 @@ const functionDataAsHTML = computed(() =>
 </template>
 
 <style lang="postcss">
+@import url("webapps-common/ui/css/variables/spacings.css");
+
 .markdown-function-desc {
   & h3 {
     line-height: 18px;
@@ -31,21 +33,18 @@ const functionDataAsHTML = computed(() =>
 
     &:first-child {
       margin-top: 0;
-      margin-bottom: -12px;
     }
   }
 
   & h4 {
     line-height: 16px;
-    margin: 0;
-    margin-top: 32px;
-    margin-bottom: 4px;
+    margin: var(--space-32) 0 var(--space-4);
     font-size: 13px;
   }
 
   & ul {
     margin: 0;
-    padding-left: 20px;
+    padding-left: var(--space-16);
   }
 }
 </style>
@@ -53,8 +52,8 @@ const functionDataAsHTML = computed(() =>
 <style scoped>
 .node-description {
   height: 100%;
-  padding-right: 8px;
-  padding-bottom: 8px;
+  padding-right: var(--space-8);
+  padding-bottom: var(--space-8);
   overflow: auto;
 
   & .description {
@@ -69,14 +68,11 @@ const functionDataAsHTML = computed(() =>
     line-height: 16px;
   }
 
-  & pre {
-    overflow-y: scroll;
-    text-wrap: nowrap;
-  }
-
   & :deep(pre code) {
     border: none;
-    overflow: hidden scroll;
+    white-space: pre;
+    overflow: auto;
+    display: block;
   }
 }
 </style>
