@@ -1854,7 +1854,7 @@ public final class MathFunctions {
         .keywords("gaussian", "distribution", "probability") //
         .category(CATEGORY_DISTRIBUTIONS.name()) //
         .args( //
-            arg("value", "Random variable", isNumericOrOpt()), //
+            arg("x", "Random variable", isNumericOrOpt()), //
             arg("mean", "Mean value of the normal distribution", isNumericOrOpt()), //
             optarg("standard_deviation", "Standard deviation of the normal distribution", isNumericOrOpt()) //
         ) //
