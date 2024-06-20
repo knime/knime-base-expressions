@@ -102,7 +102,7 @@ public final class ControlFlowFunctions {
                     Conditions need to be boolean expressions and all `value_N` expressions have to return the same type. \
                     Integers will be automatically cast to floats if necessary.  \s
 
-                    Example:  \s
+                    **Examples**  \s
                     ```  \s
                     if(  \s
                     \t $customer_id < 100,  #condition_1  \s
@@ -192,7 +192,7 @@ public final class ControlFlowFunctions {
                 All `value_N` expressions have to return the same type. \
                 If integer expressions are used, they will be cast to float expressions if necessary.  \s
 
-                Example:  \s
+                **Example**  \s
                 ```  \s
                 switch($customer_name,  \s
                 \t "Elon", 0, #case_1, value_1  \s
