@@ -102,10 +102,10 @@ onKeyStroke("z", (e) => {
   --title-bar-height: 30px;
   --min-editor-height: 70px;
 
-  margin-bottom: 20px;
-  margin-left: 20px;
-  margin-right: 20px;
-  box-shadow: 0 0 5px 5px var(--knime-silver-sand);
+  margin-bottom: 8px;
+  margin-left: 8px;
+  margin-right: 8px;
+  box-shadow: var(--shadow-elevation-1);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -128,7 +128,7 @@ onKeyStroke("z", (e) => {
 /* Editor gets an extra margin iff it's the first one of its type.
 Basically gives us some nice margin collapsing. */
 .editor-container:first-child {
-  margin-top: 20px;
+  margin-top: 8px;
 }
 
 .editor-title-bar {
@@ -136,7 +136,8 @@ Basically gives us some nice margin collapsing. */
   padding-left: 20px;
   background-color: var(--knime-porcelain);
   flex-shrink: 0;
-  align-content: center;
+  display: flex;
+  align-items: center;
 }
 
 .editor-control-bar {
