@@ -3,9 +3,8 @@
 <plugin>
    <extension
          point="org.knime.workbench.repository.nodes">
-      <!-- TODO(node-description) put the node into the correct category -->
       <node
-            category-path="/labs"
+            category-path="/manipulation"
             deprecated="false"
             factory-class="org.knime.base.expressions.node.ExpressionNodeFactory"
             hidden="false">
