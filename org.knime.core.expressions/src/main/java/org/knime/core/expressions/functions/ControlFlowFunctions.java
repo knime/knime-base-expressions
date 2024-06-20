@@ -95,30 +95,30 @@ public final class ControlFlowFunctions {
         .description(
             """
                     **Conditional expression:**  \s
-                    `if(condition_1, if_1_true, ...<condition_N,if_N_true>, if_all_false)`  \s
+                    `if(condition_1, value_1, ...<condition_N, value_N>, value_if_all_false)`  \s
 
                     The first expression after a fulfilled condition will be returned. \
-                    If no condition evaluates to `true` the `else` case, i.e. `if_all_false` will be returned.   \
-                    Conditions need to be boolean expressions and all `if_…_true` expressions have to return the same type. \
-                    Integers will be casted automatically to floats if necessary.  \s
+                    If no condition evaluates to `true` the `else` case, i.e. `value_if_all_false` will be returned.   \
+                    Conditions need to be boolean expressions and all `value_N` expressions have to return the same type. \
+                    Integers will be automatically cast to floats if necessary.  \s
 
                     Example:  \s
                     ```  \s
                     if(  \s
                     \t $customer_id < 100,  #condition_1  \s
-                    \t $customer_name + " is an early customer", #if_1_true  \s
+                    \t $customer_name + " is an early customer", #value_1  \s
                     \t $customer_id < 1000, #condtion_2  \s
-                    \t $customer_name + " is a mid customer", #if_2_true and cond. 1 false  \s
-                    \t $customre_name + " is a late customer", #if_all_false  \s
+                    \t $customer_name + " is a mid customer", #value_2 and cond. 1 false  \s
+                    \t $customre_name + " is a late customer", #value_if_all_false  \s
                     )
                     ```
                       \s
-                    The simplest case has no additional conditions (`if(condition_1, if_1_true, if_all_false)`) and this function becomes a classical *if-then-else*:  \s
+                    The simplest case has no additional conditions (`if(condition_1, value_1, value_if_all_false)`) and this function becomes a classical *if-then-else*:  \s
                     ```
                     if(  \s
                     \t $customer_id < 100,  #if / condition_1 \s
-                    \t $customer_name + " is an early customer", #then / if_1_true  \s
-                    \t $customer_name + " is a late customer", #else / if_all_false  \s
+                    \t $customer_name + " is an early customer", #then / value_1  \s
+                    \t $customer_name + " is a late customer", #else / value_if_all_false  \s
                     )
                     ```
                     """ //
@@ -128,8 +128,8 @@ public final class ControlFlowFunctions {
         .args( //
             arg("condition_1", "Boolean condition. See how to chain multiple conditions in description below.",
                 isBoolean()), //
-            arg("if_1_true", "Expression if condition 1 is `true`.", isAnything()), //
-            vararg("additional_conditions, if_all_false",
+            arg("value_1", "Expression if condition 1 is `true`.", isAnything()), //
+            vararg("additional_conditions, value_if_all_false",
                 "Pairs of conditions and related expressions executed when the condition evaluates to `true`. "
                     + "Last argument is the mandatory default (\"else\" case) to be returned when no condition is fulfilled.",
                 isAnything()) //
@@ -181,24 +181,24 @@ public final class ControlFlowFunctions {
         .name("switch") //
         .description("""
                 **Switch expression:**  \s
-                `switch(value, case_1, if_1_matched, case_2, if_2_matched,..., optional if_none_matched)`  \s
+                `switch(expression, case_1, value_1, case_2, value_2,..., optional value_if_none_matched)`  \s
 
                 The switch function executes different expressions based on the value of a given input. \
                 It compares the `value` against each provided `case` in order until a match is found. \
-                The `value` and `case` must have the same type (either string or boolean). \
-                If a match is found, the corresponding `if_…_matched` is executed and returned. \
-                If no match is found the `if_none_matched` expression is returned, if provided. \
+                The `expression` and `case` must have the same type (either string or integer). \
+                If a match is found, the corresponding `value_N` is executed and returned. \
+                If no match is found the `value_if_none_matched` expression is returned, if provided. \
                 Otherwise, the function returns `MISSING`. \
-                All `if_…_matched` expressions have to return the same type. \
-                If integer expressions are used, they will be casted to float expressions if necessary.  \s
+                All `value_N` expressions have to return the same type. \
+                If integer expressions are used, they will be cast to float expressions if necessary.  \s
 
                 Example:  \s
                 ```  \s
                 switch($customer_name,  \s
-                \t "Elon", 0, #case_1, if_1_matched  \s
-                \t "Mark", 1, #case_2, if_2_matched  \s
-                \t "Jeff", 2, #case_3, if_3_matched  \s
-                \t 100, #if_none_matched / default  \s
+                \t "Elon", 0, #case_1, value_1  \s
+                \t "Mark", 1, #case_2, value_2  \s
+                \t "Jeff", 2, #case_3, value_3  \s
+                \t 100, #value_if_none_matched / default  \s
                 )
                 ```
                 """ //
@@ -207,14 +207,14 @@ public final class ControlFlowFunctions {
         .keywords("conditional") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("value", "Value to switch on. Only accepts string or boolean types.",
+            arg("expression", "Value to switch on. Only accepts string or integer types.",
                 isOneOfBaseTypes(STRING, INTEGER)), //
-            arg("case_1", "Case to check equality against `value`.", isOneOfBaseTypes(STRING, INTEGER)), //
-            arg("if_1_matched", "Expression to execute, when `case_1` matches the `value`.", isAnything()), //
-            vararg("additional_cases, if_none_matched",
-                "Optional pairs of `case_…` values to check for equality with the `value` and `if_…_matched` expressions. "
-                    + "The last argument can be an optional `if_none_matched` expression to be applied as a default when no match is found. "
-                    + "If no `if_none_matched` expression is provided, the default is `MISSING`.",
+            arg("case_1", "Case to check equality against `expression`.", isOneOfBaseTypes(STRING, INTEGER)), //
+            arg("value_1", "Expression to execute, when `case_1` matches the `expression`.", isAnything()), //
+            vararg("additional_cases, value_if_none_matched",
+                "Optional pairs of `case_N` values to check for equality with the `expression` and `value_N` expressions. "
+                    + "The last argument can be an optional `value_if_none_matched` expression to be applied as a default when no match is found. "
+                    + "If no `value_if_none_matched` expression is provided, the default is `MISSING`.",
                 isAnything()) //
         ) //
         .returnType("Result of the expression belonging to the first matched case",
