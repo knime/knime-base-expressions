@@ -149,4 +149,10 @@ public enum MathConstantValue {
     public Ast toAst() {
         return toAst(new HashMap<>());
     }
+
+    /** Category for all mathematical constants */
+    public static final OperatorCategory MATH_CONSTANT_CATEGORY = new OperatorCategory("Math – Constants", """
+            The "Math – Constants" category in KNIME Expression language includes
+            predefined mathematical constants such as PI, Infinity, and NaN.
+            """);
 }
