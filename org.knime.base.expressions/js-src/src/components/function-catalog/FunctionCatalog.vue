@@ -281,6 +281,14 @@ const grabFocus = () => {
   // behaviour we want.
   functionListRef.value?.focus();
 };
+
+const expandAll = () => {
+  if (searchQuery.value.trim().length !== 0) {
+    for (const categoryName in categories.value) {
+      categories.value[categoryName].expanded = true;
+    }
+  }
+};
 </script>
 
 <template>
@@ -300,7 +308,12 @@ const grabFocus = () => {
           <SearchInput
             v-model="searchQuery"
             placeholder="Search the catalog"
-            @update:model-value="selectEntry(null)"
+            @update:model-value="
+              () => {
+                selectEntry(null);
+                expandAll();
+              }
+            "
           />
         </div>
       </div>
