@@ -2,12 +2,15 @@ import type {
   FunctionCatalogData,
   FunctionCatalogEntryData,
 } from "@/components/functionCatalogTypes";
-import type { MathConstant } from "@/expressionScriptingService";
+import type {
+  MathConstant,
+  MathConstantData,
+} from "@/expressionScriptingService";
 
 export type CatalogData = Record<string, FunctionCatalogEntryData[]>;
 export const mapFunctionCatalogData = (
   data: FunctionCatalogData,
-  mathConstants: MathConstant[],
+  mathConstants: MathConstantData,
 ): CatalogData => {
   const functionData = data.functions.reduce((catalog, func) => {
     const ellipseOrNot = func.arguments.length > 2 ? ", ..." : "";
@@ -31,17 +34,19 @@ export const mapFunctionCatalogData = (
   }, {} as CatalogData);
 
   const mathConstantsData = {
-    "Math Constants": mathConstants.map((constant: MathConstant) => {
-      return {
-        name: constant.name,
-        category: "Math Constants",
-        keywords: [],
-        description: constant.documentation,
-        returnType: constant.type,
-        entryType: "mathConstant",
-        value: constant.value,
-      } as FunctionCatalogEntryData;
-    }),
+    [mathConstants.category.name]: mathConstants.constants.map(
+      (constant: MathConstant) => {
+        return {
+          name: constant.name,
+          category: mathConstants.category.name,
+          keywords: [],
+          description: constant.documentation,
+          returnType: constant.type,
+          entryType: "mathConstant",
+          value: constant.value,
+        } as FunctionCatalogEntryData;
+      },
+    ),
   };
 
   return { ...functionData, ...mathConstantsData } as CatalogData;

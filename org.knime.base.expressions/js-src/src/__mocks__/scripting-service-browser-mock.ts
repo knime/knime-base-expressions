@@ -194,6 +194,11 @@ if (import.meta.env.MODE === "development.browser") {
     { name: "E", value: "e", type: "String", documentation: "The letter E" },
   ];
 
+  const MATH_CONSTANTS_DATA = {
+    constants: MATH_CONSTANTS,
+    category: { name: "Mathematical Constants", description: "Constants" },
+  };
+
   const scriptingService = createScriptingServiceMock({
     sendToServiceMockResponses: {
       runExpression: (options: any[] | undefined) => {
@@ -201,7 +206,7 @@ if (import.meta.env.MODE === "development.browser") {
         return Promise.resolve();
       },
       getFunctionCatalog: () => Promise.resolve(FUNCTION_CATALOG),
-      getMathConstants: () => Promise.resolve(MATH_CONSTANTS),
+      getMathConstants: () => Promise.resolve(MATH_CONSTANTS_DATA),
       getDiagnostics: () => Promise.resolve([]),
     },
     inputObjects: INPUT_OBJECTS,

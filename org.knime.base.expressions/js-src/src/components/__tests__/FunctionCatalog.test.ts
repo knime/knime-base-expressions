@@ -4,7 +4,10 @@ import FunctionCatalog from "../function-catalog/FunctionCatalog.vue";
 import type { FunctionData } from "../functionCatalogTypes";
 import { useElementBounding } from "@vueuse/core";
 import { ref } from "vue";
-import type { MathConstant } from "@/expressionScriptingService";
+import type {
+  MathConstant,
+  MathConstantData,
+} from "@/expressionScriptingService";
 
 // Beware: This constant is duplicated in the component and the test
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
@@ -87,6 +90,10 @@ describe("FunctionCatalog", () => {
       value: Math.E,
     },
   ] satisfies MathConstant[];
+  const mathConstantsData = {
+    category: { name: "Math Constants", description: "Mathematical constants" },
+    constants: mathConstants,
+  } satisfies MathConstantData;
 
   const doMount = (
     args: {
@@ -102,7 +109,7 @@ describe("FunctionCatalog", () => {
     const wrapper = mount(FunctionCatalog, {
       props: {
         functionCatalogData,
-        constantData: mathConstants,
+        constantData: mathConstantsData,
         initiallyExpanded: true,
         ...args.props,
       },

@@ -7,7 +7,7 @@ import {
 import {
   type ExpressionVersion,
   getExpressionScriptingService,
-  type MathConstant,
+  type MathConstantData,
 } from "@/expressionScriptingService";
 import Button from "webapps-common/ui/components/Button.vue";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
@@ -58,7 +58,7 @@ const expressionVersion = ref<ExpressionVersion>({
 
 const multiEditorComponentRef = ref<MultiEditorPaneExposes | null>(null);
 const functionCatalogData = ref<FunctionCatalogData>();
-const mathConstantData = ref<MathConstant[]>();
+const mathConstantData = ref<MathConstantData>();
 const inputsAvailable = ref(false);
 
 const convertFunctionsToInsertionItems = (functions: FunctionData[]) => {
@@ -129,6 +129,7 @@ onMounted(async () => {
   }
 
   functionCatalogData.value = functionCatalog;
+  functionCatalogData.value.categories.push(mathsConstants.category);
   mathConstantData.value = mathsConstants;
 
   if (inputObjects && inputObjects.length > 0 && inputObjects[0].subItems) {
@@ -154,7 +155,7 @@ onMounted(async () => {
       : [],
     extraCompletionItems: [
       ...convertFunctionsToInsertionItems(functionCatalog.functions),
-      ...mathsConstants.map((constant) => ({
+      ...mathConstantData.value.constants.map((constant) => ({
         text: constant.name,
         kind: monaco.languages.CompletionItemKind.Constant,
         extraDetailForMonaco: {

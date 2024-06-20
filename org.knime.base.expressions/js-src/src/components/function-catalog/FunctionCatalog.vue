@@ -18,14 +18,14 @@ import CategoryDescription from "@/components/function-catalog/CategoryDescripti
 import { createDragGhosts } from "webapps-common/ui/components/FileExplorer/dragGhostHelpers";
 import { EMPTY_DRAG_IMAGE } from "webapps-common/ui/components/FileExplorer/useItemDragging";
 import { useDraggedFunctionStore } from "@/draggedFunctionStore";
-import type { MathConstant } from "@/expressionScriptingService";
+import type { MathConstantData } from "@/expressionScriptingService";
 
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 450;
 const FUNCTION_CATALOG_WIDTH = "250px";
 
 const props = defineProps<{
   functionCatalogData: FunctionCatalogData;
-  constantData: MathConstant[];
+  constantData: MathConstantData;
   initiallyExpanded: boolean;
 }>();
 

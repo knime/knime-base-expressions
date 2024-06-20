@@ -45,15 +45,21 @@ const TEST_FUNCTION_CATALOG = {
   ],
 } satisfies FunctionCatalogData;
 
-const TEST_MATH_CONSTANTS = [
-  {
-    name: "PI",
-    value: 3,
-    type: "Float",
-    documentation: "The *real* value of Pi",
+const TEST_MATH_CONSTANTS = {
+  category: {
+    name: "Mathematical Constants",
+    description: "Constants",
   },
-  { name: "E", value: 3, type: "String", documentation: "The letter E" },
-];
+  constants: [
+    {
+      name: "PI",
+      value: 3,
+      type: "Float",
+      documentation: "The *real* value of Pi",
+    },
+    { name: "E", value: 3, type: "String", documentation: "The letter E" },
+  ],
+};
 
 vi.mock("@/expressionScriptingService", () => ({
   getExpressionScriptingService: () => ({
