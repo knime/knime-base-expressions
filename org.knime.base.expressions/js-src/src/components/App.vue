@@ -3,6 +3,7 @@ import {
   consoleHandler,
   ScriptingEditor,
   setActiveEditorStoreForAi,
+  MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE,
 } from "@knime/scripting-editor";
 import {
   type ExpressionVersion,
@@ -14,7 +15,7 @@ import SplitButton from "webapps-common/ui/components/SplitButton.vue";
 import DropdownIcon from "webapps-common/ui/assets/img/icons/arrow-dropdown.svg";
 import SubMenu from "webapps-common/ui/components/SubMenu.vue";
 import Tooltip from "webapps-common/ui/components/Tooltip.vue";
-import { onKeyStroke } from "@vueuse/core";
+import { useWindowSize, onKeyStroke } from "@vueuse/core";
 import { computed, onMounted, ref } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
@@ -33,10 +34,16 @@ import { useStore } from "@/store";
 
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { functionDataToMarkdown } from "@/components/function-catalog/functionDescriptionToMarkdown";
+import {
+  COMBINED_SPLITTER_WIDTH,
+  MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION,
+  MIN_WIDTH_FUNCTION_CATALOG,
+  SWITCH_TO_SMALL_DESCRIPTION,
+  WIDTH_OF_INPUT_OUTPUT_PANE,
+} from "@/components/function-catalog/contraints";
 
 const language = "knime-expression";
 
-const MIN_WIDTH_FUNCTION_CATALOG = 300;
 const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
 
 const scriptingService = getExpressionScriptingService();
@@ -270,6 +277,37 @@ const runButtonDisabledErrorReason = computed(() => {
     return null;
   }
 });
+
+const calculateInitialPaneSizes = () => {
+  const availableWidthForPanes =
+    useWindowSize().width.value - COMBINED_SPLITTER_WIDTH;
+
+  const sizeOfInputOutputPaneInPixel =
+    availableWidthForPanes < MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE
+      ? 0
+      : WIDTH_OF_INPUT_OUTPUT_PANE;
+  const relativeSizeOfInputOutputPane =
+    (sizeOfInputOutputPaneInPixel / availableWidthForPanes) * 100;
+
+  const widthOfRightPane =
+    availableWidthForPanes < SWITCH_TO_SMALL_DESCRIPTION
+      ? MIN_WIDTH_FUNCTION_CATALOG
+      : MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION;
+  const relativeSizeOfRightPaneWithoutTakingIntoAccountTheLeftPane =
+    (widthOfRightPane / availableWidthForPanes) * 100;
+
+  const factorForRightPaneToTakeLeftPaneIntoAccount =
+    100 / (100 - relativeSizeOfInputOutputPane);
+
+  return {
+    right:
+      relativeSizeOfRightPaneWithoutTakingIntoAccountTheLeftPane *
+      factorForRightPaneToTakeLeftPaneIntoAccount,
+    left: relativeSizeOfInputOutputPane,
+  };
+};
+
+const initialPaneSizes = calculateInitialPaneSizes();
 </script>
 
 <template>
@@ -279,6 +317,11 @@ const runButtonDisabledErrorReason = computed(() => {
       :show-control-bar="true"
       :language="language"
       :show-output-table="true"
+      :initial-pane-sizes="{
+        right: initialPaneSizes.right,
+        left: initialPaneSizes.left,
+        bottom: 30,
+      }"
       @input-output-item-insertion="onInputOutputItemInsertionTriggered"
     >
       <template #editor>

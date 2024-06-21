@@ -18,9 +18,12 @@ import { createDragGhosts } from "webapps-common/ui/components/FileExplorer/drag
 import { EMPTY_DRAG_IMAGE } from "webapps-common/ui/components/FileExplorer/useItemDragging";
 import { useDraggedFunctionStore } from "@/draggedFunctionStore";
 import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
+import {
+  MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION,
+  MIN_WIDTH_FUNCTION_CATALOG,
+} from "@/components/function-catalog/contraints";
 
-const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 600;
-const FUNCTION_CATALOG_WIDTH = "300px";
+const FUNCTION_CATALOG_WIDTH = `${MIN_WIDTH_FUNCTION_CATALOG}px`;
 
 const props = defineProps<{
   functionCatalogData: FunctionCatalogData;
