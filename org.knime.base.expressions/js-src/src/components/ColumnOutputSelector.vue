@@ -128,7 +128,7 @@ watch(
         :possible-values="allowedReplacementColumns"
         class="column-input"
         direction="up"
-        :compact="true"
+        compact
       />
     </div>
   </span>

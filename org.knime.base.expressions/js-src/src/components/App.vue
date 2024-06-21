@@ -15,13 +15,13 @@ import SplitButton from "webapps-common/ui/components/SplitButton.vue";
 import DropdownIcon from "webapps-common/ui/assets/img/icons/arrow-dropdown.svg";
 import SubMenu from "webapps-common/ui/components/SubMenu.vue";
 import Tooltip from "webapps-common/ui/components/Tooltip.vue";
+import { onKeyStroke } from "@vueuse/core";
 import { computed, onMounted, ref } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
   type AllowedDropDownValue,
   type ColumnSelectorState,
 } from "@/components/ColumnOutputSelector.vue";
-import { onKeyStroke } from "@vueuse/core";
 import * as monaco from "monaco-editor";
 import MultiEditorPane, {
   type MultiEditorPaneExposes,
@@ -262,10 +262,6 @@ const runButtonDisabledErrorReason = computed(() => {
     return null;
   }
 });
-
-const runButtonEnabled = computed(
-  () => runButtonDisabledErrorReason.value === null,
-);
 </script>
 
 <template>
@@ -306,7 +302,7 @@ const runButtonEnabled = computed(
         </template>
       </template>
       <!-- Controls for the very bottom bar -->
-      <template #code-editor-controls>
+      <template #code-editor-controls="{ showButtonText }">
         <Tooltip :text="runButtonDisabledErrorReason">
           <SplitButton>
             <Button
@@ -315,9 +311,23 @@ const runButtonEnabled = computed(
               :disabled="runButtonDisabledErrorReason !== null"
               @click="runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN)"
             >
-              <PlayIcon />Evaluate first
-              {{ DEFAULT_NUMBER_OF_ROWS_TO_RUN }} rows</Button
+              <div
+                class="run-button"
+                :class="{
+                  'hide-button-text': !showButtonText,
+                }"
+              >
+                <PlayIcon />
+              </div>
+
+              {{
+                showButtonText
+                  ? `Evaluate first
+               ${DEFAULT_NUMBER_OF_ROWS_TO_RUN}  rows`
+                  : null
+              }}</Button
             >
+
             <SubMenu
               :items="[
                 { text: 'Evaluate first 100 rows', metadata: 100 },
@@ -351,6 +361,14 @@ const runButtonEnabled = computed(
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.hide-button-text {
+  margin-right: -15px;
+}
+
+.run-button {
+  display: inline;
 }
 
 .submenu {
