@@ -308,6 +308,7 @@ const expandAll = () => {
           <SearchInput
             v-model="searchQuery"
             placeholder="Search the catalog"
+            :compact="true"
             @update:model-value="
               () => {
                 selectEntry(null);
