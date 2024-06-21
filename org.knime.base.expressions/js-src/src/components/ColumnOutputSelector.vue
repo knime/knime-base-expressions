@@ -107,6 +107,7 @@ watch(
       :disabled="props.allowedReplacementColumns.length === 0"
       class="switch-button"
       :class="{ 'focus-painted': paintFocus }"
+      :compact="true"
     />
     <div v-if="outputMode === 'APPEND'" class="output-selector-child right">
       <InputField
@@ -115,6 +116,7 @@ watch(
         type="text"
         class="column-input"
         placeholder="New column..."
+        :compact="true"
       />
     </div>
     <div v-else class="output-selector-child right">
@@ -126,6 +128,7 @@ watch(
         :possible-values="allowedReplacementColumns"
         class="column-input"
         direction="up"
+        :compact="true"
       />
     </div>
   </span>
@@ -174,7 +177,7 @@ watch(
   align-items: flex-start;
   max-width: 100%;
   min-width: 100px;
-  height: 35px;
+  height: 30px;
 }
 
 /* Stop the dropdown being taller than the bar. This takes some forcing, since it REALLY doesn't want to be smaller than about 40px */
@@ -182,7 +185,6 @@ watch(
 :deep(.dropdown),
 :deep(#dropdown-box-to-select-column),
 :deep(#button-dropdown-box-to-select-column) {
-  height: 100%;
   max-width: 400px;
 }
 
