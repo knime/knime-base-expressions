@@ -421,7 +421,7 @@ const expandAll = () => {
 </template>
 
 <style scoped>
-@import "webapps-common/ui/css/variables/spacings.css";
+@import url("webapps-common/ui/css/variables/spacings.css");
 
 .function-catalog-container {
   display: flex;
@@ -483,9 +483,8 @@ const expandAll = () => {
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-size: small;
   font-weight: bold;
-  margin-top: var(--space-4);
+  font-size: 13px;
 }
 
 .category-header:focus {
@@ -533,7 +532,7 @@ const expandAll = () => {
 .function-header {
   font-size: 13px;
   font-weight: normal;
-  line-height: 20px;
+  margin-top: 2px;
   margin-left: var(--space-24);
   cursor: pointer;
   color: var(--knime-dove-gray);

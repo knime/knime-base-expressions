@@ -24,8 +24,6 @@ defineProps<{
 }
 
 .category-description {
-  border-left: 5px solid var(--knime-silver-sand-semi);
-  padding-left: 25px;
   margin-left: 5px;
   margin-top: 10px;
 }
