@@ -53,7 +53,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -73,6 +72,7 @@ import org.knime.core.expressions.ExpressionCompileError;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.MathConstantValue;
+import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
@@ -104,7 +104,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
      * Cached function for mapping column access to output types for checking the expression types. Use
      * {@link #getColumnToTypeMapper()} to access this!
      */
-    private Function<String, Optional<ValueType>> m_columnToType;
+    private Function<String, ReturnResult<ValueType>> m_columnToType;
 
     /**
      * Cached input table for executing the expression.
@@ -135,7 +135,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         m_inputTable = null;
     }
 
-    synchronized Function<String, Optional<ValueType>> getColumnToTypeMapper() {
+    synchronized Function<String, ReturnResult<ValueType>> getColumnToTypeMapper() {
         if (m_columnToType == null) {
             var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
             m_columnToType = ExpressionNodeModel.columnToTypesForTypeInference(spec);
