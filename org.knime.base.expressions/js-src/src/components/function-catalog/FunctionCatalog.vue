@@ -295,11 +295,11 @@ const expandAll = () => {
   <div
     ref="catalogRoot"
     class="function-catalog-container"
-    :class="isSlimMode ? 'slim-mode' : ''"
+    :class="{ 'slim-mode': isSlimMode }"
   >
     <div
       class="function-catalog"
-      :class="isSlimMode ? 'slim-mode' : ''"
+      :class="{ 'slim-mode': isSlimMode }"
       :style="{ '--function-catalog-width': FUNCTION_CATALOG_WIDTH }"
       tabindex="-1"
     >
