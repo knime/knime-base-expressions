@@ -344,11 +344,11 @@ final class TypingTest {
         "s", STRING, "s?", OPT_STRING //
     );
 
-    private static final Function<String, Optional<ValueType>> TEST_COLUMN_TO_TYPE =
-        c -> Optional.ofNullable(TEST_TYPES.get(c));
+    private static final Function<String, ReturnResult<ValueType>> TEST_COLUMN_TO_TYPE =
+        c -> ReturnResult.fromNullable(TEST_TYPES.get(c), "col " + c + " missing");
 
-    private static final Function<String, Optional<ValueType>> TEST_FLOWVARIABLE_TO_TYPE =
-        c -> Optional.ofNullable(TEST_TYPES.get(c));
+    private static final Function<String, ReturnResult<ValueType>> TEST_FLOWVARIABLE_TO_TYPE =
+        c -> ReturnResult.fromNullable(TEST_TYPES.get(c), "var " + c + " missing");
 
     private static void assertChildrenHaveTypes(final Ast astWithTypes) {
         for (var child : astWithTypes.children()) {

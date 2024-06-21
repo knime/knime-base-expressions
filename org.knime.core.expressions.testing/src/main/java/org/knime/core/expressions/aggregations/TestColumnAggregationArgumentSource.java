@@ -52,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.knime.core.expressions.aggregations.ArgumentsBuilder.args;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -61,6 +60,7 @@ import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -85,7 +85,8 @@ public class TestColumnAggregationArgumentSource implements ArgumentsProvider {
         var args = getTestArgsFor(agg);
         var ast = Ast.aggregationCall(agg.name(), args);
         try {
-            Expressions.inferTypes(ast, n -> Optional.ofNullable(TEST_COLUMNS.get(n)), n -> Optional.empty());
+            Expressions.inferTypes(ast, n -> ReturnResult.fromNullable(TEST_COLUMNS.get(n), "Column does not exist"),
+                n -> ReturnResult.failure("There are no flow variables"));
         } catch (ExpressionCompileException ex) {
             fail("Failed to infer types for " + ast, ex); // NOSONAR - the method cannot throw to be usable in map
         }

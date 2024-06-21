@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -47,8 +47,8 @@ public final class ColumnAggregationTestBuilder {
         m_illegalArgsTests = new ArrayList<>();
     }
 
-    private Optional<ValueType> columnType(final String colName) {
-        return Optional.ofNullable(m_columnTypes.get(colName));
+    private ReturnResult<ValueType> columnType(final String colName) {
+        return ReturnResult.fromNullable(m_columnTypes.get(colName), "Column does not exist");
     }
 
     /**

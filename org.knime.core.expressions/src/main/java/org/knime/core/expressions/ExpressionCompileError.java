@@ -85,14 +85,12 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
         return new ExpressionCompileError(message, CompileErrorType.TYPING, location);
     }
 
-    static ExpressionCompileError missingColumnError(final Ast.ColumnId column, final TextRange location) {
-        return new ExpressionCompileError("The column " + column.toExpression() + " is not available",
-            CompileErrorType.MISSING_COLUMN, location);
+    static ExpressionCompileError missingColumnError(final String message, final TextRange location) {
+        return new ExpressionCompileError(message, CompileErrorType.MISSING_COLUMN, location);
     }
 
-    static ExpressionCompileError missingFlowVariableError(final String flowVariableName, final TextRange location) {
-        return new ExpressionCompileError("The flowVariable '" + flowVariableName + "' is not available",
-            CompileErrorType.MISSING_FLOW_VARIABLE, location);
+    static ExpressionCompileError missingFlowVariableError(final String message, final TextRange location) {
+        return new ExpressionCompileError(message, CompileErrorType.MISSING_FLOW_VARIABLE, location);
     }
 
     static ExpressionCompileError aggregationNotImplemented(final String aggregationName, final TextRange location) {
@@ -101,11 +99,13 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
     }
 
     static ExpressionCompileError missingColumnError(final ColumnAccess node) {
-        return missingColumnError(node.columnId(), Parser.getTextLocation(node));
+        return missingColumnError("The column " + node.toExpression() + " is not available",
+            Parser.getTextLocation(node));
     }
 
     static ExpressionCompileError missingFlowVariableError(final FlowVarAccess node) {
-        return missingFlowVariableError(node.name(), Parser.getTextLocation(node));
+        return missingFlowVariableError("The flowVariable '" + node.name() + "' is not available",
+            Parser.getTextLocation(node));
     }
 
     static ExpressionCompileError aggregationNotImplemented(final AggregationCall node) {

@@ -97,13 +97,13 @@ final class Typing {
 
     static ValueType inferTypes( //
         final Ast root, //
-        final Function<String, Optional<ValueType>> columnType, //
-        final Function<String, Optional<ValueType>> flowVarType, //
+        final Function<String, ReturnResult<ValueType>> columnToType, //
+        final Function<String, ReturnResult<ValueType>> flowVarType, //
         final Map<String, ExpressionFunction> functions, //
         final Map<String, ColumnAggregation> aggregations //
     ) throws ExpressionCompileException {
         var outputType = Ast.putDataRecursive(root, TYPE_DATA_KEY,
-            new TypingVisitor(columnType, flowVarType, functions, aggregations));
+            new TypingVisitor(columnToType, flowVarType, functions, aggregations));
         if (outputType instanceof ErrorValueType errorValueType) {
             throw new ExpressionCompileException(errorValueType.m_errors);
         }
@@ -140,21 +140,21 @@ final class Typing {
 
     private static final class TypingVisitor implements Ast.AstVisitor<ValueType, RuntimeException> {
 
-        private final Function<String, Optional<ValueType>> m_columnType;
+        private final Function<String, ReturnResult<ValueType>> m_columnType;
 
-        private final Function<String, Optional<ValueType>> m_flowVariableType;
+        private final Function<String, ReturnResult<ValueType>> m_flowVariableType;
 
         private final Map<String, ExpressionFunction> m_functions;
 
         private final Map<String, ColumnAggregation> m_aggregations;
 
         TypingVisitor( //
-            final Function<String, Optional<ValueType>> columnType, //
-            final Function<String, Optional<ValueType>> flowVarType, //
+            final Function<String, ReturnResult<ValueType>> columnToType, //
+            final Function<String, ReturnResult<ValueType>> flowVarType, //
             final Map<String, ExpressionFunction> functions, //
             final Map<String, ColumnAggregation> aggregations //
         ) {
-            m_columnType = columnType;
+            m_columnType = columnToType;
             m_functions = functions;
             m_flowVariableType = flowVarType;
             m_aggregations = aggregations;
@@ -189,7 +189,8 @@ final class Typing {
         public ValueType visit(final ColumnAccess node) {
             final Ast.ColumnId id = node.columnId();
             return switch (id.type()) {
-                case NAMED -> m_columnType.apply(id.name()).orElseGet(() -> ErrorValueType.missingColumn(node));
+                case NAMED -> m_columnType.apply(id.name())
+                    .orElseGet(message -> ErrorValueType.missingColumn(node, message));
                 case ROW_ID -> STRING;
                 case ROW_INDEX -> INTEGER;
             };
@@ -197,7 +198,8 @@ final class Typing {
 
         @Override
         public ValueType visit(final FlowVarAccess node) {
-            return m_flowVariableType.apply(node.name()).orElseGet(() -> ErrorValueType.missingFlowVariable(node));
+            return m_flowVariableType.apply(node.name())
+                .orElseGet(message -> ErrorValueType.missingFlowVariable(node, message));
         }
 
         @Override
@@ -383,12 +385,14 @@ final class Typing {
 
         private final List<ExpressionCompileError> m_errors;
 
-        static ErrorValueType missingColumn(final ColumnAccess node) {
-            return new ErrorValueType(List.of(ExpressionCompileError.missingColumnError(node)));
+        static ErrorValueType missingColumn(final ColumnAccess node, final String errorMessage) {
+            return new ErrorValueType(
+                List.of(ExpressionCompileError.missingColumnError(errorMessage, Parser.getTextLocation(node))));
         }
 
-        static ErrorValueType missingFlowVariable(final FlowVarAccess node) {
-            return new ErrorValueType(List.of(ExpressionCompileError.missingFlowVariableError(node)));
+        static ErrorValueType missingFlowVariable(final FlowVarAccess node, final String message) {
+            return new ErrorValueType(
+                List.of(ExpressionCompileError.missingFlowVariableError(message, Parser.getTextLocation(node))));
         }
 
         static ErrorValueType combined(final List<ValueType> children) {

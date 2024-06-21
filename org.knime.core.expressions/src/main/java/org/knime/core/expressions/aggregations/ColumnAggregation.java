@@ -48,7 +48,6 @@
  */
 package org.knime.core.expressions.aggregations;
 
-import java.util.Optional;
 import java.util.function.Function;
 
 import org.knime.core.expressions.Arguments;
@@ -88,5 +87,5 @@ public interface ColumnAggregation extends NamedExpressionOperator {
      * @return the return type or <code>Optional.empty()</code> if the aggregation is not applicable to the arguments
      */
     ReturnResult<ValueType> returnType(Arguments<ConstantAst> arguments,
-        Function<String, Optional<ValueType>> columnType);
+        Function<String, ReturnResult<ValueType>> columnType);
 }

@@ -110,7 +110,10 @@ final class EvaluationTest {
     @EnumSource(ExecutionTest.class)
     void test(final ExecutionTest params) throws Exception {
         var ast = params.m_expression;
-        Typing.inferTypes(ast, FIND_TEST_COLUMN.andThen(c -> c.map(TestColumn::type)), FIND_TEST_FLOW_VARIABLE.andThen(c -> c.map(TestFlowVariable::type)),
+        Typing.inferTypes(ast, //
+            FIND_TEST_COLUMN.andThen(c -> ReturnResult.fromOptional(c, "col missing").map(TestColumn::type)), //
+            FIND_TEST_FLOW_VARIABLE
+                .andThen(c -> ReturnResult.fromOptional(c, "var missing").map(TestFlowVariable::type)), //
             TEST_FUNCTIONS, TEST_AGGREGATIONS);
         var result = Evaluation.evaluate( //
             ast, //

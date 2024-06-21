@@ -49,7 +49,6 @@
 package org.knime.core.expressions.aggregations;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -132,7 +131,7 @@ public class AggregationBuilder {
          *         arguments are valid.
          */
         ReturnResult<ValueType> returnType(Arguments<ConstantAst> arguments,
-            Function<String, Optional<ValueType>> columnType);
+            Function<String, ReturnResult<ValueType>> columnType);
     }
 
     interface RequiresReturnType {
@@ -188,7 +187,7 @@ public class AggregationBuilder {
 
         @Override
         public ReturnResult returnType(final Arguments<ConstantAst> arguments,
-            final Function<String, Optional<ValueType>> columnType) {
+            final Function<String, ReturnResult<ValueType>> columnType) {
 
             return m_returnTypeMapping.returnType(arguments, columnType);
         }

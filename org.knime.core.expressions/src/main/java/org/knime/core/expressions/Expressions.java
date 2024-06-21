@@ -120,17 +120,18 @@ public final class Expressions {
      *
      * @param expression the expression
      * @param columnToType a function that returns the type of a column accessed by the expression. The function should
-     *            return <code>Optional.empty()</code> if the column is not available.
+     *            return <code>ReturnResult.failure()</code> if the column is not available or has an unsupported type.
      * @param flowVarType a function that returns the type of a flow variable accessed by the expression. The function
-     *            should return <code>Optional.empty()</code> if the flow variable is not available.
+     *            should return <code>ReturnResult.failure()</code> if the flow variable is not available or has an
+     *            unsupported type.
      * @return the output type of the full expression
      * @throws ExpressionCompileException if type inference failed because operations are used for incompatible types or
      *             a column is not available
      */
     public static ValueType inferTypes( //
         final Ast expression, //
-        final Function<String, Optional<ValueType>> columnToType, //
-        final Function<String, Optional<ValueType>> flowVarType //
+        final Function<String, ReturnResult<ValueType>> columnToType, //
+        final Function<String, ReturnResult<ValueType>> flowVarType //
     ) throws ExpressionCompileException {
         return Typing.inferTypes(expression, columnToType, flowVarType, BuiltInFunctions.BUILT_IN_FUNCTIONS_MAP,
             BuiltInAggregations.BUILT_IN_AGGREGATIONS_MAP);

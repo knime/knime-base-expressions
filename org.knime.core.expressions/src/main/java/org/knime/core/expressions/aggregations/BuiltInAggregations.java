@@ -51,7 +51,6 @@ package org.knime.core.expressions.aggregations;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -99,8 +98,6 @@ public final class BuiltInAggregations {
     private static final String COLUMN_ARG_ID = "column";
 
     // Some error messages that we reuse a lot
-    private static final String COLUMN_DOES_NOT_EXIST_ERR = "Column does not exist";
-
     private static final String COLUMN_ARG_MUST_BE_STRING_ERR = "Column argument must be a string";
 
     private static final String ARGUMENTS_NOT_MATCHED_ERR = "Invalid arguments provided to aggregation";
@@ -138,19 +135,18 @@ public final class BuiltInAggregations {
         .build();
 
     private static ReturnResult<ValueType> maxReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnTypeMapper) {
+        final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
         var matchedArgs = Argument.matchSignature(MAX.description().arguments(), arguments);
 
         return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
             .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
-            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .flatMap(columnTypeMapper::apply) //
             .filter(ValueType::isNumericOrOpt, "Column must be numeric");
     }
 
@@ -185,19 +181,18 @@ public final class BuiltInAggregations {
         .build();
 
     private static ReturnResult<ValueType> minReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnTypeMapper) {
+        final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
         var matchedArgs = Argument.matchSignature(MIN.description().arguments(), arguments);
 
         return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
             .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
-            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .flatMap(columnTypeMapper::apply) //
             .filter(ValueType::isNumericOrOpt, "Column must be numeric");
     }
 
@@ -231,19 +226,18 @@ public final class BuiltInAggregations {
         .build();
 
     private static ReturnResult<ValueType> meanReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnTypeMapper) {
+        final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
         var matchedArgs = Argument.matchSignature(MEAN.description().arguments(), arguments);
 
         return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
             .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
-            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .flatMap(columnTypeMapper::apply) //
             .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
             .map(type -> ValueType.OPT_FLOAT);
     }
@@ -278,19 +272,18 @@ public final class BuiltInAggregations {
         .build();
 
     private static ReturnResult<ValueType> medianReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnTypeMapper) {
+        final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
         var matchedArgs = Argument.matchSignature(MEDIAN.description().arguments(), arguments);
 
         return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
             .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
-            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .flatMap(columnTypeMapper::apply) //
             .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
             .map(type -> ValueType.OPT_FLOAT);
     }
@@ -326,19 +319,18 @@ public final class BuiltInAggregations {
         .build();
 
     private static ReturnResult<ValueType> sumReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnTypeMapper) {
+        final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
         var matchedArgs = Argument.matchSignature(SUM.description().arguments(), arguments);
 
         return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
             .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
-            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .flatMap(columnTypeMapper::apply) //
             .filter(ValueType::isNumericOrOpt, "Column must be numeric");
     }
 
@@ -372,19 +364,18 @@ public final class BuiltInAggregations {
         .build();
 
     private static ReturnResult<ValueType> varianceReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnTypeMapper) {
+        final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
         var matchedArgs = Argument.matchSignature(VARIANCE.description().arguments(), arguments);
 
         return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
             .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
-            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .flatMap(columnTypeMapper::apply) //
             .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
             .map(type -> ValueType.OPT_FLOAT);
     }
@@ -428,20 +419,19 @@ public final class BuiltInAggregations {
         .build();
 
     private static ReturnResult<ValueType> stddevReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnTypeMapper) {
+        final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
         var matchedArgs = Argument.matchSignature(STD_DEV.description().arguments(), arguments); //
 
         return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
             .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
             .filter(optArgHasType("ddof", Ast.IntegerConstant.class), "ddof must be an integer") //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
-            .map(colName -> columnTypeMapper.apply(colName).get()) //
+            .flatMap(columnTypeMapper::apply) //
             .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
             .map(type -> ValueType.OPT_FLOAT);
     }
@@ -474,15 +464,18 @@ public final class BuiltInAggregations {
         .build();
 
     private static ReturnResult<ValueType> countReturnType(final Arguments<ConstantAst> arguments,
-        final Function<String, Optional<ValueType>> columnTypeMapper) {
+        final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
         var matchedArgs = Argument.matchSignature(COUNT.description().arguments(), arguments); //
 
         return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(columnExists(columnTypeMapper), COLUMN_DOES_NOT_EXIST_ERR) //
             .filter(optArgHasType("ignore_missing", Ast.BooleanConstant.class), "ignore_missing must be a boolean") //
+            .map(args -> args.get(COLUMN_ARG_ID)) //
+            .map(Ast.StringConstant.class::cast) //
+            .map(Ast.StringConstant::value) //
+            .flatMap(columnTypeMapper::apply) //
             .map(arg -> ValueType.INTEGER); //
     }
 
@@ -492,12 +485,6 @@ public final class BuiltInAggregations {
 
     private static Predicate<Map<String, ConstantAst>> columnArgumentIsString() {
         return args -> args.get(COLUMN_ARG_ID) instanceof Ast.StringConstant;
-    }
-
-    private static Predicate<Map<String, ConstantAst>>
-        columnExists(final Function<String, Optional<ValueType>> columnTypeMapper) {
-
-        return args -> columnTypeMapper.apply(((Ast.StringConstant)args.get(COLUMN_ARG_ID)).value()).isPresent();
     }
 
     private static Predicate<Map<String, ConstantAst>> optArgHasType(final String argName,

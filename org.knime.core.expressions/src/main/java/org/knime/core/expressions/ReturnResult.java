@@ -104,6 +104,18 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
     <R> ReturnResult<R> map(final Function<T, R> mapper);
 
     /**
+     * Map the return value to a new return value, if it is present. Otherwise, do nothing.
+     * <P>
+     * This function is similar to {@link #map(Function)} but allows the mapping function to convert the value into an
+     * error.
+     *
+     * @param <R> the type of the new return value
+     * @param mapper the function to map the return value to a new return value or error
+     * @return the new return result or error
+     */
+    <R> ReturnResult<R> flatMap(final Function<T, ReturnResult<R>> mapper);
+
+    /**
      * Filter the return value with a predicate. If the predicate is not satisfied, return an error return result.
      *
      * @param filter the predicate to filter the return value
@@ -120,6 +132,14 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
      * @return the new return result, or this one if it is not empty
      */
     ReturnResult<T> or(Supplier<T> otherSupplier);
+
+    /**
+     * Get the value or if it is an error, map the error message to an alternative value.
+     *
+     * @param other a function that provides a return value if this return result is empty
+     * @return the value
+     */
+    T orElseGet(Function<String, ? extends T> other);
 
     /**
      * Return result that contains a return value. Use {@link ReturnResult#success} to create a new {@link Success}.
@@ -155,6 +175,11 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
         }
 
         @Override
+        public <R> ReturnResult<R> flatMap(final Function<T, ReturnResult<R>> mapper) {
+            return mapper.apply(m_returnValue);
+        }
+
+        @Override
         public ReturnResult<T> filter(final Predicate<T> filter, final String errorMessage) {
             return filter.test(m_returnValue) ? this : new Failure<>(errorMessage);
         }
@@ -162,6 +187,11 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
         @Override
         public ReturnResult<T> or(final Supplier<T> otherSupplier) {
             return this;
+        }
+
+        @Override
+        public T orElseGet(final Function<String, ? extends T> other) {
+            return getValue();
         }
     }
 
@@ -199,6 +229,11 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
         }
 
         @Override
+        public <R> ReturnResult<R> flatMap(final Function<T, ReturnResult<R>> mapper) {
+            return new Failure<>(m_errorMessage);
+        }
+
+        @Override
         public ReturnResult<T> filter(final Predicate<T> filter, final String errorMessage) {
             return this;
         }
@@ -206,6 +241,11 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
         @Override
         public ReturnResult<T> or(final Supplier<T> otherSupplier) {
             return new Success<>(otherSupplier.get());
+        }
+
+        @Override
+        public T orElseGet(final Function<String, ? extends T> other) {
+            return other.apply(m_errorMessage);
         }
     }
 
