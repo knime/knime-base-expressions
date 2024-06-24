@@ -51,6 +51,7 @@ package org.knime.base.expressions.node;
 import java.util.Collection;
 import java.util.List;
 
+import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.scripting.editor.InputOutputModel;
@@ -100,7 +101,8 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
                 null, //
                 COLUMN_ALIAS_TEMPLATE, //
                 false, // no multiple selection
-                null // no required import
+                null, // no required import
+                type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null //
             ));
         } else {
             return List.of(new InputOutputModel( //
