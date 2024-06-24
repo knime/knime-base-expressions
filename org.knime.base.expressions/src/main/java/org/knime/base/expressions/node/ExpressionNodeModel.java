@@ -48,6 +48,9 @@
  */
 package org.knime.base.expressions.node;
 
+import static org.knime.base.expressions.ExpressionRunnerUtils.columnToTypesForTypeInference;
+import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForTypeInference;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -58,14 +61,8 @@ import org.knime.base.expressions.ExpressionMapperFactory;
 import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContext;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
-import org.knime.core.data.BooleanValue;
-import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
-import org.knime.core.data.DataType;
-import org.knime.core.data.DoubleValue;
-import org.knime.core.data.LongValue;
-import org.knime.core.data.StringValue;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
@@ -76,8 +73,6 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
-import org.knime.core.expressions.ReturnResult;
-import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -106,24 +101,6 @@ class ExpressionNodeModel extends NodeModel {
     ExpressionNodeModel() {
         super(1, 1);
         m_settings = new ExpressionNodeSettings();
-    }
-
-    static Function<String, ReturnResult<ValueType>> columnToTypesForTypeInference(final DataTableSpec spec) {
-        return name -> ReturnResult
-            .fromNullable(spec.getColumnSpec(name), "No column with the name '" + name + "' is available.") //
-            .map(DataColumnSpec::getType) //
-            .flatMap(type -> ReturnResult.fromNullable(mapDataTypeToValueType(type),
-                "Columns of the type '" + type + "' are not supported in expressions."));
-    }
-
-    /** Utility function to get a mapper from flow variable names to the value type */
-    static Function<String, ReturnResult<ValueType>>
-        flowVarToTypeForTypeInference(final Map<String, FlowVariable> flowVars) {
-        return name -> ReturnResult
-            .fromNullable(flowVars.get(name), "No flow variable with the name '" + name + "' is available.") //
-            .map(FlowVariable::getVariableType) //
-            .flatMap(type -> ReturnResult.fromNullable(mapVariableToValueType(type),
-                "Flow variables of the type '" + type + "' are not supported"));
     }
 
     static final VariableType<?>[] SUPPORTED_FLOW_VARIABLE_TYPES =
@@ -299,40 +276,6 @@ class ExpressionNodeModel extends NodeModel {
             } else {
                 throw new IllegalArgumentException("Unsupported variable type: " + variableType);
             }
-        }
-    }
-
-    // Note sonar complains about the number of retruns which is not a problem here
-    private static ValueType mapVariableToValueType(final VariableType<?> variableType) { // NOSONAR
-        if (variableType == VariableType.DoubleType.INSTANCE) {
-            return ValueType.FLOAT;
-        } else if (variableType == VariableType.BooleanType.INSTANCE) {
-            return ValueType.BOOLEAN;
-        } else if (variableType == VariableType.LongType.INSTANCE) {
-            return ValueType.INTEGER;
-        } else if (variableType == VariableType.IntType.INSTANCE) {
-            return ValueType.INTEGER;
-        } else if (variableType == VariableType.StringType.INSTANCE) {
-            return ValueType.STRING;
-        } else {
-            return null;
-        }
-    }
-
-    private static ValueType mapDataTypeToValueType(final DataType type) {
-        if (type.isCompatible(BooleanValue.class)) {
-            return ValueType.OPT_BOOLEAN;
-        } else if (type.isCompatible(LongValue.class)) {
-            // Note that IntCell is compatible with LongValue
-            return ValueType.OPT_INTEGER;
-        } else if (type.isCompatible(DoubleValue.class)) {
-            return ValueType.OPT_FLOAT;
-        } else if (type.getPreferredValueClass().equals(StringValue.class)) {
-            // Note that we do not use isCompatible because many types are compatible with StringValue
-            // but we do not want to represent them as Strings (e.g. JSON, XML, Date and Time)
-            return ValueType.OPT_STRING;
-        } else {
-            return null;
         }
     }
 }

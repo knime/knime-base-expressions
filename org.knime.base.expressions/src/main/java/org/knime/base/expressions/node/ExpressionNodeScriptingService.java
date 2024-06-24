@@ -138,7 +138,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
     synchronized Function<String, ReturnResult<ValueType>> getColumnToTypeMapper() {
         if (m_columnToType == null) {
             var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
-            m_columnToType = ExpressionNodeModel.columnToTypesForTypeInference(spec);
+            m_columnToType = ExpressionRunnerUtils.columnToTypesForTypeInference(spec);
         }
         return m_columnToType;
     }
@@ -220,7 +220,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
          */
         private Ast getPreparedExpression(final String script) throws ExpressionCompileException {
             var ast = Expressions.parse(script);
-            var flowVarToTypeMapper = ExpressionNodeModel.flowVarToTypeForTypeInference(
+            var flowVarToTypeMapper = ExpressionRunnerUtils.flowVarToTypeForTypeInference(
                 getAvailableFlowVariables(ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES));
             Expressions.inferTypes(ast, getColumnToTypeMapper(), flowVarToTypeMapper);
             return ast;

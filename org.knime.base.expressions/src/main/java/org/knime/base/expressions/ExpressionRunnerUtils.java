@@ -67,6 +67,13 @@ import java.util.stream.IntStream;
 
 import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContext;
 import org.knime.base.expressions.aggregations.ColumnAggregations;
+import org.knime.core.data.BooleanValue;
+import org.knime.core.data.DataColumnSpec;
+import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataType;
+import org.knime.core.data.DoubleValue;
+import org.knime.core.data.LongValue;
+import org.knime.core.data.StringValue;
 import org.knime.core.data.columnar.ColumnarTableBackend;
 import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
@@ -84,12 +91,16 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.ReturnResult;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.VariableType;
 
 /**
  * Utility methods to work with expressions on Columnar virtual tables.
@@ -508,5 +519,74 @@ public final class ExpressionRunnerUtils {
             .executionContext(exec) //
             .tableIdSupplier(Node.invokeGetDataRepository(exec)::generateNewID) //
             .materialize(expressionResultVirtual);
+    }
+
+    /**
+     * Utility function to get a mapper from column names to the value type
+     *
+     * @param spec the {@link DataTableSpec} to get the column types from
+     * @return a function that maps column names to the value type
+     */
+    public static Function<String, ReturnResult<ValueType>> columnToTypesForTypeInference(final DataTableSpec spec) {
+        return name -> ReturnResult
+            .fromNullable(spec.getColumnSpec(name), "No column with the name '" + name + "' is available.") //
+            .map(DataColumnSpec::getType) //
+            .flatMap(type -> ReturnResult.fromNullable(mapDataTypeToValueType(type),
+                "Columns of the type '" + type + "' are not supported in expressions."));
+    }
+
+    /**
+     * Map a {@link DataType} to the {@link ValueType} which is used for it in expressions.
+     *
+     * @param type the {@link DataType} to map
+     * @return the {@link ValueType} or {@code null} if the type is not supported
+     */
+    public static ValueType mapDataTypeToValueType(final DataType type) {
+        if (type.isCompatible(BooleanValue.class)) {
+            return ValueType.OPT_BOOLEAN;
+        } else if (type.isCompatible(LongValue.class)) {
+            // Note that IntCell is compatible with LongValue
+            return ValueType.OPT_INTEGER;
+        } else if (type.isCompatible(DoubleValue.class)) {
+            return ValueType.OPT_FLOAT;
+        } else if (type.getPreferredValueClass().equals(StringValue.class)) {
+            // Note that we do not use isCompatible because many types are compatible with StringValue
+            // but we do not want to represent them as Strings (e.g. JSON, XML, Date and Time)
+            return ValueType.OPT_STRING;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Utility function to get a mapper from flow variable names to the value type
+     *
+     * @param flowVars the map of flow variables
+     * @return a function that maps flow variable names to the value type
+     */
+    public static Function<String, ReturnResult<ValueType>>
+        flowVarToTypeForTypeInference(final Map<String, FlowVariable> flowVars) {
+        return name -> ReturnResult
+            .fromNullable(flowVars.get(name), "No flow variable with the name '" + name + "' is available.") //
+            .map(FlowVariable::getVariableType) //
+            .flatMap(type -> ReturnResult.fromNullable(mapVariableToValueType(type),
+                "Flow variables of the type '" + type + "' are not supported"));
+    }
+
+    // Note sonar complains about the number of retruns which is not a problem here
+    private static ValueType mapVariableToValueType(final VariableType<?> variableType) { // NOSONAR
+        if (variableType == VariableType.DoubleType.INSTANCE) {
+            return ValueType.FLOAT;
+        } else if (variableType == VariableType.BooleanType.INSTANCE) {
+            return ValueType.BOOLEAN;
+        } else if (variableType == VariableType.LongType.INSTANCE) {
+            return ValueType.INTEGER;
+        } else if (variableType == VariableType.IntType.INSTANCE) {
+            return ValueType.INTEGER;
+        } else if (variableType == VariableType.StringType.INSTANCE) {
+            return ValueType.STRING;
+        } else {
+            return null;
+        }
     }
 }
