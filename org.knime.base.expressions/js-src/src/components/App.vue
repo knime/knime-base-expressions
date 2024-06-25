@@ -267,7 +267,6 @@ const runButtonDisabledErrorReason = computed(() => {
 <template>
   <main>
     <ScriptingEditor
-      title="Expression (Labs)"
       :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
       :show-control-bar="true"
       :language="language"
