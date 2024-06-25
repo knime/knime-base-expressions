@@ -355,15 +355,15 @@ const runButtonDisabledErrorReason = computed(() => {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 1px 10px;
+  padding: var(--space-4) var(--space-8);
   height: fit-content;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--space-4);
 }
 
 .hide-button-text {
-  margin-right: -15px;
+  margin-right: calc(-1 * var(--space-16));
 }
 
 .run-button {

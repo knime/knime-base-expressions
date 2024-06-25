@@ -107,7 +107,7 @@ watch(
       :disabled="props.allowedReplacementColumns.length === 0"
       class="switch-button"
       :class="{ 'focus-painted': paintFocus }"
-      :compact="true"
+      compact
     />
     <div v-if="outputMode === 'APPEND'" class="output-selector-child right">
       <InputField
@@ -116,7 +116,7 @@ watch(
         type="text"
         class="column-input"
         placeholder="New column..."
-        :compact="true"
+        compact
       />
     </div>
     <div v-else class="output-selector-child right">
@@ -140,11 +140,11 @@ watch(
   flex-flow: row wrap;
   height: fit-content;
   flex-grow: 1;
-  gap: 10px;
+  gap: var(--space-8);
   align-items: center;
   container-type: inline-size;
   justify-content: center;
-  padding: 2px 0;
+  padding: var(--space-4);
 }
 
 .output-selector-child {
@@ -152,7 +152,7 @@ watch(
   height: 100%;
   display: flex;
   top: 0;
-  gap: 10px;
+  gap: var(--space-8);
   width: 150px;
 }
 
@@ -177,7 +177,7 @@ watch(
   align-items: flex-start;
   max-width: 100%;
   min-width: 100px;
-  height: 30px;
+  height: var(--space-32);
 }
 
 /* Stop the dropdown being taller than the bar. This takes some forcing, since it REALLY doesn't want to be smaller than about 40px */
@@ -199,7 +199,7 @@ watch(
 
 /* Create a selection highlight slightly bigger than the buttons themselves */
 .switch-button.focus-painted:focus-within::after {
-  --border-spacing: 4px;
+  --border-spacing: var(--space-4);
 
   content: "";
   border: 2px solid var(--knime-cornflower);

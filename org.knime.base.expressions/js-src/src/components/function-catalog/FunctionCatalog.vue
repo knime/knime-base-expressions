@@ -308,7 +308,7 @@ const expandAll = () => {
           <SearchInput
             v-model="searchQuery"
             placeholder="Search the catalog"
-            :compact="true"
+            compact
             @update:model-value="
               () => {
                 selectEntry(null);
@@ -444,7 +444,8 @@ const expandAll = () => {
   --function-catalog-width: 300px;
 
   width: var(--function-catalog-width);
-  padding: var(--space-4);
+  padding-bottom: var(--space-4);
+  padding-top: var(--space-4);
   background-color: white;
   display: flex;
   flex-direction: column;
@@ -486,6 +487,7 @@ const expandAll = () => {
   align-items: center;
   font-weight: bold;
   font-size: 13px;
+  padding-left: var(--space-4);
 }
 
 .category-header:focus {
@@ -533,12 +535,12 @@ const expandAll = () => {
 .function-header {
   font-size: 13px;
   font-weight: normal;
-  margin-top: 2px;
+  margin-top: var(--space-4);
   margin-left: var(--space-24);
   cursor: pointer;
   color: var(--knime-dove-gray);
   word-wrap: normal;
-  box-decoration-break: clone;
+  padding-left: var(--space-4);
 }
 
 .function-header:focus {
@@ -574,9 +576,5 @@ const expandAll = () => {
 .category-header:not(.selected):hover {
   background: var(--theme-dropdown-background-color-hover);
   color: var(--theme-dropdown-foreground-color-hover);
-  padding-left: 100px;
-  margin-left: -100px;
-  padding-right: 100px;
-  margin-right: -100px;
 }
 </style>

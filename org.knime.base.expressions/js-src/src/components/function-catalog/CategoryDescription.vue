@@ -24,8 +24,8 @@ defineProps<{
 }
 
 .category-description {
-  margin-left: 5px;
-  margin-top: 10px;
+  margin-left: var(--space-4);
+  margin-top: var(--space-12);
 }
 
 .category-description-panel {
