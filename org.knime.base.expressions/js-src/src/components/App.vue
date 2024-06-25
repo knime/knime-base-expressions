@@ -270,6 +270,7 @@ const runButtonDisabledErrorReason = computed(() => {
       :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
       :show-control-bar="true"
       :language="language"
+      :show-output-table="true"
       @input-output-item-insertion="onInputOutputItemInsertionTriggered"
     >
       <template #editor>

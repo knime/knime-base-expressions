@@ -47,6 +47,7 @@ describe("MultiEditorPane", () => {
         container: expect.anything(),
         language: "someLanguage",
         fileName: "myFile.ts",
+        hideOverviewRulerLanes: true,
       });
       expect(useCodeEditorSpy.mock.calls[0][0].container.value).toBeDefined();
     });

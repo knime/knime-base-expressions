@@ -141,7 +141,6 @@ describe("FunctionCatalog", () => {
       name: "FunctionCatalog",
     });
     expect(functionCatalog.exists()).toBeTruthy();
-    expect(functionCatalog.text()).contains("Select an entry");
 
     const catalogFunction = wrapper.find(".function-header");
     await catalogFunction.trigger("click");

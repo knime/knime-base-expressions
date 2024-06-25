@@ -319,6 +319,9 @@ const expandAll = () => {
         </div>
       </div>
 
+      <div v-if="isFilteredCatalogDataEmpty" class="no-search-match">
+        There are no matching functions found
+      </div>
       <!-- Make this panel not be a tab stop if filtered catalogue is empty -->
       <div
         ref="functionListRef"
@@ -416,7 +419,6 @@ const expandAll = () => {
           <CategoryDescription :category="categories[selectedEntry.name]" />
         </div>
       </div>
-      <div v-else>Select an entry to see its description.</div>
     </div>
   </div>
 </template>
@@ -438,6 +440,17 @@ const expandAll = () => {
   background-color: white;
   padding: var(--space-4);
   padding-bottom: var(--space-8);
+}
+
+.no-search-match {
+  padding: var(--space-8);
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 19.5px;
+  display: flex;
+  justify-content: center;
+  color: var(--knime-masala);
 }
 
 .function-catalog {
@@ -469,7 +482,6 @@ const expandAll = () => {
 .info-panel {
   flex: 1;
   padding: var(--space-8);
-  font-size: x-small;
   overflow-y: auto;
   border-left: 1px solid var(--knime-silver-sand);
 }
