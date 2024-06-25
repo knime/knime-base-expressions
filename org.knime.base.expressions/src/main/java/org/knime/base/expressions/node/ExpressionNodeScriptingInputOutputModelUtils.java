@@ -55,7 +55,6 @@ import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.scripting.editor.InputOutputModel;
-import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItem;
 import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
 
 import com.google.common.base.Preconditions;
@@ -77,21 +76,19 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
     }
 
     static InputOutputModel getFlowVariableInputs(final Collection<FlowVariable> flowVariables) {
-        var subItems = flowVariables.stream() //
-            .map(f -> new InputOutputModelSubItem(f.getName(), f.getVariableType().toString())) //
-            .toArray(InputOutputModelSubItem[]::new);
-        return new InputOutputModel( //
-            "Flow variables", //
+        return InputOutputModel.createFromFlowVariables( //
+            flowVariables, //
             null, //
             FLOWVAR_ALIAS_TEMPLATE, //
             null, // no required import
-            false, // no multiple selection
-            subItems //
+            false // no multiple selection
         );
     }
 
     static List<InputOutputModel> getInputObjects(final InputPortInfo[] inputPorts) {
+
         Preconditions.checkArgument(inputPorts.length == 1, "expected one input port");
+
         final var spec = inputPorts[0].portSpec();
         if (spec != null) {
             Preconditions.checkArgument(spec instanceof DataTableSpec, "expected data table spec");
@@ -105,18 +102,17 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
                 type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null //
             ));
         } else {
-            return List.of(new InputOutputModel( //
+            return List.of(InputOutputModel.createForNonAvailableTable( //
                 "Input table", //
                 null, //
                 COLUMN_ALIAS_TEMPLATE, //
                 null, // no required import
-                false, // no multiple selection
-                null //
+                false // no multiple selection
             ));
         }
     }
 
     static List<InputOutputModel> getOutputObjects() {
-        return List.of(new InputOutputModel("Output table", null, null, null, false, null));
+        return List.of(InputOutputModel.createForNonAvailableTable("Output table", null, null, null, false));
     }
 }
