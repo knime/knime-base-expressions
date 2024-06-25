@@ -26,6 +26,7 @@ const editorState = editor.useCodeEditor({
   language: props.language,
   fileName: props.fileName,
   container: editorContainer,
+  hideOverviewRulerLanes: true,
 });
 
 registerExpressionDiagnostics(editorState);
