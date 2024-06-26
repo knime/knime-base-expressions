@@ -177,7 +177,7 @@ watch(
   align-items: flex-start;
   max-width: 100%;
   min-width: 100px;
-  height: var(--space-32);
+  height: var(--single-line-form-height-compact);
 }
 
 /* Stop the dropdown being taller than the bar. This takes some forcing, since it REALLY doesn't want to be smaller than about 40px */
