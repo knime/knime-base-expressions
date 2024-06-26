@@ -67,9 +67,10 @@ import com.google.common.base.Preconditions;
 @SuppressWarnings("restriction")
 final class ExpressionNodeScriptingInputOutputModelUtils {
 
-    private static final String COLUMN_ALIAS_TEMPLATE = "$[\"{{{subItems.[0]}}}\"]";
+    // escapeQuotes is a HandleBars helper registered in the frontend
+    private static final String COLUMN_ALIAS_TEMPLATE = "$[\"{{{escapeDblQuotes subItems.[0]}}}\"]";
 
-    private static final String FLOWVAR_ALIAS_TEMPLATE = "$$[\"{{{subItems.[0]}}}\"]";
+    private static final String FLOWVAR_ALIAS_TEMPLATE = "$$[\"{{{escapeDblQuotes subItems.[0]}}}\"]";
 
     private ExpressionNodeScriptingInputOutputModelUtils() {
         // utility class

@@ -30,15 +30,16 @@ if (import.meta.env.MODE === "development.browser") {
         { name: "Column 6", type: "string" },
         { name: "Column 7", type: "boolean" },
         { name: "%<a&b>", type: "problem" },
+        { name: 'b\\lah"blah', type: "problem" },
       ],
       multiSelection: false,
-      subItemCodeAliasTemplate: '$["{{{subItems.[0]}}}"]',
+      subItemCodeAliasTemplate: '$["{{{escapeDblQuotes subItems.[0]}}}"]',
     },
   ];
   const FLOW_VARIABLES = {
     ...DEFAULT_FLOW_VARIABLE_INPUTS,
     multiSelection: false,
-    subItemCodeAliasTemplate: '$$["{{{subItems.[0]}}}"]',
+    subItemCodeAliasTemplate: '$$["{{{escapeDblQuotes subItems.[0]}}}"]',
   };
 
   const FUNCTION_CATALOG = {

@@ -223,6 +223,11 @@ const registerKnimeExpressionLanguage = ({
         const escapeRegex = (text: string) =>
           text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 
+        const escapeColumnName = (columnName: string, quoteType: string) =>
+          columnName
+            .replace(/\\/g, "\\\\")
+            .replace(new RegExp(`${quoteType}`, "g"), '\\"');
+
         const mapColumnNameReducerFactory =
           (prefix: string) =>
           (aggregation: OptionalSuggestion[], column: ColumnWithDType) => {
@@ -238,12 +243,12 @@ const registerKnimeExpressionLanguage = ({
             }
             // Add the longhand methods (single and double quotes both)
             aggregation.push({
-              text: `${prefix}['${column.name}']`,
+              text: `${prefix}['${escapeColumnName(column.name, "'")}']`,
               requirePrefixMatches: RegExp(`^.*${escapeRegex(prefix)}\\['.*$`),
               extraDetailForMonaco: { detail: `Type: ${column.type}` },
             });
             aggregation.push({
-              text: `${prefix}["${column.name}"]`,
+              text: `${prefix}["${escapeColumnName(column.name, '"')}"]`,
               requirePrefixMatches: RegExp(
                 `^.*${escapeRegex(prefix)}($|(\\[("?).*$))`,
               ),
