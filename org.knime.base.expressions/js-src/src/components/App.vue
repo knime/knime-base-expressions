@@ -304,7 +304,7 @@ const runButtonDisabledErrorReason = computed(() => {
       </template>
       <!-- Controls for the very bottom bar -->
       <template #code-editor-controls="{ showButtonText }">
-        <Tooltip :text="runButtonDisabledErrorReason">
+        <Tooltip :text="runButtonDisabledErrorReason ?? ''">
           <SplitButton>
             <Button
               primary
@@ -325,7 +325,7 @@ const runButtonDisabledErrorReason = computed(() => {
                 showButtonText
                   ? `Evaluate first
                ${DEFAULT_NUMBER_OF_ROWS_TO_RUN}  rows`
-                  : null
+                  : ""
               }}</Button
             >
 
