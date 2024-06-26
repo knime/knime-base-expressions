@@ -16,17 +16,16 @@ export type FunctionData = {
   entryType: "function";
 };
 
-export type MathConstantData = {
+export type ConstantData = {
   name: string;
-  value: number;
   category: string;
   keywords: string[];
   description: string;
   returnType: string;
-  entryType: "mathConstant";
+  entryType: "constant";
 };
 
-export type FunctionCatalogEntryData = FunctionData | MathConstantData;
+export type FunctionCatalogEntryData = FunctionData | ConstantData;
 
 export type CategoryData = {
   name: string;
@@ -35,5 +34,5 @@ export type CategoryData = {
 
 export type FunctionCatalogData = {
   categories: CategoryData[];
-  functions: FunctionData[];
+  functions: FunctionCatalogEntryData[];
 };

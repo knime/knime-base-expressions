@@ -17,11 +17,15 @@ const lock = <T = void>() => {
   return { promise, resolve };
 };
 
-const TEST_FUNCTION_CATALOG = {
+const TEST_FUNCTION_CATALOG: FunctionCatalogData = {
   categories: [
     {
       name: "test",
       description: "Test category",
+    },
+    {
+      name: "math constants",
+      description: "Mathematical constants",
     },
   ],
   functions: [
@@ -42,22 +46,14 @@ const TEST_FUNCTION_CATALOG = {
       returnDescription: "Return value",
       entryType: "function",
     },
-  ],
-} satisfies FunctionCatalogData;
-
-const TEST_MATH_CONSTANTS = {
-  category: {
-    name: "Mathematical Constants",
-    description: "Constants",
-  },
-  constants: [
     {
       name: "PI",
-      value: 3,
-      type: "Float",
-      documentation: "The *real* value of Pi",
+      returnType: "Float",
+      description: "The *real* value of Pi",
+      category: "math constants",
+      keywords: ["pi"],
+      entryType: "constant",
     },
-    { name: "E", value: 3, type: "String", documentation: "The letter E" },
   ],
 };
 
@@ -65,7 +61,6 @@ vi.mock("@/expressionScriptingService", () => ({
   getExpressionScriptingService: () => ({
     ...getScriptingService(),
     getFunctions: vi.fn(() => Promise.resolve(TEST_FUNCTION_CATALOG)),
-    getMathConstants: vi.fn(() => Promise.resolve(TEST_MATH_CONSTANTS)),
   }),
 }));
 
@@ -89,8 +84,6 @@ describe("App.vue", () => {
       (methodName: string) => {
         if (methodName === "getFunctionCatalog") {
           return Promise.resolve(TEST_FUNCTION_CATALOG);
-        } else if (methodName === "getMathConstants") {
-          return Promise.resolve(TEST_MATH_CONSTANTS);
         }
         throw new Error(
           `Called unexpected scripting service method ${methodName}`,

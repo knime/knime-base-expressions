@@ -1,6 +1,6 @@
 import * as monaco from "monaco-editor";
 import { functionDataToMarkdown } from "@/components/function-catalog/functionDescriptionToMarkdown";
-import type { FunctionData } from "@/components/functionCatalogTypes";
+import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
 
 export type CompletionItemWithType = {
   text: string;
@@ -42,7 +42,7 @@ const registerKnimeExpressionLanguage = ({
   columnNamesForCompletion?: Array<ColumnWithDType>;
   flowVariableNamesForCompletion?: Array<ColumnWithDType>;
   extraCompletionItems?: Array<CompletionItemWithType>;
-  functionData?: FunctionData[];
+  functionData?: FunctionCatalogEntryData[];
   languageName?: string;
 } = {}) => {
   monaco.languages.register({ id: languageName });

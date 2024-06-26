@@ -7,6 +7,10 @@ import {
   getExpressionScriptingService,
   type ExpressionNodeSettings,
 } from "@/expressionScriptingService";
+import type {
+  FunctionCatalogData,
+  FunctionCatalogEntryData,
+} from "@/components/functionCatalogTypes";
 
 const log = (message: any, ...args: any[]) => {
   if (typeof consola === "undefined") {
@@ -42,11 +46,15 @@ if (import.meta.env.MODE === "development.browser") {
     subItemCodeAliasTemplate: '$$["{{{escapeDblQuotes subItems.[0]}}}"]',
   };
 
-  const FUNCTION_CATALOG = {
+  const FUNCTION_CATALOG: FunctionCatalogData = {
     categories: [
       {
         name: "String Manipulation",
         description: "Functions for manipulating strings",
+      },
+      {
+        name: "Demo",
+        description: "Demo functions",
       },
       {
         name: "Math Operations",
@@ -64,6 +72,7 @@ if (import.meta.env.MODE === "development.browser") {
         name: "Very big category",
         description: "You have to scroll down to see everything",
       },
+      { name: "Mathematical Constants", description: "Constants" },
     ],
     functions: [
       {
@@ -77,6 +86,7 @@ if (import.meta.env.MODE === "development.browser") {
           "# Markdown\nConcatenates two strings.\n## Example:\n`concatenateStrings('hello', 'world')`",
         keywords: ["concat", "join", "merge"],
         returnType: "string",
+        entryType: "function",
       },
       {
         name: "substring",
@@ -102,6 +112,7 @@ if (import.meta.env.MODE === "development.browser") {
           "# Markdown \nExtracts a substring from the input string.\n ## Example:\n`substring('abcdef', 1, 4)`",
         keywords: ["slice", "extract", "subset"],
         returnType: "string",
+        entryType: "function",
       },
       {
         name: "Show that html is not rendered",
@@ -111,6 +122,7 @@ if (import.meta.env.MODE === "development.browser") {
           "# Markdown \nExtracts a substring from the input string.\n ## Example:\n`substring('abcdef', 1, 4)` <script>alert('hello')</script>",
         keywords: ["demo", "no", "html"],
         returnType: "Awww",
+        entryType: "function",
       },
       {
         name: "sum",
@@ -127,6 +139,7 @@ if (import.meta.env.MODE === "development.browser") {
           "# Markdown\nCalculates the sum of a list of numbers.\n## Example:\n`sum(1, 2, 3, 4)`",
         keywords: ["add", "total", "accumulate"],
         returnType: "int",
+        entryType: "function",
       },
       {
         name: "multiply",
@@ -139,6 +152,7 @@ if (import.meta.env.MODE === "development.browser") {
           "# Markdown\nMultiplies two numbers.\n## Example:\n`multiply(5, 3)`",
         keywords: ["product", "times", "multiply"],
         returnType: "int",
+        entryType: "function",
       },
       {
         name: "filterArray",
@@ -155,6 +169,7 @@ if (import.meta.env.MODE === "development.browser") {
           "# Markdown\nFilters elements of an array based on a condition.\n## Example:\n`filterArray([1, 2, 3, 4], x => x > 2)`",
         keywords: ["select", "subset", "extract"],
         returnType: "array",
+        entryType: "function",
       },
       {
         name: "getDayOfWeek",
@@ -173,31 +188,40 @@ if (import.meta.env.MODE === "development.browser") {
           "dayOfWeek",
         ],
         returnType: "string",
+        entryType: "function",
       },
       // eslint-disable-next-line no-magic-numbers
-      ...[...Array(20).keys()].map((i) => ({
-        name: `function${i}`,
-        category: "Very big category",
-        arguments: [],
-        description: "Doesn't do anything",
-        returnType: "int",
-      })),
+      ...[...Array(20).keys()].map(
+        (i) =>
+          ({
+            name: `function${i}`,
+            category: "Very big category",
+            arguments: [
+              { name: "arg", type: "int", description: "Doesn't do anything" },
+            ],
+            description: "Doesn't do anything",
+            returnType: "int",
+            entryType: "function",
+            keywords: ["something"],
+          }) as FunctionCatalogEntryData,
+      ),
+      {
+        name: "pi",
+        category: "Mathematical Constants",
+        description: "The value of Pi",
+        returnType: "float",
+        keywords: ["pi", "π"],
+        entryType: "constant",
+      },
+      {
+        name: "e",
+        category: "Mathematical Constants",
+        description: "The value of the Euler's number",
+        returnType: "float",
+        keywords: ["e", "Euler"],
+        entryType: "constant",
+      },
     ],
-  };
-
-  const MATH_CONSTANTS = [
-    {
-      name: "PI",
-      value: 3,
-      type: "Float",
-      documentation: "The *real* value of Pi",
-    },
-    { name: "E", value: "e", type: "String", documentation: "The letter E" },
-  ];
-
-  const MATH_CONSTANTS_DATA = {
-    constants: MATH_CONSTANTS,
-    category: { name: "Mathematical Constants", description: "Constants" },
   };
 
   const scriptingService = createScriptingServiceMock({
@@ -207,7 +231,6 @@ if (import.meta.env.MODE === "development.browser") {
         return Promise.resolve();
       },
       getFunctionCatalog: () => Promise.resolve(FUNCTION_CATALOG),
-      getMathConstants: () => Promise.resolve(MATH_CONSTANTS_DATA),
       getDiagnostics: () => Promise.resolve([]),
     },
     inputObjects: INPUT_OBJECTS,

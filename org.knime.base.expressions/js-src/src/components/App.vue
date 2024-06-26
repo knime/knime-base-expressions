@@ -7,7 +7,6 @@ import {
 import {
   type ExpressionVersion,
   getExpressionScriptingService,
-  type MathConstantData,
 } from "@/expressionScriptingService";
 import Button from "webapps-common/ui/components/Button.vue";
 import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
@@ -26,7 +25,10 @@ import * as monaco from "monaco-editor";
 import MultiEditorPane, {
   type MultiEditorPaneExposes,
 } from "./MultiEditorPane.vue";
-import type { FunctionCatalogData, FunctionData } from "./functionCatalogTypes";
+import type {
+  FunctionCatalogData,
+  FunctionCatalogEntryData,
+} from "./functionCatalogTypes";
 import { useStore } from "@/store";
 
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
@@ -58,33 +60,45 @@ const expressionVersion = ref<ExpressionVersion>({
 
 const multiEditorComponentRef = ref<MultiEditorPaneExposes | null>(null);
 const functionCatalogData = ref<FunctionCatalogData>();
-const mathConstantData = ref<MathConstantData>();
 const inputsAvailable = ref(false);
 
-const convertFunctionsToInsertionItems = (functions: FunctionData[]) => {
+const convertFunctionsToInsertionItems = (
+  functions: FunctionCatalogEntryData[],
+) => {
   return functions.map((func) => {
-    // closest we can get to a list comprehension over a range in JS
-    const listOfIndices = [...Array(func.arguments!.length).keys()];
+    if (func.entryType === "function") {
+      // closest we can get to a list comprehension over a range in JS
+      const listOfIndices = [...Array(func.arguments!.length).keys()];
 
-    // This snippet syntax is used to allow for tabbing through the arguments
-    // when the function is inserted.
-    const argumentsWithSnippetSyntax = listOfIndices
-      .map((i) => `$\{${i + 1}:${func.arguments![i].name}}`)
-      .join(", ");
+      // This snippet syntax is used to allow for tabbing through the arguments
+      // when the function is inserted.
+      const argumentsWithSnippetSyntax = listOfIndices
+        .map((i) => `$\{${i + 1}:${func.arguments![i].name}}`)
+        .join(", ");
 
-    const argumentsWithoutSnippetSyntax =
-      func.arguments!.length > 0 ? "..." : "";
+      const argumentsWithoutSnippetSyntax =
+        func.arguments!.length > 0 ? "..." : "";
 
-    return {
-      text: `${func.name}(${argumentsWithSnippetSyntax})`,
-      kind: monaco.languages.CompletionItemKind.Function,
-      extraDetailForMonaco: {
-        documentation: { value: functionDataToMarkdown(func) },
-        insertTextRules:
-          monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        label: `${func.name}(${argumentsWithoutSnippetSyntax})`,
-      },
-    };
+      return {
+        text: `${func.name}(${argumentsWithSnippetSyntax})`,
+        kind: monaco.languages.CompletionItemKind.Function,
+        extraDetailForMonaco: {
+          documentation: { value: functionDataToMarkdown(func) },
+          insertTextRules:
+            monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          label: `${func.name}(${argumentsWithoutSnippetSyntax})`,
+        },
+      };
+    } else {
+      return {
+        text: func.name,
+        kind: monaco.languages.CompletionItemKind.Constant,
+        extraDetailForMonaco: {
+          documentation: { value: func.description },
+          detail: `Type: ${func.returnType}`,
+        },
+      };
+    }
   });
 };
 
@@ -95,14 +109,12 @@ onMounted(async () => {
     inputObjects,
     flowVariableInputs,
     functionCatalog,
-    mathsConstants,
   ] = await Promise.all([
     scriptingService.getInitialSettings(),
     scriptingService.inputsAvailable(),
     scriptingService.getInputObjects(),
     scriptingService.getFlowVariableInputs(),
     scriptingService.getFunctions(),
-    scriptingService.getMathConstants(),
   ]);
 
   multiEditorComponentRef.value
@@ -129,8 +141,6 @@ onMounted(async () => {
   }
 
   functionCatalogData.value = functionCatalog;
-  functionCatalogData.value.categories.push(mathsConstants.category);
-  mathConstantData.value = mathsConstants;
 
   if (inputObjects && inputObjects.length > 0 && inputObjects[0].subItems) {
     allowedReplacementColumns.value = inputObjects[0]?.subItems?.map(
@@ -155,14 +165,6 @@ onMounted(async () => {
       : [],
     extraCompletionItems: [
       ...convertFunctionsToInsertionItems(functionCatalog.functions),
-      ...mathConstantData.value.constants.map((constant) => ({
-        text: constant.name,
-        kind: monaco.languages.CompletionItemKind.Constant,
-        extraDetailForMonaco: {
-          documentation: { value: constant.documentation },
-          detail: `Type: ${constant.type}`,
-        },
-      })),
     ],
     functionData: functionCatalog.functions,
     languageName: language,
@@ -295,7 +297,6 @@ const runButtonDisabledErrorReason = computed(() => {
         <template v-if="functionCatalogData">
           <FunctionCatalog
             :function-catalog-data="functionCatalogData"
-            :constant-data="mathConstantData!"
             :initially-expanded="false"
             @function-insertion-event="onFunctionInsertionTriggered"
           />

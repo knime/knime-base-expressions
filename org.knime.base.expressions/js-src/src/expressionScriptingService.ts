@@ -22,18 +22,6 @@ export type ExpressionNodeSettings = NodeSettings &
   ExpressionVersion &
   ColumnSettings;
 
-export type MathConstant = {
-  name: string;
-  value: number;
-  type: string;
-  documentation: string;
-};
-
-export type MathConstantData = {
-  constants: MathConstant[];
-  category: { name: string; description: string };
-};
-
 const scriptingService = getScriptingService();
 const expressionScriptingService = {
   ...scriptingService,
@@ -46,10 +34,6 @@ const expressionScriptingService = {
     scriptingService.sendToService(
       "getFunctionCatalog",
     ) as Promise<FunctionCatalogData>,
-  getMathConstants: () =>
-    scriptingService.sendToService(
-      "getMathConstants",
-    ) as Promise<MathConstantData>,
 };
 
 export type ExpressionScriptingServiceType = typeof expressionScriptingService;

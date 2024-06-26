@@ -17,7 +17,6 @@ import CategoryDescription from "@/components/function-catalog/CategoryDescripti
 import { createDragGhosts } from "webapps-common/ui/components/FileExplorer/dragGhostHelpers";
 import { EMPTY_DRAG_IMAGE } from "webapps-common/ui/components/FileExplorer/useItemDragging";
 import { useDraggedFunctionStore } from "@/draggedFunctionStore";
-import type { MathConstantData } from "@/expressionScriptingService";
 import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
 
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 600;
@@ -25,14 +24,11 @@ const FUNCTION_CATALOG_WIDTH = "300px";
 
 const props = defineProps<{
   functionCatalogData: FunctionCatalogData;
-  constantData: MathConstantData;
   initiallyExpanded: boolean;
 }>();
 
-const catalogData = mapFunctionCatalogData(
-  props.functionCatalogData,
-  props.constantData,
-);
+const catalogData = mapFunctionCatalogData(props.functionCatalogData);
+
 const categoryNames = Object.keys(catalogData);
 const categories = ref(
   Object.fromEntries(
@@ -79,9 +75,7 @@ const onDragStart = (e: DragEvent, f: FunctionCatalogEntryData) => {
   draggedFunctionStore.draggedFunctionData = {
     name: f.name,
     arguments:
-      f.entryType === "mathConstant"
-        ? null
-        : f.arguments?.map((arg) => arg.name)!,
+      f.entryType === "constant" ? null : f.arguments?.map((arg) => arg.name)!,
   };
 
   e.dataTransfer?.setDragImage(EMPTY_DRAG_IMAGE, 0, 0);
@@ -99,9 +93,7 @@ const triggerFunctionInsertionEvent = (
   emit("functionInsertionEvent", {
     functionName: f.name,
     functionArgs:
-      f.entryType === "mathConstant"
-        ? null
-        : f.arguments?.map((arg) => arg.name),
+      f.entryType === "constant" ? null : f.arguments?.map((arg) => arg.name),
     eventSource: "function-catalog",
   });
 };

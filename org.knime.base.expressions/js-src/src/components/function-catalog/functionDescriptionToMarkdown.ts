@@ -4,11 +4,11 @@ import MarkdownIt from "markdown-it";
 export const functionDataToMarkdown = (
   func: FunctionCatalogEntryData,
 ): string => {
-  if (func.entryType === "mathConstant") {
+  if (func.entryType === "constant") {
     return (
-      `## ${func.name}` +
+      `### ${func.name}` +
       `\n\nType: ${func.returnType}` +
-      "\n\n### Description" +
+      "\n\n#### Description" +
       `\n\n${func.description}`
     );
   } else {

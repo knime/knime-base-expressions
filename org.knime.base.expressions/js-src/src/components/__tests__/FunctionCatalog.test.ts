@@ -1,13 +1,9 @@
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FunctionCatalog from "../function-catalog/FunctionCatalog.vue";
-import type { FunctionData } from "../functionCatalogTypes";
+import type { FunctionData, ConstantData } from "../functionCatalogTypes";
 import { useElementBounding } from "@vueuse/core";
 import { ref } from "vue";
-import type {
-  MathConstant,
-  MathConstantData,
-} from "@/expressionScriptingService";
 
 // Beware: This constant is duplicated in the component and the test
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 600;
@@ -69,31 +65,22 @@ describe("FunctionCatalog", () => {
     returnType: "returnType2",
     entryType: "function",
   };
+  const constant1: ConstantData = {
+    name: "pi",
+    category: "math constants",
+    description: "The constant PI",
+    returnType: "number",
+    entryType: "constant",
+    keywords: ["pi"],
+  };
   const functionCatalogData = {
     categories: [
       { name: "category1", description: "This is a description for category1" },
       { name: "category2" },
+      { name: "math constants", description: "Mathematical constants" },
     ],
-    functions: [function1, function2],
+    functions: [function1, function2, constant1],
   };
-  const mathConstants = [
-    {
-      name: "PI",
-      documentation: "The constant PI",
-      type: "number",
-      value: Math.PI,
-    },
-    {
-      name: "E",
-      documentation: "The constant E",
-      type: "number",
-      value: Math.E,
-    },
-  ] satisfies MathConstant[];
-  const mathConstantsData = {
-    category: { name: "Math Constants", description: "Mathematical constants" },
-    constants: mathConstants,
-  } satisfies MathConstantData;
 
   const doMount = (
     args: {
@@ -109,7 +96,6 @@ describe("FunctionCatalog", () => {
     const wrapper = mount(FunctionCatalog, {
       props: {
         functionCatalogData,
-        constantData: mathConstantsData,
         initiallyExpanded: true,
         ...args.props,
       },
@@ -172,8 +158,7 @@ describe("FunctionCatalog", () => {
 
     const categories = wrapper.findAll(".category-container");
 
-    // +1 for the math constants which have their own category
-    expect(categories).toHaveLength(functionCatalogData.categories.length + 1);
+    expect(categories).toHaveLength(functionCatalogData.categories.length);
 
     await Promise.all(
       // We also slice to remove the math constants category
@@ -259,11 +244,12 @@ describe("FunctionCatalog", () => {
     expect(functionInSecondCategory.classes()).toContain("selected");
 
     expect(firstCategory.classes()).not.toContain("selected");
+
+    // Enough keydowns to loop back to the first category
+    await functionList.trigger("keydown", { key: "ArrowDown" });
+    await functionList.trigger("keydown", { key: "ArrowDown" });
     await functionList.trigger("keydown", { key: "ArrowDown" });
 
-    for (let i = 0; i < 1 + mathConstants.length; i++) {
-      await functionList.trigger("keydown", { key: "ArrowDown" });
-    }
     expect(firstCategory.classes()).toContain("selected");
   });
 
@@ -272,12 +258,10 @@ describe("FunctionCatalog", () => {
 
     const categoryFunctions = wrapper.findAll(".function-header");
     expect(categoryFunctions).toHaveLength(
-      functionCatalogData.functions.length + mathConstants.length,
+      functionCatalogData.functions.length,
     );
 
-    for (const [index, categoryFunction] of [
-      ...categoryFunctions.entries(),
-    ].slice(0, -mathConstants.length)) {
+    for (const [index, categoryFunction] of categoryFunctions.entries()) {
       expect(categoryFunction.text()).toContain(
         functionCatalogData.functions[index].name,
       );
@@ -347,7 +331,7 @@ describe("FunctionCatalog", () => {
 
       const allCategoryFunctions = wrapper.findAll(".function-header");
       expect(allCategoryFunctions).toHaveLength(
-        functionCatalogData.functions.length + mathConstants.length,
+        functionCatalogData.functions.length,
       );
 
       const searchBar = wrapper.findComponent({

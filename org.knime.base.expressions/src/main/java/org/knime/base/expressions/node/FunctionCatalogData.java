@@ -49,9 +49,10 @@
 package org.knime.base.expressions.node;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
+import org.knime.core.expressions.ExpressionConstants;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.OperatorDescription;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
@@ -68,15 +69,28 @@ record FunctionCatalogData(List<OperatorCategory> categories, List<OperatorDescr
         new FunctionCatalogData(getBuiltInCategories(), getBuiltInOperators());
 
     private static List<OperatorDescription> getBuiltInOperators() {
-        return Stream.concat( //
-            BuiltInFunctions.BUILT_IN_FUNCTIONS.stream().map(ExpressionFunction::description), //
-            BuiltInAggregations.BUILT_IN_AGGREGATIONS.stream().map(ColumnAggregation::description) //
-        ).toList();
+        var operators = new ArrayList<OperatorDescription>();
+
+        operators.addAll(BuiltInFunctions.BUILT_IN_FUNCTIONS.stream().map(ExpressionFunction::description).toList());
+        operators
+            .addAll(BuiltInAggregations.BUILT_IN_AGGREGATIONS.stream().map(ColumnAggregation::description).toList());
+        operators.addAll(
+            Arrays.stream(ExpressionConstants.values()).map(ExpressionConstants::toOperatorDescription).toList());
+
+        return operators;
     }
 
     private static List<OperatorCategory> getBuiltInCategories() {
-        var categories = new ArrayList<>(BuiltInFunctions.BUILT_IN_CATEGORIES);
+        var categories = new ArrayList<OperatorCategory>();
+
+        categories.add(ExpressionConstants.CONSTANTS_CATEGORY);
+        categories.addAll(BuiltInFunctions.META_CATEGORY_CONTROL);
+
+        categories.addAll(BuiltInFunctions.META_CATEGORY_MATH);
         categories.addAll(BuiltInAggregations.BUILT_IN_CATEGORIES);
+
+        categories.addAll(BuiltInFunctions.META_CATEGORY_STRING);
+
         return categories;
     }
 }
