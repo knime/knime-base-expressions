@@ -49,6 +49,7 @@
 package org.knime.core.expressions;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.knime.core.expressions.ValueType.NativeValueType;
@@ -148,6 +149,16 @@ public enum MathConstantValue {
      */
     public Ast toAst() {
         return toAst(new HashMap<>());
+    }
+
+    /**
+     * Converts this constant to an {@link OperatorDescription}. Arguments and return type are null.
+     *
+     * @return the {@link OperatorDescription} representing this constant
+     */
+    public OperatorDescription toOperatorDescription() {
+        return new OperatorDescription(name(), documentation(), null, type().name(), null, List.of("constant"),
+            MATH_CONSTANT_CATEGORY.name());
     }
 
     /** Category for all mathematical constants */

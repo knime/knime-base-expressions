@@ -52,6 +52,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.knime.core.expressions.OperatorCategory;
 
@@ -74,20 +75,35 @@ public final class BuiltInFunctions {
     private BuiltInFunctions() {
     }
 
-    /** Built-in function categories */
-    public static final List<OperatorCategory> BUILT_IN_CATEGORIES = List.of( //
-        ControlFlowFunctions.CATEGORY, //
+    /** List of all maths function categories */
+    public static final List<OperatorCategory> META_CATEGORY_MATH = List.of( //
         MathFunctions.CATEGORY_GENERAL, //
         MathFunctions.CATEGORY_ROUND, //
         MathFunctions.CATEGORY_AGGREGATE, //
         MathFunctions.CATEGORY_TRIGONOMETRY, //
-        MathFunctions.CATEGORY_DISTRIBUTIONS, //
+        MathFunctions.CATEGORY_DISTRIBUTIONS //
+    );
+
+    /** List of all string manipulation categories */
+    public static final List<OperatorCategory> META_CATEGORY_STRING = List.of( //
         StringFunctions.CATEGORY_GENERAL, //
         StringFunctions.CATEGORY_MATCH_COMPARE, //
         StringFunctions.CATEGORY_EXTRACT_REPLACE, //
         StringFunctions.CATEGORY_CLEAN, //
         StringFunctions.CATEGORY_ENCODE //
     );
+
+    /** List of all control flow categories */
+    public static final List<OperatorCategory> META_CATEGORY_CONTROL = List.of( //
+        ControlFlowFunctions.CATEGORY //
+    );
+
+    /** All built-in function categories */
+    public static final List<OperatorCategory> BUILT_IN_CATEGORIES = Stream.concat( //
+        Stream.concat( //
+            META_CATEGORY_MATH.stream(), META_CATEGORY_STRING.stream()), //
+        META_CATEGORY_CONTROL.stream() //
+    ).collect(Collectors.toUnmodifiableList());
 
     /** Built-in functions */
     public static final List<ExpressionFunction> BUILT_IN_FUNCTIONS = List.of( //
