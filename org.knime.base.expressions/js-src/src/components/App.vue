@@ -14,6 +14,7 @@ import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
 import SplitButton from "webapps-common/ui/components/SplitButton.vue";
 import DropdownIcon from "webapps-common/ui/assets/img/icons/arrow-dropdown.svg";
 import SubMenu from "webapps-common/ui/components/SubMenu.vue";
+import Tooltip from "webapps-common/ui/components/Tooltip.vue";
 import { computed, onMounted, ref } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
@@ -249,13 +250,22 @@ const columnSelectorStateValid = computed(() => {
   );
 });
 
-const runButtonEnabled = computed(() => {
-  return (
-    inputsAvailable.value &&
-    store.expressionValid &&
-    columnSelectorStateValid.value
-  );
+const runButtonDisabledErrorReason = computed(() => {
+  if (!inputsAvailable.value) {
+    return "No input available. Connect an executed node.";
+  } else if (!store.expressionValid) {
+    return "Expression is not valid.";
+    // eslint-disable-next-line no-negated-condition
+  } else if (!columnSelectorStateValid.value) {
+    return "Output column exists in input table.";
+  } else {
+    return null;
+  }
 });
+
+const runButtonEnabled = computed(
+  () => runButtonDisabledErrorReason.value === null,
+);
 </script>
 
 <template>
@@ -297,31 +307,33 @@ const runButtonEnabled = computed(() => {
       </template>
       <!-- Controls for the very bottom bar -->
       <template #code-editor-controls>
-        <SplitButton>
-          <Button
-            primary
-            compact
-            :disabled="!runButtonEnabled"
-            @click="runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN)"
-          >
-            <PlayIcon />Evaluate first
-            {{ DEFAULT_NUMBER_OF_ROWS_TO_RUN }} rows</Button
-          >
-          <SubMenu
-            :items="[
-              { text: 'Evaluate first 100 rows', metadata: 100 },
-              { text: 'Evaluate first 1000 rows', metadata: 1000 },
-            ]"
-            button-title="Run more rows"
-            orientation="top"
-            :disabled="!runButtonEnabled"
-            @item-click="
-              (_evt: any, item: any) => runExpressions(item.metadata)
-            "
-          >
-            <DropdownIcon />
-          </SubMenu>
-        </SplitButton>
+        <Tooltip :text="runButtonDisabledErrorReason">
+          <SplitButton>
+            <Button
+              primary
+              compact
+              :disabled="runButtonDisabledErrorReason !== null"
+              @click="runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN)"
+            >
+              <PlayIcon />Evaluate first
+              {{ DEFAULT_NUMBER_OF_ROWS_TO_RUN }} rows</Button
+            >
+            <SubMenu
+              :items="[
+                { text: 'Evaluate first 100 rows', metadata: 100 },
+                { text: 'Evaluate first 1000 rows', metadata: 1000 },
+              ]"
+              button-title="Run more rows"
+              orientation="top"
+              :disabled="runButtonDisabledErrorReason !== null"
+              @item-click="
+                (_evt: any, item: any) => runExpressions(item.metadata)
+              "
+            >
+              <DropdownIcon />
+            </SubMenu>
+          </SplitButton>
+        </Tooltip>
       </template>
     </ScriptingEditor>
   </main>
