@@ -86,7 +86,9 @@ public final class BuiltInAggregations {
             The "Math – Aggregate Columns" category in KNIME Expression language includes functions that perform
             aggregations over all rows of a column. These functions are distinct from other aggregations as they
             operate across the entire column rather than individual values or subsets. They are essential for
-            summarizing and analyzing data at the column level within expressions.
+            summarizing and analyzing data at the column level within expressions. Note that aggregation functions 
+            utilize the entire column as provided in the input. They do not use the output of the expression 
+            if applied on a column configured to be replaced.
             """);
 
     /** The list of all built-in aggregation categories */
