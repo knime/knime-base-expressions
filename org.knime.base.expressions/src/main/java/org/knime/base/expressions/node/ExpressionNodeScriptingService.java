@@ -280,7 +280,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                 evaluationContext);
 
             updateTablePreview(inputTable, slicedInputTable, expressionResult, columnName, columnInsertionModeString,
-                numPreviewRows);
+                numPreviewRows, inputTable.getBufferedTable().size());
 
             for (var warning : warnings) {
                 addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));
@@ -299,7 +299,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
          */
         private void updateTablePreview(final ReferenceTable inputTable, final ColumnarVirtualTable slicedInputTable,
             final ColumnarVirtualTable expressionResult, final String columnName,
-            final String columnInsertionModeString, final int numRows) {
+            final String columnInsertionModeString, final int numRows, final long totalNumRows) {
 
             if (!m_inputTableIsAvailable) {
                 throw new IllegalStateException(
@@ -326,7 +326,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                     .getBufferedTable());
 
                 m_cleanUpTableViewDataService.run();
-                updateOutputTable(numRows);
+                updateOutputTable(numRows, totalNumRows);
             } catch (CanceledExecutionException e) {
                 throw new IllegalStateException("Preview evaluation cancelled by the user.", e);
             } catch (VirtualTableIncompatibleException e) {
