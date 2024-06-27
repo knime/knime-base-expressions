@@ -66,15 +66,15 @@ import org.knime.core.expressions.aggregations.BuiltInAggregations;
  *
  * @author David Hickey, TNG Technology Consulting GmbH
  */
-final class MeanColumnAggregationImpl {
+final class AverageColumnAggregationImpl {
 
     private static final boolean IGNORE_NAN_DEFAULT = false;
 
-    private MeanColumnAggregationImpl() {
+    private AverageColumnAggregationImpl() {
     }
 
-    static Aggregation meanAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
-        var matchedArgs = Argument.matchSignature(BuiltInAggregations.MEAN.description().arguments(), arguments);
+    static Aggregation averageAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
+        var matchedArgs = Argument.matchSignature(BuiltInAggregations.AVERAGE.description().arguments(), arguments);
 
         var columnIdx = matchedArgs //
             .map(args -> args.get("column")) // type of the column argument
@@ -92,14 +92,14 @@ final class MeanColumnAggregationImpl {
         var columnType = tableSpec.getColumnSpec(columnIdx).getType();
 
         if (columnType.isCompatible(DoubleValue.class)) {
-            return new MeanFloatAggregation(columnIdx, ignoreNaN);
+            return new AverageFloatAggregation(columnIdx, ignoreNaN);
         } else {
             throw new IllegalStateException("Implementation error - unsupported column type: %s".formatted(columnType));
         }
     }
 
     @SuppressWarnings("squid:S3052") // Allow redundant initialisations for clarity
-    private static final class MeanFloatAggregation extends AbstractAggregation {
+    private static final class AverageFloatAggregation extends AbstractAggregation {
 
         private double m_runningMean = 0;
 
@@ -111,7 +111,7 @@ final class MeanColumnAggregationImpl {
 
         private boolean m_allValuesNaN = true;
 
-        private MeanFloatAggregation(final int columnIdx, final boolean ignoreNaN) {
+        private AverageFloatAggregation(final int columnIdx, final boolean ignoreNaN) {
             super(columnIdx);
 
             m_ignoreNaN = ignoreNaN;

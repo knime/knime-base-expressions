@@ -61,11 +61,11 @@ import org.junit.jupiter.api.TestFactory;
  * @author David Hickey, TNG Technology Consulting GmbH
  */
 @SuppressWarnings("static-method")
-final class MeanColumnAggregationImplTest {
+final class AverageColumnAggregationImplTest {
 
     @TestFactory
-    List<DynamicNode> mean() {
-        return new AggregationTestUtils.AggregationTestBuilder(MeanColumnAggregationImpl::meanAggregation) //
+    List<DynamicNode> average() {
+        return new AggregationTestUtils.AggregationTestBuilder(AverageColumnAggregationImpl::averageAggregation) //
             .setFutureTolerances(1e-10) // all tests use the same tolerance
             .implInt("int", listOf(1, -10, 10, 5), 1.5) //
             .implLong("long", listOf(1L, -10L, 10L, 5L), 1.5) //

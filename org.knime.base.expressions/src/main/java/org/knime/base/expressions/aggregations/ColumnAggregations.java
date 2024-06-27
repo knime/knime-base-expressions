@@ -91,8 +91,8 @@ public final class ColumnAggregations {
             return MaxColumnAggregationImpl.maxAggregation(aggregationCall.args(), tableSpec);
         } else if (BuiltInAggregations.MIN.equals(columnAggregation)) {
             return MinColumnAggregationImpl.minAggregation(aggregationCall.args(), tableSpec);
-        } else if (BuiltInAggregations.MEAN.equals(columnAggregation)) {
-            return MeanColumnAggregationImpl.meanAggregation(aggregationCall.args(), tableSpec);
+        } else if (BuiltInAggregations.AVERAGE.equals(columnAggregation)) {
+            return AverageColumnAggregationImpl.averageAggregation(aggregationCall.args(), tableSpec);
         } else if (BuiltInAggregations.MEDIAN.equals(columnAggregation)) {
             return MedianColumnAggregationImpl.medianAggregation(aggregationCall.args(), tableSpec);
         } else if (BuiltInAggregations.SUM.equals(columnAggregation)) {
