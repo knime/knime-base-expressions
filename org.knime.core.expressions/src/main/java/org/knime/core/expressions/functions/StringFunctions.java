@@ -180,17 +180,17 @@ public final class StringFunctions {
     public static final ExpressionFunction CONTAINS = functionBuilder() //
         .name("contains") //
         .description("""
-                This function returns `true` if the specified string contains the
+                This function returns `TRUE` if the specified string contains the
                 search term. It can optionally perform a case-insensitive match
                 using the "i" modifier. If the string or search term is `MISSING`,
                 the result is also `MISSING`.
 
                 **Examples**
-                * `contains("Hello World", "world")` returns `false`\\
+                * `contains("Hello World", "world")` returns `FALSE`\\
                   By default, the match is case-sensitive.
-                * `contains("Hello World", "world", "i")` returns `true`\\
+                * `contains("Hello World", "world", "i")` returns `TRUE`\\
                   With the "i" modifier, the match becomes case-insensitive.
-                * `contains("OpenAI", "AI")` returns `true`
+                * `contains("OpenAI", "AI")` returns `TRUE`
                 """) //
         .keywords("match", "pattern", "includes") //
         .category(CATEGORY_MATCH_COMPARE.name()) //
@@ -199,7 +199,7 @@ public final class StringFunctions {
             arg("search", "Term to search for", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" case-insensitive match (root locale)", isString()) //
         ) //
-        .returnType("`true` if string contains the search term, `false` otherwise", RETURN_BOOLEAN_MISSING,
+        .returnType("`TRUE` if string contains the search term, `FALSE` otherwise", RETURN_BOOLEAN_MISSING,
             args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::containsImpl) //
         .build();
@@ -236,8 +236,8 @@ public final class StringFunctions {
                 matching.
 
                 **Examples**
-                * `starts_with("Hello world", "Hello")` returns `true`
-                * `starts_with("Hello world", "abc")` returns `false`
+                * `starts_with("Hello world", "Hello")` returns `TRUE`
+                * `starts_with("Hello world", "abc")` returns `FALSE`
                 """) //
         .keywords("match", "pattern") //
         .category(CATEGORY_MATCH_COMPARE.name()) //
@@ -245,7 +245,7 @@ public final class StringFunctions {
             arg("string", "String to check", isStringOrOpt()), //
             arg("prefix", "Prefix to check", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString())) //
-        .returnType("`true` if the string starts with prefix, `false` otherwise", RETURN_BOOLEAN_MISSING, //
+        .returnType("`TRUE` if the string starts with prefix, `FALSE` otherwise", RETURN_BOOLEAN_MISSING, //
             args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::startsWithImpl) //
         .build();
@@ -282,8 +282,8 @@ public final class StringFunctions {
                 matching.
 
                 **Examples**
-                * `ends_with("Hello world", "world")` returns `true`
-                * `ends_with("Hello world", "abs")` returns `false`
+                * `ends_with("Hello world", "world")` returns `TRUE`
+                * `ends_with("Hello world", "abs")` returns `FALSE`
                 """) //
         .keywords("match", "pattern") //
         .category(CATEGORY_MATCH_COMPARE.name()) //
@@ -292,7 +292,7 @@ public final class StringFunctions {
             arg("suffix", "Suffix to check", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
-        .returnType("`true` if the string ends with suffix, `false` otherwise", RETURN_BOOLEAN_MISSING, //
+        .returnType("`TRUE` if the string ends with suffix, `FALSE` otherwise", RETURN_BOOLEAN_MISSING, //
             args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::endsWithImpl) //
         .build();
@@ -336,11 +336,11 @@ public final class StringFunctions {
                 `MISSING`.
 
                 **Examples**
-                * `like("apple", "a%le")` returns `true`\\
+                * `like("apple", "a%le")` returns `TRUE`\\
                   matches any string starting with "a" and ending with "le")
-                * `like("banana", "_a_a_a")` returns `true`\\
+                * `like("banana", "_a_a_a")` returns `TRUE`\\
                   matches strings like "banana", "bacada"
-                * `like("abc", "A_C", "i")` returns `true`\\
+                * `like("abc", "A_C", "i")` returns `TRUE`\\
                   case-insensitive match, matches "A_C" with "a_c"
                  """) //
         .keywords("match", "pattern", "wildcard", "SQL") //
@@ -349,7 +349,7 @@ public final class StringFunctions {
             arg("string", "String to check", isStringOrOpt()), //
             arg("pattern", "Matching rule", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString())) //
-        .returnType("`true` if the string matches the pattern, `false` otherwise", RETURN_BOOLEAN_MISSING, //
+        .returnType("`TRUE` if the string matches the pattern, `FALSE` otherwise", RETURN_BOOLEAN_MISSING, //
             args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::likeImpl) //
         .build();
@@ -412,9 +412,9 @@ public final class StringFunctions {
                   matching.
 
                   **Examples**
-                  * `regex_match("hello123", "[a-z]+\\d+")` returns `true`
-                  * `regex_match("abc", "a.c")` returns `true`
-                  * `regex_match("123-456-7890", "\\d{3}-\\d{3}-\\d{4}")` returns `true`
+                  * `regex_match("hello123", "[a-z]+\\d+")` returns `TRUE`
+                  * `regex_match("abc", "a.c")` returns `TRUE`
+                  * `regex_match("123-456-7890", "\\d{3}-\\d{3}-\\d{4}")` returns `TRUE`
                 """) //
         .keywords("pattern") //
         .category(CATEGORY_MATCH_COMPARE.name()) //
@@ -423,7 +423,7 @@ public final class StringFunctions {
             arg("pattern", "Regular expression pattern to match", isStringOrOpt()), //
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
-        .returnType("`true` if the string matches the pattern, `false` otherwise", RETURN_BOOLEAN_MISSING, //
+        .returnType("`TRUE` if the string matches the pattern, `FALSE` otherwise", RETURN_BOOLEAN_MISSING, //
             args -> ValueType.BOOLEAN(anyOptional(args))) //
         .impl(StringFunctions::regexMatchImpl) //
         .build();
@@ -697,12 +697,12 @@ public final class StringFunctions {
         .name("replace_umlauts") //
         .description("""
                 Replaces umlauts (i.e., ä, ö, ü) with their ASCII equivalents.
-                If the `no_e` argument is `true`, replaces characters like ö with o.
-                If `false`, replaces characters like ö with oe.
+                If the `no_e` argument is `TRUE`, replaces characters like ö with o.
+                If `FALSE`, replaces characters like ö with oe.
 
                 By default, also replaces ß and ẞ with ss and SS respectively, but
                 this behaviour can be changed by setting the optional argument
-                `replace_eszett` to `false`).
+                `replace_eszett` to `FALSE`).
 
                 If any of the arguments are `MISSING`, the result is also `MISSING`.
 
@@ -722,8 +722,8 @@ public final class StringFunctions {
         .category(CATEGORY_CLEAN.name()) //
         .args( //
             arg("string", "String to convert", isStringOrOpt()), //
-            arg("no_e", "If `true`, e.g. ö->o. If `false`, o->oe", isBooleanOrOpt()), //
-            optarg("replace_eszett", "If `true`, also replace ß with ss (default `true`)", isBoolean()) //
+            arg("no_e", "If `TRUE`, e.g. ö->o. If `FALSE`, o->oe", isBooleanOrOpt()), //
+            optarg("replace_eszett", "If `TRUE`, also replace ß with ss (default `TRUE`)", isBoolean()) //
         ) //
         .returnType("String with umlauts replaced", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
         .impl(StringFunctions::replaceUmlautsImpl) //
@@ -1910,7 +1910,7 @@ public final class StringFunctions {
                 Convert the input to a string.
 
                 This function supports converting various data types to strings:
-                * Boolean: converted to either `true` or `false`.
+                * Boolean: converted to either `TRUE` or `FALSE`.
                 * Float: Converted to their string representations, e.g. "5.4".
                 * Integer: Converted to their string representations, e.g. "1".
                 * String: Returns unchanged input string.
@@ -1921,7 +1921,7 @@ public final class StringFunctions {
                 * `string(42)` returns "42"\\
                   Converts the integer 42 to the string "42".
                 * `string(true)` returns "true"\\
-                  Converts the boolean `true` to the string "true".
+                  Converts the boolean `TRUE` to the string "true".
                 * `string(MISSING)` returns "MISSING"\\
                   Converts the `MISSING` value to the string "MISSING".
                 """) //
@@ -2050,13 +2050,13 @@ public final class StringFunctions {
 
                 This function attempts to parse the input string as a boolean value,
                 according to the following rules:
-                * If the string is "true" (case-insensitive), returns `true`.
-                * If the string is "false" (case-insensitive), returns `false`.
+                * If the string is "true" (case-insensitive), returns `TRUE`.
+                * If the string is "false" (case-insensitive), returns `FALSE`.
                 * If the string is neither "true" nor "false", returns `MISSING`.
 
                 **Examples**
-                * `parse_bool("true")` returns `true`
-                * `parse_bool("false")` returns `false`
+                * `parse_bool("true")` returns `TRUE`
+                * `parse_bool("false")` returns `FALSE`
                 * `parse_bool("abc")` returns `MISSING`
                 """) //
         .keywords("parse", "types") //

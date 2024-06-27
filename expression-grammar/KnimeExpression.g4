@@ -60,7 +60,7 @@ LINE_COMMENT: '#' ~[\r\n]* -> skip;
 WHITESPACE: [ \r\n\t]+ -> skip;
 
 // BOOLEAN literal
-BOOLEAN: 'true' | 'false';
+BOOLEAN: 'TRUE' | 'FALSE';
 
 // INTEGER literal
 INTEGER: '0' | NON_ZERO_DIGIT ('_'? DIGIT)*;
@@ -86,7 +86,7 @@ fragment HEX_DIGIT: [0-9a-fA-F];
 MISSING: 'MISSING';
 
 // MATH_CONSTANT literal
-MATH_CONSTANT: 'E' | 'PI' | 'INF' | 'NaN' | 'MIN_INTEGER' | 'MAX_INTEGER' | 'MIN_FLOAT' | 'MAX_FLOAT' | 'TINY_FLOAT';
+MATH_CONSTANT: 'E' | 'PI' | 'INFINITY' | 'NaN' | 'MIN_INTEGER' | 'MAX_INTEGER' | 'MIN_FLOAT' | 'MAX_FLOAT' | 'TINY_FLOAT';
 
 // literals for accessing "special" columns
 ROW_INDEX: '$[ROW_INDEX]';

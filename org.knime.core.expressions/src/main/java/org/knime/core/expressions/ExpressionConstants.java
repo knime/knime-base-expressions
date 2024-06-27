@@ -52,8 +52,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.knime.core.expressions.ValueType.NativeValueType;
-
 /**
  * Enum type representing our allowed constants.
  *
@@ -66,7 +64,7 @@ public enum ExpressionConstants {
         /** mathematical constant e. */
         E(Math.E, "Euler's constant, the base of the natural logarithm"), //
         /** positive infinity. */
-        INF(Double.POSITIVE_INFINITY, "Infinity"), //
+        INFINITY(Double.POSITIVE_INFINITY, "Infinity"), //
         /** not a number */
         NaN(Double.NaN, "Not a number, indicating that a value has no defined real value, such as 0.0/0.0"), // NOSONAR NaN should be written in this way
         /** the smallest INTEGER number */
@@ -79,23 +77,32 @@ public enum ExpressionConstants {
         MAX_FLOAT(Double.MAX_VALUE, "Largest float representable by this computer"), //
         /** the smallest positive normal FLOAT number */
         TINY_FLOAT(Double.MIN_NORMAL, "Smallest positive float value representable by this computer"), //
-    ;
+        /** true value */
+        TRUE(true, "True value"), //
+        /** false value */
+        FALSE(false, "False value"),
+        /** missing value */
+        MISSING("MISSING", ValueType.MISSING, "Missing value");
 
-    private final Number m_value;
+    private final Object m_value;
 
-    private final NativeValueType m_type;
+    private final ValueType m_type;
 
     private final String m_documentation;
 
     ExpressionConstants(final long value, final String documentation) {
-        this(value, NativeValueType.INTEGER, documentation);
+        this(value, ValueType.INTEGER, documentation);
     }
 
     ExpressionConstants(final double value, final String documentation) {
-        this(value, NativeValueType.FLOAT, documentation);
+        this(value, ValueType.FLOAT, documentation);
     }
 
-    ExpressionConstants(final Number value, final NativeValueType type, final String documentation) {
+    ExpressionConstants(final boolean value, final String documentation) {
+        this(value, ValueType.BOOLEAN, documentation);
+    }
+
+    ExpressionConstants(final Object value, final ValueType type, final String documentation) {
         m_value = value;
         m_type = type;
         m_documentation = documentation;
@@ -106,7 +113,7 @@ public enum ExpressionConstants {
      *
      * @return the value of the constant
      */
-    public Number value() {
+    public Object value() {
         return m_value;
     }
 
@@ -115,7 +122,7 @@ public enum ExpressionConstants {
      *
      * @return the type of the constant
      */
-    public NativeValueType type() {
+    public ValueType type() {
         return m_type;
     }
 
@@ -135,11 +142,17 @@ public enum ExpressionConstants {
      * @return the {@link Ast} representing this constant
      */
     public Ast toAst(final Map<String, Object> data) {
-        return switch (m_type) {
-            case INTEGER -> new Ast.IntegerConstant(m_value.longValue(), data);
-            case FLOAT -> new Ast.FloatConstant(m_value.doubleValue(), data);
-            default -> throw new IllegalStateException("Unexpected value type in toAst: " + m_type);
-        };
+        if (m_type == ValueType.INTEGER) {
+            return new Ast.IntegerConstant((Long)m_value, data);
+        } else if (m_type == ValueType.FLOAT) {
+            return new Ast.FloatConstant((Double)m_value, data);
+        } else if (m_type == ValueType.BOOLEAN) {
+            return new Ast.BooleanConstant((Boolean)m_value, data);
+        } else if (m_type == ValueType.MISSING) {
+            return new Ast.MissingConstant(data);
+        } else {
+            throw new IllegalStateException("Unexpected value type in toAst: " + m_type);
+        }
     }
 
     /**

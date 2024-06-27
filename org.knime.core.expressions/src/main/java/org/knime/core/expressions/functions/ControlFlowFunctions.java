@@ -98,7 +98,7 @@ public final class ControlFlowFunctions {
                     `if(condition_1, value_1, ...<condition_N, value_N>, value_if_all_false)`  \s
 
                     The first expression after a fulfilled condition will be returned. \
-                    If no condition evaluates to `true` the `else` case, i.e. `value_if_all_false` will be returned.   \
+                    If no condition evaluates to `TRUE` the `else` case, i.e. `value_if_all_false` will be returned.   \
                     Conditions need to be boolean expressions and all `value_N` expressions have to return the same type. \
                     Integers will be automatically cast to floats if necessary.  \s
 
@@ -128,9 +128,9 @@ public final class ControlFlowFunctions {
         .args( //
             arg("condition_1", "Boolean condition. See how to chain multiple conditions in description below.",
                 isBoolean()), //
-            arg("value_1", "Expression if condition 1 is `true`.", isAnything()), //
+            arg("value_1", "Expression if condition 1 is `TRUE`.", isAnything()), //
             vararg("additional_conditions, value_if_all_false",
-                "Pairs of conditions and related expressions executed when the condition evaluates to `true`. "
+                "Pairs of conditions and related expressions executed when the condition evaluates to `TRUE`. "
                     + "Last argument is the mandatory default (\"else\" case) to be returned when no condition is fulfilled.",
                 isAnything()) //
         ) //

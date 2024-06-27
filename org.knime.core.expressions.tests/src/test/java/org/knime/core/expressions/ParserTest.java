@@ -116,7 +116,7 @@ final class ParserTest {
             MATH_CONSTANT_E("E", FLOAT(Math.E)), //
             MATH_CONSTANT_PI("PI", FLOAT(Math.PI)), //
             MATH_CONSTANT_NaN("NaN", FLOAT(Double.NaN)), //
-            MATH_CONSTANT_INF("INF", FLOAT(Double.POSITIVE_INFINITY)), //
+            MATH_CONSTANT_INFINITY("INFINITY", FLOAT(Double.POSITIVE_INFINITY)), //
             MATH_CONSTANT_MIN_INT("MIN_INTEGER", INT(Long.MIN_VALUE)), //
             MATH_CONSTANT_MAX_INT("MAX_INTEGER", INT(Long.MAX_VALUE)), //
             MATH_CONSTANT_MIN_FLOAT("MIN_FLOAT", FLOAT(-Double.MAX_VALUE)), //
@@ -142,8 +142,8 @@ final class ParserTest {
             FLOW_LONG_2("$$[\"my 'very\\\" special variable\"]", FLOW("my 'very\" special variable")), //
 
             // BOOLEAN Literal
-            BOOL_TRUE("true", BOOL(true)), //
-            BOOL_FALSE("false", BOOL(false)), //
+            BOOL_TRUE("TRUE", BOOL(true)), //
+            BOOL_FALSE("FALSE", BOOL(false)), //
 
             // INTEGER literal
             INT_ZERO("0", INT(0)), //
@@ -264,9 +264,9 @@ final class ParserTest {
 
             // Aggregation functions
             COL_AGG("COLUMN_MEAN(\"column name\")", AGG("COLUMN_MEAN", STR("column name"))), //
-            COL_AGG_NAMED_ARG("COLUMN_MEAN(\"column name\", ignore_missing=true)",
+            COL_AGG_NAMED_ARG("COLUMN_MEAN(\"column name\", ignore_missing=TRUE)",
                 AGG("COLUMN_MEAN", List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
-            COL_AGG_ONLY_NAMED_ARGS("COLUMN_MEAN(column=\"column name\", ignore_missing=true)",
+            COL_AGG_ONLY_NAMED_ARGS("COLUMN_MEAN(column=\"column name\", ignore_missing=TRUE)",
                 AGG("COLUMN_MEAN", List.of(), Map.of("column", STR("column name"), "ignore_missing", BOOL(true)))), //
 
             // Special stuff
@@ -282,7 +282,7 @@ final class ParserTest {
             AGG_STARTING_WITH_CONSTANT_NAME("PI_AB(10)", AGG("PI_AB", INT(10))), //
 
             // Combined examples
-            COMPLEX_1("not ($email = MISSING) or ($phone_number != MISSING and $opt_in_status == true)", //
+            COMPLEX_1("not ($email = MISSING) or ($phone_number != MISSING and $opt_in_status == TRUE)", //
                 OP( //
                     OP(UnaryOperator.NOT, OP(COL("email"), EQUAL_TO, MIS())), //
                     CONDITIONAL_OR, //
@@ -398,7 +398,7 @@ final class ParserTest {
     @Test
     void testTextLocation() throws ExpressionCompileException {
         // An expression with all the Ast node types
-        var expr = "10 + foo(MISSING + true, -10, 1.0, 'bar', $col, $$flow)";
+        var expr = "10 + foo(MISSING + TRUE, -10, 1.0, 'bar', $col, $$flow)";
         //          0    ^    1    ^    2    ^    3    ^    4    ^    5    ^
         var ast = Parser.parse(expr);
 

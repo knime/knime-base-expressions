@@ -461,7 +461,7 @@ public final class MathFunctions {
                 **Examples**
                 * `tan(0)` returns `0.0`
                 * `tan(PI)` returns `0.0`
-                * `tan(PI/2)` returns `+Infinity`
+                * `tan(PI/2)` returns `+INFINITY`
                 * `tan($["Missing Column"])` returns `MISSING`
                 * `tan(NaN)` returns `NaN`
                 """) //
@@ -835,7 +835,7 @@ public final class MathFunctions {
                 The natural logarithm of a number.
 
                 If the input is 0, a warning is issued and the
-                result is `-Infinity`.
+                result is `-INFINITY`.
                 If the input is less than 0, a warning is issued and the
                 result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
@@ -844,7 +844,7 @@ public final class MathFunctions {
                 **Examples**
                 * `ln(1)` returns `0.0`
                 * `ln(E)` returns `1.0`
-                * `ln(0)` returns `-Infinity`
+                * `ln(0)` returns `-INFINITY`
                 * `ln($["Missing Column"])` returns `MISSING`
                 * `ln(NaN)` returns `NaN`
                 """) //
@@ -877,7 +877,7 @@ public final class MathFunctions {
                 The base-10 logarithm of a number.
 
                 If the input is 0, a warning is issued and the
-                result is `-Infinity`.
+                result is `-INFINITY`.
                 If the input is less than 0, a warning is issued and the
                 result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
@@ -886,7 +886,7 @@ public final class MathFunctions {
                 **Examples**
                 * `log10(1)` returns `0.0`
                 * `log10(10)` returns `1.0`
-                * `log10(0)` returns `-Infinity`
+                * `log10(0)` returns `-INFINITY`
                 * `log10($["Missing Column"])` returns `MISSING`
                 * `log10(NaN)` returns `NaN`
                 """) //
@@ -919,7 +919,7 @@ public final class MathFunctions {
                 The base-2 logarithm of a number.
 
                 If the input is 0, a warning is issued and the
-                result is `-Infinity`.
+                result is `-INFINITY`.
                 If the input is less than 0, a warning is issued and the
                 result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
@@ -928,7 +928,7 @@ public final class MathFunctions {
                 **Examples**
                 * `log2(1)` returns ´0.0´
                 * `log2(2)` returns ´1.0´
-                * `log2(0)` returns `-Infinity`
+                * `log2(0)` returns `-INFINITY`
                 * `log2($["Missing Column"])` returns `MISSING`
                 * `log2(NaN)` returns `NaN`
                 """) //
@@ -963,8 +963,8 @@ public final class MathFunctions {
                     This is mathematically equivalent to `ln(x) / ln(base)`.
 
                     If either `x` is less than 0 or the `base` is less than or equal to 0, a warning is issued and the result is `NaN`.
-                    If `x` is zero, a warning is issued and the result is `-Infinity`.
-                    If the `base` is 1, a warning is issued and the result is `Infinity`.
+                    If `x` is zero, a warning is issued and the result is `-INFINITY`.
+                    If the `base` is 1, a warning is issued and the result is `INFINITY`.
                     If any input is `MISSING`, the output is `MISSING`.
                     If any input is `NaN`, the output is `NaN`.
 
@@ -973,8 +973,8 @@ public final class MathFunctions {
                     * `log(1000, 10)` returns `3.0`
                     * `log(64, 2)` returns `6.0`
                     * `log(…, 0)` returns `NaN`
-                    * `log(0, …)` returns `-Infinity`
-                    * `log(…, 1)` returns `Infinity`
+                    * `log(0, …)` returns `-INFINITY`
+                    * `log(…, 1)` returns `INFINITY`
                     * `log($["Missing Column"], …)` returns `MISSING`
                     * `log(NaN, …)` returns `NaN`
                     """)
@@ -1030,7 +1030,7 @@ public final class MathFunctions {
                 logarithm.
 
                 If the input is equal to -1, a warning is issued
-                and the result is `-Infinity`.
+                and the result is `-INFINITY`.
                 If the input is less than -1, a warning is issued
                 and the result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
@@ -1039,7 +1039,7 @@ public final class MathFunctions {
                 **Examples**
                 * `log1p(0)` returns `0.0`
                 * `log1p(1)` returns `0.693147…`
-                * `log1p(0)` returns `-Infinity`
+                * `log1p(0)` returns `-INFINITY`
                 * `log1p($["Missing Column"])` returns `MISSING`
                 * `log1p(NaN)` returns `NaN`
                 """) //
@@ -2104,14 +2104,14 @@ public final class MathFunctions {
                 Check if a number is `NaN` (i.e. not a number).
 
                 **Examples**
-                * `is_nan(0)` returns `false`
-                * `is_nan(sqrt(-1))` returns `true`
-                * `is_nan($["Missing Column"])` returns `false`
+                * `is_nan(0)` returns `FALSE`
+                * `is_nan(sqrt(-1))` returns `TRUE`
+                * `is_nan($["Missing Column"])` returns `FALSE`
                 """) //
         .keywords("NaN") //
         .category(CATEGORY_GENERAL.name()) //
         .args(arg("x", "A number", isFloatOrOpt())) //
-        .returnType("`true` if x is `NaN`, `false` otherwise", RETURN_BOOLEAN, args -> BOOLEAN) //
+        .returnType("`TRUE` if x is `NaN`, `FALSE` otherwise", RETURN_BOOLEAN, args -> BOOLEAN) //
         .impl(MathFunctions::isNanImpl) //
         .build();
 

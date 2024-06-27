@@ -113,8 +113,8 @@ public final class BuiltInAggregations {
                 the same type as the column.
 
                 The `ignore_nan` option can be used to ignore `NaN` values. If it is
-                set to `true`, `NaN` values are ignored, but if all values are `NaN`,
-                the result is `MISSING`. If it is `false`, then `NaN` values are not
+                set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
+                the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
 
                 Examples:
@@ -129,7 +129,7 @@ public final class BuiltInAggregations {
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `false`)") //
+            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
         .returnType("The maximum value of the column", "INTEGER? | FLOAT?", BuiltInAggregations::maxReturnType) //
         .build();
@@ -159,8 +159,8 @@ public final class BuiltInAggregations {
                 the same type as the column.
 
                 The `ignore_nan` option can be used to ignore `NaN` values. If it is
-                set to `true`, `NaN` values are ignored, but if all values are `NaN`,
-                the result is `MISSING`. If it is `false`, then `NaN` values are not
+                set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
+                the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
 
                 Examples:
@@ -175,7 +175,7 @@ public final class BuiltInAggregations {
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `false`)") //
+            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
         .returnType("The minimum value of the column", "INTEGER? | FLOAT?", BuiltInAggregations::minReturnType) //
         .build();
@@ -204,8 +204,8 @@ public final class BuiltInAggregations {
                 all values are `MISSING`, the result is `MISSING`.
 
                 The `ignore_nan` option can be used to ignore `NaN` values. If it is
-                set to `true`, `NaN` values are ignored, but if all values are `NaN`,
-                the result is `MISSING`. If it is `false`, then `NaN` values are not
+                set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
+                the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
 
                 Examples:
@@ -220,7 +220,7 @@ public final class BuiltInAggregations {
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `false`)") //
+            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
         .returnType("The mean value of the column", "FLOAT?", BuiltInAggregations::meanReturnType) //
         .build();
@@ -250,8 +250,8 @@ public final class BuiltInAggregations {
                 all values are `MISSING`, the result is `MISSING`.
 
                 The `ignore_nan` option can be used to ignore `NaN` values. If it is
-                set to `true`, `NaN` values are ignored, but if all values are `NaN`,
-                the result is `MISSING`. If it is `false`, then `NaN` values are not
+                set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
+                the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
 
                 Examples:
@@ -266,7 +266,7 @@ public final class BuiltInAggregations {
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `false`)") //
+            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
         .returnType("The median value of the column", "FLOAT", BuiltInAggregations::medianReturnType) //
         .build();
@@ -297,8 +297,8 @@ public final class BuiltInAggregations {
                 same type as the column.
 
                 The `ignore_nan` option can be used to ignore `NaN` values. If it is
-                set to `true`, `NaN` values are ignored, and if all values are `NaN`,
-                the result is 0. If it is `false`, then `NaN` values are not ignored
+                set to `TRUE`, `NaN` values are ignored, and if all values are `NaN`,
+                the result is 0. If it is `FALSE`, then `NaN` values are not ignored
                 and the result is `NaN` if any value in the column is `NaN`.
 
                 Examples:
@@ -313,7 +313,7 @@ public final class BuiltInAggregations {
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `false`)") //
+            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
         .returnType("The sum of the column", "INTEGER | FLOAT", BuiltInAggregations::sumReturnType) //
         .build();
@@ -342,8 +342,8 @@ public final class BuiltInAggregations {
                 If all values are `MISSING`, the result is `MISSING`.
 
                 The `ignore_nan` option can be used to ignore `NaN` values. If it is
-                set to `true`, `NaN` values are ignored, but if all values are `NaN`,
-                the result is `MISSING`. If it is `false`, then `NaN` values are not
+                set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
+                the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
 
                 Examples:
@@ -358,7 +358,7 @@ public final class BuiltInAggregations {
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `false`)") //
+            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
         .returnType("The variance of the column", "FLOAT?", BuiltInAggregations::varianceReturnType) //
         .build();
@@ -388,8 +388,8 @@ public final class BuiltInAggregations {
                 `MISSING` values. If all values are `MISSING`, the result is `MISSING`.
 
                 The `ignore_nan` option can be used to ignore `NaN` values. If it is
-                set to `true`, `NaN` values are ignored, but if all values are `NaN`,
-                the result is `MISSING`. If it is `false`, then `NaN` values are not
+                set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
+                the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
 
                 There is also an optional argument for the delta degrees of freedom
@@ -412,7 +412,7 @@ public final class BuiltInAggregations {
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `false`)"), //
+            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)"), //
             new Argument("ddof", "INTEGER", "The delta degrees of freedom to use (defaults to 0)") //
         ) //
         .returnType("The variance of the column", "FLOAT?", BuiltInAggregations::stddevReturnType) //
@@ -443,7 +443,7 @@ public final class BuiltInAggregations {
                 Count the number of values in a column, with or without `MISSING` values.
 
                 The `ignore_missing` option can be used to skip `MISSING` values. If it is
-                set to `true`, `MISSING` values are ignored. If it is `false`, then `MISSING`
+                set to `TRUE`, `MISSING` values are ignored. If it is `FALSE`, then `MISSING`
                 values are not ignored and are counted as well.
 
                 Examples:
@@ -458,7 +458,7 @@ public final class BuiltInAggregations {
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_missing", "BOOLEAN", "Whether to skip `MISSING` values (defaults to `false`)") //
+            new Argument("ignore_missing", "BOOLEAN", "Whether to skip `MISSING` values (defaults to `FALSE`)") //
         ) //
         .returnType("The number of values in the column", "INTEGER", BuiltInAggregations::countReturnType) //
         .build();
