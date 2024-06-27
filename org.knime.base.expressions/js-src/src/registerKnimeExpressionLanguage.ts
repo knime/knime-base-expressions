@@ -50,7 +50,7 @@ const registerKnimeExpressionLanguage = ({
   monaco.languages.setMonarchTokensProvider(languageName, {
     defaultToken: "",
 
-    keywords: ["MISSING", "true", "false"],
+    keywords: ["MISSING", "TRUE", "FALSE"],
 
     brackets: [
       { open: "[", close: "]", token: "delimiter.bracket" },
@@ -66,8 +66,8 @@ const registerKnimeExpressionLanguage = ({
         { include: "@strings" },
 
         [/MISSING/, "constant"],
-        [/true/, "keyword.true"],
-        [/false/, "keyword.false"],
+        [/TRUE/, "keyword.true"],
+        [/FALSE/, "keyword.false"],
         [/\$\[?["']?/, "@columnAccess"],
 
         [/[[\]()]/, "@brackets"],
@@ -197,28 +197,21 @@ const registerKnimeExpressionLanguage = ({
           extraDetailForMonaco: { [key: string]: any };
         };
 
-        const completionWords = ["true", "false", "MISSING"].map((w) => ({
-          text: w,
-          kind: monaco.languages.CompletionItemKind.Keyword,
-          extraDetailForMonaco: {},
-        }));
-
-        const staticSuggestions = [
-          ...completionWords,
-          ...extraCompletionItems,
-        ].map((item: CompletionItemWithType) => ({
-          // Replace from beginning of current word
-          label: item.text,
-          kind: item.kind,
-          insertText: item.text,
-          range: new monaco.Range(
-            position.lineNumber,
-            position.column,
-            position.lineNumber,
-            model.getWordUntilPosition(position).startColumn,
-          ),
-          ...item.extraDetailForMonaco,
-        }));
+        const staticSuggestions = extraCompletionItems.map(
+          (item: CompletionItemWithType) => ({
+            // Replace from beginning of current word
+            label: item.text,
+            kind: item.kind,
+            insertText: item.text,
+            range: new monaco.Range(
+              position.lineNumber,
+              position.column,
+              position.lineNumber,
+              model.getWordUntilPosition(position).startColumn,
+            ),
+            ...item.extraDetailForMonaco,
+          }),
+        );
 
         const escapeRegex = (text: string) =>
           text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
