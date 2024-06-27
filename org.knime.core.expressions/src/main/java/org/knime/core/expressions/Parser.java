@@ -343,7 +343,7 @@ final class Parser {
                         rowId(data);
                 case KnimeExpressionParser.MATH_CONSTANT -> {
                     try {
-                        yield MathConstantValue.valueOf(symbol.getText()).toAst(data);
+                        yield ExpressionConstants.valueOf(symbol.getText()).toAst(data);
                     } catch (IllegalArgumentException e) {
                         // This should only happen if our grammar doesn't match our list of constants,
                         // i.e. is an implementation error

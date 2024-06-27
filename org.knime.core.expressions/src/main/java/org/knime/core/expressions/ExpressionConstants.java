@@ -55,11 +55,11 @@ import java.util.Map;
 import org.knime.core.expressions.ValueType.NativeValueType;
 
 /**
- * Enum type representing our allowed mathematical constants.
+ * Enum type representing our allowed constants.
  *
  * @author David Hickey, TNG Technology Consulting GmbH
  */
-public enum MathConstantValue {
+public enum ExpressionConstants {
 
         /** mathematical constant pi. */
         PI(Math.PI, "The ratio of a circle's circumference to its diameter"), //
@@ -87,15 +87,15 @@ public enum MathConstantValue {
 
     private final String m_documentation;
 
-    MathConstantValue(final long value, final String documentation) {
+    ExpressionConstants(final long value, final String documentation) {
         this(value, NativeValueType.INTEGER, documentation);
     }
 
-    MathConstantValue(final double value, final String documentation) {
+    ExpressionConstants(final double value, final String documentation) {
         this(value, NativeValueType.FLOAT, documentation);
     }
 
-    MathConstantValue(final Number value, final NativeValueType type, final String documentation) {
+    ExpressionConstants(final Number value, final NativeValueType type, final String documentation) {
         m_value = value;
         m_type = type;
         m_documentation = documentation;
@@ -158,12 +158,12 @@ public enum MathConstantValue {
      */
     public OperatorDescription toOperatorDescription() {
         return new OperatorDescription(name(), documentation(), null, type().name(), null, List.of("constant"),
-            MATH_CONSTANT_CATEGORY.name(), OperatorDescription.CONSTANT_ENTRY_TYPE);
+            CONSTANTS_CATEGORY.name(), OperatorDescription.CONSTANT_ENTRY_TYPE);
     }
 
-    /** Category for all mathematical constants */
-    public static final OperatorCategory MATH_CONSTANT_CATEGORY = new OperatorCategory("Math – Constants", """
-            The "Math – Constants" category in KNIME Expression language includes
-            predefined mathematical constants such as PI, Infinity, and NaN.
+    /** Category for all constants */
+    public static final OperatorCategory CONSTANTS_CATEGORY = new OperatorCategory("Constants", """
+            The "Constants" category in KNIME Expression language includes
+            predefined constants such as PI, Infinity, and NaN.
             """);
 }
