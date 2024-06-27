@@ -70,6 +70,7 @@ import static org.knime.core.expressions.functions.FunctionUtils.RETURN_INTEGER_
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.IntBinaryOperator;
@@ -1693,10 +1694,10 @@ public final class MathFunctions {
                 are required, but beyond that you can supply as many as you
                 like.
 
-                Using `NEGATIVE_INFINITY` or `POSITIVE_INFINITY` as an argument affects the result as follows.
-                - If the median is influenced by `NEGATIVE_INFINITY` or `POSITIVE_INFINITY`,
+                Using `NEGATIVE_INFINITY` or `POSITIVE_INFINITY` as an argument affects the result as follows:
+                * If the median is influenced by `NEGATIVE_INFINITY` or `POSITIVE_INFINITY`,
                   the result will be `NEGATIVE_INFINITY` or `POSITIVE_INFINITY` respectively.
-                - If the median is influenced by `NEGATIVE_INFINITY` and `POSITIVE_INFINITY`, the result will be `NaN`
+                * If the median is influenced by `NEGATIVE_INFINITY` and `POSITIVE_INFINITY`, the result will be `NaN`
 
                 If any of the numbers are `NaN`, the result will be `NaN`.
 
@@ -1739,6 +1740,136 @@ public final class MathFunctions {
                 // Median is middle element if we have an odd number of them
                 return sortedFloatArgs[sortedFloatArgs.length / 2];
             }
+        };
+
+        return FloatComputer.of(value, anyMissing(args));
+    }
+
+    /** The sum of multiple numbers */
+    public static final ExpressionFunction SUM = functionBuilder() //
+        .name("sum") //
+        .description("""
+                The sum of a list of numbers. If any argument is `MISSING`, the result
+                is also `MISSING`. At least two arguments are required, but beyond that
+                you can supply as many as you like. If all inputs are integers, the result
+                will be an integer, otherwise it will be a float.
+
+                If any of the numbers are `NaN`, the result will be `NaN`. `NEGATIVE_INFINITY` or
+                `POSITIVE_INFINITY` will coerce the result to `NEGATIVE_INFINITY` or `POSITIVE_INFINITY` respectively.
+
+                **Examples**
+                * `sum(2, 4, 6)` returns 12
+                * `sum(1, 2, 3, 4, 5)` returns 15
+                * `sum(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
+                """) //
+        .keywords("total") //
+        .category(CATEGORY_AGGREGATE.name()) //
+        .args( //
+            arg("input_1", "First number", isNumericOrOpt()), //
+            arg("input_2", "Second number", isNumericOrOpt()), //
+            vararg("…", "Additional numbers", isNumericOrOpt()) //
+        ) //
+        .returnType("Sum of the arguments", RETURN_FLOAT_INTEGER_MISSING,
+            args -> allBaseTypesMatch(INTEGER::equals, args) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
+        .impl(MathFunctions::sumImpl) //
+        .build();
+
+    private static Computer sumImpl(final List<Computer> args) {
+        boolean allArgsAreIntegers = args.stream().allMatch(IntegerComputer.class::isInstance);
+
+        if (allArgsAreIntegers) {
+            return IntegerComputer.of( //
+                ctx -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(ctx)).sum(), //
+                anyMissing(args) //
+            );
+        } else {
+            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
+            return FloatComputer.of( //
+                ctx -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(ctx)).sum(), //
+                anyMissing(args) //
+            );
+        }
+    }
+
+    private static double variance(final Collection<Double> values) {
+        double sum = 0;
+        double sumSq = 0;
+        for (double value : values) {
+            sum += value;
+            sumSq += value * value;
+        }
+        return (sumSq - sum * sum / values.size()) / values.size();
+    }
+
+    /** The variance of multiple numbers */
+    public static final ExpressionFunction VARIANCE = functionBuilder() //
+        .name("variance") //
+        .description("""
+                The variance of a list of numbers. If any argument is `MISSING`, the result
+                is also `MISSING`. At least two arguments are required, but beyond that
+                you can supply as many as you like.
+
+                If any of the numbers are `NaN`, the result will be `NaN`.
+
+                **Examples**
+                * `variance(2, 4, 6)` returns 2.666666...
+                * `variance(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
+                """) //
+        .keywords() //
+        .category(CATEGORY_AGGREGATE.name()) //
+        .args( //
+            arg("input_1", "First number", isNumericOrOpt()), //
+            arg("input_2", "Second number", isNumericOrOpt()), //
+            vararg("…", "Additional numbers", isNumericOrOpt()) //
+        ) //
+        .returnType("Variance of the arguments", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
+        .impl(MathFunctions::varianceImpl) //
+        .build();
+
+    private static Computer varianceImpl(final List<Computer> args) {
+        ToDoubleFunction<EvaluationContext> value = ctx -> {
+            var floatArgs = args.stream() //
+                .map(c -> toFloat(c).compute(ctx)) //
+                .toArray(Double[]::new); //
+
+            return variance(Arrays.asList(floatArgs));
+        };
+
+        return FloatComputer.of(value, anyMissing(args));
+    }
+
+    /** The standard deviation of multiple numbers */
+    public static final ExpressionFunction STDDEV = functionBuilder() //
+        .name("stddev") //
+        .description("""
+                The standard deviation of a list of numbers. If any argument is `MISSING`, the result
+                is also `MISSING`. At least two arguments are required, but beyond that
+                you can supply as many as you like.
+
+                If any of the numbers are `NaN`, the result will be `NaN`.
+
+                **Examples**
+                * `stddev(2, 4, 6)` returns 1.632993...
+                * `stddev(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
+                """) //
+        .keywords() //
+        .category(CATEGORY_AGGREGATE.name()) //
+        .args( //
+            arg("input_1", "First number", isNumericOrOpt()), //
+            arg("input_2", "Second number", isNumericOrOpt()), //
+            vararg("…", "Additional numbers", isNumericOrOpt()) //
+        ) //
+        .returnType("Standard deviation of the arguments", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
+        .impl(MathFunctions::stddevImpl) //
+        .build();
+
+    private static Computer stddevImpl(final List<Computer> args) {
+        ToDoubleFunction<EvaluationContext> value = ctx -> {
+            var floatArgs = args.stream() //
+                .map(c -> toFloat(c).compute(ctx)) //
+                .toArray(Double[]::new); //
+
+            return Math.sqrt(variance(Arrays.asList(floatArgs)));
         };
 
         return FloatComputer.of(value, anyMissing(args));

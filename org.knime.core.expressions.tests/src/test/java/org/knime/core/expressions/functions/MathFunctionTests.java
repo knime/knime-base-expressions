@@ -945,6 +945,75 @@ final class MathFunctionTests {
     }
 
     @TestFactory
+    List<DynamicNode> sum() {
+        return new FunctionTestBuilder(MathFunctions.SUM) //
+            .typing("INTEGER", List.of(INTEGER, INTEGER), INTEGER) //
+            .typing("FLOAT+INTEGER", List.of(FLOAT, INTEGER), FLOAT) //
+            .typing("FLOAT", List.of(FLOAT, FLOAT), FLOAT) //
+            .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_INTEGER) //
+            .typing("FLOAT?", List.of(OPT_FLOAT, FLOAT), OPT_FLOAT) //
+            .illegalArgs("STRING", List.of(STRING)) //
+            .illegalArgs("BOOLEAN", List.of(BOOLEAN)) //
+            .illegalArgs("MISSING", List.of(MISSING)) //
+            .illegalArgs("TOO FEW", List.of(INTEGER)) //
+            .impl("INTEGER", List.of(arg(1), arg(2), arg(-1)), 2) //
+            .implWithTolerance("FLOAT", List.of(arg(1.2), arg(1.4), arg(1.5)), 4.1) //
+            .impl("positive inf", List.of(arg(Float.POSITIVE_INFINITY), arg(1)), Float.POSITIVE_INFINITY) //
+            .impl("negative inf", List.of(arg(Float.NEGATIVE_INFINITY), arg(1)), Float.NEGATIVE_INFINITY) //
+            .impl("both infs", List.of(arg(Float.POSITIVE_INFINITY), arg(Float.NEGATIVE_INFINITY)), Float.NaN) //
+            .impl("missing INTEGER", List.of(misInteger(), arg(1))) //
+            .impl("missing FLOAT", List.of(misFloat(), arg(1.5))) //
+            .impl("NaN", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> variance() {
+        return new FunctionTestBuilder(MathFunctions.VARIANCE) //
+            .typing("INTEGER", List.of(INTEGER, INTEGER), FLOAT) //
+            .typing("FLOAT+INTEGER", List.of(FLOAT, INTEGER), FLOAT) //
+            .typing("FLOAT", List.of(FLOAT, FLOAT), FLOAT) //
+            .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_FLOAT) //
+            .typing("FLOAT?", List.of(OPT_FLOAT, FLOAT), OPT_FLOAT) //
+            .illegalArgs("STRING", List.of(STRING)) //
+            .illegalArgs("BOOLEAN", List.of(BOOLEAN)) //
+            .illegalArgs("MISSING", List.of(MISSING)) //
+            .illegalArgs("TOO FEW", List.of(INTEGER)) //
+            .implWithTolerance("INTEGER", List.of(arg(1), arg(2), arg(-1)), 1.555555555555) //
+            .implWithTolerance("FLOAT", List.of(arg(1.2), arg(1.4), arg(1.5)), 0.015555555555) //
+            .impl("positive inf", List.of(arg(Float.POSITIVE_INFINITY), arg(1)), Float.NaN) //
+            .impl("negative inf", List.of(arg(Float.NEGATIVE_INFINITY), arg(1)), Float.NaN) //
+            .impl("both infs", List.of(arg(Float.POSITIVE_INFINITY), arg(Float.NEGATIVE_INFINITY)), Float.NaN) //
+            .impl("missing INTEGER", List.of(misInteger(), arg(1))) //
+            .impl("missing FLOAT", List.of(misFloat(), arg(1.5))) //
+            .impl("NaN", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> stddev() {
+        return new FunctionTestBuilder(MathFunctions.STDDEV) //
+            .typing("INTEGER", List.of(INTEGER, INTEGER), FLOAT) //
+            .typing("FLOAT+INTEGER", List.of(FLOAT, INTEGER), FLOAT) //
+            .typing("FLOAT", List.of(FLOAT, FLOAT), FLOAT) //
+            .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_FLOAT) //
+            .typing("FLOAT?", List.of(OPT_FLOAT, FLOAT), OPT_FLOAT) //
+            .illegalArgs("STRING", List.of(STRING)) //
+            .illegalArgs("BOOLEAN", List.of(BOOLEAN)) //
+            .illegalArgs("MISSING", List.of(MISSING)) //
+            .illegalArgs("TOO FEW", List.of(INTEGER)) //
+            .implWithTolerance("INTEGER", List.of(arg(1), arg(2), arg(-1)), 1.247219128924647) //
+            .implWithTolerance("FLOAT", List.of(arg(1.2), arg(1.4), arg(1.5)), 0.12472191289246473) //
+            .impl("positive inf", List.of(arg(Float.POSITIVE_INFINITY), arg(1)), Float.NaN) //
+            .impl("negative inf", List.of(arg(Float.NEGATIVE_INFINITY), arg(1)), Float.NaN) //
+            .impl("both infs", List.of(arg(Float.POSITIVE_INFINITY), arg(Float.NEGATIVE_INFINITY)), Float.NaN) //
+            .impl("missing INTEGER", List.of(misInteger(), arg(1))) //
+            .impl("missing FLOAT", List.of(misFloat(), arg(1.5))) //
+            .impl("NaN", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
+            .tests();
+    }
+
+    @TestFactory
     List<DynamicNode> binomial() {
         return new FunctionTestBuilder(MathFunctions.BINOMIAL) //
             .typing("INTEGER", List.of(INTEGER, INTEGER), INTEGER) //

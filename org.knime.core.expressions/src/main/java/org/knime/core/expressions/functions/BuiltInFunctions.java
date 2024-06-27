@@ -132,12 +132,15 @@ public final class BuiltInFunctions {
         MathFunctions.CEIL, //
         MathFunctions.FLOOR, //
         // Math – Aggregate
-        MathFunctions.AVERAGE, //
-        MathFunctions.MEDIAN, //
-        MathFunctions.MIN, //
         MathFunctions.MAX, //
+        MathFunctions.MIN, //
         MathFunctions.ARGMIN, //
         MathFunctions.ARGMAX, //
+        MathFunctions.AVERAGE, //
+        MathFunctions.MEDIAN, //
+        MathFunctions.SUM, //
+        MathFunctions.VARIANCE, //
+        MathFunctions.STDDEV, //
         // Math – Trigonometry
         MathFunctions.DEGREES, //
         MathFunctions.RADIANS, //
