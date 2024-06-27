@@ -64,9 +64,9 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorDescription;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.functions.ExpressionFunctionBuilder.Arg.ArgKind;
 
 /**
@@ -321,7 +321,7 @@ public final class ExpressionFunctionBuilder {
                 .map(a -> new OperatorDescription.Argument(a.name, a.matcher.allowed(), a.description)) //
                 .toList();
             var desc = new OperatorDescription(name, description, argsDesc, returnType, returnDesc, List.of(keywords),
-                category);
+                category, OperatorDescription.FUNCTION_ENTRY_TYPE);
 
             return new FunctionImpl(name, desc, argTypes -> {
                 // Check if the args match the definition

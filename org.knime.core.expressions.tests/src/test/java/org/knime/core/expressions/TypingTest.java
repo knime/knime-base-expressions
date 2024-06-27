@@ -389,7 +389,7 @@ final class TypingTest {
         @Override
         public OperatorDescription description() {
             return new OperatorDescription(this.name(), "Test function", List.of(), "Some return type",
-                "Some return description", List.of(), "Test category");
+                "Some return description", List.of(), "Test category", OperatorDescription.FUNCTION_ENTRY_TYPE);
         }
     }
 }

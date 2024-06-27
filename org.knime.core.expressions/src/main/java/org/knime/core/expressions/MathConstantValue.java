@@ -158,7 +158,7 @@ public enum MathConstantValue {
      */
     public OperatorDescription toOperatorDescription() {
         return new OperatorDescription(name(), documentation(), null, type().name(), null, List.of("constant"),
-            MATH_CONSTANT_CATEGORY.name());
+            MATH_CONSTANT_CATEGORY.name(), OperatorDescription.CONSTANT_ENTRY_TYPE);
     }
 
     /** Category for all mathematical constants */

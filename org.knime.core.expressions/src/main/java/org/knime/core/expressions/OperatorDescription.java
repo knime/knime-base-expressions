@@ -64,9 +64,10 @@ import java.util.stream.Collectors;
  * @param returnDescription a description of the return value
  * @param keywords
  * @param category
+ * @param entryType either 'function' or 'constant'
  */
 public record OperatorDescription(String name, String description, List<OperatorDescription.Argument> arguments,
-    String returnType, String returnDescription, List<String> keywords, String category) {
+    String returnType, String returnDescription, List<String> keywords, String category, String entryType) {
 
     /**
      * The description of a function argument.
@@ -119,4 +120,8 @@ public record OperatorDescription(String name, String description, List<Operator
             return Optional.of(argumentsMap);
         }
     }
+
+    public static final String CONSTANT_ENTRY_TYPE = "constant";
+
+    public static final String FUNCTION_ENTRY_TYPE = "function";
 }

@@ -155,7 +155,7 @@ public class AggregationBuilder {
             }
 
             var desc = new OperatorDescription(name, description, List.of(args), returnType, returnDesc,
-                List.of(keywords), category);
+                List.of(keywords), category, OperatorDescription.FUNCTION_ENTRY_TYPE);
 
             return new AggregationImpl(name, desc, returnTypeMapping);
         }
