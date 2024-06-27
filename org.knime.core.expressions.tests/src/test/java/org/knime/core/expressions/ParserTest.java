@@ -378,6 +378,9 @@ final class ParserTest {
             AGG_WITH_EXPR_ARG("AB_00(1 + 2)"), //
             AGG_WITH_NO_ARGS("FOO()"), //
             AGG_WITH_POSITIONAL_AFTER_NAMED_ARGS("FOO(a=100, 10)"), //
+            AGG_WITH_ROW_ID("FOO($[ROW_ID])"), //
+            AGG_WITH_ROW_INDEX("FOO($[ROW_INDEX])"), //
+            AGG_WITH_ROW_NUMBER("FOO($[ROW_NUMBER])"), //
 
             // Trying to break it
             NOT_OP_WITHOUT_SPACE("not10"), // NB: can maybe parsed to a constant at some point
