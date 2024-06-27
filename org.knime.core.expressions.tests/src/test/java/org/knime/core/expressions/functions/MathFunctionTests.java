@@ -740,7 +740,7 @@ final class MathFunctionTests {
 
     @TestFactory
     List<DynamicNode> trunc() {
-        return new FunctionTestBuilder(MathFunctions.TRUNC) //
+        return new FunctionTestBuilder(MathFunctions.TRUNCATE) //
             .typing("INTEGER", List.of(INTEGER), INTEGER) //
             .typing("FLOAT", List.of(FLOAT), INTEGER) //
             .typing("INTEGER?", List.of(OPT_INTEGER), OPT_INTEGER) //

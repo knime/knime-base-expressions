@@ -128,7 +128,7 @@ public final class BuiltInFunctions {
         MathFunctions.ROUNDHALFUP, //
         MathFunctions.ROUNDHALFDOWN, //
         MathFunctions.ROUNDHALFEVEN, //
-        MathFunctions.TRUNC, //
+        MathFunctions.TRUNCATE, //
         MathFunctions.CEIL, //
         MathFunctions.FLOOR, //
         // Math – Aggregate

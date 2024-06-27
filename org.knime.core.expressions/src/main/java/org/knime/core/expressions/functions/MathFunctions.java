@@ -1406,21 +1406,21 @@ public final class MathFunctions {
     }
 
     /** truncate number, i.e. round towards zero */
-    public static final ExpressionFunction TRUNC = functionBuilder() //
-        .name("trunc") //
+    public static final ExpressionFunction TRUNCATE = functionBuilder() //
+        .name("truncate") //
         .description("""
                 Round x to the nearest integer closer to zero.
 
                 If the input is `MISSING`, the output will also be `MISSING`.
 
-                `trunc(NaN)` returns `NaN`.
+                `truncate(NaN)` returns `NaN`.
 
                 **Examples**
-                * `trunc(2.5)` returns 2
-                * `trunc(-2.5)` returns -2
-                * `trunc(1.0)` returns 1
+                * `truncate(2.5)` returns 2
+                * `truncate(-2.5)` returns -2
+                * `truncate(1.0)` returns 1
                 """) //
-        .keywords("rounddown") //
+        .keywords("round down") //
         .category(CATEGORY_ROUND.name()) //
         .args(arg("x", "A number", isNumericOrOpt())) //
         .returnType("Nearest integer closer to zero than x", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
@@ -1435,7 +1435,7 @@ public final class MathFunctions {
                 if (c.isMissing(ctx)) {
                     return true;
                 } else if (Double.isNaN(c.compute(ctx))) {
-                    ctx.addWarning("Invalid arguments to trunc: arg is `NaN`");
+                    ctx.addWarning("Invalid arguments to truncate: arg is `NaN`");
                     return true;
                 } else {
                     return false;

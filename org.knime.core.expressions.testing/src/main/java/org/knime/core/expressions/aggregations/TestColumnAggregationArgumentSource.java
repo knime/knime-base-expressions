@@ -100,7 +100,7 @@ public class TestColumnAggregationArgumentSource implements ArgumentsProvider {
             return args().p(Ast.stringConstant("FLOAT_COL")).build();
         } else if (BuiltInAggregations.SUM.equals(call)) {
             return args().p(Ast.stringConstant("INT_COL")).build();
-        } else if (BuiltInAggregations.MEAN.equals(call)) {
+        } else if (BuiltInAggregations.AVERAGE.equals(call)) {
             return args().p(Ast.stringConstant("FLOAT_COL")).build();
         } else if (BuiltInAggregations.COUNT.equals(call)) {
             return args().p(Ast.stringConstant("STRING_COL")).n("ignore_missing", Ast.booleanConstant(true)).build();

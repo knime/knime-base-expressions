@@ -144,8 +144,8 @@ final class BuiltInAggregationsTests {
     }
 
     @TestFactory
-    List<DynamicNode> mean() {
-        return new ColumnAggregationTestBuilder(BuiltInAggregations.MEAN, COLUMN_TYPES) //
+    List<DynamicNode> average() {
+        return new ColumnAggregationTestBuilder(BuiltInAggregations.AVERAGE, COLUMN_TYPES) //
             .typing("Integer column positional", args().p(STR(INT_COL)).build(), ValueType.OPT_FLOAT) //
             .typing("Integer column named", args().n("column", STR(INT_COL)).build(), ValueType.OPT_FLOAT) //
             .typing("Float column positional", args().p(STR(FLOAT_COL)).build(), ValueType.OPT_FLOAT) //

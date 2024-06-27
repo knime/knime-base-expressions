@@ -197,8 +197,8 @@ public final class BuiltInAggregations {
     }
 
     /** Aggregation that returns the mean value of a column. */
-    public static final ColumnAggregation MEAN = AggregationBuilder.aggregationBuilder() //
-        .name("COLUMN_MEAN") //
+    public static final ColumnAggregation AVERAGE = AggregationBuilder.aggregationBuilder() //
+        .name("COLUMN_AVERAGE") //
         .description("""
                 Find the mean value in a column, ignoring `MISSING` values. If
                 all values are `MISSING`, the result is `MISSING`.
@@ -209,14 +209,14 @@ public final class BuiltInAggregations {
                 ignored and the result is `NaN` if any value in the column is `NaN`.
 
                 Examples:
-                * `COLUMN_MEAN("col")` returns the mean value in column `col`,
+                * `COLUMN_AVERAGE("col")` returns the mean value in column `col`,
                   including `NaN` values
-                * `COLUMN_MEAN("col", ignore_nan=true)` returns the mean value in
+                * `COLUMN_AVERAGE("col", ignore_nan=true)` returns the mean value in
                   column `col`, ignoring `NaN` values
-                * `COLUMN_MEAN("col", false)` returns the mean value in column `col`,
+                * `COLUMN_AVERAGE("col", false)` returns the mean value in column `col`,
                   including `NaN` values
                 """) //
-        .keywords("average", "avg") //
+        .keywords("mean", "avg") //
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
@@ -228,7 +228,7 @@ public final class BuiltInAggregations {
     private static ReturnResult<ValueType> meanReturnType(final Arguments<ConstantAst> arguments,
         final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(MEAN.description().arguments(), arguments);
+        var matchedArgs = Argument.matchSignature(AVERAGE.description().arguments(), arguments);
 
         return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
@@ -497,7 +497,7 @@ public final class BuiltInAggregations {
     public static final List<ColumnAggregation> BUILT_IN_AGGREGATIONS = List.of( //
         MAX, //
         MIN, //
-        MEAN, //
+        AVERAGE, //
         MEDIAN, //
         SUM, //
         VARIANCE, //
