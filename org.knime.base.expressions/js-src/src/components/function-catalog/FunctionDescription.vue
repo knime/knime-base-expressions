@@ -27,9 +27,12 @@ const functionDataAsHTML = computed(() =>
 @import url("webapps-common/ui/css/variables/spacings.css");
 
 .markdown-function-desc {
+  --description-font-weight: 500;
+
   & h3 {
     line-height: 18px;
     font-size: 15px;
+    font-weight: var(--description-font-weight);
 
     &:first-child {
       margin-top: 0;
@@ -40,6 +43,7 @@ const functionDataAsHTML = computed(() =>
     line-height: 16px;
     margin: var(--space-32) 0 var(--space-4);
     font-size: 13px;
+    font-weight: var(--description-font-weight);
   }
 
   & ul {

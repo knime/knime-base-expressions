@@ -299,7 +299,7 @@ const expandAll = () => {
         <div class="search-input">
           <SearchInput
             v-model="searchQuery"
-            placeholder="Search the catalog"
+            placeholder="Search"
             compact
             @update:model-value="
               () => {
@@ -475,12 +475,9 @@ const expandAll = () => {
   flex: 1;
   padding: var(--space-8);
   overflow-y: auto;
-  border-left: 1px solid var(--knime-silver-sand);
 }
 
 .info-panel.slim-mode {
-  border-left: none;
-  border-top: 1px solid var(--knime-silver-sand);
   width: 100%;
   height: 40%;
 }
@@ -489,7 +486,7 @@ const expandAll = () => {
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-weight: bold;
+  font-weight: 500;
   font-size: 13px;
   padding-left: var(--space-4);
 }
@@ -539,12 +536,11 @@ const expandAll = () => {
 .function-header {
   font-size: 13px;
   font-weight: normal;
-  margin-top: var(--space-4);
   margin-left: var(--space-24);
   cursor: pointer;
   color: var(--knime-dove-gray);
   word-wrap: normal;
-  padding-left: var(--space-4);
+  padding: 2px 0 2px var(--space-4);
 }
 
 .function-header:focus {
