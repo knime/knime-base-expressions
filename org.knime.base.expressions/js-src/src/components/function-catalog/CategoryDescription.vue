@@ -1,15 +1,36 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from "vue";
+
+const props = defineProps<{
   category: {
     name: string;
     description: string;
   };
 }>();
+
+const splitHeader = (header: string) => {
+  const split = header.split("–");
+
+  if (split.length === 2) {
+    return {
+      first: split[0].trim(),
+      second: split[1].trim(),
+    };
+  } else {
+    return {
+      first: null,
+      second: header,
+    };
+  }
+};
+
+const splittedHeader = computed(() => splitHeader(props.category.name));
 </script>
 
 <template>
   <div class="category-description-panel">
-    <h4 class="category-header">{{ `Category: ${category.name}` }}</h4>
+    <h4 class="category-header upper">{{ splittedHeader.first ?? "" }}</h4>
+    <h4 class="category-header">{{ splittedHeader.second }}</h4>
     <div class="category-description">
       {{ category.description }}
     </div>
@@ -18,17 +39,28 @@ defineProps<{
 
 <style scoped>
 .category-header {
-  font-size: x-large;
+  font-size: 15px;
   margin: 0 auto;
-  text-align: center;
-}
+  font-weight: 500;
+  line-height: 18px;
+  height: 18px;
+  color: var(--knime-masala);
 
-.category-description {
-  margin-left: var(--space-4);
-  margin-top: var(--space-12);
+  &.upper {
+    font-weight: 300;
+    font-size: 13px;
+  }
 }
 
 .category-description-panel {
-  font-size: small;
+  margin-left: var(--space-8);
+  margin-right: var(--space-8);
+  margin-top: var(--space-4);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.category-description {
+  margin-top: var(--space-32);
 }
 </style>
