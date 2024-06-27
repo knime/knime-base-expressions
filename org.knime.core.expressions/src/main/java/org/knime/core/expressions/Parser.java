@@ -91,6 +91,7 @@ import org.knime.core.expressions.antlr.KnimeExpressionBaseVisitor;
 import org.knime.core.expressions.antlr.KnimeExpressionLexer;
 import org.knime.core.expressions.antlr.KnimeExpressionParser;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.AggregationCallContext;
+import org.knime.core.expressions.antlr.KnimeExpressionParser.AtomContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.BinaryOpContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.ColAccessContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FlowVarAccessContext;
@@ -268,12 +269,12 @@ final class Parser {
 
         @Override
         public Ast visitAggregationCall(final AggregationCallContext ctx) {
-            // NB: The cast to ConstantAst is safe because the grammar ensures that the arguments are constant
 
             var positionalArgs = //
                 Optional.ofNullable(ctx.aggregationArgs().positionalAggregationArgs()) //
                     .map(paa -> paa.atom().stream()) //
                     .orElseGet(Stream::empty) //
+                    .filter(a -> isLiteral(a)) //
                     .map(a -> (ConstantAst)a.accept(this)) //
                     .toList(); //
 
@@ -281,6 +282,7 @@ final class Parser {
                 Optional.ofNullable(ctx.aggregationArgs().namedAggregationArgs()) //
                     .map(naa -> naa.namedAggregationArg().stream()) //
                     .orElseGet(Stream::empty) //
+                    .filter(arg -> isLiteral(arg.atom())) //
                     .collect( //
                         Collectors.toMap( //
                             // NB: The "=" is part of the text but we need to remove it
@@ -291,6 +293,15 @@ final class Parser {
 
             var name = ctx.name.getText();
             return aggregationCall(name, new Arguments<>(positionalArgs, namedArgs), createData(getLocation(ctx)));
+        }
+
+        private static boolean isLiteral(final AtomContext atom) throws RuntimeSyntaxError {
+            if ( atom.ROW_ID() != null ||  atom.ROW_INDEX() != null || atom.ROW_NUMBER()  != null) {
+                throw syntaxError(
+                    "`ROW_ID`, `ROW_INDEX` and `ROW_NUMBER`" + " cannot be used as arguments for aggregation functions",
+                    getLocation(atom));
+            }
+            return true;
         }
 
         private static String removeLastChar(final String str) {
