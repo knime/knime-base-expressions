@@ -110,7 +110,9 @@ final class ExpressionNodeScriptingService extends ScriptingService {
      */
     private ReferenceTable m_inputTable;
 
-    private AtomicReference<BufferedDataTable> m_outputBufferTableReference;
+    private final AtomicReference<BufferedDataTable> m_outputBufferTableReference;
+
+    private final boolean m_inputTableIsAvailable;
 
     private final Runnable m_cleanUpTableViewDataService;
 
@@ -118,8 +120,15 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         final Runnable cleanUpTableViewDataService) {
         super(null, flowVar -> SUPPORTED_FLOW_VARIABLE_TYPES_SET.contains(flowVar.getVariableType()));
 
-        m_outputBufferTableReference = outputTableRef;
-        m_outputBufferTableReference.set(getInputTable().getBufferedTable());
+        m_inputTableIsAvailable = getWorkflowControl().getInputData()[0] != null;
+
+        if (m_inputTableIsAvailable) {
+            m_outputBufferTableReference = outputTableRef;
+            m_outputBufferTableReference.set(getInputTable().getBufferedTable());
+        } else {
+            m_outputBufferTableReference = outputTableRef;
+        }
+
         m_cleanUpTableViewDataService = cleanUpTableViewDataService;
     }
 
@@ -286,6 +295,11 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         private void updateTablePreview(final ReferenceTable inputTable, final ColumnarVirtualTable slicedInputTable,
             final ColumnarVirtualTable expressionResult, final String columnName,
             final String columnInsertionModeString, final int numRows) {
+
+            if (!m_inputTableIsAvailable) {
+                throw new IllegalStateException(
+                    "Implementation error - input table not available, but preview requested");
+            }
 
             try {
                 var context =

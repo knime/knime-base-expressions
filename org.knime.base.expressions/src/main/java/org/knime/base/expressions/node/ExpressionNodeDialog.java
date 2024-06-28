@@ -151,6 +151,11 @@ final class ExpressionNodeDialog implements NodeDialog {
         }
 
         public String getInitialData() {
+            if (m_table.get() == null) {
+                // This can happen if no input table is connected to the node
+                return null;
+            }
+
             var tab = new TableViewViewSettings(m_table.get().getSpec());
             tab.m_title = null;
             tab.m_enableGlobalSearch = false;
