@@ -28,7 +28,7 @@ export const filterCatalogData = (
     );
 
     if (filteredCatalogData[category].length !== 0) {
-      orderOfItems.push({ type: "category", name: category });
+      orderOfItems.push({ type: "category", fullName: category });
       if (categories[category].expanded) {
         const functionsToPutIn: SelectableItem[] = filteredCatalogData[
           category

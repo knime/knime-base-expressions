@@ -5,6 +5,7 @@ import NextIcon from "../../../webapps-common/ui/assets/img/icons/arrow-next.svg
 import { useElementBounding } from "@vueuse/core";
 import { mapFunctionCatalogData } from "@/components/function-catalog/mapFunctionCatalogData";
 import type {
+  CategoryData,
   FunctionCatalogData,
   FunctionCatalogEntryData,
 } from "@/components/functionCatalogTypes";
@@ -29,6 +30,12 @@ const props = defineProps<{
 
 const catalogData = mapFunctionCatalogData(props.functionCatalogData);
 
+// Should never return undefined
+const getCategoryByName = (fullName: string) =>
+  props.functionCatalogData.categories.find(
+    (category) => category.fullName === fullName,
+  ) as CategoryData;
+
 const categoryNames = Object.keys(catalogData);
 const categories = ref(
   Object.fromEntries(
@@ -36,11 +43,7 @@ const categories = ref(
       categoryName,
       {
         expanded: props.initiallyExpanded,
-        name: categoryName,
-        description:
-          props.functionCatalogData.categories.find(
-            (category) => category.name === categoryName,
-          )?.description ?? "No description for category available",
+        ...getCategoryByName(categoryName)!,
       },
     ]),
   ),
@@ -133,7 +136,7 @@ const selectEntry = (item: SelectableItem | null) => {
   if (item?.type) {
     const refName = createElementName(
       item.type,
-      item.type === "category" ? item.name : item.functionData.name,
+      item.type === "category" ? item.fullName : item.functionData.name,
     );
 
     functionAndCategoryElementRefs[refName].scrollIntoView({
@@ -156,7 +159,7 @@ const toggleCategoryExpansion = (categoryName: string) => {
 };
 const isSelected = (item: SelectableItem): boolean => {
   if (item.type === "category" && selectedEntry.value?.type === "category") {
-    return selectedEntry.value?.name === item.name;
+    return selectedEntry.value?.fullName === item.fullName;
   }
   if (item.type === "function" && selectedEntry.value?.type === "function") {
     return selectedEntry.value?.functionData.name === item.functionData.name;
@@ -229,7 +232,7 @@ const onKeyDown = (e: KeyboardEvent) => {
     case " ":
     case "Enter":
       if (selectedEntry.value?.type === "category") {
-        toggleCategoryExpansion(selectedEntry.value.name);
+        toggleCategoryExpansion(selectedEntry.value.fullName);
       } else {
         triggerFunctionInsertionEvent(
           e,
@@ -242,9 +245,9 @@ const onKeyDown = (e: KeyboardEvent) => {
     case "ArrowRight":
       if (
         selectedEntry.value?.type === "category" &&
-        !categories.value[selectedEntry.value.name].expanded
+        !categories.value[selectedEntry.value.fullName].expanded
       ) {
-        toggleCategoryExpansion(selectedEntry.value.name);
+        toggleCategoryExpansion(selectedEntry.value.fullName);
       }
 
       e.preventDefault(); // Stop accidental scrolling
@@ -252,9 +255,9 @@ const onKeyDown = (e: KeyboardEvent) => {
     case "ArrowLeft":
       if (
         selectedEntry.value?.type === "category" &&
-        categories.value[selectedEntry.value.name].expanded
+        categories.value[selectedEntry.value.fullName].expanded
       ) {
-        toggleCategoryExpansion(selectedEntry.value.name);
+        toggleCategoryExpansion(selectedEntry.value.fullName);
       }
 
       e.preventDefault(); // Stop accidental scrolling
@@ -340,13 +343,13 @@ const expandAll = () => {
               expanded: categories[categoryName].expanded,
               selected: isSelected({
                 type: 'category',
-                name: categoryName,
+                fullName: categoryName,
               }),
               empty: categoryData.length === 0,
             }"
             tabindex="-1"
             @click="toggleCategoryExpansion(categoryName)"
-            @focus="selectEntry({ type: 'category', name: categoryName })"
+            @focus="selectEntry({ type: 'category', fullName: categoryName })"
           >
             <span
               class="category-icon"
@@ -354,7 +357,7 @@ const expandAll = () => {
                 expanded: categories[categoryName].expanded ? 'expanded' : '',
                 'selected-icon': isSelected({
                   type: 'category',
-                  name: categoryName,
+                  fullName: categoryName,
                 }),
                 empty: categoryData.length === 0,
               }"
@@ -408,7 +411,7 @@ const expandAll = () => {
           <FunctionDescription :function-data="selectedEntry.functionData" />
         </div>
         <div v-else>
-          <CategoryDescription :category="categories[selectedEntry.name]" />
+          <CategoryDescription :category="categories[selectedEntry.fullName]" />
         </div>
       </div>
     </div>
