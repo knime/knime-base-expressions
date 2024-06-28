@@ -412,9 +412,9 @@ public final class StringFunctions {
                   matching.
 
                   **Examples**
-                  * `regex_match("hello123", "[a-z]+\\d+")` returns `TRUE`
+                  * `regex_match("hello123", "[a-z]+\\\\d+")` returns `TRUE`
                   * `regex_match("abc", "a.c")` returns `TRUE`
-                  * `regex_match("123-456-7890", "\\d{3}-\\d{3}-\\d{4}")` returns `TRUE`
+                  * `regex_match("123-456-7890", "\\\\d{3}-\\\\d{3}-\\\\d{4}")` returns `TRUE`
                 """) //
         .keywords("pattern") //
         .category(CATEGORY_MATCH_COMPARE.name()) //
@@ -452,7 +452,8 @@ public final class StringFunctions {
         .description("""
                 Given a regex that captures some groups, extract and return the
                 group referred to by the index. Groups are one-indexed. Index `0`
-                refers to the entire match.
+                refers to the entire match. Note that if multiple substrings of
+                the input match the regex, only the first match is considered.
 
                 Raises an error if the regex is invalid. If the group index is out
                 of bounds, the regex does not match, or any of the arguments are
@@ -463,8 +464,8 @@ public final class StringFunctions {
 
                 **Examples**
                 * `regex_extract("5hello123", "[0-9]([a-z]+).*", 1)` returns "hello"
-                * `regex_extract("abc123def", "(\\d+)", 1)` returns "123"
-                * `regex_extract("foo_bar_baz", "foo_(\\w+)_baz", 1)` returns "bar"
+                * `regex_extract("abc123def", "(\\\\d+).+", 1)` returns "123"
+                * `regex_extract("foo_bar_baz", "foo_(\\\\w+)_baz", 1)` returns "bar"
                 * `regex_extract("abc", "(a)(b)(c)", 2)` returns "b"
                 """) //
         .keywords("pattern", "match", "capture group") //
@@ -486,7 +487,7 @@ public final class StringFunctions {
 
         var matcher = Pattern.compile(pattern, ignoreCase ? Pattern.CASE_INSENSITIVE : 0).matcher(toMatch);
 
-        if (!matcher.matches() || group < 0 || group > matcher.groupCount()) {
+        if (!matcher.find() || group < 0 || group > matcher.groupCount()) {
             return null;
         } else {
             return matcher.group(group);

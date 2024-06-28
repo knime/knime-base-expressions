@@ -199,9 +199,10 @@ final class StringFunctionTests {
             .impl("extract 0 group", List.of(arg("1234abcd"), arg(".*"), arg(0)), "1234abcd") //
             .impl("extract 1 group", List.of(arg("hellow0rld"), arg("^([a-z]+).*"), arg(1)), "hellow") //
             .impl("extract 2 group", List.of(arg("12-_a"), arg("(\\d+)(?:[_-]+)(\\w+)"), arg(2)), "a") //
+            .impl("find semantics", List.of(arg("abc123"), arg("(\\d+)"), arg(1)), "123") //
             .impl("group too big", List.of(arg("12-_a"), arg("(\\d+)(?:[_-]+)(\\w+)"), arg(3))) //
             .impl("group < 0", List.of(arg("12-_a"), arg("(\\d+)(?:[_-]+)(\\w+)"), arg(-1))) //
-            .impl("regex doesn't match", List.of(arg("14a"), arg("[abc123]+"), arg(0))) //
+            .impl("regex doesn't match", List.of(arg("14a"), arg("q"), arg(0))) //
             .impl("case insensitive", List.of(arg("HELLO"), arg("h(el)lo"), arg(1), arg("i"), arg(0)), "EL") //
             .impl("missing STRING", List.of(misString(), arg("foo"), arg(0))) //
             .tests();
