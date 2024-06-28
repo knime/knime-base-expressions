@@ -1,7 +1,11 @@
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FunctionCatalog from "../function-catalog/FunctionCatalog.vue";
-import type { FunctionData, ConstantData } from "../functionCatalogTypes";
+import type {
+  FunctionData,
+  ConstantData,
+  FunctionCatalogData,
+} from "../functionCatalogTypes";
 import { useElementBounding } from "@vueuse/core";
 import { ref } from "vue";
 
@@ -73,11 +77,26 @@ describe("FunctionCatalog", () => {
     entryType: "constant",
     keywords: ["pi"],
   };
-  const functionCatalogData = {
+  const functionCatalogData: FunctionCatalogData = {
     categories: [
-      { name: "category1", description: "This is a description for category1" },
-      { name: "category2" },
-      { name: "math constants", description: "Mathematical constants" },
+      {
+        fullName: "category1",
+        shortName: "category1",
+        description: "This is a description for category1",
+        metaCategory: null,
+      },
+      {
+        fullName: "category2",
+        shortName: "category2",
+        description: "This is a description for category2",
+        metaCategory: null,
+      },
+      {
+        fullName: "math constants",
+        shortName: "math constants",
+        description: "Mathematical constants",
+        metaCategory: null,
+      },
     ],
     functions: [function1, function2, constant1],
   };
@@ -164,7 +183,7 @@ describe("FunctionCatalog", () => {
       // We also slice to remove the math constants category
       categories.slice(0, -1).map(async (categoryContainer, index) => {
         expect(categoryContainer.text()).toContain(
-          functionCatalogData.categories[index].name,
+          functionCatalogData.categories[index].fullName,
         );
 
         const category = categoryContainer.find(".category-header");

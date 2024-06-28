@@ -2,7 +2,7 @@ import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes
 
 export type SelectableCategory = {
   type: "category";
-  name: string;
+  fullName: string;
 };
 
 export type SelectableFunction = {

@@ -1,36 +1,19 @@
 <script setup lang="ts">
-import { computed } from "vue";
-
-const props = defineProps<{
+defineProps<{
   category: {
-    name: string;
+    shortName: string;
     description: string;
+    metaCategory: string | null;
   };
 }>();
-
-const splitHeader = (header: string) => {
-  const split = header.split("–");
-
-  if (split.length === 2) {
-    return {
-      first: split[0].trim(),
-      second: split[1].trim(),
-    };
-  } else {
-    return {
-      first: null,
-      second: header,
-    };
-  }
-};
-
-const splittedHeader = computed(() => splitHeader(props.category.name));
 </script>
 
 <template>
   <div class="category-description-panel">
-    <h4 class="category-header upper">{{ splittedHeader.first ?? "" }}</h4>
-    <h4 class="category-header">{{ splittedHeader.second }}</h4>
+    <h4 class="category-header upper">
+      {{ category.metaCategory ?? "" }}
+    </h4>
+    <h4 class="category-header">{{ category.shortName }}</h4>
     <div class="category-description">
       {{ category.description }}
     </div>

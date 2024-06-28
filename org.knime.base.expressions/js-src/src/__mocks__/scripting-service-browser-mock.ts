@@ -49,35 +49,52 @@ if (import.meta.env.MODE === "development.browser") {
   const FUNCTION_CATALOG: FunctionCatalogData = {
     categories: [
       {
-        name: "String Manipulation",
+        fullName: "Text - String Manipulation",
+        shortName: "String Manipulation",
         description: "Functions for manipulating strings",
+        metaCategory: "Text",
       },
       {
-        name: "Demo",
+        fullName: "Testing - Demo",
+        shortName: "Demo",
         description: "Demo functions",
+        metaCategory: "Testing",
       },
       {
-        name: "Math Operations",
+        fullName: "Math - Operations",
+        shortName: "Operations",
         description: "Functions for performing mathematical operations",
+        metaCategory: "Math",
       },
       {
-        name: "Array Operations",
+        fullName: "Array Operations",
+        shortName: "Array Operations",
         description: "Functions for manipulating arrays",
+        metaCategory: null,
       },
       {
-        name: "Date and Time",
+        fullName: "Date and Time",
+        shortName: "Date and Time",
         description: "Functions for working with dates and times",
+        metaCategory: null,
       },
       {
-        name: "Very big category",
+        fullName: "Testing - Very big category",
+        shortName: "Very big category",
         description: "You have to scroll down to see everything",
+        metaCategory: "Testing",
       },
-      { name: "Mathematical Constants", description: "Constants" },
+      {
+        fullName: "Math - Mathematical Constants",
+        shortName: "Mathematical Constants",
+        description: "Constants",
+        metaCategory: "Math",
+      },
     ],
     functions: [
       {
         name: "concatenateStringsIsAVeryLongFunctionName",
-        category: "String Manipulation",
+        category: "Text - String Manipulation",
         arguments: [
           { name: "string1", type: "string", description: "the first string" },
           { name: "string2", type: "string", description: "the second string" },
@@ -90,7 +107,7 @@ if (import.meta.env.MODE === "development.browser") {
       },
       {
         name: "substring",
-        category: "String Manipulation",
+        category: "Text - String Manipulation",
         arguments: [
           {
             name: "inputString",
@@ -116,7 +133,7 @@ if (import.meta.env.MODE === "development.browser") {
       },
       {
         name: "Show that html is not rendered",
-        category: "Demo",
+        category: "Testing - Demo",
         arguments: [],
         description:
           "# Markdown \nExtracts a substring from the input string.\n ## Example:\n`substring('abcdef', 1, 4)` <script>alert('hello')</script>",
@@ -126,7 +143,7 @@ if (import.meta.env.MODE === "development.browser") {
       },
       {
         name: "sum",
-        category: "Math Operations",
+        category: "Math - Operations",
         arguments: [
           {
             name: "numbers",
@@ -143,7 +160,7 @@ if (import.meta.env.MODE === "development.browser") {
       },
       {
         name: "multiply",
-        category: "Math Operations",
+        category: "Math - Operations",
         arguments: [
           { name: "factor1", type: "int", description: "the first factor" },
           { name: "factor2", type: "int", description: "the second factor" },
@@ -195,7 +212,7 @@ if (import.meta.env.MODE === "development.browser") {
         (i) =>
           ({
             name: `function${i}`,
-            category: "Very big category",
+            category: "Testing - Very big category",
             arguments: [
               { name: "arg", type: "int", description: "Doesn't do anything" },
             ],
@@ -207,7 +224,7 @@ if (import.meta.env.MODE === "development.browser") {
       ),
       {
         name: "pi",
-        category: "Mathematical Constants",
+        category: "Math - Mathematical Constants",
         description: "The value of Pi",
         returnType: "float",
         keywords: ["pi", "π"],
@@ -215,7 +232,7 @@ if (import.meta.env.MODE === "development.browser") {
       },
       {
         name: "e",
-        category: "Mathematical Constants",
+        category: "Math - Mathematical Constants",
         description: "The value of the Euler's number",
         returnType: "float",
         keywords: ["e", "Euler"],

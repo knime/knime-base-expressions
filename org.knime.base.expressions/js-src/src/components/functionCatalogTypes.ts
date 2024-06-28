@@ -28,8 +28,10 @@ export type ConstantData = {
 export type FunctionCatalogEntryData = FunctionData | ConstantData;
 
 export type CategoryData = {
-  name: string;
-  description?: string;
+  fullName: string;
+  description: string;
+  metaCategory: string | null;
+  shortName: string;
 };
 
 export type FunctionCatalogData = {

@@ -20,12 +20,16 @@ const lock = <T = void>() => {
 const TEST_FUNCTION_CATALOG: FunctionCatalogData = {
   categories: [
     {
-      name: "test",
+      fullName: "test",
+      shortName: "test",
       description: "Test category",
+      metaCategory: null,
     },
     {
-      name: "math constants",
+      fullName: "math constants",
+      shortName: "math constants",
       description: "Mathematical constants",
+      metaCategory: null,
     },
   ],
   functions: [
