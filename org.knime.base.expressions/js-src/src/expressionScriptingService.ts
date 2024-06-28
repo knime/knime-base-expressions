@@ -28,7 +28,7 @@ const expressionScriptingService = {
   registerSettingsGetterForApply: (
     settingsGetter: () => ExpressionNodeSettings,
   ) => scriptingService.registerSettingsGetterForApply(settingsGetter),
-  getInitialSettings: () =>
+  getInitialSettings: (): Promise<ExpressionNodeSettings> =>
     scriptingService.getInitialSettings() as Promise<ExpressionNodeSettings>,
   getFunctions: () =>
     scriptingService.sendToService(

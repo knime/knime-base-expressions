@@ -28,6 +28,7 @@ export const editor = {
     onDidChangeCursorSelection: vi.fn(),
     onDidPaste: vi.fn(),
     dispose: vi.fn(),
+    updateOptions: vi.fn(),
   })),
   defineTheme: vi.fn(),
   setTheme: vi.fn(),

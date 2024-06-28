@@ -120,6 +120,12 @@ onMounted(async () => {
   multiEditorComponentRef.value
     ?.getEditorState()
     .setInitialText(initialSettings.script);
+  multiEditorComponentRef.value?.getEditorState().editor.value?.updateOptions({
+    readOnly: typeof initialSettings.scriptUsedFlowVariable === "string",
+    readOnlyMessage: {
+      value: `Read-Only-Mode: The script is set by the flow variable '${initialSettings.scriptUsedFlowVariable}'.`,
+    },
+  });
 
   columnSelectorState.value = {
     outputMode: initialSettings.columnOutputMode,
