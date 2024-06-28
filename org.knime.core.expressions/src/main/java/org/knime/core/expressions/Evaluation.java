@@ -411,6 +411,7 @@ final class Evaluation {
             return ctx -> {
                 var divisor = a2.compute(ctx);
                 if (divisor == 0) {
+                    ctx.addWarning("INTEGER division returned 0 because divisor was 0.");
                     return 0;
                 }
                 return a1.compute(ctx) / divisor;
@@ -421,6 +422,7 @@ final class Evaluation {
             return ctx -> {
                 var divisor = a2.compute(ctx);
                 if (divisor == 0) {
+                    ctx.addWarning("INTEGER modulo returned 0 because divisor was 0.");
                     return 0;
                 }
                 return a1.compute(ctx) % divisor;
@@ -443,9 +445,25 @@ final class Evaluation {
                 case PLUS -> ctx -> arg1.compute(ctx) + arg2.compute(ctx);
                 case MINUS -> ctx -> arg1.compute(ctx) - arg2.compute(ctx);
                 case MULTIPLY -> ctx -> arg1.compute(ctx) * arg2.compute(ctx);
-                case DIVIDE -> ctx -> arg1.compute(ctx) / arg2.compute(ctx);
+                case DIVIDE -> ctx -> {
+                    var divisor = arg2.compute(ctx);
+                    var returnValue = arg1.compute(ctx) / divisor;
+                    if (divisor == 0) { // NOSONAR equality should be fine here
+                        ctx.addWarning("FLOAT division returned %s because divisor was 0."
+                            .formatted(String.valueOf(returnValue).replace("Infinity", "INFINITY")));
+                    }
+                    return returnValue;
+                };
                 case EXPONENTIAL -> ctx -> Math.pow(arg1.compute(ctx), arg2.compute(ctx));
-                case REMAINDER -> ctx -> arg1.compute(ctx) % arg2.compute(ctx);
+                case REMAINDER -> ctx -> {
+                    var divisor = arg2.compute(ctx);
+                    var returnValue = arg1.compute(ctx) % divisor;
+                    if (divisor == 0) { // NOSONAR equality should be fine here
+                        ctx.addWarning("FLOAT modulo returned %s because divisor was 0."
+                            .formatted(String.valueOf(returnValue).replace("Infinity", "INFINITY")));
+                    }
+                    return returnValue;
+                };
                 default -> throw unsupportedOutputForOpError(op, FLOAT);
             };
             return FloatComputer.of(value, ctx -> arg1.isMissing(ctx) || arg2.isMissing(ctx));
