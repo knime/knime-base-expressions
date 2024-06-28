@@ -134,6 +134,14 @@
 		</intro>
 		<link href="https://knime-com.atlassian.net/wiki/x/AYD-6Q">Expression language specification</link>
 	</fullDescription>
+	<keywords>
+		<keyword>math formula</keyword>
+		<keyword>multi-row formula</keyword>
+		<keyword>calculator</keyword>
+		<keyword>function</keyword>
+		<keyword>string manipulation</keyword>
+		<keyword>rule engine</keyword>
+	</keywords>
 	<ports>
 		<inPort index="0" name="Input table">The tabular input data which will be
 			used.
