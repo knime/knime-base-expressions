@@ -51,9 +51,9 @@ package org.knime.base.expressions.node;
 import java.util.Map;
 
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
-import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.scripting.editor.ScriptingNodeSettingsService;
 
@@ -71,7 +71,7 @@ public class ExpressionNodeSettingsService extends ScriptingNodeSettingsService 
 
     @Override
     protected void addAdditionalSettingsToNodeSettings(final ObjectNode settingsJson,
-        final Map<SettingsType, NodeAndVariableSettingsWO> settings) {
+        final Map<SettingsType, ? extends NodeSettingsWO> settings) {
         // save settings
         try {
             var columnOutputMode = settingsJson.get(ExpressionNodeSettings.CFG_KEY_OUTPUT_MODE)
