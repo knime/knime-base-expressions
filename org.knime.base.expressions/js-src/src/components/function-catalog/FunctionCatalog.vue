@@ -385,10 +385,13 @@ const expandAll = () => {
                     functionData,
                   })
                 "
-                @dragstart="(event) => onDragStart(event, functionData)"
+                @dragstart="
+                  (event: DragEvent) => onDragStart(event, functionData)
+                "
                 @dragend="onDragEnd"
                 @dblclick="
-                  (event) => triggerFunctionInsertionEvent(event, functionData)
+                  (event: MouseEvent) =>
+                    triggerFunctionInsertionEvent(event, functionData)
                 "
               >
                 {{
