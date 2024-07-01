@@ -528,8 +528,9 @@ public final class ExpressionRunnerUtils {
      * @return a function that maps column names to the value type
      */
     public static Function<String, ReturnResult<ValueType>> columnToTypesForTypeInference(final DataTableSpec spec) {
-        return name -> ReturnResult
-            .fromNullable(spec.getColumnSpec(name), "No column with the name '" + name + "' is available.") //
+        return name -> ReturnResult.fromNullable(spec, "No input data is available.") //
+            .flatMap(s -> ReturnResult.fromNullable(s.getColumnSpec(name),
+                "No column with the name '" + name + "' is available.")) //
             .map(DataColumnSpec::getType) //
             .flatMap(type -> ReturnResult.fromNullable(mapDataTypeToValueType(type),
                 "Columns of the type '" + type + "' are not supported in expressions."));

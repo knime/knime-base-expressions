@@ -206,7 +206,12 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         }
 
         private Map<String, FlowVariable> getAvailableFlowVariables(final VariableType<?>[] types) {
-            return getWorkflowControl().getFlowObjectStack().getAvailableFlowVariables(types);
+            var flowObjectStack = getWorkflowControl().getFlowObjectStack();
+            if (flowObjectStack != null) {
+                return flowObjectStack.getAvailableFlowVariables(types);
+            } else {
+                return Map.of();
+            }
         }
 
         /**
