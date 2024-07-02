@@ -1810,13 +1810,13 @@ public final class StringFunctions {
                 corresponding XML entities to prevent interpretation of the
                 characters as markup.
 
-                The following characters are replaced: &, <, >, \\, ' and ".
+                The following characters are replaced: `&`, `<`, `>`, `\\`, `'` and `"`.
 
                 If the input string is `MISSING`, the result is also `MISSING`.
 
                 **Examples**
-                * `xml_encode("<a>Hello</a>")` returns "&lt;a&gt;Hello&lt;/a&gt;"
-                * `xml_encode("&")` returns "&amp;"
+                * `xml_encode("<a>Hello</a>")` returns "&amp;lt;a&amp;gt;Hello&amp;lt;/a&amp;gt;"
+                * `xml_encode("&")` returns "&amp;amp;"
                 """) //
         .keywords("escape", "special characters", "markup") //
         .category(CATEGORY_ENCODE.name()) //
