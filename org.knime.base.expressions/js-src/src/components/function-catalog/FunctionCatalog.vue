@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, reactive, type ComponentPublicInstance } from "vue";
+import {
+  type ComponentPublicInstance,
+  computed,
+  onMounted,
+  reactive,
+  ref,
+} from "vue";
 import SearchInput from "../../../webapps-common/ui/components/forms/SearchInput.vue";
 import NextIcon from "../../../webapps-common/ui/assets/img/icons/arrow-next.svg";
 import { useElementBounding } from "@vueuse/core";
@@ -10,14 +16,15 @@ import type {
 } from "@/components/functionCatalogTypes";
 import { filterCatalogData } from "@/components/function-catalog/filterCatalogData";
 import type {
-  SelectableItem,
   SelectableFunction,
+  SelectableItem,
 } from "@/components/function-catalog/catalogTypes";
 import CategoryDescription from "@/components/function-catalog/CategoryDescription.vue";
 import { createDragGhosts } from "webapps-common/ui/components/FileExplorer/dragGhostHelpers";
 import { EMPTY_DRAG_IMAGE } from "webapps-common/ui/components/FileExplorer/useItemDragging";
 import { useDraggedFunctionStore } from "@/draggedFunctionStore";
 import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
+import { getExpressionScriptingService } from "@/expressionScriptingService";
 
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 600;
 const FUNCTION_CATALOG_WIDTH = "300px";
@@ -26,6 +33,16 @@ const props = defineProps<{
   functionCatalogData: FunctionCatalogData;
   initiallyExpanded: boolean;
 }>();
+
+const interactive = ref(false);
+
+onMounted(() => {
+  getExpressionScriptingService()
+    .getInitialSettings()
+    .then((settings) => {
+      interactive.value = typeof settings.scriptUsedFlowVariable !== "string";
+    });
+});
 
 const catalogData = mapFunctionCatalogData(props.functionCatalogData);
 
@@ -51,6 +68,9 @@ const removeGhostsRef = ref<() => void>(() => {});
 const draggedFunctionStore = useDraggedFunctionStore();
 
 const onDragStart = (e: DragEvent, f: FunctionCatalogEntryData) => {
+  if (!interactive.value) {
+    return;
+  }
   const { removeGhosts } = createDragGhosts({
     badgeCount: null, // don't show a badge at all
     dragStartEvent: e,
@@ -87,13 +107,18 @@ const onDragEnd = () => {
 
 const emit = defineEmits(["functionInsertionEvent"]);
 const triggerFunctionInsertionEvent = (
-  evt: Event,
-  f: FunctionCatalogEntryData,
+  functionEntry: FunctionCatalogEntryData,
 ) => {
+  if (!interactive.value) {
+    return;
+  }
+
   emit("functionInsertionEvent", {
-    functionName: f.name,
+    functionName: functionEntry.name,
     functionArgs:
-      f.entryType === "constant" ? null : f.arguments?.map((arg) => arg.name),
+      functionEntry.entryType === "constant"
+        ? null
+        : functionEntry.arguments?.map((arg) => arg.name),
     eventSource: "function-catalog",
   });
 };
@@ -232,7 +257,6 @@ const onKeyDown = (e: KeyboardEvent) => {
         toggleCategoryExpansion(selectedEntry.value.name);
       } else {
         triggerFunctionInsertionEvent(
-          e,
           (selectedEntry.value as SelectableFunction)?.functionData,
         );
       }
@@ -378,7 +402,7 @@ const expandAll = () => {
                   selected: isSelected({ type: 'function', functionData }),
                 }"
                 tabindex="-1"
-                :draggable="true"
+                :draggable="interactive"
                 @click="
                   selectEntry({
                     type: 'function',
@@ -389,10 +413,7 @@ const expandAll = () => {
                   (event: DragEvent) => onDragStart(event, functionData)
                 "
                 @dragend="onDragEnd"
-                @dblclick="
-                  (event: MouseEvent) =>
-                    triggerFunctionInsertionEvent(event, functionData)
-                "
+                @dblclick="() => triggerFunctionInsertionEvent(functionData)"
               >
                 {{
                   functionData.entryType === "function"
