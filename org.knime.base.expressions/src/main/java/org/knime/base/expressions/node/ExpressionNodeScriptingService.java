@@ -229,8 +229,15 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
         public List<Diagnostic> getDiagnostics(final String expression) {
             try {
-                getPreparedExpression(expression);
-                return List.of();
+                var ast = getPreparedExpression(expression);
+
+                if (ValueType.MISSING.equals(Expressions.getInferredType(ast))) {
+                    // Show an error if the full expression has the output type "MISSING" because this is not supported
+                    return List.of(new Diagnostic("The full expression must not have the value type MISSING.",
+                        DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast)));
+                } else {
+                    return List.of();
+                }
             } catch (ExpressionCompileException ex) {
                 return Diagnostic.fromException(ex);
             }
