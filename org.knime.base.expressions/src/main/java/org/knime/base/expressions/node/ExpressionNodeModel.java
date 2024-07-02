@@ -73,6 +73,7 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -124,6 +125,10 @@ class ExpressionNodeModel extends NodeModel {
         try {
             var ast = getPreparedExpression(inSpecs[0]);
             var outputType = Expressions.getInferredType(ast);
+            if (ValueType.MISSING.equals(outputType)) {
+                throw new InvalidSettingsException(
+                    "The expression evaluates to MISSING. Enter an expression that has an output type.");
+            }
             var outputDataSpec = Exec.valueTypeToDataSpec(outputType);
             var outputColumnSpec = ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(),
                 m_settings.getActiveOutputColumn());
