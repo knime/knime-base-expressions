@@ -132,7 +132,7 @@
 				another response by entering a new or refined prompt.
 			</p>
 		</intro>
-		<link href="https://knime-com.atlassian.net/wiki/x/AYD-6Q">Expression language specification</link>
+		<link href="https://docs.knime.com/latest/knime_expressions_guide/index.html">Expression language specification</link>
 	</fullDescription>
 	<keywords>
 		<keyword>math formula</keyword>
