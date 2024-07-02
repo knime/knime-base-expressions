@@ -575,7 +575,7 @@ public final class ExpressionRunnerUtils {
     }
 
     // Note sonar complains about the number of retruns which is not a problem here
-    private static ValueType mapVariableToValueType(final VariableType<?> variableType) { // NOSONAR
+    public static ValueType mapVariableToValueType(final VariableType<?> variableType) { // NOSONAR
         if (variableType == VariableType.DoubleType.INSTANCE) {
             return ValueType.FLOAT;
         } else if (variableType == VariableType.BooleanType.INSTANCE) {

@@ -50,9 +50,11 @@ package org.knime.base.expressions.node;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
@@ -82,7 +84,9 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
             null, //
             FLOWVAR_ALIAS_TEMPLATE, //
             null, // no required import
-            false // no multiple selection
+            false, // no multiple selection
+            type -> Optional.ofNullable(ExpressionRunnerUtils.mapVariableToValueType(type)).map(ValueType::toString)
+                .orElse(type.toString()) // try to convert to an expression type, otherwise fallback to type name
         );
     }
 
@@ -100,7 +104,10 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
                 COLUMN_ALIAS_TEMPLATE, //
                 false, // no multiple selection
                 null, // no required import
-                type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null //
+                type -> Optional.ofNullable(ExpressionRunnerUtils.mapDataTypeToValueType(type)) //
+                    .map(ValueType::baseType) //
+                    .map(ValueType::toString) //
+                    .orElse(null) // extract type name, or null if unsupported
             ));
         } else {
             return List.of(InputOutputModel.createForNonAvailableTable( //
