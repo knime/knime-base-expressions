@@ -299,7 +299,7 @@ const expandAll = () => {
         <div class="search-input">
           <SearchInput
             v-model="searchQuery"
-            placeholder="Search the catalog"
+            placeholder="Search"
             compact
             @update:model-value="
               () => {
