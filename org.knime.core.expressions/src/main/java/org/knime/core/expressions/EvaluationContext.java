@@ -58,6 +58,10 @@ public interface EvaluationContext {
     /**
      * Add a warning that happened during expression evaluation.
      *
+     * Warnings should follow this format as much as possible:
+     *
+     * "{thing} returned {value} because {reason} [{at position/row N}]"
+     *
      * @param warning the warning to add
      */
     void addWarning(final String warning);

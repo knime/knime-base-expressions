@@ -504,12 +504,13 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
+            var ret = Math.asin(cC);
 
             if (Math.abs(cC) > 1) {
-                ctx.addWarning("Invalid argument to asin (|x| > 1).");
+                ctx.addWarning("asin returned %s because argument is outside the range [-1, 1].".formatted(ret));
             }
 
-            return Math.asin(cC);
+            return ret;
         }, c::isMissing);
     }
 
@@ -541,12 +542,13 @@ public final class MathFunctions {
         var c = toFloat(args.get(0));
         return FloatComputer.of(ctx -> {
             var cC = c.compute(ctx);
+            var ret = Math.acos(cC);
 
             if (Math.abs(cC) > 1) {
-                ctx.addWarning("Invalid argument to acos (|x| > 1).");
+                ctx.addWarning("acos returned %s because argument is greater than 1.".formatted(ret));
             }
 
-            return Math.acos(cC);
+            return ret;
         }, c::isMissing);
     }
 
@@ -618,7 +620,7 @@ public final class MathFunctions {
                 var yC = y.compute(ctx);
 
                 if (isNearZero(xC) && isNearZero(yC)) {
-                    ctx.addWarning("Invalid arguments to atan2. Both inputs, y and x, are zero.");
+                    ctx.addWarning("atan2 returned NaN because both inputs are zero.");
                     return Float.NaN;
                 }
 
@@ -775,7 +777,7 @@ public final class MathFunctions {
             var cC = c.compute(ctx);
 
             if (cC < 1) {
-                ctx.addWarning("Invalid argument to acosh (x < 1).");
+                ctx.addWarning("acosh returned NaN because argument is less than 1.");
                 return Float.NaN;
             }
 
@@ -816,10 +818,13 @@ public final class MathFunctions {
         ToDoubleFunction<EvaluationContext> value = ctx -> {
             var cC = c.compute(ctx);
 
-            if (Math.abs(cC) <= 1) {
-                ctx.addWarning("Invalid argument to atanh (|x| <= 1).");
+            if (isNear(Math.abs(cC), 1)) {
+                var argSign = Math.signum(cC);
+                var ret = argSign * Double.POSITIVE_INFINITY;
+                ctx.addWarning("atanh returned %s because argument is %s.".formatted(ret, argSign));
             } else if (Math.abs(cC) >= 1) {
-                ctx.addWarning("Invalid argument to atanh (|x| >= 1).");
+                ctx.addWarning("atanh returned NaN because argument is outside the range [-1, 1].");
+                return Float.NaN;
             }
 
             return 0.5 * Math.log((cC + 1.0) / (1.0 - cC));
@@ -861,9 +866,11 @@ public final class MathFunctions {
             var cC = c.compute(ctx);
 
             if (cC == 0) {
-                ctx.addWarning("Invalid argument to ln (x = 0).");
+                ctx.addWarning("ln returned -INFINITY because argument is 0.");
+                return Double.NEGATIVE_INFINITY;
             } else if (cC < 0) {
-                ctx.addWarning("Invalid argument to ln (x < 0).");
+                ctx.addWarning("ln returned NaN because argument is less than 0.");
+                return Double.NaN;
             }
 
             return Math.log(cC);
@@ -903,9 +910,11 @@ public final class MathFunctions {
             var cC = c.compute(ctx);
 
             if (cC == 0) {
-                ctx.addWarning("Invalid argument to log10 (x = 0).");
+                ctx.addWarning("log10 returned -INFINITY because argument is 0.");
+                return Double.NEGATIVE_INFINITY;
             } else if (cC < 0) {
-                ctx.addWarning("Invalid argument to log10 (x < 0).");
+                ctx.addWarning("log10 returned NaN because argument is less than 0.");
+                return Double.NaN;
             }
 
             return Math.log10(cC);
@@ -945,9 +954,11 @@ public final class MathFunctions {
             var cC = c.compute(ctx);
 
             if (cC == 0) {
-                ctx.addWarning("Invalid argument to log2 (x = 0).");
+                ctx.addWarning("log2 returned -INFINITY because argument is 0.");
+                return Double.NEGATIVE_INFINITY;
             } else if (cC < 0) {
-                ctx.addWarning("Invalid argument to log2 (x < 0).");
+                ctx.addWarning("log2 returned NaN because argument is less than 0.");
+                return Double.NaN;
             }
 
             return Math.log(cC) / Math.log(2);
@@ -964,7 +975,7 @@ public final class MathFunctions {
 
                     If either `x` is less than 0 or the `base` is less than or equal to 0, a warning is issued and the result is `NaN`.
                     If `x` is zero, a warning is issued and the result is `-INFINITY`.
-                    If the `base` is 1, a warning is issued and the result is `INFINITY`.
+                    If the `base` is 1, a warning is issued and the result is `NaN`.
                     If any input is `MISSING`, the output is `MISSING`.
                     If any input is `NaN`, the output is `NaN`.
 
@@ -974,7 +985,7 @@ public final class MathFunctions {
                     * `log(64, 2)` returns `6.0`
                     * `log(…, 0)` returns `NaN`
                     * `log(0, …)` returns `-INFINITY`
-                    * `log(…, 1)` returns `INFINITY`
+                    * `log(…, 1)` returns `NaN`
                     * `log($["Missing Column"], …)` returns `MISSING`
                     * `log(NaN, …)` returns `NaN`
                     """)
@@ -993,27 +1004,30 @@ public final class MathFunctions {
         var b = toFloat(args.get(1));
 
         ToDoubleFunction<EvaluationContext> value = ctx -> {
-            var bC = b.compute(ctx);
-            var cC = c.compute(ctx);
+            var base = b.compute(ctx);
+            var number = c.compute(ctx);
 
-            if (bC > 0 && isNearZero(cC)) {
-                ctx.addWarning("Invalid argument to log (x = 0, base > 0).");
+            if (isNearZero(base) && isNearZero(number)) {
+                ctx.addWarning("log returned NaN because both arguments are 0.");
+                return Double.NaN;
+            } else if (isNearZero(base)) {
+                ctx.addWarning("log returned NaN because base is 0.");
+                return Double.NaN;
+            } else if (isNearZero(number)) {
+                ctx.addWarning("log returned -INFINITY because first argument is 0.");
+                return Double.NEGATIVE_INFINITY;
+            } else if (number < 0) {
+                ctx.addWarning("log returned NaN because first argument is less than 0.");
+                return Double.NaN;
+            } else if (base <= 0) {
+                ctx.addWarning("log returned NaN because base is less than 0.");
+                return Double.NaN;
+            } else if (isNear(base, 1)) {
+                ctx.addWarning("log returned NaN because base is 1.");
+                return Double.NaN;
             }
 
-            if (bC <= 0) {
-                ctx.addWarning("Invalid argument to log (base <= 0).");
-                return Float.NaN;
-            }
-
-            if (Math.abs(bC - 1) < 2 * Double.MIN_VALUE) {
-                ctx.addWarning("Invalid argument to log (base = 1).");
-            }
-
-            if (cC <= 0) {
-                ctx.addWarning("Invalid argument to log (x <= 0).");
-            }
-
-            return Math.log(cC) / Math.log(bC);
+            return Math.log(number) / Math.log(base);
         };
 
         return FloatComputer.of(value, anyMissing(args));
@@ -1057,9 +1071,11 @@ public final class MathFunctions {
                 var cC = c.compute(ctx);
 
                 if (cC == -1) {
-                    ctx.addWarning("Invalid argument to log1p (x = -1).");
+                    ctx.addWarning("log1p returned -INFINITY because argument is -1.");
+                    return Double.NEGATIVE_INFINITY;
                 } else if (cC < -1) {
-                    ctx.addWarning("Invalid argument to log1p (x < -1).");
+                    ctx.addWarning("log1p returned NaN because argument is less than -1.");
+                    return Double.NaN;
                 }
 
                 return Math.log1p(cC);
@@ -1142,7 +1158,7 @@ public final class MathFunctions {
                     var yC = y.compute(ctx);
 
                     if (xC == 0 && yC <= 0) {
-                        ctx.addWarning("invalid arguments to pow (pow(0, <=0) is undefined)");
+                        ctx.addWarning("INTEGER pow returned 0 because base is zero and exponent is non-positive.");
                         return 0;
                     }
 
@@ -1158,7 +1174,7 @@ public final class MathFunctions {
                     var yC = y.compute(ctx);
 
                     if (isNearZero(xC) && (isNearZero(yC) || yC < 0)) {
-                        ctx.addWarning("invalid arguments to pow (pow(0, <=0) is undefined)");
+                        ctx.addWarning("FLOAT pow returned NaN because base is zero and exponent is non-positive.");
                         return Float.NaN;
                     }
 
@@ -1198,7 +1214,8 @@ public final class MathFunctions {
                 var cC = c.compute(ctx);
 
                 if (cC < 0) {
-                    ctx.addWarning("invalid argument to sqrt (x < 0)");
+                    ctx.addWarning("sqrt returned NaN because argument is negative.");
+                    return Float.NaN;
                 }
 
                 return Math.sqrt(cC); //
@@ -1247,7 +1264,7 @@ public final class MathFunctions {
                 var y = toInteger(args.get(1)).compute(ctx);
 
                 if (y == 0) {
-                    ctx.addWarning("invalid arguments to mod (y == 0)");
+                    ctx.addWarning("INTEGER mod returned 0 because divisor is zero.");
                     return 0;
                 }
 
@@ -1260,7 +1277,7 @@ public final class MathFunctions {
                     var y = toFloat(args.get(1)).compute(ctx);
 
                     if (isNearZero(y)) {
-                        ctx.addWarning("invalid arguments to mod (y == 0)");
+                        ctx.addWarning("FLOAT mod returned NaN because divisor is zero.");
                         return Float.NaN;
                     }
 
@@ -1336,7 +1353,7 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`.
 
-                `floor(NaN)` returns `NaN`.
+                `floor(NaN)` returns `MISSING`.
 
                 **Examples**
                 * `floor(2.5)` returns 2
@@ -1358,7 +1375,7 @@ public final class MathFunctions {
                 if (c.isMissing(ctx)) {
                     return true;
                 } else if (Double.isNaN(c.compute(ctx))) {
-                    ctx.addWarning("Invalid arguments to floor: arg is `NaN`");
+                    ctx.addWarning("floor returned MISSING because argument is NaN");
                     return true;
                 } else {
                     return false;
@@ -1375,7 +1392,7 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`.
 
-                `ceil(NaN)` returns `NaN`.
+                `ceil(NaN)` returns `MISSING`.
 
                 **Examples**
                 * `ceil(2.5)` returns 3
@@ -1397,7 +1414,7 @@ public final class MathFunctions {
                 if (c.isMissing(ctx)) {
                     return true;
                 } else if (Double.isNaN(c.compute(ctx))) {
-                    ctx.addWarning("Invalid arguments to ceil: arg is `NaN`");
+                    ctx.addWarning("ceil returned MISSING because argument is NaN");
                     return true;
                 } else {
                     return false;
@@ -1414,7 +1431,7 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output will also be `MISSING`.
 
-                `truncate(NaN)` returns `NaN`.
+                `truncate(NaN)` returns `MISSING`.
 
                 **Examples**
                 * `truncate(2.5)` returns 2
@@ -1436,7 +1453,7 @@ public final class MathFunctions {
                 if (c.isMissing(ctx)) {
                     return true;
                 } else if (Double.isNaN(c.compute(ctx))) {
-                    ctx.addWarning("Invalid arguments to truncate: arg is `NaN`");
+                    ctx.addWarning("truncate returned MISSING because argument is NaN");
                     return true;
                 } else {
                     return false;
@@ -1460,8 +1477,8 @@ public final class MathFunctions {
                 INTEGER, otherwise it will be of type FLOAT, even if the precision
                 is zero!
 
-                `roundhalfdown(NaN)` returns `NaN`. The precision argument must be an
-                integer and cannot be `NaN`.
+                `roundhalfdown(NaN)` returns `MISSING`, but if a precision is specified it will return NaN.
+                The precision argument must be an integer and cannot be `NaN`.
 
                 **Examples**
                 * Without ambiguity:
@@ -1480,7 +1497,7 @@ public final class MathFunctions {
             arg("x", "A number", isNumericOrOpt()), //
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
-        .returnType("Nearest integer to x", RETURN_FLOAT_INTEGER_MISSING,
+        .returnType("Nearest value to `x` with `precision` decimal places", RETURN_FLOAT_INTEGER_MISSING,
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(roundImplFactory(RoundingMode.HALF_DOWN, "roundhalfdown")) //
         .build();
@@ -1500,8 +1517,8 @@ public final class MathFunctions {
                 INTEGER, otherwise it will be of type FLOAT, even if the precision
                 is zero!
 
-                `roundhalfup(NaN)` returns `NaN`. The precision argument must be an
-                integer and cannot be `NaN`.
+                `roundhalfup(NaN)` returns `MISSING`, but if a precision is specified it will return NaN.
+                The precision argument must be an integer and cannot be `NaN`.
 
                 **Examples**
                 * Without ambiguity:
@@ -1520,7 +1537,7 @@ public final class MathFunctions {
             arg("x", "A number", isNumericOrOpt()), //
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
-        .returnType("Nearest integer to x", RETURN_FLOAT_INTEGER_MISSING,
+        .returnType("Nearest value to `x` with `precision` decimal places", RETURN_FLOAT_INTEGER_MISSING,
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(roundImplFactory(RoundingMode.HALF_UP, "roundhalfup")) //
         .build();
@@ -1541,8 +1558,8 @@ public final class MathFunctions {
                 INTEGER, otherwise it will be of type FLOAT, even if the precision
                 is zero!
 
-                `round(NaN)` returns `NaN`. The precision argument must be an
-                integer and cannot be `NaN`.
+                `round(NaN)` returns `MISSING`, but if a precision is specified it will return NaN.
+                The precision argument must be an integer and cannot be `NaN`.
 
                 **Examples**
                 * Without ambiguity:
@@ -1563,7 +1580,7 @@ public final class MathFunctions {
             arg("x", "A number", isNumericOrOpt()), //
             optarg("precision", "Number of decimal places in the result", isIntegerOrOpt()) //
         ) //
-        .returnType("Nearest integer to x", RETURN_FLOAT_INTEGER_MISSING,
+        .returnType("Nearest value to `x` with `precision` decimal places", RETURN_FLOAT_INTEGER_MISSING,
             args -> (args.length == 1) ? INTEGER(anyOptional(args)) : FLOAT(anyOptional(args))) //
         .impl(roundImplFactory(RoundingMode.HALF_EVEN, "round")) //
         .build();
@@ -1587,7 +1604,7 @@ public final class MathFunctions {
                         if (anyMissing(args).test(ctx)) {
                             return true;
                         } else if (Double.isNaN(c.compute(ctx))) {
-                            ctx.addWarning("Invalid arguments to %s: arg is `NaN`".formatted(functionName));
+                            ctx.addWarning("%s returned MISSING because argument is NaN".formatted(functionName));
                             return true;
                         } else {
                             return false;
@@ -1599,6 +1616,7 @@ public final class MathFunctions {
                     double value = c.compute(ctx);
 
                     if (Double.isNaN(value)) {
+                        ctx.addWarning("%s returned NaN because argument is NaN".formatted(functionName));
                         return Double.NaN;
                     } else {
                         return BigDecimal.valueOf(value).setScale(scale, mode).doubleValue();
@@ -1612,10 +1630,9 @@ public final class MathFunctions {
     public static final ExpressionFunction SIGN = functionBuilder() //
         .name("sign") //
         .description("""
-                Get the sign of a number. If  the input is `MISSING`, the output
-                will also be `MISSING`.
-
-                `sign(NaN)` returns `NaN`.
+                Get the sign of a number. A positive argument causes the function to return +1,
+                a negative argument causes -1, and a zero argument returns 0. If the input is
+                `MISSING`, the output will also be `MISSING`. `sign(NaN)` also returns `MISSING`.
 
                 **Examples**
                 * `sign(0)` returns 0
@@ -1637,7 +1654,7 @@ public final class MathFunctions {
                 if (c.isMissing(ctx)) {
                     return true;
                 } else if (Double.isNaN(c.compute(ctx))) {
-                    ctx.addWarning("Invalid arguments to sign: arg is `NaN`");
+                    ctx.addWarning("sign returned MISSING because argument is NaN");
                     return true;
                 } else {
                     return false;
@@ -1923,17 +1940,17 @@ public final class MathFunctions {
             }
 
             if (r > n) {
-                ctx.addWarning("invalid arguments to binomial (r > n)");
+                ctx.addWarning("binomial returned zero because r > n");
                 return 0;
             }
 
             if (r < 0) {
-                ctx.addWarning("invalid arguments to binomial (r < 0)");
+                ctx.addWarning("binomial returned zero because r < 0");
                 return 0;
             }
 
             if (n < 0) {
-                ctx.addWarning("invalid arguments to binomial (n < 0)");
+                ctx.addWarning("binomial returned zero because n < 0");
                 return 0;
             }
 
@@ -2001,7 +2018,7 @@ public final class MathFunctions {
             var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(ctx) : 1.0;
 
             if (isNearZero(standardDeviation) || standardDeviation < 0) {
-                ctx.addWarning("invalid argument to error_function (standard deviation <= 0)");
+                ctx.addWarning("normal returned NaN because standard deviation <= 0");
                 return Float.NaN;
             }
 
@@ -2062,7 +2079,7 @@ public final class MathFunctions {
             var standardDeviation = args.size() > 2 ? toFloat(args.get(2)).compute(ctx) : (1.0 / Math.sqrt(2));
 
             if (isNearZero(standardDeviation) || standardDeviation < 0) {
-                ctx.addWarning("invalid argument to error_function (standard deviation <= 0)");
+                ctx.addWarning("error_function returned NaN because standard deviation <= 0");
                 return Float.NaN;
             }
 
@@ -2158,7 +2175,11 @@ public final class MathFunctions {
     }
 
     private static boolean isNearZero(final double d) {
-        return Math.abs(d) < 2 * Double.MIN_VALUE;
+        return isNear(d, 0);
+    }
+
+    private static boolean isNear(final double d, final double d2) {
+        return Math.abs(d - d2) < 2 * Double.MIN_NORMAL;
     }
 
     private enum ExtremumType {
