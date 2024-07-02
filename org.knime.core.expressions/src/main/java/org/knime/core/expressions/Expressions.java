@@ -235,6 +235,15 @@ public final class Expressions {
             });
     }
 
+    /**
+     * @param node an {@link Ast} node that was parsed by {@link #parse}
+     * @return the {@link TextRange} of the code that was parsed to this node, or <code>null</code> if there is no text
+     *         location associated
+     */
+    public static TextRange getTextLocation(final Ast node) {
+        return Parser.getTextLocation(node);
+    }
+
     // EXCEPTIONS
 
     /** Base class for exceptions that happen when working with expressions. */
