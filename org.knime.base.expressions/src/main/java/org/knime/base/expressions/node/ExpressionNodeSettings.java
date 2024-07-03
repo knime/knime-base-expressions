@@ -48,6 +48,11 @@
  */
 package org.knime.base.expressions.node;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
@@ -88,6 +93,8 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
 
     public static final ColumnInsertionMode DEFAULT_OUTPUT_MODE = ColumnInsertionMode.APPEND;
 
+    public static final int DEFAULT_NUM_ADDITIONAL_SCRIPTS = 0;
+
     public static final String CFG_KEY_CREATED_COLUMN = "createdColumn";
 
     public static final String CFG_KEY_REPLACED_COLUMN = "replacedColumn";
@@ -100,6 +107,10 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
 
     public static final String CFG_KEY_BUILTIN_AGGREGATIONS_VERSION = "builtinAggregationsVersion";
 
+    public static final String CFG_KEY_NUM_ADDITIONAL_SCRIPTS = "numAdditionalScripts";
+
+    public static final String CFG_KEY_ADDITIONAL_SCRIPTS = "additionalScripts";
+
     private ColumnInsertionMode m_outputMode;
 
     private String m_createdColumn;
@@ -111,6 +122,10 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
     private int m_builtinFunctionsVersion;
 
     private int m_builtinAggregationsVersion;
+
+    private int m_numAdditionalScripts;
+
+    private List<String> m_additionalScripts;
 
     ExpressionNodeSettings() {
         this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, DEFAULT_REPLACED_COLUMN);
@@ -129,6 +144,9 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
         this.m_languageVersion = Expressions.LANGUAGE_VERSION;
         this.m_builtinFunctionsVersion = BuiltInFunctions.FUNCTIONS_VERSION;
         this.m_builtinAggregationsVersion = BuiltInAggregations.AGGREGATIONS_VERSION;
+
+        this.m_numAdditionalScripts = 0;
+        this.m_additionalScripts = new ArrayList<>();
     }
 
     static void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -147,6 +165,42 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
         m_languageVersion = settings.getInt(CFG_KEY_LANGUAGE_VERSION);
         m_builtinFunctionsVersion = settings.getInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION);
         m_builtinAggregationsVersion = settings.getInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION);
+
+        if (settings.containsKey(CFG_KEY_ADDITIONAL_SCRIPTS)) {
+            m_scripts = new ArrayList<>(Arrays.asList(settings.getStringArray(CFG_KEY_ADDITIONAL_SCRIPTS)));
+            m_scripts.add(0, settings.getString(CFG_KEY_SCRIPT));
+
+            m_outputModes = Arrays.stream(settings.getStringArray(CFG_KEY_ADDITIONAL_OUTPUT_MODES))
+                .map(ColumnInsertionMode::valueOf).collect(Collectors.toList());
+            m_outputModes.add(0, ColumnInsertionMode.valueOf(settings.getString(CFG_KEY_OUTPUT_MODE)));
+
+            m_createdColumns =
+                new ArrayList<>(Arrays.asList(settings.getStringArray(CFG_KEY_ADDITIONAL_CREATED_COLUMNS)));
+            m_createdColumns.add(0, settings.getString(CFG_KEY_CREATED_COLUMN));
+
+            m_replacedColumns =
+                new ArrayList<>(Arrays.asList(settings.getStringArray(CFG_KEY_ADDITIONAL_REPLACED_COLUMNS)));
+            m_replacedColumns.add(0, settings.getString(CFG_KEY_REPLACED_COLUMN));
+        } else {
+            m_scripts = new ArrayList<>();
+            m_scripts.add(settings.getString(CFG_KEY_SCRIPT));
+
+            m_outputModes = new ArrayList<>();
+            m_outputModes.add(ColumnInsertionMode.valueOf(settings.getString(CFG_KEY_OUTPUT_MODE)));
+
+            m_createdColumns = new ArrayList<>();
+            m_createdColumns.add(settings.getString(CFG_KEY_CREATED_COLUMN));
+
+            m_replacedColumns = new ArrayList<>();
+            m_replacedColumns.add(settings.getString(CFG_KEY_REPLACED_COLUMN));
+        }
+
+        if (Stream.of(m_scripts, m_outputModes, m_createdColumns, m_replacedColumns).mapToInt(List::size).distinct()
+            .count() != 1) {
+
+            throw new InvalidSettingsException(
+                "Different number of scripts, output modes, created columns, or replaced columns found in model settings.");
+        }
     }
 
     public ColumnInsertionMode getColumnInsertionMode() {
@@ -165,6 +219,10 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
         return m_outputMode == ColumnInsertionMode.APPEND ? m_createdColumn : m_replacedColumn;
     }
 
+    public List<String> getAdditionalScripts() {
+        return Collections.unmodifiableList(m_additionalScripts);
+    }
+
     @Override
     public void saveModelSettingsTo(final NodeSettingsWO settings) {
         super.saveModelSettingsTo(settings);
@@ -176,6 +234,9 @@ final class ExpressionNodeSettings extends ScriptingNodeSettings {
         settings.addInt(CFG_KEY_LANGUAGE_VERSION, m_languageVersion);
         settings.addInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, m_builtinFunctionsVersion);
         settings.addInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION, m_builtinAggregationsVersion);
+
+        settings.addInt(CFG_KEY_NUM_ADDITIONAL_SCRIPTS, m_numAdditionalScripts);
+        settings.addStringArray(CFG_KEY_ADDITIONAL_SCRIPTS, m_additionalScripts.toArray(new String[0]));
     }
 
     static NodeSettingsService createNodeSettingsService() {

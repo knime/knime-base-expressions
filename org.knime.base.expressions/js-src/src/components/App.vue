@@ -249,15 +249,20 @@ const runExpressions = (rows: number) => {
   }
 };
 
-scriptingService.registerSettingsGetterForApply(() => {
-  return {
-    ...expressionVersion.value,
-    script: getActiveEditor()?.getEditorState().text.value ?? "",
-    columnOutputMode: columnSelectorState.value?.outputMode,
-    createdColumn: columnSelectorState.value?.createColumn,
-    replacedColumn: columnSelectorState.value?.replaceColumn,
-  };
-});
+scriptingService.registerSettingsGetterForApply(() => ({
+  ...expressionVersion.value,
+  script:
+    multiEditorComponentRefs[
+      Object.keys(multiEditorComponentRefs)[0]
+    ].getEditorState().text.value ?? "",
+  columnOutputMode: columnSelectorState.value?.outputMode,
+  createdColumn: columnSelectorState.value?.createColumn,
+  replacedColumn: columnSelectorState.value?.replaceColumn,
+  additionalScripts: Object.keys(multiEditorComponentRefs)
+    .slice(1)
+    .map((key) => multiEditorComponentRefs[key])
+    .map((editor) => editor.getEditorState().text.value ?? ""),
+}));
 
 const onFunctionInsertionTriggered = (payload: {
   eventSource: string;

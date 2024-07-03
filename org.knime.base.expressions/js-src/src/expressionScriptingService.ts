@@ -20,7 +20,9 @@ export type ColumnSettings = {
 
 export type ExpressionNodeSettings = NodeSettings &
   ExpressionVersion &
-  ColumnSettings;
+  ColumnSettings & {
+    additionalScripts: string[];
+  };
 
 const scriptingService = getScriptingService();
 const expressionScriptingService = {

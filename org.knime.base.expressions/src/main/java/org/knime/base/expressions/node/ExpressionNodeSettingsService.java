@@ -48,6 +48,8 @@
  */
 package org.knime.base.expressions.node;
 
+import static org.knime.scripting.editor.SettingsServiceUtils.copyVariableSettings;
+
 import java.util.Map;
 
 import org.knime.core.node.InvalidSettingsException;
@@ -57,7 +59,11 @@ import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.scripting.editor.ScriptingNodeSettingsService;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Streams;
 
 /**
  * @author David Hickey, TNG Technology Consulting GmbH
@@ -94,7 +100,18 @@ public class ExpressionNodeSettingsService extends ScriptingNodeSettingsService 
                 settingsJson.get(ExpressionNodeSettings.CFG_KEY_BUILTIN_FUNCTIONS_VERSION).asInt());
             modelSettings.addInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION,
                 settingsJson.get(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION).asInt());
-        } catch (NullPointerException ex) { // NOSONAR this is nicer than 3 separate null checks
+
+            modelSettings.addInt(ExpressionNodeSettings.CFG_KEY_NUM_ADDITIONAL_SCRIPTS,
+                settingsJson.get(ExpressionNodeSettings.CFG_KEY_NUM_ADDITIONAL_SCRIPTS).asInt());
+
+            var additionalScripts =
+                Streams.stream(settingsJson.get(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS).iterator()) //
+                    .map(JsonNode::asText) //
+                    .toArray(String[]::new);
+
+            modelSettings.addStringArray(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS, additionalScripts);
+
+        } catch (NullPointerException ex) { // NOSONAR this is nicer than many separate null checks
             // Can happen if we're given invalid settings by the frontend
             throw new IllegalStateException(
                 "Error saving expression editor settings - this might mean the frontend gave us invalid input", //
@@ -124,9 +141,65 @@ public class ExpressionNodeSettingsService extends ScriptingNodeSettingsService 
                 modelSettings.getInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_FUNCTIONS_VERSION));
             settingsJson.put(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION,
                 modelSettings.getInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION));
+
+            settingsJson.put(ExpressionNodeSettings.CFG_KEY_NUM_ADDITIONAL_SCRIPTS,
+                modelSettings.getInt(ExpressionNodeSettings.CFG_KEY_NUM_ADDITIONAL_SCRIPTS));
+
+            var additionalScripts = modelSettings.getStringArray(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS);
+            ArrayNode additionalScriptsAsArrayNode = new ObjectMapper().valueToTree(additionalScripts);
+            settingsJson.putArray(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS)
+                .addAll(additionalScriptsAsArrayNode);
+
         } catch (InvalidSettingsException ex) {
             throw new IllegalStateException("Error loading expression settings. This is an implementation error", ex);
         }
     }
 
+    @Override
+    public String fromNodeSettings(final Map<SettingsType, NodeAndVariableSettingsRO> settings,
+        final PortObjectSpec[] specs) {
+
+        try {
+            String scriptUsedFlowVariable = null;
+            var settingsForScript = settings.get(SettingsType.MODEL);
+            if (settingsForScript.isVariableSetting(ExpressionNodeSettings.CFG_KEY_SCRIPT)) {
+                scriptUsedFlowVariable = settingsForScript.getUsedVariable(ExpressionNodeSettings.CFG_KEY_SCRIPT);
+            }
+
+            // Construct the JSON output
+            var settingsJson = new ObjectMapper().createObjectNode() //
+                .put("scriptUsedFlowVariable", scriptUsedFlowVariable);
+
+            putAdditionalSettingsToJson(settings, specs, settingsJson);
+
+            return settingsJson.toString();
+        } catch (InvalidSettingsException e) {
+            // IllegalSettings: Should not happen because we do not save invalid settings
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    public void toNodeSettings(final String textSettings,
+        final Map<SettingsType, NodeAndVariableSettingsRO> previousSettings,
+        final Map<SettingsType, NodeAndVariableSettingsWO> settings) {
+
+        try {
+            var settingsJson = (ObjectNode)new ObjectMapper().readTree(textSettings);
+            addAdditionalSettingsToNodeSettings(settingsJson, settings);
+            setVariableSettings(settingsJson, previousSettings, settings);
+        } catch (JsonProcessingException e) {
+            // Should not happen because the frontend gives a correct JSON settings
+            throw new IllegalStateException(e);
+        }
+
+    }
+
+    private static void setVariableSettings(final ObjectNode settingsJson,
+        final Map<SettingsType, ? extends VariableSettingsRO> previousSettings,
+        final Map<SettingsType, ? extends VariableSettingsWO> settings) {
+        for (var settingsType : settings.keySet()) {
+            copyVariableSettings(previousSettings.get(settingsType), settings.get(settingsType));
+        }
+    }
 }
