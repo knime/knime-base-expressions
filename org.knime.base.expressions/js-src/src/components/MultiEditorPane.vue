@@ -12,6 +12,8 @@ export type MultiEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;
 };
 
+const emit = defineEmits<{ focus: [string] }>();
+
 interface Props {
   language: string;
   fileName: string;
@@ -39,6 +41,10 @@ onKeyStroke("Escape", () => {
     (document.activeElement as HTMLElement)?.blur();
   }
 });
+
+const onFocus = () => {
+  emit("focus", props.fileName);
+};
 
 const draggedFunctionStore = useDraggedFunctionStore();
 
@@ -84,7 +90,12 @@ onKeyStroke("z", (e) => {
     <span class="editor-title-bar">
       {{ props.title }}
     </span>
-    <div ref="editorContainer" class="code-editor" @drop="onDropEvent" />
+    <div
+      ref="editorContainer"
+      class="code-editor"
+      @drop="onDropEvent"
+      @focusin="onFocus"
+    />
     <span class="editor-control-bar">
       <slot name="multi-editor-controls" />
     </span>

@@ -16,7 +16,7 @@ import DropdownIcon from "webapps-common/ui/assets/img/icons/arrow-dropdown.svg"
 import SubMenu from "webapps-common/ui/components/SubMenu.vue";
 import Tooltip from "webapps-common/ui/components/Tooltip.vue";
 import { useWindowSize, onKeyStroke } from "@vueuse/core";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, reactive, nextTick } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
   type AllowedDropDownValue,
@@ -65,7 +65,40 @@ const expressionVersion = ref<ExpressionVersion>({
   builtinAggregationsVersion: 0,
 });
 
-const multiEditorComponentRef = ref<MultiEditorPaneExposes | null>(null);
+const multiEditorComponentRefs = reactive<{
+  [title: string]: MultiEditorPaneExposes;
+}>({});
+
+const createElementReference = (title: string) => {
+  return (el: any) => {
+    multiEditorComponentRefs[title] = el as unknown as MultiEditorPaneExposes;
+  };
+};
+
+const getActiveEditor = (): MultiEditorPaneExposes | null => {
+  if (!store.activeEditorFileName) {
+    return null;
+  }
+
+  return multiEditorComponentRefs[store.activeEditorFileName];
+};
+
+const onEditorFocused = (filename: string) => {
+  store.activeEditorFileName = filename;
+  setActiveEditorStoreForAi(
+    multiEditorComponentRefs[filename]?.getEditorState(),
+  );
+
+  // Scroll to the editor. The focusing somehow interferes with scrolling,
+  // so wait for a tick first.
+  nextTick().then(() => {
+    multiEditorComponentRefs[filename]
+      ?.getEditorState()
+      .editor.value?.getDomNode()
+      ?.scrollIntoView();
+  });
+};
+
 const functionCatalogData = ref<FunctionCatalogData>();
 const inputsAvailable = ref(false);
 
@@ -109,6 +142,10 @@ const convertFunctionsToInsertionItems = (
   });
 };
 
+const getFirstEditor = (): MultiEditorPaneExposes => {
+  return multiEditorComponentRefs[Object.keys(multiEditorComponentRefs)[0]];
+};
+
 onMounted(async () => {
   const [
     initialSettings,
@@ -124,16 +161,16 @@ onMounted(async () => {
     scriptingService.getFunctions(),
   ]);
 
-  multiEditorComponentRef.value
-    ?.getEditorState()
-    .setInitialText(initialSettings.script);
-  multiEditorComponentRef.value?.getEditorState().editor.value?.updateOptions({
-    readOnly: typeof initialSettings.scriptUsedFlowVariable === "string",
-    readOnlyMessage: {
-      value: `Read-Only-Mode: The script is set by the flow variable '${initialSettings.scriptUsedFlowVariable}'.`,
-    },
-  });
+  getFirstEditor()?.getEditorState().setInitialText(initialSettings.script);
 
+  for (const editor of Object.values(multiEditorComponentRefs)) {
+    editor.getEditorState().editor.value?.updateOptions({
+      readOnly: typeof initialSettings.scriptUsedFlowVariable === "string",
+      readOnlyMessage: {
+        value: `Read-Only-Mode: The script is set by the flow variable '${initialSettings.scriptUsedFlowVariable}'.`,
+      },
+    });
+  }
   columnSelectorState.value = {
     outputMode: initialSettings.columnOutputMode,
     createColumn: initialSettings.createdColumn,
@@ -195,14 +232,14 @@ onMounted(async () => {
     languageName: language,
   });
 
-  setActiveEditorStoreForAi(multiEditorComponentRef.value?.getEditorState());
+  setActiveEditorStoreForAi(getFirstEditor()?.getEditorState());
 });
 
 const runExpressions = (rows: number) => {
   // TODO make this work with multiple editors
   if (store.expressionValid) {
     scriptingService.sendToService("runExpression", [
-      multiEditorComponentRef.value?.getEditorState().text.value,
+      getActiveEditor()?.getEditorState().text.value,
       rows,
       columnSelectorState.value.outputMode,
       columnSelectorState.value.outputMode === "APPEND"
@@ -215,7 +252,7 @@ const runExpressions = (rows: number) => {
 scriptingService.registerSettingsGetterForApply(() => {
   return {
     ...expressionVersion.value,
-    script: multiEditorComponentRef.value?.getEditorState().text.value ?? "",
+    script: getActiveEditor()?.getEditorState().text.value ?? "",
     columnOutputMode: columnSelectorState.value?.outputMode,
     createdColumn: columnSelectorState.value?.createColumn,
     replacedColumn: columnSelectorState.value?.replaceColumn,
@@ -227,34 +264,34 @@ const onFunctionInsertionTriggered = (payload: {
   functionName: string;
   functionArgs: string[] | null;
 }) => {
-  multiEditorComponentRef.value?.getEditorState().editor.value?.focus();
+  getActiveEditor()?.getEditorState().editor.value?.focus();
 
   if (payload.functionArgs === null) {
-    multiEditorComponentRef.value
+    getActiveEditor()
       ?.getEditorState()
       .insertFunctionReference(payload.functionName, null);
   } else {
-    multiEditorComponentRef.value
+    getActiveEditor()
       ?.getEditorState()
       .insertFunctionReference(payload.functionName, payload.functionArgs);
   }
 };
 
 const onInputOutputItemInsertionTriggered = (codeToInsert: string) => {
-  multiEditorComponentRef.value?.getEditorState().editor.value?.focus();
+  getActiveEditor()?.getEditorState().editor.value?.focus();
 
   // Note that we're ignoring requiredImport, because the expression editor
   // doesn't need imports.
-  multiEditorComponentRef.value
-    ?.getEditorState()
-    .insertColumnReference(codeToInsert);
+  getActiveEditor()?.getEditorState().insertColumnReference(codeToInsert);
 };
 
 // Shift+Enter while editor has focus runs expressions
 onKeyStroke("Enter", (evt: KeyboardEvent) => {
   if (
     evt.shiftKey &&
-    multiEditorComponentRef.value?.getEditorState().editor.value?.hasTextFocus()
+    Object.values(multiEditorComponentRefs)
+      .map((editor) => editor.getEditorState().editor.value?.hasTextFocus())
+      .some((hasFocus) => hasFocus)
   ) {
     evt.preventDefault();
     runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN);
@@ -320,6 +357,8 @@ const calculateInitialPaneSizes = () => {
 };
 
 const initialPaneSizes = calculateInitialPaneSizes();
+
+const numberOfEditors = 1;
 </script>
 
 <template>
@@ -338,10 +377,13 @@ const initialPaneSizes = calculateInitialPaneSizes();
     >
       <template #editor>
         <MultiEditorPane
-          ref="multiEditorComponentRef"
+          v-for="index in numberOfEditors"
+          :key="`_${index}.knexp`"
+          :ref="createElementReference(`_${index}.knexp`)"
           title="Expression editor"
-          file-name="_1.knexp"
+          :file-name="`_${index}.knexp`"
           :language="language"
+          @focus="onEditorFocused(`_${index}.knexp`)"
         >
           <!-- Controls displayed once per editor -->
           <template #multi-editor-controls>
