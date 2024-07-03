@@ -424,7 +424,7 @@ public final class BuiltInAggregations {
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)"), //
             new Argument("ddof", "INTEGER", "The delta degrees of freedom to use (defaults to 0)") //
         ) //
-        .returnType("The variance of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
+        .returnType("The standard deviation of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
             BuiltInAggregations::stddevReturnType) //
         .build();
 
