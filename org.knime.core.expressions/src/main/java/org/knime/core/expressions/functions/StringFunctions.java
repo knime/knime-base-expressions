@@ -48,6 +48,11 @@
  */
 package org.knime.core.expressions.functions;
 
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_BOOLEAN_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_FLOAT_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_INTEGER_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_STRING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_STRING_MISSING;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.arg;
@@ -61,11 +66,6 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isS
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isStringOrOpt;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.optarg;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.vararg;
-import static org.knime.core.expressions.functions.FunctionUtils.RETURN_BOOLEAN_MISSING;
-import static org.knime.core.expressions.functions.FunctionUtils.RETURN_FLOAT_MISSING;
-import static org.knime.core.expressions.functions.FunctionUtils.RETURN_INTEGER_MISSING;
-import static org.knime.core.expressions.functions.FunctionUtils.RETURN_STRING;
-import static org.knime.core.expressions.functions.FunctionUtils.RETURN_STRING_MISSING;
 
 import java.net.URLDecoder;
 import java.net.URLEncoder;

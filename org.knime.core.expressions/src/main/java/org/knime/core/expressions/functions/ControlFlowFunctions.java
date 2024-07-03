@@ -272,8 +272,7 @@ public final class ControlFlowFunctions {
             returnType.baseType());
     }
 
-    private static Computer computeMatchingCaseSwitch(final List<Computer> arguments,
-        final EvaluationContext ctx) { // NOSONAR
+    private static Computer computeMatchingCaseSwitch(final List<Computer> arguments, final EvaluationContext ctx) { // NOSONAR
 
         Computer computerToSwitchOn = arguments.get(0);
         final boolean hasDefaultCase = arguments.size() % 2 == 0;
@@ -322,7 +321,8 @@ public final class ControlFlowFunctions {
             return null;
         }
 
-        ValueType commonReturnBaseType = expressions.stream().filter(type -> type != MISSING).findFirst().orElse(MISSING);
+        ValueType commonReturnBaseType =
+            expressions.stream().filter(type -> type != MISSING).findFirst().orElse(MISSING);
         if (expressions.stream().anyMatch(type -> type.baseType() == FLOAT)) {
             commonReturnBaseType = ValueType.FLOAT;
         }
@@ -337,8 +337,7 @@ public final class ControlFlowFunctions {
     private static Predicate<ValueType> isCompatibleTo(final ValueType typeToCompare) {
         return typeToCheck -> ValueType.hasSameBaseType(typeToCompare, typeToCheck)
             || (ValueType.isNumericOrOpt(typeToCompare) && ValueType.isNumericOrOpt(typeToCheck))
-            || typeToCheck == MISSING
-            || typeToCompare == MISSING;
+            || typeToCheck == MISSING || typeToCompare == MISSING;
     }
 
 }

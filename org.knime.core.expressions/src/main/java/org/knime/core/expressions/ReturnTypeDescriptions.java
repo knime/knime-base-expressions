@@ -44,22 +44,47 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 8, 2024 (benjamin): created
+ *   Jul 8, 2024 (david): created
  */
-package org.knime.core.expressions.functions;
+package org.knime.core.expressions;
 
 /**
- * Utilities for implementing functions.
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
-public final class FunctionUtils {
+public final class ReturnTypeDescriptions {
 
-    private FunctionUtils() {
+    private ReturnTypeDescriptions() {
     }
 
-    /** @return an {@link IllegalStateException} that indicates an implementation error */
-    static IllegalStateException calledWithIllegalArgs() {
-        return new IllegalStateException("Implementation error: called function with unsupported arguments");
-    }
+    /** Return type description for function returning non-optional string */
+    public static final String RETURN_STRING = "STRING";
+
+    /** Return type description for function returning non-optional boolean */
+    public static final String RETURN_BOOLEAN = "BOOLEAN";
+
+    /** Return type description for function returning non-optional integer */
+    public static final String RETURN_INTEGER = "INTEGER";
+
+    /** Return type description for function returning non-optional float */
+    public static final String RETURN_FLOAT = "FLOAT";
+
+    /** Return type description for function returning non-optional numeric type */
+    public static final String RETURN_INTEGER_FLOAT = "INTEGER | FLOAT";
+
+    /** Return type description for function returning optional boolean */
+    public static final String RETURN_BOOLEAN_MISSING = "BOOLEAN | MISSING";
+
+    /** Return type description for function returning optional integer */
+    public static final String RETURN_INTEGER_MISSING = "INTEGER | MISSING";
+
+    /** Return type description for function returning optional float */
+    public static final String RETURN_FLOAT_MISSING = "FLOAT | MISSING";
+
+    /** Return type description for function returning optional string */
+    public static final String RETURN_STRING_MISSING = "STRING | MISSING";
+
+    /** Return type description for function returning optional numeric type */
+    public static final String RETURN_INTEGER_FLOAT_MISSING = "INTEGER | FLOAT | MISSING";
+
 }

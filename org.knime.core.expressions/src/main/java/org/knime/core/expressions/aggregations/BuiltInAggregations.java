@@ -61,6 +61,7 @@ import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.ReturnResult;
+import org.knime.core.expressions.ReturnTypeDescriptions;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -86,8 +87,8 @@ public final class BuiltInAggregations {
             The "Math – Aggregate Columns" category in KNIME Expression language includes functions that perform
             aggregations over all rows of a column. These functions are distinct from other aggregations as they
             operate across the entire column rather than individual values or subsets. They are essential for
-            summarizing and analyzing data at the column level within expressions. Note that aggregation functions 
-            utilize the entire column as provided in the input. They do not use the output of the expression 
+            summarizing and analyzing data at the column level within expressions. Note that aggregation functions
+            utilize the entire column as provided in the input. They do not use the output of the expression
             if applied on a column configured to be replaced.
             """);
 
@@ -133,7 +134,8 @@ public final class BuiltInAggregations {
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
-        .returnType("The maximum value of the column", "INTEGER? | FLOAT?", BuiltInAggregations::maxReturnType) //
+        .returnType("The maximum value of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING,
+            BuiltInAggregations::maxReturnType) //
         .build();
 
     private static ReturnResult<ValueType> maxReturnType(final Arguments<ConstantAst> arguments,
@@ -179,7 +181,8 @@ public final class BuiltInAggregations {
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
-        .returnType("The minimum value of the column", "INTEGER? | FLOAT?", BuiltInAggregations::minReturnType) //
+        .returnType("The minimum value of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING,
+            BuiltInAggregations::minReturnType) //
         .build();
 
     private static ReturnResult<ValueType> minReturnType(final Arguments<ConstantAst> arguments,
@@ -224,7 +227,8 @@ public final class BuiltInAggregations {
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
-        .returnType("The mean value of the column", "FLOAT?", BuiltInAggregations::meanReturnType) //
+        .returnType("The mean value of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
+            BuiltInAggregations::meanReturnType) //
         .build();
 
     private static ReturnResult<ValueType> meanReturnType(final Arguments<ConstantAst> arguments,
@@ -270,7 +274,8 @@ public final class BuiltInAggregations {
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
-        .returnType("The median value of the column", "FLOAT", BuiltInAggregations::medianReturnType) //
+        .returnType("The median value of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
+            BuiltInAggregations::medianReturnType) //
         .build();
 
     private static ReturnResult<ValueType> medianReturnType(final Arguments<ConstantAst> arguments,
@@ -317,7 +322,8 @@ public final class BuiltInAggregations {
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
-        .returnType("The sum of the column", "INTEGER | FLOAT", BuiltInAggregations::sumReturnType) //
+        .returnType("The sum of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT,
+            BuiltInAggregations::sumReturnType) //
         .build();
 
     private static ReturnResult<ValueType> sumReturnType(final Arguments<ConstantAst> arguments,
@@ -362,7 +368,8 @@ public final class BuiltInAggregations {
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
         ) //
-        .returnType("The variance of the column", "FLOAT?", BuiltInAggregations::varianceReturnType) //
+        .returnType("The variance of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
+            BuiltInAggregations::varianceReturnType) //
         .build();
 
     private static ReturnResult<ValueType> varianceReturnType(final Arguments<ConstantAst> arguments,
@@ -417,7 +424,8 @@ public final class BuiltInAggregations {
             new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)"), //
             new Argument("ddof", "INTEGER", "The delta degrees of freedom to use (defaults to 0)") //
         ) //
-        .returnType("The variance of the column", "FLOAT?", BuiltInAggregations::stddevReturnType) //
+        .returnType("The variance of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
+            BuiltInAggregations::stddevReturnType) //
         .build();
 
     private static ReturnResult<ValueType> stddevReturnType(final Arguments<ConstantAst> arguments,
@@ -462,7 +470,8 @@ public final class BuiltInAggregations {
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
             new Argument("ignore_missing", "BOOLEAN", "Whether to skip `MISSING` values (defaults to `FALSE`)") //
         ) //
-        .returnType("The number of values in the column", "INTEGER", BuiltInAggregations::countReturnType) //
+        .returnType("The number of values in the column", ReturnTypeDescriptions.RETURN_INTEGER,
+            BuiltInAggregations::countReturnType) //
         .build();
 
     private static ReturnResult<ValueType> countReturnType(final Arguments<ConstantAst> arguments,
