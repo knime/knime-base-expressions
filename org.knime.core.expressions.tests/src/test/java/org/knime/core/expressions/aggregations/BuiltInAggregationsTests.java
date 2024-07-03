@@ -49,6 +49,7 @@
 package org.knime.core.expressions.aggregations;
 
 import static org.knime.core.expressions.AstTestUtils.BOOL;
+import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.STR;
 import static org.knime.core.expressions.aggregations.ArgumentsBuilder.args;
 
@@ -204,10 +205,16 @@ final class BuiltInAggregationsTests {
             .typing("Specify second arg positional", args().p(STR(INT_COL)).p(BOOL(false)).build(), ValueType.OPT_FLOAT) //
             .typing("Specify second arg named", args().n("column", STR(INT_COL)).n("ignore_nan", BOOL(false)).build(),
                 ValueType.OPT_FLOAT) //
+            .typing("All 3 args specificed named",
+                args().n("column", STR(INT_COL)).n("ignore_nan", BOOL(false)).n("ddof", INT(1)).build(),
+                ValueType.OPT_FLOAT)
+            .typing("All 3 args specified positionally", args().p(STR(INT_COL)).p(BOOL(false)).p(INT(1)).build(),
+                ValueType.OPT_FLOAT) //)
             .illegalArgs("No column arg", args().build()) //
             .illegalArgs("String column", args().p(STR(STR_COL)).build()) //
             .illegalArgs("No column arg", args().p(STR("foo")).build()) //
             .illegalArgs("Invalid second arg type", args().p(STR(INT_COL)).p(STR("foo")).build()) //
+            .illegalArgs("Invalid third arg type", args().p(STR(INT_COL)).p(BOOL(false)).p(STR("foo")).build()) //
             .tests();
     }
 
