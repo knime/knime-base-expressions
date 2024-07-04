@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App.vue";
 import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { type FunctionCatalogData } from "../functionCatalogTypes";
+import type { ExpressionNodeSettings } from "../../expressionScriptingService";
 
 vi.mock("@/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),
@@ -57,10 +58,39 @@ const TEST_FUNCTION_CATALOG: FunctionCatalogData = {
   ],
 };
 
+const INPUT_OBJECTS = [
+  {
+    name: "input1",
+    portType: "table",
+    subItems: [
+      {
+        name: "column1",
+        type: "string",
+      },
+      {
+        name: "column2",
+        type: "int",
+      },
+    ],
+  },
+];
+
+const INITIAL_SETTINGS: ExpressionNodeSettings = {
+  script: "myInitialScript",
+  languageVersion: 1,
+  builtinFunctionsVersion: 1,
+  builtinAggregationsVersion: 1,
+  columnOutputMode: "APPEND",
+  createdColumn: "New Column",
+  replacedColumn: "",
+};
+
 vi.mock("@/expressionScriptingService", () => ({
   getExpressionScriptingService: () => ({
     ...getScriptingService(),
     getFunctions: vi.fn(() => Promise.resolve(TEST_FUNCTION_CATALOG)),
+    getInitialSettings: vi.fn(() => Promise.resolve(INITIAL_SETTINGS)),
+    getInputObjects: vi.fn(() => Promise.resolve(INPUT_OBJECTS)),
   }),
 }));
 
@@ -84,6 +114,12 @@ describe("App.vue", () => {
       (methodName: string) => {
         if (methodName === "getFunctionCatalog") {
           return Promise.resolve(TEST_FUNCTION_CATALOG);
+        }
+        if (methodName === "getInputObjects") {
+          return Promise.resolve(INPUT_OBJECTS);
+        }
+        if (methodName === "getInitialSettings") {
+          return Promise.resolve(INITIAL_SETTINGS);
         }
         throw new Error(
           `Called unexpected scripting service method ${methodName}`,
@@ -135,5 +171,27 @@ describe("App.vue", () => {
     expect(functionCatalog.props("functionCatalogData")).toEqual(
       TEST_FUNCTION_CATALOG,
     );
+  });
+
+  it("renders column selector and check that it is updated when promises are resolved", async () => {
+    const { wrapper } = doMount();
+    const columnSelector = wrapper.findComponent({
+      name: "ColumnOutputSelector",
+    });
+
+    expect(columnSelector.exists()).toBeTruthy();
+    expect(columnSelector.props("modelValue")).toEqual({
+      createColumn: "",
+      outputMode: "APPEND",
+      replaceColumn: "",
+    });
+
+    await flushPromises();
+
+    expect(columnSelector.props("modelValue")).toEqual({
+      createColumn: INITIAL_SETTINGS.createdColumn,
+      outputMode: "APPEND",
+      replaceColumn: INPUT_OBJECTS[0].subItems[0].name,
+    });
   });
 });

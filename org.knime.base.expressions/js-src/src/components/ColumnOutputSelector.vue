@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { watch, computed } from "vue";
 import ValueSwitch from "webapps-common/ui/components/forms/ValueSwitch.vue";
 import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
 import InputField from "webapps-common/ui/components/forms/InputField.vue";
@@ -19,54 +18,15 @@ export type AllowedDropDownValue = {
 
 type PropType = {
   allowedReplacementColumns: AllowedDropDownValue[];
-  modelValue?: ColumnSelectorState;
 };
 
-const props = withDefaults(defineProps<PropType>(), {
-  modelValue: () =>
-    ({
-      outputMode: "APPEND",
-      replaceColumn: "",
-      createColumn: "New column",
-    }) satisfies ColumnSelectorState,
-});
+const props = withDefaults(defineProps<PropType>(), {});
 
-const emit = defineEmits<{ "update:modelValue": [ColumnSelectorState] }>();
-
-const localModelValue = computed({
-  get: () => props.modelValue,
-  set: (newModelValue: ColumnSelectorState) => {
-    emit("update:modelValue", newModelValue);
-  },
-});
-
-const outputMode = computed({
-  get: () => localModelValue.value.outputMode,
-  set: (newValue: OutputInsertionMode) => {
-    localModelValue.value = {
-      ...localModelValue.value,
-      outputMode: newValue,
-    };
-  },
-});
-
-const newColumn = computed({
-  get: () => localModelValue.value.createColumn,
-  set: (newValue: string) => {
-    localModelValue.value = {
-      ...localModelValue.value,
-      createColumn: newValue,
-    };
-  },
-});
-
-const replacementColumn = computed({
-  get: () => localModelValue.value.replaceColumn,
-  set: (newValue: string) => {
-    localModelValue.value = {
-      ...localModelValue.value,
-      replaceColumn: newValue,
-    };
+const model = defineModel<ColumnSelectorState>({
+  default: {
+    outputMode: "APPEND",
+    createColumn: "",
+    replaceColumn: "",
   },
 });
 
@@ -76,43 +36,26 @@ const allowedOperationModes = [
 ];
 
 const paintFocus = useShouldFocusBePainted();
-
-// Since these props can change after the component is mounted, we need to watch
-// for changes to the allowedReplacementColumns prop and update the default
-// replacementColumn value accordingly!
-watch(
-  () => props.allowedReplacementColumns,
-  (newValue) => {
-    replacementColumn.value =
-      newValue.find((value) => value.id === replacementColumn.value)?.id ??
-      newValue[0]?.id;
-  },
-  { deep: true },
-);
-
-// If the v-model changes via props, we also have to update
-watch(
-  () => props.modelValue,
-  (newValue) => (localModelValue.value = newValue),
-  { deep: true },
-);
 </script>
 
 <template>
   <span class="output-selector-container">
     <span class="output-label">Output column</span>
     <ValueSwitch
-      v-model="outputMode"
+      v-model="model.outputMode"
       :possible-values="allowedOperationModes"
       :disabled="props.allowedReplacementColumns.length === 0"
       class="switch-button"
       :class="{ 'focus-painted': paintFocus }"
       compact
     />
-    <div v-if="outputMode === 'APPEND'" class="output-selector-child right">
+    <div
+      v-if="model.outputMode === 'APPEND'"
+      class="output-selector-child right"
+    >
       <InputField
         id="input-field-to-add-new-column"
-        v-model="newColumn"
+        v-model="model.createColumn"
         type="text"
         class="column-input"
         placeholder="New column..."
@@ -123,7 +66,7 @@ watch(
       <!-- eslint-disable vue/attribute-hyphenation typescript complains with ':aria-label' instead of ':ariaLabel'-->
       <Dropdown
         id="dropdown-box-to-select-column"
-        v-model="replacementColumn"
+        v-model="model.replaceColumn"
         ariaLabel="column selection"
         :possible-values="allowedReplacementColumns"
         class="column-input"
