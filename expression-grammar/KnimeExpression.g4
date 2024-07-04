@@ -76,11 +76,8 @@ fragment EXPONENT: ('e' | 'E') ('+' | '-')? DIGIT_PART;
 fragment FRACTION: '.' DIGIT_PART;
 
 // STRING literal
-STRING: '"' (ESC | ~["\\])* '"' | '\'' (ESC | ~['\\])* '\'';
-fragment ESC: '\\' (UNICODE_16 | [\n\\'"abfnrtv]);
-fragment UNICODE_16:
-    'u' HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT;
-fragment HEX_DIGIT: [0-9a-fA-F];
+STRING: '"' (ESC | .)*? '"' | '\'' (ESC | .)*? '\'';
+fragment ESC: '\\' . ;
 
 // MISSING literal
 MISSING: 'MISSING';

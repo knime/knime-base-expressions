@@ -50,6 +50,7 @@ package org.knime.core.expressions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.knime.core.expressions.Ast.BinaryOperator.CONDITIONAL_AND;
 import static org.knime.core.expressions.Ast.BinaryOperator.CONDITIONAL_OR;
 import static org.knime.core.expressions.Ast.BinaryOperator.DIVIDE;
@@ -132,8 +133,8 @@ final class ParserTest {
             COL_SHORTHAND_2("$col_name12_", COL("col_name12_")), //
             COL_LONG_1("$[\"col\"]", COL("col")), //
             COL_LONG_2("$[\"my 'very\\\" special column\"]", COL("my 'very\" special column")), //
-            COL_ROW_INDEX( "$[ROW_INDEX]", ROW_INDEX()), //
-            COL_ROW_ID( "$[ROW_ID]", ROW_ID()), //
+            COL_ROW_INDEX("$[ROW_INDEX]", ROW_INDEX()), //
+            COL_ROW_ID("$[ROW_ID]", ROW_ID()), //
 
             // Flow Variable Access
             FLOW_SHORTHAND_1("$$varname", FLOW("varname")), //
@@ -176,8 +177,6 @@ final class ParserTest {
             STRING_SQ_ESC_DOUBLE_QUOTE("'my \\\" value'", STR("my \" value")), //
             STRING_DQ_ESC_BS("\"my \\b value\"", STR("my \b value")), //
             STRING_SQ_ESC_BS("'my \\b value'", STR("my \b value")), //
-            STRING_DQ_ESC_FF("\"my \\f value\"", STR("my \f value")), //
-            STRING_SQ_ESC_FF("'my \\f value'", STR("my \f value")), //
             STRING_DQ_ESC_LF("\"my \\n value\"", STR("my \n value")), //
             STRING_SQ_ESC_LF("'my \\n value'", STR("my \n value")), //
             STRING_DQ_ESC_CR("\"my \\r value\"", STR("my \r value")), //
@@ -340,26 +339,40 @@ final class ParserTest {
         }
     }
 
-    // TODO(AP-22371) check for good error messages
     @ParameterizedTest
     @EnumSource(InvalidExpr.class)
     void testSyntaxErrors(final InvalidExpr exprTest) {
-        assertThrows(ExpressionCompileException.class, () -> Expressions.parse(exprTest.m_input),
-            "Expected syntax error for expr '" + exprTest.m_input + "'");
+        ExpressionCompileException message = assertThrows(ExpressionCompileException.class,
+            () -> Expressions.parse(exprTest.m_input), "Expected syntax error for expr '" + exprTest.m_input + "'");
+        if (exprTest.m_expectedErrorMessageFragments.length > 0) {
+            for (String fragment : exprTest.m_expectedErrorMessageFragments) {
+                assertTrue(message.getMessage().toLowerCase().contains(fragment.toLowerCase()),
+                    "Wrong error message for expr '" + exprTest.m_input + "' - Error message (" + message.getMessage()
+                        + ") expected to contain '" + fragment + "'");
+            }
+        }
     }
 
     enum InvalidExpr {
+            // no expression present
+            EMPTY("", "no expression present"), //
+            EMPTY_WITH_WHITESPACE(" ", "no expression present"), //
+            EMPTY_WITH_COMMENTS("# comment", "no expression present"), //
+
             // Column access
-            COL_ACCESS_INVALID_SHORTHAND("$foo@bar"), //
+            COL_ACCESS_INVALID_SHORTHAND("$foo@bar", "token", "recognition", "error"), //
 
             // INTEGER literal
-            INT_LEADING_ZERO("01"), //
+            INT_LEADING_ZERO("01", "Leading", "integer"), //
 
             // STRING literal
-            INVALID_STRING_ESC_WHITESPACE("'Hello \\ World'"), //
-            INVALID_STRING_ESC_CHAR_G("'Hello \\g World'"), //
+            INVALID_STRING_ESC_WHITESPACE("'Hello \\ World'", "\\"), //
+            INVALID_STRING_ESC_CHAR_G("'Hello \\g World'", "invalid", "escape sequence", "\\g"), //
             INVALID_STRING_ESC_NON_ESCAPED_DQ("\"Hello \\\\\" World\""), //
             INVALID_STRING_ESC_NON_ESCAPED_SQ("'Hello \\\\\' World'"), //
+            INVALID_STRING_ESC_NON_ESCAPED_BS("\"\\\"", "escape sequence"), //
+            INVALID_STRING_ESC_NON_COMPLETE_UNICODE("\" \\u \"", "unicode", "escape sequence"), //
+            INVALID_STRING_ESC_UNICODE_INVALID_CHARS("\" \\u123z \"", "unicode", "escape sequence", "z"), //
 
             // Unmatched stuff
             UNMATCHED_OPENING_PAREN("(1 + 2"), //
@@ -390,8 +403,11 @@ final class ParserTest {
 
         private final String m_input;
 
-        private InvalidExpr(final String input) {
+        private final String[] m_expectedErrorMessageFragments;
+
+        private InvalidExpr(final String input, final String... expectedErrorMessageFragments) {
             m_input = input;
+            m_expectedErrorMessageFragments = expectedErrorMessageFragments;
         }
     }
 

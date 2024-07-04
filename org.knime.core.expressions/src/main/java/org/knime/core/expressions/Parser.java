@@ -77,10 +77,12 @@ import java.util.stream.Stream;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.InputMismatchException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.knime.core.expressions.Ast.BinaryOperator;
@@ -107,7 +109,9 @@ import org.knime.core.expressions.antlr.KnimeExpressionParser.UnaryOpContext;
  */
 final class Parser {
 
-    private static final Pattern ESC_SEQUENCE_PATTERN = Pattern.compile("\\\\([abfnrtv\"'\\\\\\n]|u([0-9A-Fa-f]{4}))");
+    private static final Pattern ESC_SEQUENCE_PATTERN = Pattern.compile("\\\\(u....|.|$)", Pattern.DOTALL);
+
+    private static final String VALID_ESCAPE_SEQUENCES = "<newline>, \\, \', \", b, n, r, t, u<4-hex-digits>";
 
     private static final String LOCATION_DATA_KEY = "text_location";
 
@@ -178,11 +182,41 @@ final class Parser {
             return new TextRange(idx, idx + 1);
         }
 
+        private static String getPrecidingToken(final Token offendingSymbol) {
+            if (offendingSymbol.getStartIndex() == 0) {
+                return null;
+            }
+            return offendingSymbol.getInputStream()
+                .getText(new Interval(offendingSymbol.getStartIndex() - 1, offendingSymbol.getStartIndex()));
+        }
+
         @Override
         public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
             final int charPositionInLine, final String msg, final RecognitionException e) {
-            m_errors.add(
-                ExpressionCompileError.syntaxError(msg, textRangeFromLineAndCharPos(line - 1, charPositionInLine)));
+            var detailedMsg = msg;
+
+            if (offendingSymbol instanceof Token) {
+                var offendingToken = (Token)offendingSymbol;
+                if (offendingToken.getType() == KnimeExpressionLexer.INTEGER
+                    && getPrecidingToken(offendingToken).startsWith("0")) {
+                    detailedMsg = "Leading zeros are not allowed in integers.";
+                }
+            }
+
+            // recognizer can be the parser or the lexer
+            // if it is the parser, we can check if the expression is empty,
+            // There are no errors yet so the following should work and should not throw false positives
+            if (recognizer instanceof KnimeExpressionParser parser
+                && e instanceof InputMismatchException inputMismatchException && m_errors.size() == 0) {
+                var tokens = parser.getTokenStream();
+                if (tokens.size() == 1 && tokens.get(0).getType() == Recognizer.EOF) {
+                    detailedMsg = "No expression present. Enter an expression.";
+                }
+            }
+            ;
+
+            m_errors.add(ExpressionCompileError.syntaxError(detailedMsg,
+                textRangeFromLineAndCharPos(line - 1, charPositionInLine)));
         }
     }
 
@@ -296,10 +330,9 @@ final class Parser {
         }
 
         private static boolean isLiteral(final AtomContext atom) throws RuntimeSyntaxError {
-            if ( atom.ROW_ID() != null ||  atom.ROW_INDEX() != null || atom.ROW_NUMBER()  != null) {
-                throw syntaxError(
-                    "`ROW_ID`, `ROW_INDEX` and `ROW_NUMBER`" + " cannot be used as arguments for aggregation functions",
-                    getLocation(atom));
+            if (atom.ROW_ID() != null || atom.ROW_INDEX() != null || atom.ROW_NUMBER() != null) {
+                throw syntaxError("`ROW_ID`, `ROW_INDEX` and `ROW_NUMBER`"
+                    + " cannot be used as arguments for aggregation functions.", getLocation(atom));
             }
             return true;
         }
@@ -348,10 +381,11 @@ final class Parser {
                         // This should only happen if our grammar doesn't match our list of constants,
                         // i.e. is an implementation error
                         throw new IllegalStateException(
-                            "Implementation error - invalid mathematical constant: " + symbol.getText(), e);
+                            "Implementation error - invalid mathematical constant: " + symbol.getText() + ".", e);
                     }
                 }
-                default -> throw syntaxError("Unexpected terminal value: " + symbol.getText(), getLocation(symbol));
+                default -> throw syntaxError("Unexpected terminal value: " + symbol.getText() + ".",
+                    getLocation(symbol));
             };
         }
 
@@ -359,7 +393,7 @@ final class Parser {
         private static String parseStringLiteral(final Token symbol) {
             var text = symbol.getText();
 
-            // Crop of the double or single quotes
+            // Crop off the double or single quotes
             var content = text.substring(1, text.length() - 1);
 
             // Replace escape sequences
@@ -367,21 +401,57 @@ final class Parser {
                 matchResult -> Matcher.quoteReplacement(escapeSequenceMapping(matchResult.group(1), symbol)));
         }
 
+        private static RuntimeSyntaxError getUnicodeSyntaxError(final String escapeCharacter, final Token symbol,
+            final Character invalidCharacter) {
+            String errorMessage = "Invalid unicode escape sequence: '\\" + escapeCharacter + "'.";
+            if (invalidCharacter != null) {
+                errorMessage += " Character '" + invalidCharacter + "' is not a hexadecimal digit (0-9, a-f, A-F).";
+            } else {
+                errorMessage += " Expected 4 hexadecimal digits after '\\u'.";
+            }
+            return syntaxError(errorMessage, getLocation(symbol));
+        }
+
+        private static RuntimeSyntaxError getEscapeSequenceSyntaxError(final String escapeCharacter,
+            final Token symbol) {
+            if (escapeCharacter == null) {
+                return syntaxError("Incomplete escape sequence: '\\'. Expected: " + VALID_ESCAPE_SEQUENCES + ".",
+                    getLocation(symbol));
+            }
+            return syntaxError(
+                "Invalid escape sequence: '\\" + escapeCharacter + "'. Expected: " + VALID_ESCAPE_SEQUENCES + ".",
+                getLocation(symbol));
+        }
+
         /** @return the value that an escape sequence should be resolved to */
-        private static String escapeSequenceMapping(final String escapeSequence, final Token symbol) { // NOSONAR - not too complex
-            return switch (escapeSequence.charAt(0)) {
+        private static String escapeSequenceMapping(final String escapeCharacter, final Token symbol) {
+            if (escapeCharacter.isEmpty()) {
+                throw getEscapeSequenceSyntaxError(null, symbol);
+            }
+
+            return switch (escapeCharacter.charAt(0)) {
                 case '\n' -> ""; // \<newline> -> <newline ignored>
                 case '\\' -> "\\"; // \\ -> \
                 case '\'' -> "'"; // \' -> '
                 case '"' -> "\""; // \" -> "
                 case 'b' -> "\b"; // \b -> <ASCII Backspace (BS)>
-                case 'f' -> "\f"; // \f -> <ASCII Formfeed (FF)>
                 case 'n' -> "\n"; // \n -> <ASCII Linefeed (LF)>
                 case 'r' -> "\r"; // \r -> <ASCII Carriage Return (CR)>
                 case 't' -> "\t"; // \t -> <ASCII Horizontal Tab (TAB)>
-                case 'u' -> "" + (char)Integer.parseInt(escapeSequence.substring(1), 16); // unicode sequence
-                default -> throw syntaxError("Invalid escape sequence: '\\" + escapeSequence + "'",
-                    getLocation(symbol));
+                case 'u' -> { // unicode sequence
+                    if (escapeCharacter.length() != 5) {
+                        throw getUnicodeSyntaxError(escapeCharacter, symbol, null);
+                    }
+                    String hexadecimalString = escapeCharacter.substring(1, 5);
+                    for (int i = 0; i < hexadecimalString.length(); i++) {
+                        char ch = hexadecimalString.charAt(i);
+                        if (Character.digit(ch, 16) == -1) {
+                            throw getUnicodeSyntaxError(escapeCharacter, symbol, ch);
+                        }
+                    }
+                    yield "" + (char)Integer.parseInt(hexadecimalString, 16);
+                }
+                default -> throw getEscapeSequenceSyntaxError(escapeCharacter, symbol);
             };
         }
 
@@ -390,7 +460,7 @@ final class Parser {
             return switch (op.getType()) {
                 case KnimeExpressionParser.MINUS -> UnaryOperator.MINUS;
                 case KnimeExpressionParser.NOT -> UnaryOperator.NOT;
-                default -> throw syntaxError("Unexpected unary operator: " + op.getType(), getLocation(op));
+                default -> throw syntaxError("Unexpected unary operator: " + op.getType() + ".", getLocation(op));
             };
         }
 
@@ -417,7 +487,7 @@ final class Parser {
                 case KnimeExpressionParser.OR -> BinaryOperator.CONDITIONAL_OR;
                 case KnimeExpressionParser.MISSING_FALLBACK -> BinaryOperator.MISSING_FALLBACK;
 
-                default -> throw syntaxError("Unexpected binary operator: " + op.getType(), getLocation(op));
+                default -> throw syntaxError("Unexpected binary operator: " + op.getType() + ".", getLocation(op));
             };
         }
 
