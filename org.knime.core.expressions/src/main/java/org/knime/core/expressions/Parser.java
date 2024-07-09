@@ -72,7 +72,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
@@ -89,18 +88,23 @@ import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
+import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.antlr.KnimeExpressionBaseVisitor;
 import org.knime.core.expressions.antlr.KnimeExpressionLexer;
 import org.knime.core.expressions.antlr.KnimeExpressionParser;
-import org.knime.core.expressions.antlr.KnimeExpressionParser.AggregationCallContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.AtomContext;
+import org.knime.core.expressions.antlr.KnimeExpressionParser.AtomExprContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.BinaryOpContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.ColAccessContext;
+import org.knime.core.expressions.antlr.KnimeExpressionParser.ConstantContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FlowVarAccessContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FullExprContext;
-import org.knime.core.expressions.antlr.KnimeExpressionParser.FunctionCallContext;
+import org.knime.core.expressions.antlr.KnimeExpressionParser.FunctionOrAggregationCallContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.ParenthesisedExprContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.UnaryOpContext;
+import org.knime.core.expressions.functions.BuiltInFunctions;
+import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
  * Expression language parser that makes use of a ANTLR4 generated parser.
@@ -182,12 +186,12 @@ final class Parser {
             return new TextRange(idx, idx + 1);
         }
 
-        private static String getPrecidingToken(final Token offendingSymbol) {
+        private static Optional<String> getPrecedingToken(final Token offendingSymbol) {
             if (offendingSymbol.getStartIndex() == 0) {
-                return null;
+                return Optional.empty();
             }
-            return offendingSymbol.getInputStream()
-                .getText(new Interval(offendingSymbol.getStartIndex() - 1, offendingSymbol.getStartIndex()));
+            return Optional.of(offendingSymbol.getInputStream()
+                .getText(new Interval(offendingSymbol.getStartIndex() - 1, offendingSymbol.getStartIndex())));
         }
 
         @Override
@@ -197,8 +201,9 @@ final class Parser {
 
             if (offendingSymbol instanceof Token) {
                 var offendingToken = (Token)offendingSymbol;
-                if (offendingToken.getType() == KnimeExpressionLexer.INTEGER
-                    && getPrecidingToken(offendingToken).startsWith("0")) {
+                var precedingToken = getPrecedingToken(offendingToken);
+                if (offendingToken.getType() == KnimeExpressionLexer.INTEGER && precedingToken.isPresent()
+                    && precedingToken.get().startsWith("0")) {
                     detailedMsg = "Leading zeros are not allowed in integers.";
                 }
             }
@@ -206,14 +211,13 @@ final class Parser {
             // recognizer can be the parser or the lexer
             // if it is the parser, we can check if the expression is empty,
             // There are no errors yet so the following should work and should not throw false positives
-            if (recognizer instanceof KnimeExpressionParser parser
-                && e instanceof InputMismatchException inputMismatchException && m_errors.size() == 0) {
+            if (recognizer instanceof KnimeExpressionParser parser && e instanceof InputMismatchException
+                && m_errors.isEmpty()) {
                 var tokens = parser.getTokenStream();
                 if (tokens.size() == 1 && tokens.get(0).getType() == Recognizer.EOF) {
                     detailedMsg = "No expression present. Enter an expression.";
                 }
             }
-            ;
 
             m_errors.add(ExpressionCompileError.syntaxError(detailedMsg,
                 textRangeFromLineAndCharPos(line - 1, charPositionInLine)));
@@ -240,7 +244,7 @@ final class Parser {
     private static final class RuntimeSyntaxError extends RuntimeException {
         private static final long serialVersionUID = 1L;
 
-        final ExpressionCompileError m_cause;
+        final transient ExpressionCompileError m_cause;
 
         RuntimeSyntaxError(final ExpressionCompileError cause) {
             m_cause = cause;
@@ -260,6 +264,23 @@ final class Parser {
 
         @Override
         public Ast visitUnaryOp(final UnaryOpContext ctx) {
+
+            // Handle unary minus on numbers
+            if (ctx.getChild(0) instanceof TerminalNode op && op.getSymbol().getType() == KnimeExpressionParser.MINUS) {
+
+                if (ctx.getChild(1) instanceof AtomExprContext arg) {
+                    if (arg.atom().INTEGER() != null) {
+                        return integerConstant(-Long.parseLong(arg.getText().replace("_", "")),
+                            createData(getLocation(ctx)));
+                    } else if (arg.atom().FLOAT() != null) {
+                        return floatConstant(-Double.parseDouble(arg.getText().replace("_", "")),
+                            createData(getLocation(ctx)));
+                    }
+                } else if (ctx.getChild(1) instanceof ConstantContext arg) {
+                    return resolveConstant(arg).toAst(createData(getLocation(ctx)));
+                }
+            }
+
             var arg = ctx.getChild(1).accept(this);
             var op = mapUnaryOperator(ctx.op);
             return unaryOp(op, arg, createData(getLocation(ctx)));
@@ -291,54 +312,165 @@ final class Parser {
         }
 
         @Override
-        public Ast visitFunctionCall(final FunctionCallContext ctx) {
-            var name = ctx.name.getText();
-            var argsContext = ctx.functionArgs();
-            var args = //
-                argsContext == null //
-                    ? List.<Ast> of() //
-                    : argsContext.expr().stream().map(a -> a.accept(this)).toList();
-            return functionCall(name, args, createData(getLocation(ctx)));
+        public ConstantAst visitConstant(final KnimeExpressionParser.ConstantContext ctx) {
+            return resolveConstant(ctx).toAst(createData(getLocation(ctx)));
         }
 
-        @Override
-        public Ast visitAggregationCall(final AggregationCallContext ctx) {
+        private static boolean checkOrderOfArguments(final FunctionOrAggregationCallContext ctx) {
+            if (ctx.arguments() == null) {
+                return true;
+            }
 
-            var positionalArgs = //
-                Optional.ofNullable(ctx.aggregationArgs().positionalAggregationArgs()) //
-                    .map(paa -> paa.atom().stream()) //
-                    .orElseGet(Stream::empty) //
-                    .filter(a -> isLiteral(a)) //
-                    .map(a -> (ConstantAst)a.accept(this)) //
-                    .toList(); //
+            boolean namedArgOccured = false;
+            for (int i = 0; i < ctx.arguments().getChildCount(); i++) {
 
-            var namedArgs = //
-                Optional.ofNullable(ctx.aggregationArgs().namedAggregationArgs()) //
-                    .map(naa -> naa.namedAggregationArg().stream()) //
-                    .orElseGet(Stream::empty) //
-                    .filter(arg -> isLiteral(arg.atom())) //
-                    .collect( //
-                        Collectors.toMap( //
-                            // NB: The "=" is part of the text but we need to remove it
-                            arg -> removeLastChar(arg.argName.getText()), // identifier
-                            arg -> (ConstantAst)arg.atom().accept(this) // value
-                        ) //
-                    );
-
-            var name = ctx.name.getText();
-            return aggregationCall(name, new Arguments<>(positionalArgs, namedArgs), createData(getLocation(ctx)));
-        }
-
-        private static boolean isLiteral(final AtomContext atom) throws RuntimeSyntaxError {
-            if (atom.ROW_ID() != null || atom.ROW_INDEX() != null || atom.ROW_NUMBER() != null) {
-                throw syntaxError("`ROW_ID`, `ROW_INDEX` and `ROW_NUMBER`"
-                    + " cannot be used as arguments for aggregation functions.", getLocation(atom));
+                if (ctx.arguments().getChild(i) instanceof KnimeExpressionParser.NamedArgumentContext) {
+                    namedArgOccured = true;
+                }
+                if (ctx.arguments().getChild(i) instanceof KnimeExpressionParser.PositionalArgumentContext
+                    && namedArgOccured) {
+                    return false;
+                }
             }
             return true;
         }
 
-        private static String removeLastChar(final String str) {
-            return str.substring(0, str.length() - 1);
+        private static ExpressionConstants resolveConstant(final ConstantContext ctx) {
+            try {
+                return ExpressionConstants.valueOf(ctx.getText());
+            } catch (IllegalArgumentException e) {
+                throw syntaxError("Unexpected constant: " + ctx.getText() + "\nAvailable Constants: "
+                    + ExpressionConstants.availableConstants(), getLocation(ctx));
+            }
+        }
+
+        private static String getMissingExpressionOperatorErrorMessage(final String name) {
+
+            var possibleFunctions = NamedOperatorFuzzyMatching.findMostSimilarlyNamedOperators(name,
+                BuiltInFunctions.BUILT_IN_FUNCTIONS_MAP);
+            var possibleAggregations = NamedOperatorFuzzyMatching.findMostSimilarlyNamedOperators(name,
+                BuiltInAggregations.BUILT_IN_AGGREGATIONS_MAP);
+
+            var allPossibleAlternatives = new ArrayList<String>();
+
+            allPossibleAlternatives.addAll(possibleFunctions);
+            allPossibleAlternatives.addAll(possibleAggregations);
+
+            return switch (allPossibleAlternatives.size()) {
+                case 0 -> "No function or aggregation with name %s.".formatted(name);
+                case 1 -> "No function or aggregation with name %s. Did you mean %s?" //
+                    .formatted(name, allPossibleAlternatives.get(0));
+                default -> "No function or aggregation with name %s. Did you mean %s, or %s?" //
+                    .formatted(name,
+                        String.join(",", allPossibleAlternatives.subList(0, allPossibleAlternatives.size() - 1)), //
+                        allPossibleAlternatives.get(allPossibleAlternatives.size() - 1));
+            };
+        }
+
+        @Override
+        public Ast visitFunctionOrAggregationCall(final FunctionOrAggregationCallContext ctx) {
+
+            var resolvedFunction = Optional.ofNullable(BuiltInFunctions.BUILT_IN_FUNCTIONS_MAP.get(ctx.name.getText()));
+            var resolvedAggregation =
+                Optional.ofNullable(BuiltInAggregations.BUILT_IN_AGGREGATIONS_MAP.get(ctx.name.getText()));
+
+            if (resolvedFunction.isEmpty() && resolvedAggregation.isEmpty()) {
+                throw typingError(getMissingExpressionOperatorErrorMessage(ctx.name.getText()), getLocation(ctx));
+            }
+
+            if (!checkOrderOfArguments(ctx)) {
+                throw syntaxError("Named arguments must be after positional arguments.", getLocation(ctx));
+            }
+
+            if (resolvedFunction.isPresent() && resolvedAggregation.isPresent()) {
+                throw new IllegalStateException("Ambiguous function or aggregation: " + ctx.name.getText()
+                    + ". Found a matching function " + resolvedFunction.get().description().name()
+                    + " and a matching aggregation " + resolvedAggregation.get().description().name()
+                    + ". This ambiguity stems from the provided lists of available functions and aggregations.");
+            }
+
+            // TODO (AP-22303):
+            //  Here we have the full information of the function/aggregation and we could resolve args too.
+            // I still think it should be possible to convert all named args to positional ones
+            // and only handle positional ones afterwards.
+            // Could make things easier
+            if (resolvedAggregation.isPresent()) {
+                return visitAggregationCall(ctx, resolvedAggregation.get());
+            }
+
+            return visitFunctionCall(ctx, resolvedFunction.get());
+        }
+
+        public Ast visitFunctionCall(final FunctionOrAggregationCallContext ctx, final ExpressionFunction function) {
+
+            if (ctx.arguments() == null) {
+                return functionCall(function, new Arguments<>(List.of(), Map.of()), createData(getLocation(ctx)));
+            }
+
+            if (!ctx.arguments().namedArgument().isEmpty()) {
+                throw syntaxError("Named arguments are not supported for functions.", getLocation(ctx));
+            }
+
+            var positionalArgs = ctx.arguments().positionalArgument() //
+                .stream() //
+                .map(arg -> arg.accept(this)) //
+                .toList();
+
+            return functionCall(function, new Arguments<>(positionalArgs, Map.of()), createData(getLocation(ctx)));
+        }
+
+        private static boolean isAtom(final KnimeExpressionParser.ExprContext expr) {
+            return expr.getChildCount() == 1 && expr.getChild(0) instanceof AtomContext;
+        }
+
+        private static boolean isConstant(final KnimeExpressionParser.ExprContext expr) {
+            return expr.accept(EXPRESSION_TO_AST_VISITOR) instanceof ConstantAst;
+        }
+
+        private static boolean isSpecialColumnAccessor(final AtomContext atom) throws RuntimeSyntaxError {
+            return (atom.ROW_ID() != null || atom.ROW_INDEX() != null || atom.ROW_NUMBER() != null);
+        }
+
+        private static ConstantAst validateConstantExpression(final KnimeExpressionParser.ExprContext expr) {
+
+            if (isAtom(expr)) {
+                if (isSpecialColumnAccessor((AtomContext)expr.getChild(0))) {
+                    throw typingError(
+                        "`ROW_ID`, `ROW_INDEX` and `ROW_NUMBER` cannot be used as arguments for aggregation functions.",
+                        getLocation(expr));
+                }
+                return (ConstantAst)expr.getChild(0).accept(EXPRESSION_TO_AST_VISITOR);
+            }
+            if (isConstant(expr)) {
+                return (ConstantAst)expr.accept(EXPRESSION_TO_AST_VISITOR);
+            }
+            throw syntaxError("Aggregation functions only allow constant expressions as arguments.", getLocation(expr));
+        }
+
+        public static Ast visitAggregationCall(final FunctionOrAggregationCallContext ctx,
+            final ColumnAggregation aggregation) {
+
+            if (ctx.arguments() == null) {
+                return aggregationCall(aggregation, new Arguments<>(List.of(), Map.of()), createData(getLocation(ctx)));
+            }
+
+            var positionalArgs = ctx.arguments().positionalArgument() //
+                .stream() //
+                .map(arg -> validateConstantExpression(arg.expr())) //
+                .toList();
+
+            var namedArgs = //
+                ctx.arguments().namedArgument() //
+                    .stream() //
+                    .collect( //
+                        Collectors.toMap( //
+                            arg -> arg.argName.getText(), //
+                            arg -> validateConstantExpression(arg.expr()) //
+                        ) //
+                    );
+
+            return aggregationCall(aggregation, new Arguments<>(positionalArgs, namedArgs),
+                createData(getLocation(ctx)));
         }
 
         @Override
@@ -374,16 +506,6 @@ final class Parser {
                         binaryOp(BinaryOperator.PLUS, rowIndex(data), integerConstant(1));
                 case KnimeExpressionParser.ROW_ID -> //
                         rowId(data);
-                case KnimeExpressionParser.MATH_CONSTANT -> {
-                    try {
-                        yield ExpressionConstants.valueOf(symbol.getText()).toAst(data);
-                    } catch (IllegalArgumentException e) {
-                        // This should only happen if our grammar doesn't match our list of constants,
-                        // i.e. is an implementation error
-                        throw new IllegalStateException(
-                            "Implementation error - invalid mathematical constant: " + symbol.getText() + ".", e);
-                    }
-                }
                 default -> throw syntaxError("Unexpected terminal value: " + symbol.getText() + ".",
                     getLocation(symbol));
             };
@@ -415,11 +537,11 @@ final class Parser {
         private static RuntimeSyntaxError getEscapeSequenceSyntaxError(final String escapeCharacter,
             final Token symbol) {
             if (escapeCharacter == null) {
-                return syntaxError("Incomplete escape sequence: '\\'. Expected: " + VALID_ESCAPE_SEQUENCES + ".",
-                    getLocation(symbol));
+                return syntaxError("Incomplete escape sequence: '\\%s'. Expected %s.".formatted(escapeCharacter,
+                    VALID_ESCAPE_SEQUENCES), getLocation(symbol));
             }
             return syntaxError(
-                "Invalid escape sequence: '\\" + escapeCharacter + "'. Expected: " + VALID_ESCAPE_SEQUENCES + ".",
+                "Invalid escape sequence: '\\%s'. Expected %s.".formatted(escapeCharacter, VALID_ESCAPE_SEQUENCES),
                 getLocation(symbol));
         }
 
@@ -481,6 +603,7 @@ final class Parser {
                 case KnimeExpressionParser.GREATER_THAN -> BinaryOperator.GREATER_THAN;
                 case KnimeExpressionParser.GREATER_THAN_EQUAL -> BinaryOperator.GREATER_THAN_EQUAL;
                 case KnimeExpressionParser.EQUAL -> BinaryOperator.EQUAL_TO;
+                case KnimeExpressionParser.DBL_EQUAL -> BinaryOperator.EQUAL_TO;
                 case KnimeExpressionParser.NOT_EQUAL -> BinaryOperator.NOT_EQUAL_TO;
                 // Logical
                 case KnimeExpressionParser.AND -> BinaryOperator.CONDITIONAL_AND;
@@ -494,6 +617,11 @@ final class Parser {
         /** Create a {@link RuntimeSyntaxError} to throw (will result in a {@link ExpressionCompileException}) */
         private static RuntimeSyntaxError syntaxError(final String message, final TextRange location) {
             return new RuntimeSyntaxError(ExpressionCompileError.syntaxError(message, location));
+        }
+
+        /** Create a {@link RuntimeSyntaxError} to throw (will result in a {@link ExpressionCompileException}) */
+        private static RuntimeSyntaxError typingError(final String message, final TextRange location) {
+            return new RuntimeSyntaxError(ExpressionCompileError.typingError(message, location));
         }
 
         /** Create a data map containing location data to attach to the Ast */

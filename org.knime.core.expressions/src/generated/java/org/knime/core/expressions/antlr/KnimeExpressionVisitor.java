@@ -23,6 +23,13 @@ public interface KnimeExpressionVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAtom(KnimeExpressionParser.AtomContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code functionOrAggregationCall}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionOrAggregationCall(KnimeExpressionParser.FunctionOrAggregationCallContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code parenthesisedExpr}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
 	 * @param ctx the parse tree
@@ -44,19 +51,12 @@ public interface KnimeExpressionVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitColAccess(KnimeExpressionParser.ColAccessContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code aggregationCall}
+	 * Visit a parse tree produced by the {@code constant}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAggregationCall(KnimeExpressionParser.AggregationCallContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code functionCall}
-	 * labeled alternative in {@link KnimeExpressionParser#expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFunctionCall(KnimeExpressionParser.FunctionCallContext ctx);
+	T visitConstant(KnimeExpressionParser.ConstantContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code flowVarAccess}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
@@ -79,33 +79,21 @@ public interface KnimeExpressionVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitUnaryOp(KnimeExpressionParser.UnaryOpContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link KnimeExpressionParser#functionArgs}.
+	 * Visit a parse tree produced by {@link KnimeExpressionParser#arguments}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFunctionArgs(KnimeExpressionParser.FunctionArgsContext ctx);
+	T visitArguments(KnimeExpressionParser.ArgumentsContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link KnimeExpressionParser#aggregationArgs}.
+	 * Visit a parse tree produced by {@link KnimeExpressionParser#namedArgument}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAggregationArgs(KnimeExpressionParser.AggregationArgsContext ctx);
+	T visitNamedArgument(KnimeExpressionParser.NamedArgumentContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link KnimeExpressionParser#positionalAggregationArgs}.
+	 * Visit a parse tree produced by {@link KnimeExpressionParser#positionalArgument}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitPositionalAggregationArgs(KnimeExpressionParser.PositionalAggregationArgsContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link KnimeExpressionParser#namedAggregationArgs}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitNamedAggregationArgs(KnimeExpressionParser.NamedAggregationArgsContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link KnimeExpressionParser#namedAggregationArg}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitNamedAggregationArg(KnimeExpressionParser.NamedAggregationArgContext ctx);
+	T visitPositionalArgument(KnimeExpressionParser.PositionalArgumentContext ctx);
 }

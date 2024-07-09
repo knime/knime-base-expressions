@@ -107,7 +107,7 @@ final class Evaluation {
         private static final long serialVersionUID = 1L;
 
         public EvaluationImplementationError(final String message) {
-            super(message + " (this is an implementation error)");
+            super(message + " (this is an implementation error).");
         }
     }
 
@@ -176,7 +176,7 @@ final class Evaluation {
             } else if (FLOAT.equals(outType.baseType())) {
                 return Float.unary(node.op(), toFloat(arg));
             }
-            throw new EvaluationImplementationError("Unknown output type " + outType.name() + " for unary operation");
+            throw new EvaluationImplementationError("Unknown output type " + outType.name() + " for unary operation.");
         }
 
         @Override
@@ -198,19 +198,19 @@ final class Evaluation {
                 return Strings.binary(node.op(), arg1, arg2);
             }
 
-            throw new EvaluationImplementationError("Unknown output type " + outType.name() + " for binary operation");
+            throw new EvaluationImplementationError("Unknown output type " + outType.name() + " for binary operation.");
         }
 
         @Override
         public Computer visit(final FunctionCall node) throws ExpressionCompileException {
+
             // Create computers for the arguments
-            var argComputers = new ArrayList<Computer>(node.args().size());
-            for (var arg : node.args()) {
+            var argComputers = new ArrayList<Computer>(node.args().asList().size());
+            for (var arg : node.args().asList()) {
                 argComputers.add(arg.accept(this));
             }
 
-            // Apply the function
-            return Typing.getFunctionImpl(node).apply(argComputers);
+            return node.function().apply(argComputers);
         }
 
         @Override
@@ -250,7 +250,7 @@ final class Evaluation {
                 );
             } else {
                 throw new IllegalStateException(
-                    "Implementation error: this shouldn't happen if our typing check is correct");
+                    "Implementation error: this shouldn't happen if our typing check is correct.");
             }
         }
     }
@@ -297,7 +297,7 @@ final class Evaluation {
                     case GREATER_THAN_EQUAL -> ctx -> bothMissing.test(ctx)
                         || (!anyMissing.test(ctx) && a1.compute(ctx) >= a2.compute(ctx));
                     default -> throw new EvaluationImplementationError(
-                        "Binary operator " + op + " is not a comparison");
+                        "Binary operator " + op + " is not a comparison.");
                 };
             } else {
                 // Both are INTEGER
@@ -309,7 +309,7 @@ final class Evaluation {
                     case GREATER_THAN -> ctx -> !anyMissing.test(ctx) && a1.compute(ctx) > a2.compute(ctx);
                     case GREATER_THAN_EQUAL -> ctx -> !anyMissing.test(ctx) && a1.compute(ctx) >= a2.compute(ctx);
                     default -> throw new EvaluationImplementationError(
-                        "Binary operator " + op + " is not a comparison");
+                        "Binary operator " + op + " is not a comparison.");
                 };
             }
             return BooleanComputer.of(value, ctx -> false);
@@ -334,7 +334,7 @@ final class Evaluation {
                 valuesEqual = ctx -> a1.compute(ctx) == a2.compute(ctx);
             } else {
                 throw new EvaluationImplementationError(
-                    "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not equality comparable");
+                    "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not equality comparable.");
             }
 
             ToBooleanFunction<EvaluationContext> equal = //
@@ -345,7 +345,7 @@ final class Evaluation {
                 case EQUAL_TO -> BooleanComputer.of(equal, ctx -> false);
                 case NOT_EQUAL_TO -> BooleanComputer.of(ctx -> !equal.applyAsBoolean(ctx), ctx -> false);
                 default -> throw new EvaluationImplementationError(
-                    "Binary operator " + op + " is not a equality check");
+                    "Binary operator " + op + " is not a equality check.");
             };
         }
 
@@ -356,7 +356,7 @@ final class Evaluation {
             return switch (op) {
                 case CONDITIONAL_AND -> fromKleenesLogicSupplier(ctx -> KleenesLogic.and(a1.apply(ctx), a2.apply(ctx)));
                 case CONDITIONAL_OR -> fromKleenesLogicSupplier(ctx -> KleenesLogic.or(a1.apply(ctx), a2.apply(ctx)));
-                default -> throw new EvaluationImplementationError("Binary operator " + op + " is not logical");
+                default -> throw new EvaluationImplementationError("Binary operator " + op + " is not logical.");
             };
 
         }
@@ -483,7 +483,7 @@ final class Evaluation {
                 value = c::compute;
             } else {
                 throw new EvaluationImplementationError(
-                    "Argument of " + computer.getClass() + " cannot be cast to STRING");
+                    "Argument of " + computer.getClass() + " cannot be cast to STRING.");
             }
             return ctx -> computer.isMissing(ctx) ? "MISSING" : value.apply(ctx);
         }
@@ -500,6 +500,7 @@ final class Evaluation {
 
     private static EvaluationImplementationError unsupportedOutputForOpError(final Object operator,
         final ValueType outputType) {
-        return new EvaluationImplementationError("Output of operator " + operator + " cannot be " + outputType.name());
+        return new EvaluationImplementationError(
+            "Output of operator " + operator + " cannot be " + outputType.name() + ".");
     }
 }

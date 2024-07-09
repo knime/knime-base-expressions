@@ -32,6 +32,13 @@ public class KnimeExpressionBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitFunctionOrAggregationCall(KnimeExpressionParser.FunctionOrAggregationCallContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitParenthesisedExpr(KnimeExpressionParser.ParenthesisedExprContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -53,14 +60,7 @@ public class KnimeExpressionBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitAggregationCall(KnimeExpressionParser.AggregationCallContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitFunctionCall(KnimeExpressionParser.FunctionCallContext ctx) { return visitChildren(ctx); }
+	@Override public T visitConstant(KnimeExpressionParser.ConstantContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -88,33 +88,19 @@ public class KnimeExpressionBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFunctionArgs(KnimeExpressionParser.FunctionArgsContext ctx) { return visitChildren(ctx); }
+	@Override public T visitArguments(KnimeExpressionParser.ArgumentsContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitAggregationArgs(KnimeExpressionParser.AggregationArgsContext ctx) { return visitChildren(ctx); }
+	@Override public T visitNamedArgument(KnimeExpressionParser.NamedArgumentContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitPositionalAggregationArgs(KnimeExpressionParser.PositionalAggregationArgsContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitNamedAggregationArgs(KnimeExpressionParser.NamedAggregationArgsContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitNamedAggregationArg(KnimeExpressionParser.NamedAggregationArgContext ctx) { return visitChildren(ctx); }
+	@Override public T visitPositionalArgument(KnimeExpressionParser.PositionalArgumentContext ctx) { return visitChildren(ctx); }
 }

@@ -87,6 +87,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
+import org.knime.core.expressions.functions.MathFunctions;
+import org.knime.core.expressions.functions.StringFunctions;
 
 /**
  * Tests for parsing expressions in the KNIME Expression language.
@@ -197,8 +200,8 @@ final class ParserTest {
             MISSING("MISSING", MIS()),
 
             // Unary Operators
-            OP_UNARY_MINUS_1("-10", OP(UnaryOperator.MINUS, INT(10))), //
-            OP_UNARY_MINUS_2("- 10", OP(UnaryOperator.MINUS, INT(10))), //
+            OP_UNARY_MINUS_1("-10", INT(-10)), //
+            OP_UNARY_MINUS_2("- 10", INT(-10)), //
             OP_UNARY_NOT("not 10", OP(UnaryOperator.NOT, INT(10))), //
 
             // Binary Operator
@@ -228,8 +231,8 @@ final class ParserTest {
             OP_PREC_PLUS_MULTIPLY("1+2*3", OP(INT(1), PLUS, OP(INT(2), MULTIPLY, INT(3)))), //
             OP_PREC_PLUS_MULTIPLY_EXPONENTIAL("0+1*2**3",
                 OP(INT(0), PLUS, OP(INT(1), MULTIPLY, OP(INT(2), EXPONENTIAL, INT(3))))), //
-            OP_PREC_MULTIPLY_NEGATE("1 * - 2", OP(INT(1), MULTIPLY, OP(UnaryOperator.MINUS, INT(2)))), //
-            OP_PREC_PLUS_NEGATE("1 + - 2", OP(INT(1), PLUS, OP(UnaryOperator.MINUS, INT(2)))), //
+            OP_PREC_MULTIPLY_NEGATE("1 * - 2", OP(INT(1), MULTIPLY, INT(-2))), //
+            OP_PREC_PLUS_NEGATE("1 + - 2", OP(INT(1), PLUS, INT(-2))), //
             OP_PREC_PLUS_LESS_THAN("1 < 2 + 3", OP(INT(1), LESS_THAN, OP(INT(2), PLUS, INT(3)))), //
             OP_PREC_MULTIPLY_GREATER_THAN_EQUAL("1 >= 2 * 3",
                 OP(INT(1), GREATER_THAN_EQUAL, OP(INT(2), MULTIPLY, INT(3)))), //
@@ -256,17 +259,24 @@ final class ParserTest {
             )),
 
             // Function calls
-            FUNC_NO_ARGS("my_func()", FUN("my_func")), //
-            FUNC_SINGLE_ARG("a(1)", FUN("a", INT(1))), //
-            FUNC_TRAILING_COMMA("foo120(1,2,)", FUN("foo120", INT(1), INT(2))), //
-            FUNC_COLUMN_ACCESS_PARM("foo($[\"col\"] , 2)", FUN("foo", COL("col"), INT(2))), //
+            FUNC_NO_ARGS(MathFunctions.SIN.name() + "()", FUN(MathFunctions.SIN)), //
+            FUNC_SINGLE_ARG(MathFunctions.SIN.name() + "(1)", FUN(MathFunctions.SIN, INT(1))), //
+            FUNC_TRAILING_COMMA(MathFunctions.SIN.name() + "(1,2,)", FUN(MathFunctions.SIN, INT(1), INT(2))), //
+            FUNC_COLUMN_ACCESS_PARM(MathFunctions.SIN.name() + "($[\"col\"] , 2)",
+                FUN(MathFunctions.SIN, COL("col"), INT(2))), //
 
             // Aggregation functions
-            COL_AGG("COLUMN_MEAN(\"column name\")", AGG("COLUMN_MEAN", STR("column name"))), //
-            COL_AGG_NAMED_ARG("COLUMN_MEAN(\"column name\", ignore_missing=TRUE)",
-                AGG("COLUMN_MEAN", List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
-            COL_AGG_ONLY_NAMED_ARGS("COLUMN_MEAN(column=\"column name\", ignore_missing=TRUE)",
-                AGG("COLUMN_MEAN", List.of(), Map.of("column", STR("column name"), "ignore_missing", BOOL(true)))), //
+            COL_AGG(BuiltInAggregations.AVERAGE.name() + "(\"column name\")",
+                AGG(BuiltInAggregations.AVERAGE, STR("column name"))), //
+            COL_AGG_NAMED_ARG(BuiltInAggregations.AVERAGE.name() + "(\"column name\", ignore_missing=TRUE)",
+                AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
+            COL_AGG_NAMED_ARG_WITH_WHITESPACE(
+                BuiltInAggregations.AVERAGE.name() + "(\"column name\", ignore_missing =TRUE)",
+                AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
+            COL_AGG_ONLY_NAMED_ARGS(
+                BuiltInAggregations.AVERAGE.name() + "(column=\"column name\", ignore_missing=TRUE)",
+                AGG(BuiltInAggregations.AVERAGE, List.of(),
+                    Map.of("column", STR("column name"), "ignore_missing", BOOL(true)))), //
 
             // Special stuff
 
@@ -277,8 +287,6 @@ final class ParserTest {
             MIXING_MISSING_IN_STR("\"MISSING\"", STR("MISSING")), //
             MIXING_NUMBERS_IN("\"1.2\"", STR("1.2")), //
             MIXING_EXPR_IN_COL_ACCESS("$[\"1 + 2\"]", COL("1 + 2")), //
-            AGG_WITH_CONSTANT_IN_NAME("AB_PI(1)", AGG("AB_PI", INT(1))), //
-            AGG_STARTING_WITH_CONSTANT_NAME("PI_AB(10)", AGG("PI_AB", INT(10))), //
 
             // Combined examples
             COMPLEX_1("not ($email = MISSING) or ($phone_number != MISSING and $opt_in_status == TRUE)", //
@@ -298,15 +306,15 @@ final class ParserTest {
                     OP(COL("price"), MINUS, FLOW("min_savings")) //
                 ) //
             ), //
-            COMPLEX_3("round(avg($age), 0) >= 30 and lower($department) = \"marketing\"", //
+            COMPLEX_3("round(average($age), 0) >= 30 and lower_case($department) = \"marketing\"", //
                 OP( //
                     OP( //
-                        FUN("round", FUN("avg", COL("age")), INT(0)), //
+                        FUN(MathFunctions.ROUNDHALFEVEN, FUN(MathFunctions.AVERAGE, COL("age")), INT(0)), //
                         GREATER_THAN_EQUAL, //
                         INT(30) //
                     ), //
                     CONDITIONAL_AND, //
-                    OP(FUN("lower", COL("department")), EQUAL_TO, STR("marketing")) //
+                    OP(FUN(StringFunctions.LOWER_CASE, COL("department")), EQUAL_TO, STR("marketing")) //
                 ) //
             ), //
             COMPLEX_4( //
@@ -374,7 +382,7 @@ final class ParserTest {
             INVALID_STRING_ESC_NON_COMPLETE_UNICODE("\" \\u \"", "unicode", "escape sequence"), //
             INVALID_STRING_ESC_UNICODE_INVALID_CHARS("\" \\u123z \"", "unicode", "escape sequence", "z"), //
 
-            // Unmatched stuff
+            // mismatched input
             UNMATCHED_OPENING_PAREN("(1 + 2"), //
             UNMATCHED_CLOSING_PAREN("(1 + 2))"), //
             UNMATCHED_OPENING_BRACKET("$[\"foo\""), //
@@ -384,21 +392,23 @@ final class ParserTest {
             UNMATCHED_OPENING_DQ_STRING("\"Hello"), //
             UNMATCHED_CLOSING_DQ_STRING("Hello\""), //
 
-            // Invalid identifiers
-            FUNC_STARTING_UNDERSCORE("_func__(1,2,3)"), //
+            // Invalid function calls
+            FUNC_STARTING_UNDERSCORE("_func(1,2,3)", "token recognition error"), //
+            FUNC_WITH_INVALID_ID("func(1,2,3)", "no", "name", "func"), //
+            FUNC_WITH_POSITIONAL_AFTER_NAMED_ARGS(MathFunctions.AVERAGE.name() + "(x=100, 10)", "named", "positional"), //)
+            FUNC_WITH_NAMED_ARGS(MathFunctions.AVERAGE.name() + "(x=100)", "named", "not", "supported", "functions"), //)
 
-            // Invalid aggregation args
-            AGG_WITH_EXPR_ARG("AB_00(1 + 2)"), //
-            AGG_WITH_NO_ARGS("FOO()"), //
-            AGG_WITH_POSITIONAL_AFTER_NAMED_ARGS("FOO(a=100, 10)"), //
-            AGG_WITH_ROW_ID("FOO($[ROW_ID])"), //
-            AGG_WITH_ROW_INDEX("FOO($[ROW_INDEX])"), //
-            AGG_WITH_ROW_NUMBER("FOO($[ROW_NUMBER])"), //
+            // Invalid aggregation calls
+            AGG_WITH_INVALID_ID("AB_00(1,2,3)", "AB_00"),
+            AGG_WITH_POSITIONAL_AFTER_NAMED_ARGS(BuiltInAggregations.SUM.name() + "(a=100, 10)", "named", "positional"), //
+            AGG_WITH_EXPR_ARG(BuiltInAggregations.SUM.name() + "(1 + 2)", "only", "constant", "expression"), //
+            AGG_WITH_ROW_ID(BuiltInAggregations.SUM.name() + "($[ROW_ID])", "ROW_ID"), //
+            AGG_WITH_ROW_INDEX(BuiltInAggregations.SUM.name() + "($[ROW_INDEX])", "ROW_INDEX"), //
+            AGG_WITH_ROW_NUMBER(BuiltInAggregations.SUM.name() + "($[ROW_NUMBER])", "ROW_NUMBER"), //
 
             // Trying to break it
             NOT_OP_WITHOUT_SPACE("not10"), // NB: can maybe parsed to a constant at some point
             AND_OP_WITHOUT_SPACE("10 and20"), //
-
         ;
 
         private final String m_input;
@@ -414,7 +424,7 @@ final class ParserTest {
     @Test
     void testTextLocation() throws ExpressionCompileException {
         // An expression with all the Ast node types
-        var expr = "10 + foo(MISSING + TRUE, -10, 1.0, 'bar', $col, $$flow)";
+        var expr = "10 + sin(MISSING + TRUE, -10, 1.0, 'bar', $col, $$flow)";
         //          0    ^    1    ^    2    ^    3    ^    4    ^    5    ^
         var ast = Parser.parse(expr);
 
@@ -433,8 +443,6 @@ final class ParserTest {
         // -10
         var unaryOp = functionCall.children().get(1);
         assertTextLocation(25, 28, unaryOp);
-        // 10
-        assertTextLocation(26, 28, unaryOp.children().get(0));
 
         // 1.0
         assertTextLocation(30, 33, functionCall.children().get(2));

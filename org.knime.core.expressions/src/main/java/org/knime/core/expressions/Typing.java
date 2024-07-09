@@ -55,10 +55,7 @@ import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.OPT_FLOAT;
 import static org.knime.core.expressions.ValueType.STRING;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 import org.knime.core.expressions.Ast.AggregationCall;
@@ -75,8 +72,6 @@ import org.knime.core.expressions.Ast.StringConstant;
 import org.knime.core.expressions.Ast.UnaryOp;
 import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
-import org.knime.core.expressions.aggregations.ColumnAggregation;
-import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
  * Algorithm to infer types of an {@link Ast}.
@@ -88,22 +83,15 @@ final class Typing {
 
     private static final String TYPE_DATA_KEY = "type";
 
-    private static final String FUNCTION_IMPL_DATA_KEY = "function_impl";
-
-    private static final String AGGREGATION_IMPL_DATA_KEY = "aggregation_impl";
-
     private Typing() {
     }
 
     static ValueType inferTypes( //
         final Ast root, //
         final Function<String, ReturnResult<ValueType>> columnToType, //
-        final Function<String, ReturnResult<ValueType>> flowVarType, //
-        final Map<String, ExpressionFunction> functions, //
-        final Map<String, ColumnAggregation> aggregations //
+        final Function<String, ReturnResult<ValueType>> flowVarType //
     ) throws ExpressionCompileException {
-        var outputType = Ast.putDataRecursive(root, TYPE_DATA_KEY,
-            new TypingVisitor(columnToType, flowVarType, functions, aggregations));
+        var outputType = Ast.putDataRecursive(root, TYPE_DATA_KEY, new TypingVisitor(columnToType, flowVarType));
         if (outputType instanceof ErrorValueType errorValueType) {
             throw new ExpressionCompileException(errorValueType.m_errors);
         }
@@ -119,45 +107,18 @@ final class Typing {
         }
     }
 
-    static ExpressionFunction getFunctionImpl(final FunctionCall node) {
-        Object function = node.data(FUNCTION_IMPL_DATA_KEY);
-        if (function instanceof ExpressionFunction f) {
-            return f;
-        } else {
-            throw new IllegalArgumentException("The node " + node + " has no resolved function implementation.");
-        }
-    }
-
-    static ColumnAggregation getAggregationImpl(final AggregationCall node) {
-        Object aggregation = node.data(AGGREGATION_IMPL_DATA_KEY);
-        if (aggregation instanceof ColumnAggregation f) {
-            return f;
-        } else {
-            throw new IllegalArgumentException(
-                "The node " + node + " has no resolved column aggregation implementation.");
-        }
-    }
-
     private static final class TypingVisitor implements Ast.AstVisitor<ValueType, RuntimeException> {
 
         private final Function<String, ReturnResult<ValueType>> m_columnType;
 
         private final Function<String, ReturnResult<ValueType>> m_flowVariableType;
 
-        private final Map<String, ExpressionFunction> m_functions;
-
-        private final Map<String, ColumnAggregation> m_aggregations;
-
         TypingVisitor( //
             final Function<String, ReturnResult<ValueType>> columnToType, //
-            final Function<String, ReturnResult<ValueType>> flowVarType, //
-            final Map<String, ExpressionFunction> functions, //
-            final Map<String, ColumnAggregation> aggregations //
+            final Function<String, ReturnResult<ValueType>> flowVarType //
         ) {
             m_columnType = columnToType;
-            m_functions = functions;
             m_flowVariableType = flowVarType;
-            m_aggregations = aggregations;
         }
 
         @Override
@@ -247,40 +208,22 @@ final class Typing {
 
         @Override
         public ValueType visit(final FunctionCall node) {
-            var argTypes = node.args().stream().map(Typing::getType).toList();
+            var argTypes = node.args().asList().stream().map(Typing::getType).toList();
 
-            var resolvedFunction = Optional.ofNullable(m_functions.get(node.name()));
-            if (resolvedFunction.isEmpty()) {
-                var errorTypes = new ArrayList<>(argTypes);
-
-                errorTypes.add(ErrorValueType.missingFunction(node,
-                    NamedOperatorFuzzyMatching.findMostSimilarlyNamedOperators(node.name(), m_functions)));
-                return ErrorValueType.combined(errorTypes);
-            } else if (argTypes.stream().anyMatch(ErrorValueType.class::isInstance)) {
+            if (argTypes.stream().anyMatch(ErrorValueType.class::isInstance)) {
                 return ErrorValueType.combined(argTypes);
             }
 
-            node.putData(FUNCTION_IMPL_DATA_KEY, resolvedFunction.get());
-
             // TODO(AP-22303) show better error if the function is not applicable
-            return resolvedFunction.get().returnType(argTypes)
+            return node.function().returnType(argTypes)
                 .orElseGet(() -> ErrorValueType.functionNotApplicable(node, argTypes));
         }
 
         @Override
         public ValueType visit(final AggregationCall node) throws RuntimeException {
-            var resolvedAggregation = Optional.ofNullable(m_aggregations.get(node.name()));
-            if (resolvedAggregation.isEmpty()) {
+            var resolvedAggregation = node.aggregation();
 
-                return ErrorValueType.missingAggregation(node,
-                    NamedOperatorFuzzyMatching.findMostSimilarlyNamedOperators(node.name(), m_aggregations));
-            }
-
-            node.putData(AGGREGATION_IMPL_DATA_KEY, resolvedAggregation.get());
-
-            var args = node.args();
-
-            var ret = resolvedAggregation.get().returnType(args, m_columnType);
+            var ret = resolvedAggregation.returnType(node.args(), m_columnType);
 
             if (ret.isOk()) {
                 return ret.getValue();
@@ -419,19 +362,9 @@ final class Typing {
             return typingError("Operator '" + node.op().symbol() + "' is not applicable for " + t.name() + ".", node);
         }
 
-        static ErrorValueType missingFunction(final FunctionCall node, final List<String> similarFunctionNames) {
-            return typingError(getMissingExpressionOperatorErrorMessage(node.name(), "function", similarFunctionNames),
-                node);
-        }
-
         static ErrorValueType functionNotApplicable(final FunctionCall node, final List<ValueType> args) {
-            return typingError("The function " + node.name() + " is not applicable to the arguments " + args, node);
-        }
-
-        static ErrorValueType missingAggregation(final AggregationCall node,
-            final List<String> similarAggregationNames) {
-            return typingError(
-                getMissingExpressionOperatorErrorMessage(node.name(), "aggregation", similarAggregationNames), node);
+            return typingError("The function " + node.function().name() + " is not applicable to the arguments " + args,
+                node);
         }
 
         static ErrorValueType aggregationNotApplicable(final AggregationCall node, final String errorMessage) {
@@ -467,17 +400,5 @@ final class Typing {
             return this;
         }
 
-        private static String getMissingExpressionOperatorErrorMessage(final String name, final String type,
-            final List<String> similarNames) {
-
-            return switch (similarNames.size()) {
-                case 0 -> "No %s with name %s.".formatted(type, name);
-                case 1 -> "No %s with name %s. Did you mean %s?" //
-                    .formatted(type, name, similarNames.get(0));
-                default -> "No %s with name %s. Did you mean %s, or %s?" //
-                    .formatted(type, name, String.join(",", similarNames.subList(0, similarNames.size() - 1)), //
-                        similarNames.get(similarNames.size() - 1));
-            };
-        }
     }
 }

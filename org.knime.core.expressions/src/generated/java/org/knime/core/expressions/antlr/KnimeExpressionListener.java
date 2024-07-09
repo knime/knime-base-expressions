@@ -28,6 +28,18 @@ public interface KnimeExpressionListener extends ParseTreeListener {
 	 */
 	void exitAtom(KnimeExpressionParser.AtomContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code functionOrAggregationCall}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterFunctionOrAggregationCall(KnimeExpressionParser.FunctionOrAggregationCallContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code functionOrAggregationCall}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitFunctionOrAggregationCall(KnimeExpressionParser.FunctionOrAggregationCallContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code parenthesisedExpr}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
 	 * @param ctx the parse tree
@@ -64,29 +76,17 @@ public interface KnimeExpressionListener extends ParseTreeListener {
 	 */
 	void exitColAccess(KnimeExpressionParser.ColAccessContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code aggregationCall}
+	 * Enter a parse tree produced by the {@code constant}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
 	 * @param ctx the parse tree
 	 */
-	void enterAggregationCall(KnimeExpressionParser.AggregationCallContext ctx);
+	void enterConstant(KnimeExpressionParser.ConstantContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code aggregationCall}
+	 * Exit a parse tree produced by the {@code constant}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
 	 * @param ctx the parse tree
 	 */
-	void exitAggregationCall(KnimeExpressionParser.AggregationCallContext ctx);
-	/**
-	 * Enter a parse tree produced by the {@code functionCall}
-	 * labeled alternative in {@link KnimeExpressionParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void enterFunctionCall(KnimeExpressionParser.FunctionCallContext ctx);
-	/**
-	 * Exit a parse tree produced by the {@code functionCall}
-	 * labeled alternative in {@link KnimeExpressionParser#expr}.
-	 * @param ctx the parse tree
-	 */
-	void exitFunctionCall(KnimeExpressionParser.FunctionCallContext ctx);
+	void exitConstant(KnimeExpressionParser.ConstantContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code flowVarAccess}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
@@ -124,53 +124,33 @@ public interface KnimeExpressionListener extends ParseTreeListener {
 	 */
 	void exitUnaryOp(KnimeExpressionParser.UnaryOpContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link KnimeExpressionParser#functionArgs}.
+	 * Enter a parse tree produced by {@link KnimeExpressionParser#arguments}.
 	 * @param ctx the parse tree
 	 */
-	void enterFunctionArgs(KnimeExpressionParser.FunctionArgsContext ctx);
+	void enterArguments(KnimeExpressionParser.ArgumentsContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link KnimeExpressionParser#functionArgs}.
+	 * Exit a parse tree produced by {@link KnimeExpressionParser#arguments}.
 	 * @param ctx the parse tree
 	 */
-	void exitFunctionArgs(KnimeExpressionParser.FunctionArgsContext ctx);
+	void exitArguments(KnimeExpressionParser.ArgumentsContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link KnimeExpressionParser#aggregationArgs}.
+	 * Enter a parse tree produced by {@link KnimeExpressionParser#namedArgument}.
 	 * @param ctx the parse tree
 	 */
-	void enterAggregationArgs(KnimeExpressionParser.AggregationArgsContext ctx);
+	void enterNamedArgument(KnimeExpressionParser.NamedArgumentContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link KnimeExpressionParser#aggregationArgs}.
+	 * Exit a parse tree produced by {@link KnimeExpressionParser#namedArgument}.
 	 * @param ctx the parse tree
 	 */
-	void exitAggregationArgs(KnimeExpressionParser.AggregationArgsContext ctx);
+	void exitNamedArgument(KnimeExpressionParser.NamedArgumentContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link KnimeExpressionParser#positionalAggregationArgs}.
+	 * Enter a parse tree produced by {@link KnimeExpressionParser#positionalArgument}.
 	 * @param ctx the parse tree
 	 */
-	void enterPositionalAggregationArgs(KnimeExpressionParser.PositionalAggregationArgsContext ctx);
+	void enterPositionalArgument(KnimeExpressionParser.PositionalArgumentContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link KnimeExpressionParser#positionalAggregationArgs}.
+	 * Exit a parse tree produced by {@link KnimeExpressionParser#positionalArgument}.
 	 * @param ctx the parse tree
 	 */
-	void exitPositionalAggregationArgs(KnimeExpressionParser.PositionalAggregationArgsContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link KnimeExpressionParser#namedAggregationArgs}.
-	 * @param ctx the parse tree
-	 */
-	void enterNamedAggregationArgs(KnimeExpressionParser.NamedAggregationArgsContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link KnimeExpressionParser#namedAggregationArgs}.
-	 * @param ctx the parse tree
-	 */
-	void exitNamedAggregationArgs(KnimeExpressionParser.NamedAggregationArgsContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link KnimeExpressionParser#namedAggregationArg}.
-	 * @param ctx the parse tree
-	 */
-	void enterNamedAggregationArg(KnimeExpressionParser.NamedAggregationArgContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link KnimeExpressionParser#namedAggregationArg}.
-	 * @param ctx the parse tree
-	 */
-	void exitNamedAggregationArg(KnimeExpressionParser.NamedAggregationArgContext ctx);
+	void exitPositionalArgument(KnimeExpressionParser.PositionalArgumentContext ctx);
 }

@@ -48,9 +48,13 @@
  */
 package org.knime.core.expressions;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.knime.core.expressions.Ast.ConstantAst;
 
 /**
  * Enum type representing our allowed constants.
@@ -108,6 +112,10 @@ public enum ExpressionConstants {
         m_documentation = documentation;
     }
 
+    static String availableConstants() {
+        return Arrays.stream(values()).map(ExpressionConstants::name).collect(Collectors.joining(", "));
+    }
+
     /**
      * The numerical value of the constant.
      *
@@ -141,7 +149,7 @@ public enum ExpressionConstants {
      * @param data the data to be used for the {@link Ast}
      * @return the {@link Ast} representing this constant
      */
-    public Ast toAst(final Map<String, Object> data) {
+    public ConstantAst toAst(final Map<String, Object> data) {
         if (m_type == ValueType.INTEGER) {
             return new Ast.IntegerConstant((Long)m_value, data);
         } else if (m_type == ValueType.FLOAT) {

@@ -109,7 +109,7 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
     }
 
     static ExpressionCompileError aggregationNotImplemented(final AggregationCall node) {
-        return aggregationNotImplemented(node.name(), Parser.getTextLocation(node));
+        return aggregationNotImplemented(node.aggregation().name(), Parser.getTextLocation(node));
     }
 
     /** Types of compile errors */

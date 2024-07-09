@@ -61,9 +61,6 @@ import java.util.stream.Collectors;
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.FlowVarAccess;
-import org.knime.core.expressions.aggregations.BuiltInAggregations;
-import org.knime.core.expressions.aggregations.ColumnAggregation;
-import org.knime.core.expressions.functions.BuiltInFunctions;
 
 /**
  * Utilities for working with expressions in the KNIME Expression Language.
@@ -133,8 +130,7 @@ public final class Expressions {
         final Function<String, ReturnResult<ValueType>> columnToType, //
         final Function<String, ReturnResult<ValueType>> flowVarType //
     ) throws ExpressionCompileException {
-        return Typing.inferTypes(expression, columnToType, flowVarType, BuiltInFunctions.BUILT_IN_FUNCTIONS_MAP,
-            BuiltInAggregations.BUILT_IN_AGGREGATIONS_MAP);
+        return Typing.inferTypes(expression, columnToType, flowVarType);
     }
 
     /**
@@ -178,16 +174,6 @@ public final class Expressions {
      */
     public static int getResolvedColumnIdx(final ColumnAccess columnAccess) {
         return ColumnIdxResolve.getColumnIdx(columnAccess);
-    }
-
-    /**
-     * Get the resolve aggregation implementation of the given AggregationCall.
-     *
-     * @param aggregationCall the aggregation call with present aggregation information from {@link #inferTypes}
-     * @return the aggregation implementation
-     */
-    public static ColumnAggregation getResolvedColumnAggregation(final AggregationCall aggregationCall) {
-        return Typing.getAggregationImpl(aggregationCall);
     }
 
     /**

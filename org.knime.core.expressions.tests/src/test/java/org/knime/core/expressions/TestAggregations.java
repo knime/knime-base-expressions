@@ -71,7 +71,7 @@ enum TestAggregations implements ColumnAggregation {
             (args, columnType) -> {
                 if (args.positionalArguments().size() == 1 && args.namedArguments().size() == 0
                     && args.positionalArguments().get(0) instanceof Ast.StringConstant colName) {
-                    return columnType.apply(colName.value()).filter(ValueType::isNumericOrOpt, "some error message");
+                    return columnType.apply(colName.value()).filter(ValueType::isNumericOrOpt, "RETURN_42_WITH_COL_TYPE not numeric");
                 }
                 return ReturnResult.failure("Invalid arguments to aggregation RETURN_42_WITH_COL_TYPE");
             }, //
@@ -107,7 +107,7 @@ enum TestAggregations implements ColumnAggregation {
         TestUtils.enumFinderAsMap(TestAggregations.values(), ColumnAggregation.class);
 
     public static final Function<AggregationCall, Optional<Computer>> TEST_AGGREGATIONS_COMPUTER = agg -> TestUtils
-        .enumFinderAsFunction(TestAggregations.values()).apply(agg.name()).flatMap(t -> t.computer(agg));
+        .enumFinderAsFunction(TestAggregations.values()).apply(agg.aggregation().name()).flatMap(t -> t.computer(agg));
 
     private final BiFunction<Arguments<ConstantAst>, Function<String, ReturnResult<ValueType>>, ReturnResult<ValueType>> m_returnType;
 

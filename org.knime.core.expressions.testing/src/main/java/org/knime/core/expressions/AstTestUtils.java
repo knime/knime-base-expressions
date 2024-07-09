@@ -52,6 +52,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.knime.core.expressions.Ast.ConstantAst;
+import org.knime.core.expressions.aggregations.ColumnAggregation;
+import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
  * Helpers to create {@link Ast}s with as few characters as possible. Only for tests.
@@ -155,8 +157,13 @@ public final class AstTestUtils {
      * @param args
      * @return a {@link Ast.FunctionCall}
      */
-    public static Ast.FunctionCall FUN(final String name, final Ast... args) { // NOSONAR - name useful for visual clarity
-        return Ast.functionCall(name, List.of(args));
+    public static Ast.FunctionCall FUN(final ExpressionFunction name, final Ast... args) { // NOSONAR - name useful for visual clarity
+        return FUN(name, List.of(args), Map.of());
+    }
+
+    public static Ast.FunctionCall FUN(final ExpressionFunction name, final List<Ast> positionalArgs,
+        final Map<String, Ast> namedArgs) { // NOSONAR - name useful for visual clarity
+        return Ast.functionCall(name, new Arguments<Ast>(positionalArgs, namedArgs));
     }
 
     /**
@@ -164,7 +171,7 @@ public final class AstTestUtils {
      * @param positionalArgs
      * @return a {@link Ast.AggregationCall}
      */
-    public static Ast.AggregationCall AGG(final String name, final ConstantAst... positionalArgs) { // NOSONAR - name useful for visual clarity
+    public static Ast.AggregationCall AGG(final ColumnAggregation name, final ConstantAst... positionalArgs) { // NOSONAR - name useful for visual clarity
         return AGG(name, List.of(positionalArgs), Map.of());
     }
 
@@ -174,7 +181,7 @@ public final class AstTestUtils {
      * @param namedArgs
      * @return a {@link Ast.AggregationCall}
      */
-    public static Ast.AggregationCall AGG(final String name, final List<ConstantAst> positionalArgs,
+    public static Ast.AggregationCall AGG(final ColumnAggregation name, final List<ConstantAst> positionalArgs,
         final Map<String, ConstantAst> namedArgs) { // NOSONAR - name useful for visual clarity
         return Ast.aggregationCall(name, new Arguments<>(positionalArgs, namedArgs));
     }

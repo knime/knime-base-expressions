@@ -58,7 +58,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.BinaryOp;
@@ -67,6 +66,8 @@ import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Ast.FunctionCall;
 import org.knime.core.expressions.Ast.UnaryOp;
+import org.knime.core.expressions.aggregations.ColumnAggregation;
+import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
  * An abstract syntax tree of an Expression according to the KNIME Expression Language. The syntax tree is not
@@ -500,8 +501,8 @@ public sealed interface Ast
      * @param args the arguments
      * @return the node
      */
-    static FunctionCall functionCall(final String name, final List<Ast> args) {
-        return functionCall(name, args, new HashMap<>());
+    static FunctionCall functionCall(final ExpressionFunction function, final Arguments<Ast> args) {
+        return functionCall(function, args, new HashMap<>());
     }
 
     /**
@@ -512,8 +513,9 @@ public sealed interface Ast
      * @param data
      * @return the node
      */
-    static FunctionCall functionCall(final String name, final List<Ast> args, final Map<String, Object> data) {
-        return new FunctionCall(name, args, data);
+    static FunctionCall functionCall(final ExpressionFunction function, final Arguments<Ast> args,
+        final Map<String, Object> data) {
+        return new FunctionCall(function, args, data);
     }
 
     /**
@@ -523,8 +525,8 @@ public sealed interface Ast
      * @param args the arguments
      * @return the node
      */
-    static AggregationCall aggregationCall(final String name, final Arguments<ConstantAst> args) {
-        return aggregationCall(name, args, new HashMap<>());
+    static AggregationCall aggregationCall(final ColumnAggregation aggregation, final Arguments<ConstantAst> args) {
+        return aggregationCall(aggregation, args, new HashMap<>());
     }
 
     /**
@@ -535,9 +537,9 @@ public sealed interface Ast
      * @param data
      * @return the node
      */
-    static AggregationCall aggregationCall(final String name, final Arguments<ConstantAst> args,
+    static AggregationCall aggregationCall(final ColumnAggregation aggregation, final Arguments<ConstantAst> args,
         final Map<String, Object> data) {
-        return new AggregationCall(name, args, data);
+        return new AggregationCall(aggregation, args, data);
     }
 
     // ======================================================
@@ -985,15 +987,14 @@ public sealed interface Ast
     /**
      * {@link Ast} representing a function call
      *
-     * @param name the name of the function
+     * @param function the function itself
      * @param args the arguments of the function
      * @param data attached data
      */
-    record FunctionCall(String name, List<Ast> args, Map<String, Object> data) implements Ast {
+    record FunctionCall(ExpressionFunction function, Arguments<Ast> args, Map<String, Object> data) implements Ast {
         @Override
         public String toExpression() {
-            var argsExpr = args.stream().map(Ast::toExpression).collect(Collectors.joining(", "));
-            return name + "(" + argsExpr + ")";
+            return function.name() + args.renderArgumentList(Ast::toExpression);
         }
 
         @Override
@@ -1003,21 +1004,22 @@ public sealed interface Ast
 
         @Override
         public List<Ast> children() {
-            return args;
+            return args.asList();
         }
     }
 
     /**
      * {@link Ast} representing a function call
      *
-     * @param name the name of the function
+     * @param aggregation the aggregation function itself
      * @param args the arguments of the function
      * @param data attached data
      */
-    record AggregationCall(String name, Arguments<ConstantAst> args, Map<String, Object> data) implements Ast {
+    record AggregationCall(ColumnAggregation aggregation, Arguments<ConstantAst> args, Map<String, Object> data)
+        implements Ast {
         @Override
         public String toExpression() {
-            return name + args.renderArgumentList(ConstantAst::toExpression);
+            return aggregation.name() + args.renderArgumentList(ConstantAst::toExpression);
         }
 
         @Override

@@ -83,7 +83,7 @@ public class TestColumnAggregationArgumentSource implements ArgumentsProvider {
 
     private static Ast.AggregationCall getTestAstFor(final ColumnAggregation agg) {
         var args = getTestArgsFor(agg);
-        var ast = Ast.aggregationCall(agg.name(), args);
+        var ast = Ast.aggregationCall(agg, args);
         try {
             Expressions.inferTypes(ast, n -> ReturnResult.fromNullable(TEST_COLUMNS.get(n), "Column does not exist"),
                 n -> ReturnResult.failure("There are no flow variables"));

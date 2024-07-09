@@ -71,6 +71,8 @@ import org.knime.core.expressions.ValueType;
  */
 public final class BuiltInAggregations {
 
+    private static final String COLUMN_MUST_BE_NUMERIC = "Column data type must be numeric.";
+
     /**
      * The major version of the built-in aggregations. This version number should be incremented whenever incompatible
      * changes are introduced to the built-in aggregations. Incompatible changes include, but are not limited to,
@@ -101,9 +103,9 @@ public final class BuiltInAggregations {
     private static final String COLUMN_ARG_ID = "column";
 
     // Some error messages that we reuse a lot
-    private static final String COLUMN_ARG_MUST_BE_STRING_ERR = "Column argument must be a string";
+    private static final String COLUMN_ARG_MUST_BE_STRING_ERR = "Column argument must be a string.";
 
-    private static final String ARGUMENTS_NOT_MATCHED_ERR = "Invalid arguments provided to aggregation";
+    private static final String ARGUMENTS_NOT_MATCHED_ERR = "Invalid arguments provided to aggregation.";
 
     // Aggregation implementations
 
@@ -128,7 +130,7 @@ public final class BuiltInAggregations {
                 * `COLUMN_MAX("col", false)` returns the maximum value in
                   column `col`, including `NaN` values
                 """) //
-        .keywords("maximum") //
+        .keywords("maximum", "max") //
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
@@ -151,7 +153,7 @@ public final class BuiltInAggregations {
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
             .flatMap(columnTypeMapper::apply) //
-            .filter(ValueType::isNumericOrOpt, "Column must be numeric");
+            .filter(ValueType::isNumericOrOpt, COLUMN_MUST_BE_NUMERIC);
     }
 
     /** Aggregation that returns the minimum value of a column. */
@@ -198,7 +200,7 @@ public final class BuiltInAggregations {
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
             .flatMap(columnTypeMapper::apply) //
-            .filter(ValueType::isNumericOrOpt, "Column must be numeric");
+            .filter(ValueType::isNumericOrOpt, COLUMN_MUST_BE_NUMERIC);
     }
 
     /** Aggregation that returns the mean value of a column. */
@@ -221,7 +223,7 @@ public final class BuiltInAggregations {
                 * `COLUMN_AVERAGE("col", false)` returns the mean value in column `col`,
                   including `NaN` values
                 """) //
-        .keywords("mean", "avg") //
+        .keywords("column_mean", "avg") //
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
             new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
@@ -244,7 +246,7 @@ public final class BuiltInAggregations {
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
             .flatMap(columnTypeMapper::apply) //
-            .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
+            .filter(ValueType::isNumericOrOpt, COLUMN_MUST_BE_NUMERIC) //
             .map(type -> ValueType.OPT_FLOAT);
     }
 
@@ -291,7 +293,7 @@ public final class BuiltInAggregations {
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
             .flatMap(columnTypeMapper::apply) //
-            .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
+            .filter(ValueType::isNumericOrOpt, COLUMN_MUST_BE_NUMERIC) //
             .map(type -> ValueType.OPT_FLOAT);
     }
 
@@ -339,7 +341,7 @@ public final class BuiltInAggregations {
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
             .flatMap(columnTypeMapper::apply) //
-            .filter(ValueType::isNumericOrOpt, "Column must be numeric");
+            .filter(ValueType::isNumericOrOpt, COLUMN_MUST_BE_NUMERIC);
     }
 
     /** Aggregation that returns the variance of a column. */
@@ -385,7 +387,7 @@ public final class BuiltInAggregations {
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
             .flatMap(columnTypeMapper::apply) //
-            .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
+            .filter(ValueType::isNumericOrOpt, COLUMN_MUST_BE_NUMERIC) //
             .map(type -> ValueType.OPT_FLOAT);
     }
 
@@ -442,7 +444,7 @@ public final class BuiltInAggregations {
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
             .flatMap(columnTypeMapper::apply) //
-            .filter(ValueType::isNumericOrOpt, "Column must be numeric") //
+            .filter(ValueType::isNumericOrOpt, COLUMN_MUST_BE_NUMERIC) //
             .map(type -> ValueType.OPT_FLOAT);
     }
 

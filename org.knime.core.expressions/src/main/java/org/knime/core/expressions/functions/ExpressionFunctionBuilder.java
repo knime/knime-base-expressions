@@ -311,11 +311,11 @@ public final class ExpressionFunctionBuilder {
         public ExpressionFunction build() {
             // Check that the name is snake_case
             if (!SNAKE_CASE_PATTERN.matcher(name).matches()) {
-                throw new IllegalArgumentException("Function name must be snake case");
+                throw new IllegalArgumentException("Function name must be snake case.");
             }
 
             if (Arrays.stream(args).limit(args.length - 1L).anyMatch(a -> a.kind != ArgKind.REQUIRED)) {
-                throw new IllegalArgumentException("Only the last argument can be optional or variable");
+                throw new IllegalArgumentException("Only the last argument can be optional or variable.");
             }
 
             var argsDesc = Arrays.stream(args) //
