@@ -233,11 +233,6 @@ onMounted(async () => {
         return { id: c.name, text: c.name };
       },
     );
-    const currentSelectionInNewValue = allowedReplacementColumns.value.find(
-      (value) => value.id === columnSelectorState.value.replaceColumn,
-    );
-    columnSelectorState.value.replaceColumn =
-      currentSelectionInNewValue?.id ?? allowedReplacementColumns.value[0]?.id;
   }
 
   registerKnimeExpressionLanguage({

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from "vue";
 import ValueSwitch from "webapps-common/ui/components/forms/ValueSwitch.vue";
 import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
 import InputField from "webapps-common/ui/components/forms/InputField.vue";
@@ -20,14 +21,14 @@ type PropType = {
   allowedReplacementColumns: AllowedDropDownValue[];
 };
 
-const props = withDefaults(defineProps<PropType>(), {});
+const props = defineProps<PropType>();
 
-const model = defineModel<ColumnSelectorState>({
+const modelValue = defineModel<ColumnSelectorState>({
   default: {
     outputMode: "APPEND",
-    createColumn: "",
     replaceColumn: "",
-  },
+    createColumn: "New column",
+  } satisfies ColumnSelectorState,
 });
 
 const allowedOperationModes = [
@@ -42,13 +43,13 @@ const paintFocus = useShouldFocusBePainted();
 // replacementColumn value if it is no longer valid
 watch(
   () => props.allowedReplacementColumns,
-  (newValue) => {
-    const indexOfReplacementColumnInNewColumns = newValue.find(
-      (value) => value.id === replacementColumn.value,
+  (newColumns) => {
+    const indexOfReplacementColumnInNewColumns = newColumns.find(
+      (value) => value.id === modelValue.value.replaceColumn,
     );
 
     if (typeof indexOfReplacementColumnInNewColumns === "undefined") {
-      replacementColumn.value = newValue[0]?.id;
+      modelValue.value.replaceColumn = newColumns[0]?.id;
     }
   },
   { deep: true },
@@ -59,7 +60,7 @@ watch(
   <span class="output-selector-container">
     <span class="output-label">Output column</span>
     <ValueSwitch
-      v-model="model.outputMode"
+      v-model="modelValue.outputMode"
       :possible-values="allowedOperationModes"
       :disabled="props.allowedReplacementColumns.length === 0"
       class="switch-button"
@@ -67,12 +68,12 @@ watch(
       compact
     />
     <div
-      v-if="model.outputMode === 'APPEND'"
+      v-if="modelValue.outputMode === 'APPEND'"
       class="output-selector-child right"
     >
       <InputField
         id="input-field-to-add-new-column"
-        v-model="model.createColumn"
+        v-model="modelValue.createColumn"
         type="text"
         class="column-input"
         placeholder="New column..."
@@ -83,7 +84,7 @@ watch(
       <!-- eslint-disable vue/attribute-hyphenation typescript complains with ':aria-label' instead of ':ariaLabel'-->
       <Dropdown
         id="dropdown-box-to-select-column"
-        v-model="model.replaceColumn"
+        v-model="modelValue.replaceColumn"
         ariaLabel="column selection"
         :possible-values="allowedReplacementColumns"
         class="column-input"

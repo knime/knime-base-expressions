@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App.vue";
 import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { type FunctionCatalogData } from "../functionCatalogTypes";
-import type { ExpressionNodeSettings } from "../../expressionScriptingService";
+import type { ExpressionNodeSettings } from "@/expressionScriptingService";
+import { nextTick } from "vue";
 
 vi.mock("@/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),
@@ -76,13 +77,13 @@ const INPUT_OBJECTS = [
 ];
 
 const INITIAL_SETTINGS: ExpressionNodeSettings = {
-  script: "myInitialScript",
+  scripts: ["myInitialScript"],
   languageVersion: 1,
   builtinFunctionsVersion: 1,
   builtinAggregationsVersion: 1,
-  columnOutputMode: "APPEND",
-  createdColumn: "New Column",
-  replacedColumn: "",
+  outputModes: ["APPEND"],
+  createdColumns: ["New Column from test"],
+  replacedColumns: [INPUT_OBJECTS[0].subItems[0].name],
 };
 
 vi.mock("@/expressionScriptingService", () => ({
@@ -92,6 +93,10 @@ vi.mock("@/expressionScriptingService", () => ({
     getInitialSettings: vi.fn(() => Promise.resolve(INITIAL_SETTINGS)),
     getInputObjects: vi.fn(() => Promise.resolve(INPUT_OBJECTS)),
   }),
+}));
+
+vi.mock("@/expressionDiagnostics", () => ({
+  runDiagnostics: vi.fn(() => Promise.resolve([[]])),
 }));
 
 describe("App.vue", () => {
@@ -132,8 +137,12 @@ describe("App.vue", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders the ScriptingEditor component with the correct language", () => {
+  it("renders the ScriptingEditor component with the correct language", async () => {
     const { wrapper } = doMount();
+
+    await flushPromises();
+    await nextTick();
+
     const scriptingComponent = wrapper.findComponent({
       name: "ScriptingEditor",
     });
@@ -141,8 +150,10 @@ describe("App.vue", () => {
     expect(scriptingComponent.props("language")).toBe("knime-expression");
   });
 
-  it("registers the knime expression language", () => {
+  it("registers the knime expression language", async () => {
     doMount();
+
+    await flushPromises();
 
     expect(registerKnimeExpressionLanguage).toHaveBeenCalled();
   });
@@ -175,21 +186,21 @@ describe("App.vue", () => {
 
   it("renders column selector and check that it is updated when promises are resolved", async () => {
     const { wrapper } = doMount();
+
+    await flushPromises();
+    await nextTick();
+
     const columnSelector = wrapper.findComponent({
       name: "ColumnOutputSelector",
     });
 
     expect(columnSelector.exists()).toBeTruthy();
-    expect(columnSelector.props("modelValue")).toEqual({
-      createColumn: "",
-      outputMode: "APPEND",
-      replaceColumn: "",
-    });
 
     await flushPromises();
+    await nextTick();
 
     expect(columnSelector.props("modelValue")).toEqual({
-      createColumn: INITIAL_SETTINGS.createdColumn,
+      createColumn: INITIAL_SETTINGS.createdColumns[0],
       outputMode: "APPEND",
       replaceColumn: INPUT_OBJECTS[0].subItems[0].name,
     });
