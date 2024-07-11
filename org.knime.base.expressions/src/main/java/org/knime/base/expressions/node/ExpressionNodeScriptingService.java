@@ -66,6 +66,7 @@ import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
+import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileError;
@@ -217,80 +218,174 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         /**
          * Parses and type-checks the expression.
          *
+         * @param script the expression to parse
+         * @param additionalColumnNames the names of the additional columns that are available (from previous expression
+         *            editors in the same node)
+         * @param additionalColumnTypes the types of the additional columns that are available (from previous expression
+         *            editors in the same node)
+         *
          * @return an expression that is ready to be executed
          */
-        private Ast getPreparedExpression(final String script) throws ExpressionCompileException {
+        private Ast getPreparedExpression(final String script, final String[] additionalColumnNames,
+            final ValueType[] additionalColumnTypes) throws ExpressionCompileException {
+
             var ast = Expressions.parse(script);
             var flowVarToTypeMapper = ExpressionRunnerUtils.flowVarToTypeForTypeInference(
                 getAvailableFlowVariables(ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES));
-            Expressions.inferTypes(ast, getColumnToTypeMapper(), flowVarToTypeMapper);
+
+            Function<String, ReturnResult<ValueType>> columnToTypeMapper = (columName) -> {
+                if (Arrays.stream(additionalColumnNames).anyMatch(columName::equals)) {
+                    return ReturnResult
+                        .success(additionalColumnTypes[Arrays.asList(additionalColumnNames).indexOf(columName)]);
+                } else {
+                    return getColumnToTypeMapper().apply(columName);
+                }
+            };
+
+            Expressions.inferTypes(ast, columnToTypeMapper, flowVarToTypeMapper);
             return ast;
         }
 
-        public List<Diagnostic> getDiagnostics(final String expression) {
-            try {
-                var ast = getPreparedExpression(expression);
+        /**
+         * List of diagnostics for each editor, hence a 2D list.
+         *
+         * @param expressions
+         * @param newColumnNames
+         * @return
+         */
+        public List<List<Diagnostic>> getDiagnostics(final String[] expressions, final String[] newColumnNames) {
+            List<ValueType> inferredColumnTypes = new ArrayList<>();
 
-                if (ValueType.MISSING.equals(Expressions.getInferredType(ast))) {
-                    // Show an error if the full expression has the output type "MISSING" because this is not supported
-                    return List.of(new Diagnostic("The full expression must not have the value type MISSING.",
-                        DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast)));
-                } else {
-                    return List.of();
+            List<List<Diagnostic>> diagnostics = new ArrayList<>();
+
+            for (int i = 0; i < expressions.length; ++i) {
+                var expression = expressions[i];
+
+                try {
+                    var ast = getPreparedExpression(expression, Arrays.copyOfRange(newColumnNames, 0, i),
+                        inferredColumnTypes.toArray(new ValueType[0]));
+
+                    var inferredType = Expressions.getInferredType(ast);
+                    inferredColumnTypes.add(inferredType);
+
+                    if (ValueType.MISSING.equals(inferredType)) {
+                        // Show an error if the full expression has the output type "MISSING" because this is not supported
+                        diagnostics
+                            .add(List.of(new Diagnostic("The full expression must not have the value type MISSING.",
+                                DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast))));
+                    } else {
+                        diagnostics.add(List.of());
+                    }
+                } catch (ExpressionCompileException ex) {
+                    // If there is an error in the expression, we still want to be able to continue with the other
+                    // expression diagnostics, so add a missing type to the list of inferred types and continue
+                    inferredColumnTypes.add(ValueType.MISSING);
+
+                    diagnostics.add(Diagnostic.fromException(ex));
                 }
-            } catch (ExpressionCompileException ex) {
-                return Diagnostic.fromException(ex);
             }
+
+            return diagnostics;
         }
 
-        public void runExpression(final String script, int numPreviewRows, final String columnInsertionModeString,
-            final String columnName) {
+        public void runExpression(final String[] scripts, int numPreviewRows, final String[] columnInsertionModesString,
+            final String[] columnNames) {
 
             if (numPreviewRows > PREVIEW_MAX_ROWS) {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            final Ast expression;
-            try {
-                expression = getPreparedExpression(script);
-            } catch (ExpressionCompileException ex) {
-                NodeLogger.getLogger(ExpressionNodeScriptingService.class)
-                    .debug("Error while running expression in dialog. This should not happen because the "
-                        + "run button is disabled if the expression is invalid: " + ex.getMessage(), ex);
-                addConsoleOutputEvent(new ConsoleText("Error: " + ex.getMessage(), true));
-                return;
-            }
-
             var inputTable = getInputTable();
+            var inputTableSize = inputTable.getBufferedTable().size();
 
-            // NB: We use the inRefTable because it is guaranteed to be a columnar table
-            try {
-                ExpressionRunnerUtils.evaluateAggregations(expression, inputTable.getBufferedTable(),
-                    new ExecutionMonitor(), numPreviewRows);
-            } catch (CanceledExecutionException ex) {
-                throw new IllegalStateException("This is an implementation error. Must not happen "
-                    + "because canceling the execution should not be possible.", ex);
-            }
+            List<ValueType> additionalColumnTypes = new ArrayList<>();
 
-            List<String> warnings = new ArrayList<>();
-            EvaluationContext evaluationContext = warnings::add;
-            numPreviewRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
-            var exprContext = new NodeExpressionMapperContext(this::getAvailableFlowVariables);
-            var slicedInputTable = inputTable.getVirtualTable().slice(0, numPreviewRows);
+            for (int i = 0; i < scripts.length; ++i) {
+                String script = scripts[i];
+                String columnName = columnNames[i];
+                String columnInsertionModeString = columnInsertionModesString[i];
 
-            var expressionResult = ExpressionRunnerUtils.applyExpression( //
-                slicedInputTable, //
-                numPreviewRows, //
-                expression, //
-                columnName, //
-                exprContext, //
-                evaluationContext);
+                final Ast expression;
+                try {
+                    expression = getPreparedExpression(script, Arrays.copyOfRange(columnNames, 0, i),
+                        additionalColumnTypes.toArray(new ValueType[0]));
 
-            updateTablePreview(inputTable, slicedInputTable, expressionResult, columnName, columnInsertionModeString,
-                numPreviewRows, inputTable.getBufferedTable().size());
+                    var inferredType = Expressions.getInferredType(expression);
+                    additionalColumnTypes.add(inferredType);
+                } catch (ExpressionCompileException ex) {
+                    NodeLogger.getLogger(ExpressionNodeScriptingService.class)
+                        .debug("Error while running expression in dialog. This should not happen because the "
+                            + "run button is disabled if the expression is invalid: " + ex.getMessage(), ex);
+                    addConsoleOutputEvent(new ConsoleText("Error: " + ex.getMessage(), true));
 
-            for (var warning : warnings) {
-                addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));
+                    throw new IllegalStateException(
+                        "Implementation error: Error while running expression in dialog: '%s'"
+                            .formatted(ex.getMessage()),
+                        ex);
+                }
+                // NB: We use the inRefTable because it is guaranteed to be a columnar table
+                try {
+                    ExpressionRunnerUtils.evaluateAggregations(expression, inputTable.getBufferedTable(),
+                        new ExecutionMonitor(), numPreviewRows);
+                } catch (CanceledExecutionException ex) {
+                    throw new IllegalStateException("This is an implementation error. Must not happen "
+                        + "because canceling the execution should not be possible.", ex);
+                }
+
+                List<String> warnings = new ArrayList<>();
+                EvaluationContext evaluationContext = warnings::add;
+                numPreviewRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
+                var exprContext = new NodeExpressionMapperContext(this::getAvailableFlowVariables);
+                var slicedInputTable = inputTable.getVirtualTable().slice(0, numPreviewRows);
+
+                var expressionResult = ExpressionRunnerUtils.applyExpression( //
+                    slicedInputTable, //
+                    numPreviewRows, //
+                    expression, //
+                    columnName, //
+                    exprContext, //
+                    evaluationContext //
+                );
+
+                var context =
+                    ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).createExecutionContext();
+
+                var outputTableVirtual = ExpressionRunnerUtils.constructOutputTable(slicedInputTable, expressionResult,
+                    new ExpressionRunnerUtils.NewColumnPosition(ColumnInsertionMode.valueOf(columnInsertionModeString),
+                        columnName));
+
+                BufferedDataTable outputTable;
+                try {
+                    outputTable = ColumnarVirtualTableMaterializer.materializer() //
+                        .sources(inputTable.getSources()) //
+                        .materializeRowKey(true) //
+                        .progress((rowIndex, rowKey) -> {
+                        }) //
+                        .executionContext(context) //
+                        .tableIdSupplier(Node.invokeGetDataRepository(context)::generateNewID) //
+                        .materialize(outputTableVirtual) //
+                        .getBufferedTable();
+                } catch (VirtualTableIncompatibleException e) {
+                    throw new IllegalStateException("This is an implementation error. Must not happen "
+                        + "because the table is guaranteed to be compatible.", e);
+                } catch (CanceledExecutionException e) {
+                    throw new IllegalStateException(
+                        "Preview evaluation cancelled by the user, which should be impossible", e);
+                }
+
+                updateTablePreview(inputTable, slicedInputTable, expressionResult, columnName,
+                    columnInsertionModeString, numPreviewRows, inputTableSize);
+
+                for (var warning : warnings) {
+                    addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));
+                }
+
+                try {
+                    inputTable = ReferenceTables.createReferenceTable(outputTable);
+                } catch (VirtualTableIncompatibleException e) {
+                    throw new IllegalStateException("This is an implementation error. Must not happen "
+                        + "because the table is guaranteed to be compatible.", e);
+                }
             }
         }
 

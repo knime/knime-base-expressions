@@ -109,45 +109,54 @@ class ExpressionNodeModel extends NodeModel {
             VariableType.LongType.INSTANCE, VariableType.IntType.INSTANCE, VariableType.StringType.INSTANCE};
 
     /** @return the typed Ast for the configured expression */
-    private Ast getPreparedExpression(final DataTableSpec inSpec) throws ExpressionCompileException {
-        var ast = Expressions.parse(m_settings.getScript());
+    private Ast getPreparedExpression(final DataTableSpec inSpec, final String script)
+        throws ExpressionCompileException {
+
+        var ast = Expressions.parse(script);
         Expressions.inferTypes(ast, columnToTypesForTypeInference(inSpec),
             flowVarToTypeForTypeInference(getAvailableInputFlowVariables(SUPPORTED_FLOW_VARIABLE_TYPES)));
         return ast;
     }
 
-    @Override
-    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
-        if (ExpressionNodeSettings.DEFAULT_SCRIPT.equals(m_settings.getScript())) {
-            throw new InvalidSettingsException("The expression node has not yet been configured. Enter an expression.");
-        }
+    /**
+     * Takes a single script, some settings, and an input table specification, and returns what the new specification
+     * would look like if the script were to be applied to the input table.
+     *
+     * @param inputSpec the input table specification
+     * @param outputMode whether to replace an existing column or add a new one
+     * @param outputColumn the name of the column to be created/replaced
+     * @param script the script to be applied
+     * @param indexInScripts the index of the script in the list of scripts. Useful for error messages
+     * @return the table specification after the script has been applied
+     * @throws InvalidSettingsException if anything is wrong with the script or the settings
+     */
+    private DataTableSpec computeTableSpecAfterScriptApplied(final DataTableSpec inputSpec,
+        final ColumnInsertionMode outputMode, final String outputColumn, final String script, final int indexInScripts)
+        throws InvalidSettingsException {
 
         try {
-            var ast = getPreparedExpression(inSpecs[0]);
+            var ast = getPreparedExpression(inputSpec, script);
             var outputType = Expressions.getInferredType(ast);
             if (ValueType.MISSING.equals(outputType)) {
                 throw new InvalidSettingsException(
-                    "The expression evaluates to MISSING. Enter an expression that has an output type.");
+                    "The %sth expression evaluates to MISSING. Enter an expression that has an output type."
+                        .formatted(indexInScripts + 1));
             }
             var outputDataSpec = Exec.valueTypeToDataSpec(outputType);
-            var outputColumnSpec = ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(),
-                m_settings.getActiveOutputColumn());
+            var outputColumnSpec =
+                ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), outputColumn);
 
-            if (m_settings.getColumnInsertionMode() == ColumnInsertionMode.REPLACE_EXISTING) {
-                return new DataTableSpec[]{ //
-                    new DataTableSpecCreator(inSpecs[0]) //
-                        .replaceColumn(inSpecs[0].findColumnIndex(m_settings.getActiveOutputColumn()), outputColumnSpec) //
-                        .createSpec() //
-                };
-            } else if (!inSpecs[0].containsName(m_settings.getActiveOutputColumn())) {
-                return new DataTableSpec[]{ //
-                    new DataTableSpecCreator(inSpecs[0]).addColumns(outputColumnSpec) //
-                        .createSpec() //
-                };
+            if (outputMode == ColumnInsertionMode.REPLACE_EXISTING) {
+                return new DataTableSpecCreator(inputSpec) //
+                    .replaceColumn(inputSpec.findColumnIndex(outputColumn), outputColumnSpec) //
+                    .createSpec(); //
+            } else if (!inputSpec.containsName(outputColumn)) {
+                return new DataTableSpecCreator(inputSpec).addColumns(outputColumnSpec) //
+                    .createSpec();
             } else {
                 throw new InvalidSettingsException(
                     "The output column '%s' exists in the input table. Choose another column name."
-                        .formatted(m_settings.getActiveOutputColumn()));
+                        .formatted(outputColumn));
             }
         } catch (final ExpressionCompileException e) {
             throw new InvalidSettingsException(e.getMessage(), e);
@@ -155,41 +164,75 @@ class ExpressionNodeModel extends NodeModel {
     }
 
     @Override
+    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
+        if (m_settings.getNumScripts() == 1
+            && ExpressionNodeSettings.DEFAULT_SCRIPT.equals(m_settings.getScripts().get(0))) {
+            throw new InvalidSettingsException("The expression node has not yet been configured. Enter an expression.");
+        }
+
+        int numberOfScripts = m_settings.getNumScripts();
+
+        var lastOutputSpec = inSpecs[0];
+
+        for (int i = 0; i < numberOfScripts; ++i) {
+            lastOutputSpec =
+                computeTableSpecAfterScriptApplied(lastOutputSpec, m_settings.getColumnInsertionModes().get(i),
+                    m_settings.getActiveOutputColumns().get(i), m_settings.getScripts().get(i), i);
+        }
+
+        return new DataTableSpec[]{lastOutputSpec};
+    }
+
+    @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws Exception {
-        var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(m_settings.getColumnInsertionMode(),
-            m_settings.getActiveOutputColumn());
+
+        int numberOfScripts = m_settings.getNumScripts();
+
+        var inTable = inData[0];
 
         var messageBuilder = createMessageBuilder();
         EvaluationContext ctx = messageBuilder::addTextIssue;
 
-        var inTable = inData[0];
+        for (int i = 0; i < numberOfScripts; ++i) {
 
-        // Prepare the expression
-        var expression = getPreparedExpression(inTable.getDataTableSpec());
+            var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(
+                m_settings.getColumnInsertionModes().get(i), m_settings.getActiveOutputColumns().get(i));
 
-        // Create a reference table for the input table
-        var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec, exec.createSubProgress(0.33));
+            // Prepare the expression
+            var expression = getPreparedExpression(inTable.getDataTableSpec(), m_settings.getScripts().get(i));
 
-        // Pre-evaluate the aggregations
-        // NB: We use the inRefTable because it is guaranteed to be a columnar table
-        ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(),
-            exec.createSubProgress(0.33));
+            // Create a reference table for the input table
+            var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec, exec.createSubProgress(0.33));
 
-        // Evaluate the expression and materialize the result
-        var exprContext = new NodeExpressionMapperContext(this::getAvailableInputFlowVariables);
-        var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
-            newColumnPosition.columnName(), exec, exec.createSubProgress(0.34), exprContext, ctx);
+            // Pre-evaluate the aggregations
+            // NB: We use the inRefTable because it is guaranteed to be a columnar table
+            ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(),
+                exec.createSubProgress(0.33));
 
-        // We must avoid using inRefTable.getVirtualTable() directly. Doing so would result in building upon the
-        // transformation of the input table, instead of initiating a new fragment. This approach leads to complications
-        // when loading the virtual table, as it would attempt to resolve the sources of the input table. By creating a
-        // new ColumnarVirtualTable, we establish a new SourceTableTransform that references the input table. This
-        // ensures that the input table itself acts as the source, providing a clean slate for transformations.
-        // Note that the CursorType is irrelevant because the transform gets re-sourced for running the comp graph.
-        var inputVirtualTable = new ColumnarVirtualTable(inRefTable.getId(), inRefTable.getSchema(), CursorType.BASIC);
-        var output = ExpressionRunnerUtils.constructOutputTable(inputVirtualTable, expressionResult.getVirtualTable(),
-            newColumnPosition);
+            // Evaluate the expression and materialize the result
+            var exprContext = new NodeExpressionMapperContext(this::getAvailableInputFlowVariables);
+            var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
+                newColumnPosition.columnName(), exec, exec.createSubProgress(0.34), exprContext, ctx);
+
+            // We must avoid using inRefTable.getVirtualTable() directly. Doing so would result in building upon the
+            // transformation of the input table, instead of initiating a new fragment. This approach leads to complications
+            // when loading the virtual table, as it would attempt to resolve the sources of the input table. By creating a
+            // new ColumnarVirtualTable, we establish a new SourceTableTransform that references the input table. This
+            // ensures that the input table itself acts as the source, providing a clean slate for transformations.
+            // Note that the CursorType is irrelevant because the transform gets re-sourced for running the comp graph.
+            var inputVirtualTable =
+                new ColumnarVirtualTable(inRefTable.getId(), inRefTable.getSchema(), CursorType.BASIC);
+            var output = ExpressionRunnerUtils.constructOutputTable(inputVirtualTable,
+                expressionResult.getVirtualTable(), newColumnPosition);
+
+            @SuppressWarnings("resource") // #close clears the table but we still want to keep the data for the output
+            var outputExtensionTable =
+                new VirtualTableExtensionTable(new ReferenceTable[]{inRefTable, expressionResult}, output,
+                    inTable.size(), Node.invokeGetDataRepository(exec).generateNewID());
+
+            inTable = outputExtensionTable.create(exec);
+        }
 
         var issueCount = messageBuilder.getIssueCount();
         if (issueCount > 0) {
@@ -201,10 +244,7 @@ class ExpressionNodeModel extends NodeModel {
             setWarning(message);
         }
 
-        @SuppressWarnings("resource") // #close clears the table but we still want to keep the data for the output
-        var outputExtensionTable = new VirtualTableExtensionTable(new ReferenceTable[]{inRefTable, expressionResult},
-            output, inTable.size(), Node.invokeGetDataRepository(exec).generateNewID());
-        return new BufferedDataTable[]{outputExtensionTable.create(exec)};
+        return new BufferedDataTable[]{inTable};
     }
 
     @Override

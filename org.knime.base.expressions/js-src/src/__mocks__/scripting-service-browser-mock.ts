@@ -241,10 +241,10 @@ if (import.meta.env.MODE === "development.browser") {
   Object.assign(getExpressionScriptingService(), scriptingService, {
     getInitialSettings: () => {
       const ret = Promise.resolve({
-        script: "mocked default script",
-        columnOutputMode: "APPEND",
-        createdColumn: "mocked output col",
-        replacedColumn: INPUT_OBJECTS[0].subItems[1].name,
+        scripts: ["mocked default script"],
+        outputModes: ["APPEND"],
+        createdColumns: ["mocked output col"],
+        replacedColumns: [INPUT_OBJECTS[0].subItems[1].name],
         languageVersion: 1,
         builtinFunctionsVersion: 1,
         builtinAggregationsVersion: 1,

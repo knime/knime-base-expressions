@@ -7,6 +7,7 @@ import {
 } from "@knime/scripting-editor";
 import {
   type ExpressionVersion,
+  type ExpressionNodeSettings,
   getExpressionScriptingService,
 } from "@/expressionScriptingService";
 import Button from "webapps-common/ui/components/Button.vue";
@@ -16,7 +17,7 @@ import DropdownIcon from "webapps-common/ui/assets/img/icons/arrow-dropdown.svg"
 import SubMenu from "webapps-common/ui/components/SubMenu.vue";
 import Tooltip from "webapps-common/ui/components/Tooltip.vue";
 import { useWindowSize, onKeyStroke } from "@vueuse/core";
-import { computed, onMounted, ref, reactive, nextTick } from "vue";
+import { computed, onMounted, ref, reactive, nextTick, watch } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
   type AllowedDropDownValue,
@@ -31,6 +32,7 @@ import type {
   FunctionCatalogEntryData,
 } from "./functionCatalogTypes";
 import { useStore } from "@/store";
+import { runDiagnostics } from "@/expressionDiagnostics";
 
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { functionDataToMarkdown } from "@/components/function-catalog/functionDescriptionToMarkdown";
@@ -49,14 +51,21 @@ const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
 const scriptingService = getExpressionScriptingService();
 const store = useStore();
 
-const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
+const numberOfEditors = ref(0);
 
 // These should be immediately overridden by the scripting service
-const columnSelectorState = ref<ColumnSelectorState>({
-  outputMode: "APPEND",
-  createColumn: "",
-  replaceColumn: "",
-});
+const columnSelectorStates = ref(
+  Array(numberOfEditors).map(
+    () =>
+      ({
+        outputMode: "APPEND",
+        createColumn: "",
+        replaceColumn: "",
+      }) as ColumnSelectorState,
+  ),
+);
+
+const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
 
 // Overwritten by the initial settings
 const expressionVersion = ref<ExpressionVersion>({
@@ -146,6 +155,17 @@ const getFirstEditor = (): MultiEditorPaneExposes => {
   return multiEditorComponentRefs[Object.keys(multiEditorComponentRefs)[0]];
 };
 
+const runDiagnosticsFunction = () => {
+  runDiagnostics(
+    Object.values(multiEditorComponentRefs).map((editor) =>
+      editor.getEditorState(),
+    ),
+    columnSelectorStates.value.map((state) =>
+      state.outputMode === "APPEND" ? state.createColumn : null,
+    ),
+  );
+};
+
 onMounted(async () => {
   const [
     initialSettings,
@@ -161,7 +181,33 @@ onMounted(async () => {
     scriptingService.getFunctions(),
   ]);
 
-  getFirstEditor()?.getEditorState().setInitialText(initialSettings.script);
+  columnSelectorStates.value = [
+    ...Array(initialSettings.scripts.length).keys(),
+  ].map((i: number) => {
+    return {
+      outputMode: initialSettings.outputModes[i],
+      createColumn: initialSettings.createdColumns[i],
+      replaceColumn: initialSettings.replacedColumns[i],
+    } satisfies ColumnSelectorState;
+  });
+
+  numberOfEditors.value = initialSettings.scripts.length;
+
+  await nextTick(); // Wait for the editors to be rendered
+
+  for (let i = 0; i < initialSettings.scripts.length; i++) {
+    const key = Object.keys(multiEditorComponentRefs)[i];
+
+    multiEditorComponentRefs[key]
+      .getEditorState()
+      .setInitialText(initialSettings.scripts[i]);
+
+    // Watch all editor text and when changes occur, rerun diagnostics
+    watch(
+      multiEditorComponentRefs[key].getEditorState().text,
+      runDiagnosticsFunction,
+    );
+  }
 
   for (const editor of Object.values(multiEditorComponentRefs)) {
     editor.getEditorState().editor.value?.updateOptions({
@@ -171,11 +217,9 @@ onMounted(async () => {
       },
     });
   }
-  columnSelectorState.value = {
-    outputMode: initialSettings.columnOutputMode,
-    createColumn: initialSettings.createdColumn,
-    replaceColumn: initialSettings.replacedColumn,
-  };
+
+  // Run initial diagnostics now that we've set the initial text
+  runDiagnosticsFunction();
 
   expressionVersion.value = {
     languageVersion: initialSettings.languageVersion,
@@ -236,33 +280,37 @@ onMounted(async () => {
 });
 
 const runExpressions = (rows: number) => {
-  // TODO make this work with multiple editors
   if (store.expressionValid) {
     scriptingService.sendToService("runExpression", [
-      getActiveEditor()?.getEditorState().text.value,
+      Object.values(multiEditorComponentRefs).map(
+        (ref) => ref.getEditorState().text.value,
+      ),
       rows,
-      columnSelectorState.value.outputMode,
-      columnSelectorState.value.outputMode === "APPEND"
-        ? columnSelectorState.value.createColumn
-        : columnSelectorState.value.replaceColumn,
+      columnSelectorStates.value.map((state) => state.outputMode),
+      columnSelectorStates.value.map((state) =>
+        state.outputMode === "APPEND"
+          ? state.createColumn
+          : state.replaceColumn,
+      ),
     ]);
   }
 };
 
-scriptingService.registerSettingsGetterForApply(() => ({
-  ...expressionVersion.value,
-  script:
-    multiEditorComponentRefs[
-      Object.keys(multiEditorComponentRefs)[0]
-    ].getEditorState().text.value ?? "",
-  columnOutputMode: columnSelectorState.value?.outputMode,
-  createdColumn: columnSelectorState.value?.createColumn,
-  replacedColumn: columnSelectorState.value?.replaceColumn,
-  additionalScripts: Object.keys(multiEditorComponentRefs)
-    .slice(1)
-    .map((key) => multiEditorComponentRefs[key])
-    .map((editor) => editor.getEditorState().text.value ?? ""),
-}));
+scriptingService.registerSettingsGetterForApply(
+  (): ExpressionNodeSettings => ({
+    ...expressionVersion.value,
+    createdColumns: columnSelectorStates.value.map(
+      (state) => state.createColumn,
+    ),
+    replacedColumns: columnSelectorStates.value.map(
+      (state) => state.replaceColumn,
+    ),
+    scripts: Object.keys(multiEditorComponentRefs)
+      .map((key) => multiEditorComponentRefs[key])
+      .map((editor) => editor.getEditorState().text.value ?? ""),
+    outputModes: columnSelectorStates.value.map((state) => state.outputMode),
+  }),
+);
 
 const onFunctionInsertionTriggered = (payload: {
   eventSource: string;
@@ -294,9 +342,9 @@ const onInputOutputItemInsertionTriggered = (codeToInsert: string) => {
 onKeyStroke("Enter", (evt: KeyboardEvent) => {
   if (
     evt.shiftKey &&
-    Object.values(multiEditorComponentRefs)
-      .map((editor) => editor.getEditorState().editor.value?.hasTextFocus())
-      .some((hasFocus) => hasFocus)
+    Object.values(multiEditorComponentRefs).some((editor) =>
+      editor.getEditorState().editor.value?.hasTextFocus(),
+    )
   ) {
     evt.preventDefault();
     runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN);
@@ -309,14 +357,26 @@ const columnExists = (columnName: string) =>
   ) !== -1;
 
 const columnSelectorStateValid = computed(() => {
-  const createColExists = columnExists(columnSelectorState.value.createColumn);
-  const outputMode = columnSelectorState.value.outputMode;
-  return (
-    (outputMode === "APPEND" &&
-      !createColExists &&
-      columnSelectorState.value.createColumn) ||
-    outputMode === "REPLACE_EXISTING"
-  );
+  if (numberOfEditors.value === 0) {
+    return true;
+  }
+
+  const appendedColumnsSoFar: string[] = [];
+
+  for (const state of columnSelectorStates.value) {
+    if (
+      state.outputMode === "APPEND" &&
+      (columnExists(state.createColumn) ||
+        appendedColumnsSoFar.includes(state.createColumn))
+    ) {
+      return false;
+    }
+
+    if (state.outputMode === "APPEND") {
+      appendedColumnsSoFar.push(state.createColumn);
+    }
+  }
+  return true;
 });
 
 const runButtonDisabledErrorReason = computed(() => {
@@ -363,98 +423,131 @@ const calculateInitialPaneSizes = () => {
 
 const initialPaneSizes = calculateInitialPaneSizes();
 
-const numberOfEditors = 1;
+const addNewEditor = () => {
+  numberOfEditors.value += 1;
+  columnSelectorStates.value.push({
+    outputMode: "APPEND",
+    createColumn: "New Column",
+    replaceColumn: "",
+  });
+
+  nextTick().then(() => {
+    const key = Object.keys(multiEditorComponentRefs)[
+      Object.keys(multiEditorComponentRefs).length - 1
+    ];
+    onEditorFocused(key);
+
+    runDiagnosticsFunction();
+
+    watch(
+      multiEditorComponentRefs[key].getEditorState().text,
+      runDiagnosticsFunction,
+    );
+  });
+};
 </script>
 
 <template>
   <main>
-    <ScriptingEditor
-      :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
-      :show-control-bar="true"
-      :language="language"
-      :show-output-table="true"
-      :initial-pane-sizes="{
-        right: initialPaneSizes.right,
-        left: initialPaneSizes.left,
-        bottom: 30,
-      }"
-      @input-output-item-insertion="onInputOutputItemInsertionTriggered"
-    >
-      <template #editor>
-        <MultiEditorPane
-          v-for="index in numberOfEditors"
-          :key="`_${index}.knexp`"
-          :ref="createElementReference(`_${index}.knexp`)"
-          title="Expression editor"
-          :file-name="`_${index}.knexp`"
-          :language="language"
-          @focus="onEditorFocused(`_${index}.knexp`)"
-        >
-          <!-- Controls displayed once per editor -->
-          <template #multi-editor-controls>
-            <div class="editor-controls">
-              <ColumnOutputSelector
-                v-model="columnSelectorState"
-                :allowed-replacement-columns="allowedReplacementColumns"
-              />
-            </div>
-          </template>
-        </MultiEditorPane>
-      </template>
-      <template #right-pane>
-        <template v-if="functionCatalogData">
-          <FunctionCatalog
-            :function-catalog-data="functionCatalogData"
-            :initially-expanded="false"
-            @function-insertion-event="onFunctionInsertionTriggered"
-          />
-        </template>
-      </template>
-      <!-- Controls for the very bottom bar -->
-      <template #code-editor-controls="{ showButtonText }">
-        <Tooltip :text="runButtonDisabledErrorReason ?? ''">
-          <SplitButton>
-            <Button
-              primary
-              compact
-              :disabled="runButtonDisabledErrorReason !== null"
-              @click="runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN)"
-            >
-              <div
-                class="run-button"
-                :class="{
-                  'hide-button-text': !showButtonText,
-                }"
-              >
-                <PlayIcon />
+    <template v-if="numberOfEditors === 0">
+      <div class="no-editors">
+        <p>No expression editors available. Please add an expression editor.</p>
+      </div>
+    </template>
+    <template v-else>
+      <ScriptingEditor
+        :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
+        :show-control-bar="true"
+        :language="language"
+        :show-output-table="true"
+        :initial-pane-sizes="{
+          right: initialPaneSizes.right,
+          left: initialPaneSizes.left,
+          bottom: 30,
+        }"
+        @input-output-item-insertion="onInputOutputItemInsertionTriggered"
+      >
+        <template #editor>
+          <MultiEditorPane
+            v-for="index in numberOfEditors"
+            :key="`_${index}.knexp`"
+            :ref="createElementReference(`_${index}.knexp`)"
+            :title="`Expression editor (${index})`"
+            :file-name="`_${index}.knexp`"
+            :language="language"
+            @focus="onEditorFocused(`_${index}.knexp`)"
+          >
+            <!-- Controls displayed once per editor -->
+            <template #multi-editor-controls>
+              <div class="editor-controls">
+                <ColumnOutputSelector
+                  v-model="columnSelectorStates[index - 1]"
+                  :allowed-replacement-columns="allowedReplacementColumns"
+                />
               </div>
+            </template>
+          </MultiEditorPane>
+        </template>
+        <template #right-pane>
+          <template v-if="functionCatalogData">
+            <FunctionCatalog
+              :function-catalog-data="functionCatalogData"
+              :initially-expanded="false"
+              @function-insertion-event="onFunctionInsertionTriggered"
+            />
+          </template>
+        </template>
+        <!-- Controls for the very bottom bar -->
+        <template #code-editor-controls="{ showButtonText }">
+          <Tooltip :text="runButtonDisabledErrorReason ?? ''">
+            <SplitButton>
+              <Button
+                primary
+                compact
+                :disabled="runButtonDisabledErrorReason !== null"
+                @click="runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN)"
+              >
+                <div
+                  class="run-button"
+                  :class="{
+                    'hide-button-text': !showButtonText,
+                  }"
+                >
+                  <PlayIcon />
+                </div>
 
-              {{
-                showButtonText
-                  ? `Evaluate first
+                {{
+                  showButtonText
+                    ? `Evaluate first
                ${DEFAULT_NUMBER_OF_ROWS_TO_RUN}  rows`
-                  : ""
-              }}</Button
-            >
+                    : ""
+                }}</Button
+              >
 
-            <SubMenu
-              :items="[
-                { text: 'Evaluate first 100 rows', metadata: 100 },
-                { text: 'Evaluate first 1000 rows', metadata: 1000 },
-              ]"
-              button-title="Run more rows"
-              orientation="top"
-              :disabled="runButtonDisabledErrorReason !== null"
-              @item-click="
-                (_evt: any, item: any) => runExpressions(item.metadata)
-              "
-            >
-              <DropdownIcon />
-            </SubMenu>
-          </SplitButton>
-        </Tooltip>
-      </template>
-    </ScriptingEditor>
+              <SubMenu
+                :items="[
+                  { text: 'Evaluate first 100 rows', metadata: 100 },
+                  { text: 'Evaluate first 1000 rows', metadata: 1000 },
+                ]"
+                button-title="Run more rows"
+                orientation="top"
+                :disabled="runButtonDisabledErrorReason !== null"
+                @item-click="
+                  (_evt: any, item: any) => runExpressions(item.metadata)
+                "
+              >
+                <DropdownIcon />
+              </SubMenu>
+            </SplitButton>
+          </Tooltip>
+        </template>
+      </ScriptingEditor>
+      <div style="position: absolute; z-index: 100; top: 0; left: 0">
+        <Button primary compact @click="addNewEditor">
+          (+) Add new editor
+        </Button>
+      </div>
+    </template>
   </main>
 </template>
 

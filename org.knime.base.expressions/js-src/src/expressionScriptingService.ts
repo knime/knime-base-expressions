@@ -1,7 +1,4 @@
-import {
-  getScriptingService,
-  type NodeSettings,
-} from "@knime/scripting-editor";
+import { getScriptingService } from "@knime/scripting-editor";
 import type { FunctionCatalogData } from "./components/functionCatalogTypes";
 
 export type OutputInsertionMode = "APPEND" | "REPLACE_EXISTING";
@@ -13,15 +10,14 @@ export type ExpressionVersion = {
 };
 
 export type ColumnSettings = {
-  columnOutputMode: OutputInsertionMode;
-  createdColumn: string;
-  replacedColumn: string;
+  outputModes: OutputInsertionMode[];
+  createdColumns: string[];
+  replacedColumns: string[];
 };
 
-export type ExpressionNodeSettings = NodeSettings &
-  ExpressionVersion &
-  ColumnSettings & {
-    additionalScripts: string[];
+export type ExpressionNodeSettings = ExpressionVersion &
+  ColumnSettings & { scripts: string[] } & {
+    scriptUsedFlowVariable?: string | null;
   };
 
 const scriptingService = getScriptingService();

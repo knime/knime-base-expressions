@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { registerExpressionDiagnostics } from "../expressionDiagnostics";
 import { editor, type UseCodeEditorReturn } from "@knime/scripting-editor";
 import { onKeyStroke } from "@vueuse/core";
 import { ref, watch } from "vue";
@@ -31,10 +30,10 @@ const editorState = editor.useCodeEditor({
   hideOverviewRulerLanes: true,
 });
 
-registerExpressionDiagnostics(editorState);
-
 const getEditorState = () => editorState;
-defineExpose<MultiEditorPaneExposes>({ getEditorState });
+defineExpose<MultiEditorPaneExposes>({
+  getEditorState,
+});
 
 onKeyStroke("Escape", () => {
   if (editorState.editor.value?.hasTextFocus()) {

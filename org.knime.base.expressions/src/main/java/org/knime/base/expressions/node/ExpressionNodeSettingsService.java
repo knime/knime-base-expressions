@@ -56,102 +56,43 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
+import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.scripting.editor.ScriptingNodeSettingsService;
+import org.knime.core.webui.node.dialog.VariableSettingsRO;
+import org.knime.core.webui.node.dialog.VariableSettingsWO;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Streams;
 
 /**
  * @author David Hickey, TNG Technology Consulting GmbH
  */
 @SuppressWarnings("restriction")
-public class ExpressionNodeSettingsService extends ScriptingNodeSettingsService {
+public class ExpressionNodeSettingsService implements NodeSettingsService {
 
     public ExpressionNodeSettingsService() {
-        super(SettingsType.MODEL);
     }
 
-    @Override
     protected void addAdditionalSettingsToNodeSettings(final ObjectNode settingsJson,
         final Map<SettingsType, ? extends NodeSettingsWO> settings) {
-        // save settings
-        try {
-            var columnOutputMode = settingsJson.get(ExpressionNodeSettings.CFG_KEY_OUTPUT_MODE)
-                .asText(ExpressionNodeSettings.DEFAULT_OUTPUT_MODE.name());
 
-            var outputNewColumn = settingsJson.get(ExpressionNodeSettings.CFG_KEY_CREATED_COLUMN)
-                .asText(ExpressionNodeSettings.DEFAULT_CREATED_COLUMN);
-
-            var outputReplacementColumn = settingsJson.get(ExpressionNodeSettings.CFG_KEY_REPLACED_COLUMN)
-                .asText(ExpressionNodeSettings.DEFAULT_REPLACED_COLUMN);
-
-            var modelSettings = settings.get(SettingsType.MODEL);
-            modelSettings.addString(ExpressionNodeSettings.CFG_KEY_OUTPUT_MODE, columnOutputMode);
-            modelSettings.addString(ExpressionNodeSettings.CFG_KEY_CREATED_COLUMN, outputNewColumn);
-            modelSettings.addString(ExpressionNodeSettings.CFG_KEY_REPLACED_COLUMN, outputReplacementColumn);
-
-            modelSettings.addInt(ExpressionNodeSettings.CFG_KEY_LANGUAGE_VERSION,
-                settingsJson.get(ExpressionNodeSettings.CFG_KEY_LANGUAGE_VERSION).asInt());
-            modelSettings.addInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_FUNCTIONS_VERSION,
-                settingsJson.get(ExpressionNodeSettings.CFG_KEY_BUILTIN_FUNCTIONS_VERSION).asInt());
-            modelSettings.addInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION,
-                settingsJson.get(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION).asInt());
-
-            modelSettings.addInt(ExpressionNodeSettings.CFG_KEY_NUM_ADDITIONAL_SCRIPTS,
-                settingsJson.get(ExpressionNodeSettings.CFG_KEY_NUM_ADDITIONAL_SCRIPTS).asInt());
-
-            var additionalScripts =
-                Streams.stream(settingsJson.get(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS).iterator()) //
-                    .map(JsonNode::asText) //
-                    .toArray(String[]::new);
-
-            modelSettings.addStringArray(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS, additionalScripts);
-
-        } catch (NullPointerException ex) { // NOSONAR this is nicer than many separate null checks
-            // Can happen if we're given invalid settings by the frontend
-            throw new IllegalStateException(
-                "Error saving expression editor settings - this might mean the frontend gave us invalid input", //
-                ex //
-            );
-        }
+        var expressionSettings = new ExpressionNodeSettings();
+        expressionSettings.readModelSettingsFromJson(settingsJson);
+        expressionSettings.saveModelSettingsTo(settings.get(SettingsType.MODEL));
     }
 
-    @Override
     protected void putAdditionalSettingsToJson(final Map<SettingsType, NodeAndVariableSettingsRO> settings,
         final PortObjectSpec[] specs, final ObjectNode settingsJson) {
         // load settings
 
-        var modelSettings = settings.get(SettingsType.MODEL);
-
         try {
-            settingsJson.put(ExpressionNodeSettings.CFG_KEY_OUTPUT_MODE,
-                modelSettings.getString(ExpressionNodeSettings.CFG_KEY_OUTPUT_MODE));
-            settingsJson.put(ExpressionNodeSettings.CFG_KEY_CREATED_COLUMN,
-                modelSettings.getString(ExpressionNodeSettings.CFG_KEY_CREATED_COLUMN));
-            settingsJson.put(ExpressionNodeSettings.CFG_KEY_REPLACED_COLUMN,
-                modelSettings.getString(ExpressionNodeSettings.CFG_KEY_REPLACED_COLUMN));
-
-            settingsJson.put(ExpressionNodeSettings.CFG_KEY_LANGUAGE_VERSION,
-                modelSettings.getInt(ExpressionNodeSettings.CFG_KEY_LANGUAGE_VERSION));
-            settingsJson.put(ExpressionNodeSettings.CFG_KEY_BUILTIN_FUNCTIONS_VERSION,
-                modelSettings.getInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_FUNCTIONS_VERSION));
-            settingsJson.put(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION,
-                modelSettings.getInt(ExpressionNodeSettings.CFG_KEY_BUILTIN_AGGREGATIONS_VERSION));
-
-            settingsJson.put(ExpressionNodeSettings.CFG_KEY_NUM_ADDITIONAL_SCRIPTS,
-                modelSettings.getInt(ExpressionNodeSettings.CFG_KEY_NUM_ADDITIONAL_SCRIPTS));
-
-            var additionalScripts = modelSettings.getStringArray(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS);
-            ArrayNode additionalScriptsAsArrayNode = new ObjectMapper().valueToTree(additionalScripts);
-            settingsJson.putArray(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS)
-                .addAll(additionalScriptsAsArrayNode);
-
+            var expressionSettings = new ExpressionNodeSettings();
+            expressionSettings.loadModelSettings(settings.get(SettingsType.MODEL));
+            expressionSettings.writeModelSettingsToJson(settingsJson);
         } catch (InvalidSettingsException ex) {
-            throw new IllegalStateException("Error loading expression settings. This is an implementation error", ex);
+            throw new IllegalStateException("Implementation error - Could not load expression settings", ex);
         }
     }
 
