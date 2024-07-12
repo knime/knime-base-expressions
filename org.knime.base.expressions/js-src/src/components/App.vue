@@ -53,16 +53,9 @@ const store = useStore();
 
 const numberOfEditors = ref(0);
 
-// These should be immediately overridden by the scripting service
-const columnSelectorStates = ref(
-  Array(numberOfEditors).map(
-    () =>
-      ({
-        outputMode: "APPEND",
-        createColumn: "",
-        replaceColumn: "",
-      }) as ColumnSelectorState,
-  ),
+// Populated by the initial settings
+const columnSelectorStates = reactive<{ [title: string]: ColumnSelectorState }>(
+  {},
 );
 
 const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
@@ -78,9 +71,23 @@ const multiEditorComponentRefs = reactive<{
   [title: string]: MultiEditorPaneExposes;
 }>({});
 
+// The canonical source of ordering truth, used to index the columnSelectorStates
+// and the multiEditorComponentRefs. Things are run in the order defined here,
+// saved in the order defined here, etc.
+const orderedEditorKeys = reactive<string[]>([]);
+
 const createElementReference = (title: string) => {
   return (el: any) => {
     multiEditorComponentRefs[title] = el as unknown as MultiEditorPaneExposes;
+
+    if (!orderedEditorKeys.includes(title)) {
+      orderedEditorKeys.push(title);
+      columnSelectorStates[title] = {
+        outputMode: "APPEND",
+        createColumn: "New Column",
+        replaceColumn: "",
+      };
+    }
   };
 };
 
@@ -152,17 +159,19 @@ const convertFunctionsToInsertionItems = (
 };
 
 const getFirstEditor = (): MultiEditorPaneExposes => {
-  return multiEditorComponentRefs[Object.keys(multiEditorComponentRefs)[0]];
+  return multiEditorComponentRefs[orderedEditorKeys[0]];
 };
 
 const runDiagnosticsFunction = () => {
   runDiagnostics(
-    Object.values(multiEditorComponentRefs).map((editor) =>
-      editor.getEditorState(),
-    ),
-    columnSelectorStates.value.map((state) =>
-      state.outputMode === "APPEND" ? state.createColumn : null,
-    ),
+    orderedEditorKeys
+      .map((key) => multiEditorComponentRefs[key])
+      .map((editor) => editor.getEditorState()),
+    orderedEditorKeys
+      .map((key) => columnSelectorStates[key])
+      .map((state) =>
+        state.outputMode === "APPEND" ? state.createColumn : null,
+      ),
   );
 };
 
@@ -181,26 +190,22 @@ onMounted(async () => {
     scriptingService.getFunctions(),
   ]);
 
-  columnSelectorStates.value = [
-    ...Array(initialSettings.scripts.length).keys(),
-  ].map((i: number) => {
-    return {
-      outputMode: initialSettings.outputModes[i],
-      createColumn: initialSettings.createdColumns[i],
-      replaceColumn: initialSettings.replacedColumns[i],
-    } satisfies ColumnSelectorState;
-  });
-
   numberOfEditors.value = initialSettings.scripts.length;
 
   await nextTick(); // Wait for the editors to be rendered
 
   for (let i = 0; i < initialSettings.scripts.length; i++) {
-    const key = Object.keys(multiEditorComponentRefs)[i];
+    const key = orderedEditorKeys[i];
 
     multiEditorComponentRefs[key]
       .getEditorState()
       .setInitialText(initialSettings.scripts[i]);
+
+    columnSelectorStates[key] = {
+      outputMode: initialSettings.outputModes[i],
+      createColumn: initialSettings.createdColumns[i],
+      replaceColumn: initialSettings.replacedColumns[i],
+    };
 
     // Watch all editor text and when changes occur, rerun diagnostics
     watch(
@@ -282,16 +287,20 @@ onMounted(async () => {
 const runExpressions = (rows: number) => {
   if (store.expressionValid) {
     scriptingService.sendToService("runExpression", [
-      Object.values(multiEditorComponentRefs).map(
-        (ref) => ref.getEditorState().text.value,
-      ),
+      orderedEditorKeys
+        .map((key) => multiEditorComponentRefs[key])
+        .map((ref) => ref.getEditorState().text.value),
       rows,
-      columnSelectorStates.value.map((state) => state.outputMode),
-      columnSelectorStates.value.map((state) =>
-        state.outputMode === "APPEND"
-          ? state.createColumn
-          : state.replaceColumn,
-      ),
+      orderedEditorKeys
+        .map((key) => columnSelectorStates[key])
+        .map((state) => state.outputMode),
+      orderedEditorKeys
+        .map((key) => columnSelectorStates[key])
+        .map((state) =>
+          state.outputMode === "APPEND"
+            ? state.createColumn
+            : state.replaceColumn,
+        ),
     ]);
   }
 };
@@ -299,16 +308,18 @@ const runExpressions = (rows: number) => {
 scriptingService.registerSettingsGetterForApply(
   (): ExpressionNodeSettings => ({
     ...expressionVersion.value,
-    createdColumns: columnSelectorStates.value.map(
-      (state) => state.createColumn,
-    ),
-    replacedColumns: columnSelectorStates.value.map(
-      (state) => state.replaceColumn,
-    ),
-    scripts: Object.keys(multiEditorComponentRefs)
+    createdColumns: orderedEditorKeys
+      .map((key) => columnSelectorStates[key])
+      .map((state) => state.createColumn),
+    replacedColumns: orderedEditorKeys
+      .map((key) => columnSelectorStates[key])
+      .map((state) => state.replaceColumn),
+    scripts: orderedEditorKeys
       .map((key) => multiEditorComponentRefs[key])
       .map((editor) => editor.getEditorState().text.value ?? ""),
-    outputModes: columnSelectorStates.value.map((state) => state.outputMode),
+    outputModes: orderedEditorKeys
+      .map((key) => columnSelectorStates[key])
+      .map((state) => state.outputMode),
   }),
 );
 
@@ -363,7 +374,9 @@ const columnSelectorStateValid = computed(() => {
 
   const appendedColumnsSoFar: string[] = [];
 
-  for (const state of columnSelectorStates.value) {
+  for (const state of orderedEditorKeys.map(
+    (key) => columnSelectorStates[key],
+  )) {
     if (
       state.outputMode === "APPEND" &&
       (columnExists(state.createColumn) ||
@@ -425,22 +438,21 @@ const initialPaneSizes = calculateInitialPaneSizes();
 
 const addNewEditor = () => {
   numberOfEditors.value += 1;
-  columnSelectorStates.value.push({
-    outputMode: "APPEND",
-    createColumn: "New Column",
-    replaceColumn: "",
-  });
 
   nextTick().then(() => {
-    const key = Object.keys(multiEditorComponentRefs)[
-      Object.keys(multiEditorComponentRefs).length - 1
-    ];
-    onEditorFocused(key);
+    const latestKey = orderedEditorKeys[orderedEditorKeys.length - 1];
+    columnSelectorStates[latestKey] = {
+      outputMode: "APPEND",
+      createColumn: "New Column",
+      replaceColumn: "",
+    };
+
+    onEditorFocused(latestKey);
 
     runDiagnosticsFunction();
 
     watch(
-      multiEditorComponentRefs[key].getEditorState().text,
+      multiEditorComponentRefs[latestKey].getEditorState().text,
       runDiagnosticsFunction,
     );
   });
@@ -481,7 +493,7 @@ const addNewEditor = () => {
             <template #multi-editor-controls>
               <div class="editor-controls">
                 <ColumnOutputSelector
-                  v-model="columnSelectorStates[index - 1]"
+                  v-model="columnSelectorStates[`_${index}.knexp`]"
                   :allowed-replacement-columns="allowedReplacementColumns"
                 />
               </div>
