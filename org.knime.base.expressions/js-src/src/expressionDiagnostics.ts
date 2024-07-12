@@ -44,18 +44,15 @@ export const runDiagnostics = (
       diagnostics.forEach((diagnosticsForThisEditor, i) => {
         const editorState = editorStates[i];
         const markers = diagnosticsForThisEditor.map(
-          (diagnostic) =>
-            ({
-              ...Range.fromPositions(
-                editorState.editorModel.getPositionAt(
-                  diagnostic.location.start,
-                ),
-                editorState.editorModel.getPositionAt(diagnostic.location.stop),
-              ),
-              message: diagnostic.message,
-              severity:
-                DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY[diagnostic.severity],
-            }) satisfies MonacoEditor.IMarkerData,
+          (diagnostic): MonacoEditor.IMarkerData => ({
+            ...Range.fromPositions(
+              editorState.editorModel.getPositionAt(diagnostic.location.start),
+              editorState.editorModel.getPositionAt(diagnostic.location.stop),
+            ),
+            message: diagnostic.message,
+            severity:
+              DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY[diagnostic.severity],
+          }),
         );
 
         MonacoEditor.setModelMarkers(

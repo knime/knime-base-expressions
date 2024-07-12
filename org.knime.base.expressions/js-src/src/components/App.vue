@@ -212,6 +212,9 @@ onMounted(async () => {
       multiEditorComponentRefs[key].getEditorState().text,
       runDiagnosticsFunction,
     );
+    watch(() => columnSelectorStates[key], runDiagnosticsFunction, {
+      deep: true,
+    });
   }
 
   for (const editor of Object.values(multiEditorComponentRefs)) {
@@ -282,6 +285,7 @@ onMounted(async () => {
   });
 
   setActiveEditorStoreForAi(getFirstEditor()?.getEditorState());
+  store.activeEditorFileName = orderedEditorKeys[0];
 });
 
 const runExpressions = (rows: number) => {
@@ -436,26 +440,29 @@ const calculateInitialPaneSizes = () => {
 
 const initialPaneSizes = calculateInitialPaneSizes();
 
-const addNewEditor = () => {
+const addNewEditor = async () => {
   numberOfEditors.value += 1;
 
-  nextTick().then(async () => {
-    const latestKey = orderedEditorKeys[orderedEditorKeys.length - 1];
-    columnSelectorStates[latestKey] = {
-      outputMode: "APPEND",
-      createColumn: "New Column",
-      replaceColumn:
-        (await scriptingService.getInputObjects())[0].subItems?.[0].name ?? "",
-    };
+  await nextTick();
 
-    onEditorFocused(latestKey);
+  const latestKey = orderedEditorKeys[orderedEditorKeys.length - 1];
+  columnSelectorStates[latestKey] = {
+    outputMode: "APPEND",
+    createColumn: "New Column",
+    replaceColumn:
+      (await scriptingService.getInputObjects())[0].subItems?.[0].name ?? "",
+  };
 
-    runDiagnosticsFunction();
+  onEditorFocused(latestKey);
 
-    watch(
-      multiEditorComponentRefs[latestKey].getEditorState().text,
-      runDiagnosticsFunction,
-    );
+  runDiagnosticsFunction();
+
+  watch(
+    multiEditorComponentRefs[latestKey].getEditorState().text,
+    runDiagnosticsFunction,
+  );
+  watch(() => columnSelectorStates[latestKey], runDiagnosticsFunction, {
+    deep: true,
   });
 };
 </script>
