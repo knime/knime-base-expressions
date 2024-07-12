@@ -195,6 +195,7 @@ class ExpressionNodeModel extends NodeModel {
         EvaluationContext ctx = messageBuilder::addTextIssue;
 
         for (int i = 0; i < numberOfScripts; ++i) {
+            var subProgress = exec.createSubProgress(1.0 / numberOfScripts);
 
             var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(
                 m_settings.getColumnInsertionModes().get(i), m_settings.getActiveOutputColumns().get(i));
@@ -203,17 +204,18 @@ class ExpressionNodeModel extends NodeModel {
             var expression = getPreparedExpression(inTable.getDataTableSpec(), m_settings.getScripts().get(i));
 
             // Create a reference table for the input table
-            var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec, exec.createSubProgress(0.33));
+            var inRefTable =
+                ExpressionRunnerUtils.createReferenceTable(inTable, exec, subProgress.createSubProgress(0.33));
 
             // Pre-evaluate the aggregations
             // NB: We use the inRefTable because it is guaranteed to be a columnar table
             ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(),
-                exec.createSubProgress(0.33));
+                subProgress.createSubProgress(0.33));
 
             // Evaluate the expression and materialize the result
             var exprContext = new NodeExpressionMapperContext(this::getAvailableInputFlowVariables);
             var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
-                newColumnPosition.columnName(), exec, exec.createSubProgress(0.34), exprContext, ctx);
+                newColumnPosition.columnName(), exec, subProgress.createSubProgress(0.34), exprContext, ctx);
 
             // We must avoid using inRefTable.getVirtualTable() directly. Doing so would result in building upon the
             // transformation of the input table, instead of initiating a new fragment. This approach leads to complications
