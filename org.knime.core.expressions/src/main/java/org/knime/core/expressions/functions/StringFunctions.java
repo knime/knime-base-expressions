@@ -88,6 +88,7 @@ import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorCategory;
+import org.knime.core.expressions.ToBooleanFunction;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -365,7 +366,7 @@ public final class StringFunctions {
         var c1 = toString(args.get(0));
         var c2 = toString(args.get(1));
 
-        Predicate<EvaluationContext> value = ctx -> {
+        ToBooleanFunction<EvaluationContext> value = ctx -> {
             String escapedPattern = c2.compute(ctx);
             String toMatch = c1.compute(ctx);
             var ignoreCase = extractModifiersOrDefault(args, 2, ctx).contains("i");
@@ -500,7 +501,7 @@ public final class StringFunctions {
         var c2 = toString(args.get(1));
         var c3 = toInteger(args.get(2));
 
-        Predicate<EvaluationContext> isMissing = ctx -> anyMissing(args).test(ctx) //
+        ToBooleanFunction<EvaluationContext> isMissing = ctx -> anyMissing(args).applyAsBoolean(ctx) //
             || extractGroupOrReturnNull(c1.compute(ctx), c2.compute(ctx), (int)c3.compute(ctx),
                 extractModifiersOrDefault(args, 3, ctx)) == null;
 
@@ -561,9 +562,7 @@ public final class StringFunctions {
             return pattern.matcher(str).replaceAll(replacement);
         };
 
-        Predicate<EvaluationContext> isMissing = anyMissing(args);
-
-        return StringComputer.of(value, isMissing);
+        return StringComputer.of(value, anyMissing(args));
     }
 
     public static final ExpressionFunction REPLACE = functionBuilder() //
@@ -618,9 +617,7 @@ public final class StringFunctions {
             return pattern.matcher(str).replaceAll(Matcher.quoteReplacement(replacement));
         };
 
-        Predicate<EvaluationContext> isMissing = anyMissing(args);
-
-        return StringComputer.of(value, isMissing);
+        return StringComputer.of(value, anyMissing(args));
     }
 
     /** Basically does a translate like in python or SQL */
@@ -689,9 +686,7 @@ public final class StringFunctions {
             return str;
         };
 
-        Predicate<EvaluationContext> isMissing = anyMissing(args);
-
-        return StringComputer.of(value, isMissing);
+        return StringComputer.of(value, anyMissing(args));
     }
 
     public static final ExpressionFunction REPLACE_UMLAUTS = functionBuilder() //
@@ -759,9 +754,7 @@ public final class StringFunctions {
             return str;
         };
 
-        Predicate<EvaluationContext> isMissing = anyMissing(args);
-
-        return StringComputer.of(value, isMissing);
+        return StringComputer.of(value, anyMissing(args));
     }
 
     public static final ExpressionFunction REPLACE_DIACRITICS = functionBuilder() //
@@ -799,9 +792,7 @@ public final class StringFunctions {
             return str;
         };
 
-        Predicate<EvaluationContext> isMissing = anyMissing(args);
-
-        return StringComputer.of(value, isMissing);
+        return StringComputer.of(value, anyMissing(args));
     }
 
     public static final ExpressionFunction LOWER_CASE = functionBuilder() //
@@ -1714,9 +1705,8 @@ public final class StringFunctions {
             }
         };
 
-        Predicate<EvaluationContext> isMissing = ctx -> //
-        anyMissing(args).test(ctx) //
-            || indexSupplier.applyAsLong(ctx) == -1;
+        ToBooleanFunction<EvaluationContext> isMissing =
+            ctx -> anyMissing(args).applyAsBoolean(ctx) || indexSupplier.applyAsLong(ctx) == -1;
 
         return IntegerComputer.of( //
             indexSupplier, //
@@ -1797,7 +1787,7 @@ public final class StringFunctions {
 
         return IntegerComputer.of( //
             value, //
-            ctx -> anyMissing(args).test(ctx) || value.applyAsLong(ctx) < 0//
+            ctx -> anyMissing(args).applyAsBoolean(ctx) || value.applyAsLong(ctx) < 0 //
         );
     }
 
@@ -1986,7 +1976,7 @@ public final class StringFunctions {
         return FloatComputer.of( //
             ctx -> Float.parseFloat(toString(args.get(0)).compute(ctx)), //
             ctx -> {
-                if (anyMissing(args).test(ctx)) {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
                     return true;
                 }
 
@@ -2029,7 +2019,7 @@ public final class StringFunctions {
         return IntegerComputer.of( //
             ctx -> Integer.parseInt(toString(args.get(0)).compute(ctx)), //
             ctx -> {
-                if (anyMissing(args).test(ctx)) {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
                     return true;
                 }
 
@@ -2074,7 +2064,7 @@ public final class StringFunctions {
         return BooleanComputer.of( //
             ctx -> toString(args.get(0)).compute(ctx).equalsIgnoreCase("true"), //
             ctx -> {
-                if (anyMissing(args).test(ctx)) {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
                     return true;
                 }
 

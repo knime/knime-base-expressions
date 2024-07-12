@@ -55,7 +55,6 @@ import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.STRING;
 
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 
@@ -89,18 +88,19 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link BooleanComputer}
          */
-        static BooleanComputer of(final Predicate<EvaluationContext> value,
-            final Predicate<EvaluationContext> missing) {
+        static BooleanComputer of(final ToBooleanFunction<EvaluationContext> value,
+            final ToBooleanFunction<EvaluationContext> missing) {
+
             return new BooleanComputer() {
 
                 @Override
                 public boolean isMissing(final EvaluationContext ctx) {
-                    return missing.test(ctx);
+                    return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
                 public boolean compute(final EvaluationContext ctx) {
-                    return value.test(ctx);
+                    return value.applyAsBoolean(ctx);
                 }
             };
         }
@@ -123,12 +123,13 @@ public interface Computer {
          * @return an {@link IntegerComputer}
          */
         static IntegerComputer of(final ToLongFunction<EvaluationContext> value,
-            final Predicate<EvaluationContext> missing) {
+            final ToBooleanFunction<EvaluationContext> missing) {
+
             return new IntegerComputer() {
 
                 @Override
                 public boolean isMissing(final EvaluationContext ctx) {
-                    return missing.test(ctx);
+                    return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
@@ -156,12 +157,13 @@ public interface Computer {
          * @return a {@link FloatComputer}
          */
         static FloatComputer of(final ToDoubleFunction<EvaluationContext> value,
-            final Predicate<EvaluationContext> missing) {
+            final ToBooleanFunction<EvaluationContext> missing) {
+
             return new FloatComputer() {
 
                 @Override
                 public boolean isMissing(final EvaluationContext ctx) {
-                    return missing.test(ctx);
+                    return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
@@ -189,12 +191,13 @@ public interface Computer {
          * @return a {@link StringComputer}
          */
         static StringComputer of(final Function<EvaluationContext, String> value,
-            final Predicate<EvaluationContext> missing) {
+            final ToBooleanFunction<EvaluationContext> missing) {
+
             return new StringComputer() {
 
                 @Override
                 public boolean isMissing(final EvaluationContext ctx) {
-                    return missing.test(ctx);
+                    return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
@@ -236,7 +239,7 @@ public interface Computer {
     static Computer createTypedResultComputer(final Function<EvaluationContext, Computer> computerSupplier,
         final ValueType returnType) {
 
-        Predicate<EvaluationContext> isMissing = ctx -> computerSupplier.apply(ctx).isMissing(ctx);
+        ToBooleanFunction<EvaluationContext> isMissing = ctx -> computerSupplier.apply(ctx).isMissing(ctx);
 
         if (returnType.baseType() == BOOLEAN) {
             return BooleanComputer.of(ctx -> ((BooleanComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR  - method reference is not possible due to delayed computation

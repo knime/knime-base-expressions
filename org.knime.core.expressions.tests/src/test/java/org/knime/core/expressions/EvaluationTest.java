@@ -84,7 +84,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 
@@ -404,7 +403,7 @@ final class EvaluationTest {
     private static final Function<String, Optional<TestFlowVariable>> FIND_TEST_FLOW_VARIABLE =
         TestUtils.enumFinderAsFunction(TestFlowVariable.values());
 
-    private static final Predicate<EvaluationContext> THROWING_BOOL_SUPPLIER = ctx -> {
+    private static final ToBooleanFunction<EvaluationContext> THROWING_BOOL_SUPPLIER = ctx -> {
         throw new AssertionError("should not call compute on missing values");
     };
 

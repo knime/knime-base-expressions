@@ -1601,7 +1601,7 @@ public final class MathFunctions {
                 return IntegerComputer.of( //
                     ctx -> BigDecimal.valueOf(c.compute(ctx)).setScale(0, mode).longValue(), //
                     ctx -> {
-                        if (anyMissing(args).test(ctx)) {
+                        if (anyMissing(args).applyAsBoolean(ctx)) {
                             return true;
                         } else if (Double.isNaN(c.compute(ctx))) {
                             ctx.addWarning("%s returned MISSING because argument is NaN".formatted(functionName));

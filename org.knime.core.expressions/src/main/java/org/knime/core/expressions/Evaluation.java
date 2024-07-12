@@ -225,7 +225,7 @@ final class Evaluation {
             Function<EvaluationContext, Computer> outputComputer = ctx -> arg1.isMissing(ctx) ? arg2 : arg1;
 
             // Output is missing iff both inputs are missing
-            Predicate<EvaluationContext> outputMissing = ctx -> arg1.isMissing(ctx) && arg2.isMissing(ctx);
+            ToBooleanFunction<EvaluationContext> outputMissing = ctx -> arg1.isMissing(ctx) && arg2.isMissing(ctx);
 
             // NOSONARs because it otherwise suggests a change that breaks deferred evaluation of get()
             if (BOOLEAN.equals(outputType.baseType())) {
@@ -284,7 +284,7 @@ final class Evaluation {
             Predicate<EvaluationContext> anyMissing = ctx -> arg1.isMissing(ctx) || arg2.isMissing(ctx);
             Predicate<EvaluationContext> bothMissing = ctx -> arg1.isMissing(ctx) && arg2.isMissing(ctx);
 
-            Predicate<EvaluationContext> value;
+            ToBooleanFunction<EvaluationContext> value;
             if (arg1 instanceof FloatComputer || arg2 instanceof FloatComputer) {
                 // One is FLOAT -> we do the comparison for FLOAT
                 var a1 = toFloat(arg1);
@@ -337,13 +337,13 @@ final class Evaluation {
                     "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not equality comparable");
             }
 
-            Predicate<EvaluationContext> equal = //
+            ToBooleanFunction<EvaluationContext> equal = //
                 ctx -> (arg1.isMissing(ctx) && arg2.isMissing(ctx)) // both missing -> true
                     || (!arg1.isMissing(ctx) && !arg2.isMissing(ctx) && valuesEqual.test(ctx)); // any missing -> false
 
             return switch (op) {
                 case EQUAL_TO -> BooleanComputer.of(equal, ctx -> false);
-                case NOT_EQUAL_TO -> BooleanComputer.of(ctx -> !equal.test(ctx), ctx -> false);
+                case NOT_EQUAL_TO -> BooleanComputer.of(ctx -> !equal.applyAsBoolean(ctx), ctx -> false);
                 default -> throw new EvaluationImplementationError(
                     "Binary operator " + op + " is not a equality check");
             };

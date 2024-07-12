@@ -66,6 +66,7 @@ import java.util.stream.IntStream;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorDescription;
+import org.knime.core.expressions.ToBooleanFunction;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.expressions.functions.ExpressionFunctionBuilder.Arg.ArgKind;
 
@@ -104,13 +105,13 @@ public final class ExpressionFunctionBuilder {
     }
 
     /**
-     * Factory for isMissing argument to computers. Returns an Predicate<EvaluationContext> that returns true iff
-     * at least one if the arguments is missing.
+     * Factory for isMissing argument to computers. Returns an Predicate<EvaluationContext> that returns true iff at
+     * least one if the arguments is missing.
      *
      * @param values
      * @return the predicate
      */
-    public static Predicate<EvaluationContext> anyMissing(final Collection<Computer> values) {
+    public static ToBooleanFunction<EvaluationContext> anyMissing(final Collection<Computer> values) {
         return ctx -> values.stream().anyMatch(c -> c.isMissing(ctx));
     }
 
