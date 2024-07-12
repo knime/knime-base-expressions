@@ -18,25 +18,27 @@ import SubMenu from "webapps-common/ui/components/SubMenu.vue";
 import Tooltip from "webapps-common/ui/components/Tooltip.vue";
 import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
 import { useWindowSize, onKeyStroke } from "@vueuse/core";
-import { computed, onMounted, ref, reactive, nextTick, watch } from "vue";
+import {
+  computed,
+  onMounted,
+  ref,
+  reactive,
+  nextTick,
+  watch,
+  type ComponentPublicInstance,
+} from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
   type AllowedDropDownValue,
   type ColumnSelectorState,
 } from "@/components/ColumnOutputSelector.vue";
-import * as monaco from "monaco-editor";
 import MultiEditorPane, {
   type MultiEditorPaneExposes,
 } from "./MultiEditorPane.vue";
-import type {
-  FunctionCatalogData,
-  FunctionCatalogEntryData,
-} from "./functionCatalogTypes";
+import type { FunctionCatalogData } from "./functionCatalogTypes";
 import { useStore } from "@/store";
 import { runDiagnostics } from "@/expressionDiagnostics";
-
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
-import { functionDataToMarkdown } from "@/components/function-catalog/functionDescriptionToMarkdown";
 import {
   COMBINED_SPLITTER_WIDTH,
   MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION,
@@ -44,6 +46,8 @@ import {
   SWITCH_TO_SMALL_DESCRIPTION,
   WIDTH_OF_INPUT_OUTPUT_PANE,
 } from "@/components/function-catalog/contraints";
+import { convertFunctionsToInsertionItems } from "./convertFunctionsToInsertionItems";
+import * as monaco from "monaco-editor";
 
 const language = "knime-expression";
 
@@ -87,7 +91,7 @@ const numberOfEditors = computed(() => orderedEditorKeys.length);
 
 /** Called by components when they're created, stores a ref to the component in our dict */
 const createElementReference = (title: string) => {
-  return (el: any) => {
+  return (el: Element | ComponentPublicInstance | null) => {
     multiEditorComponentRefs[title] = el as unknown as MultiEditorPaneExposes;
   };
 };
@@ -136,46 +140,6 @@ const onEditorFocused = (filename: string) => {
 
 const functionCatalogData = ref<FunctionCatalogData>();
 const inputsAvailable = ref(false);
-
-const convertFunctionsToInsertionItems = (
-  functions: FunctionCatalogEntryData[],
-) => {
-  return functions.map((func) => {
-    if (func.entryType === "function") {
-      // closest we can get to a list comprehension over a range in JS
-      const listOfIndices = [...Array(func.arguments!.length).keys()];
-
-      // This snippet syntax is used to allow for tabbing through the arguments
-      // when the function is inserted.
-      const argumentsWithSnippetSyntax = listOfIndices
-        .map((i) => `$\{${i + 1}:${func.arguments![i].name}}`)
-        .join(", ");
-
-      const argumentsWithoutSnippetSyntax =
-        func.arguments!.length > 0 ? "..." : "";
-
-      return {
-        text: `${func.name}(${argumentsWithSnippetSyntax})`,
-        kind: monaco.languages.CompletionItemKind.Function,
-        extraDetailForMonaco: {
-          documentation: { value: functionDataToMarkdown(func) },
-          insertTextRules:
-            monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-          label: `${func.name}(${argumentsWithoutSnippetSyntax})`,
-        },
-      };
-    } else {
-      return {
-        text: func.name,
-        kind: monaco.languages.CompletionItemKind.Constant,
-        extraDetailForMonaco: {
-          documentation: { value: func.description },
-          detail: `Type: ${func.returnType}`,
-        },
-      };
-    }
-  });
-};
 
 const getFirstEditor = (): MultiEditorPaneExposes => {
   return multiEditorComponentRefs[orderedEditorKeys[0]];
