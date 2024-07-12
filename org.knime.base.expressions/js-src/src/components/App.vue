@@ -439,12 +439,13 @@ const initialPaneSizes = calculateInitialPaneSizes();
 const addNewEditor = () => {
   numberOfEditors.value += 1;
 
-  nextTick().then(() => {
+  nextTick().then(async () => {
     const latestKey = orderedEditorKeys[orderedEditorKeys.length - 1];
     columnSelectorStates[latestKey] = {
       outputMode: "APPEND",
       createColumn: "New Column",
-      replaceColumn: "",
+      replaceColumn:
+        (await scriptingService.getInputObjects())[0].subItems?.[0].name ?? "",
     };
 
     onEditorFocused(latestKey);
