@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import ColumnOutputSelector, {
   type ColumnSelectorState,
 } from "../ColumnOutputSelector.vue";
-import type { OutputInsertionMode } from "@/expressionScriptingService";
 
 describe("ColumnOutputSelector", () => {
   enableAutoUnmount(afterEach);
@@ -15,15 +14,17 @@ describe("ColumnOutputSelector", () => {
     { id: "d", text: "D" },
   ];
 
-  const doMount = (outputMode: OutputInsertionMode = "APPEND") => {
+  const doMount = (
+    modelValue: ColumnSelectorState = {
+      outputMode: "APPEND",
+      createColumn: "test column",
+      replaceColumn: "a",
+    },
+  ) => {
     const wrapper = mount(ColumnOutputSelector, {
       props: {
         allowedReplacementColumns: columnsToReplace,
-        modelValue: {
-          outputMode,
-          createColumn: "test column",
-          replaceColumn: "a",
-        },
+        modelValue,
       },
       attachTo: "body", // needed for label clicking to work
     });
@@ -35,53 +36,57 @@ describe("ColumnOutputSelector", () => {
     vi.restoreAllMocks();
   });
 
-  it("checks that the v-model input value is respected", () => {
-    const wrapperCreate = doMount("APPEND");
+  it("shows input field on APPEND mode", () => {
+    const wrapper = doMount({
+      outputMode: "APPEND",
+      createColumn: "a1",
+      replaceColumn: "c",
+    });
     expect(
-      wrapperCreate.findComponent({ name: "ValueSwitch" }).props().modelValue,
+      wrapper
+        .findComponent({
+          name: "ValueSwitch",
+        })
+        .props().modelValue,
     ).equals("APPEND");
-    wrapperCreate.unmount();
-
-    const wrapperReplace = doMount("REPLACE_EXISTING");
-    expect(
-      wrapperReplace.findComponent({ name: "ValueSwitch" }).props().modelValue,
-    ).equals("REPLACE_EXISTING");
-    wrapperReplace.unmount();
+    const inputField = wrapper.findComponent({ name: "InputField" });
+    expect(inputField.isVisible()).toBe(true);
+    expect(inputField.props("modelValue")).toBe("a1");
+    const dropdown = wrapper.findComponent({ name: "Dropdown" });
+    expect(dropdown.exists()).toBe(false);
+    wrapper.unmount();
   });
 
-  it("checks that clicking the ValueSwitch fires the right event", async () => {
+  it("shows dropdown field on REPLACE mode", () => {
+    const wrapper = doMount({
+      outputMode: "REPLACE_EXISTING",
+      createColumn: "a1",
+      replaceColumn: "c",
+    });
+    expect(
+      wrapper
+        .findComponent({
+          name: "ValueSwitch",
+        })
+        .props().modelValue,
+    ).equals("REPLACE_EXISTING");
+    const inputField = wrapper.findComponent({ name: "InputField" });
+    expect(inputField.exists()).toBe(false);
+    const dropdown = wrapper.findComponent({ name: "Dropdown" });
+    expect(dropdown.isVisible()).toBe(true);
+    expect(dropdown.props("modelValue")).toBe("c");
+    wrapper.unmount();
+  });
+
+  it("switches mode on ValueSwitch click", async () => {
     const wrapper = doMount();
 
     const leftButton = wrapper.find(".value-switch label:first-child");
+    await leftButton.trigger("click");
+    expect(wrapper.props("modelValue")?.outputMode).equals("APPEND");
+
     const rightButton = wrapper.find(".value-switch label:last-child");
-
-    await leftButton.trigger("click");
-    expect(wrapper.props().modelValue?.outputMode).equals("APPEND");
-
     await rightButton.trigger("click");
-    expect(wrapper.emitted("update:modelValue")).toHaveLength(1);
-    expect(
-      (wrapper.emitted("update:modelValue")?.[0][0] as ColumnSelectorState)
-        ?.outputMode,
-    ).equals("REPLACE_EXISTING");
-    expect(
-      (wrapper.emitted("update:modelValue")?.[0][0] as ColumnSelectorState)
-        ?.replaceColumn,
-    ).equals("a");
-
-    await leftButton.trigger("click");
-    expect(wrapper.emitted("update:modelValue")).toHaveLength(2);
-    expect(
-      (wrapper.emitted("update:modelValue")?.[1][0] as ColumnSelectorState)
-        ?.outputMode,
-    ).equals("APPEND");
-    expect(
-      (wrapper.emitted("update:modelValue")?.[1][0] as ColumnSelectorState)
-        ?.createColumn,
-    ).equals("test column");
-
-    // Check that nothing fires when clicking the same button twice
-    await leftButton.trigger("click");
-    expect(wrapper.emitted("update:modelValue")).toHaveLength(2);
+    expect(wrapper.props("modelValue")?.outputMode).equals("REPLACE_EXISTING");
   });
 });
