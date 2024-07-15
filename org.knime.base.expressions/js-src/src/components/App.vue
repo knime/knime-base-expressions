@@ -58,7 +58,7 @@ const columnSelectorStates = reactive<{ [title: string]: ColumnSelectorState }>(
   {},
 );
 
-const allowedReplacementColumns = ref<AllowedDropDownValue[]>([]);
+const indexToKey = (index: number) => `_${index}.knexp`;
 
 // Overwritten by the initial settings
 const expressionVersion = ref<ExpressionVersion>({
@@ -79,17 +79,28 @@ const orderedEditorKeys = reactive<string[]>([]);
 const createElementReference = (title: string) => {
   return (el: any) => {
     multiEditorComponentRefs[title] = el as unknown as MultiEditorPaneExposes;
-
-    if (!orderedEditorKeys.includes(title)) {
-      orderedEditorKeys.push(title);
-      columnSelectorStates[title] = {
-        outputMode: "APPEND",
-        createColumn: "New Column",
-        replaceColumn: "",
-      };
-    }
   };
 };
+
+const columnsInInputTable = ref<AllowedDropDownValue[]>([]);
+const allReplaceTargetColumns = computed<AllowedDropDownValue[][]>(() => {
+  const output: AllowedDropDownValue[][] = [];
+
+  for (let i = 0; i < numberOfEditors.value; i++) {
+    output.push([
+      ...columnsInInputTable.value,
+      ...orderedEditorKeys
+        .slice(0, i)
+        .filter((key) => columnSelectorStates[key].outputMode === "APPEND")
+        .map((key) => ({
+          id: columnSelectorStates[key].createColumn,
+          text: columnSelectorStates[key].createColumn,
+        })),
+    ]);
+  }
+
+  return output;
+});
 
 const getActiveEditor = (): MultiEditorPaneExposes | null => {
   if (!store.activeEditorFileName) {
@@ -190,42 +201,6 @@ onMounted(async () => {
     scriptingService.getFunctions(),
   ]);
 
-  numberOfEditors.value = initialSettings.scripts.length;
-
-  await nextTick(); // Wait for the editors to be rendered
-
-  for (let i = 0; i < initialSettings.scripts.length; i++) {
-    const key = orderedEditorKeys[i];
-
-    multiEditorComponentRefs[key]
-      .getEditorState()
-      .setInitialText(initialSettings.scripts[i]);
-
-    columnSelectorStates[key] = {
-      outputMode: initialSettings.outputModes[i],
-      createColumn: initialSettings.createdColumns[i],
-      replaceColumn: initialSettings.replacedColumns[i],
-    };
-
-    // Watch all editor text and when changes occur, rerun diagnostics
-    watch(
-      multiEditorComponentRefs[key].getEditorState().text,
-      runDiagnosticsFunction,
-    );
-    watch(() => columnSelectorStates[key], runDiagnosticsFunction, {
-      deep: true,
-    });
-  }
-
-  for (const editor of Object.values(multiEditorComponentRefs)) {
-    editor.getEditorState().editor.value?.updateOptions({
-      readOnly: typeof initialSettings.scriptUsedFlowVariable === "string",
-      readOnlyMessage: {
-        value: `Read-Only-Mode: The script is set by the flow variable '${initialSettings.scriptUsedFlowVariable}'.`,
-      },
-    });
-  }
-
   // Run initial diagnostics now that we've set the initial text
   runDiagnosticsFunction();
 
@@ -245,7 +220,7 @@ onMounted(async () => {
   functionCatalogData.value = functionCatalog;
 
   if (inputObjects && inputObjects.length > 0 && inputObjects[0].subItems) {
-    allowedReplacementColumns.value = inputObjects[0]?.subItems?.map(
+    columnsInInputTable.value = inputObjects[0]?.subItems?.map(
       (c: { name: string }) => {
         return { id: c.name, text: c.name };
       },
@@ -283,6 +258,48 @@ onMounted(async () => {
     functionData: functionCatalog.functions,
     languageName: language,
   });
+
+  for (let i = 0; i < initialSettings.scripts.length; ++i) {
+    const key = indexToKey(i);
+
+    orderedEditorKeys.push(key);
+
+    columnSelectorStates[key] = {
+      outputMode: initialSettings.outputModes[i],
+      createColumn: initialSettings.createdColumns[i],
+      replaceColumn: initialSettings.replacedColumns[i],
+    };
+  }
+
+  numberOfEditors.value = initialSettings.scripts.length;
+
+  await nextTick(); // Wait for the editors to be rendered
+
+  for (let i = 0; i < initialSettings.scripts.length; i++) {
+    const key = orderedEditorKeys[i];
+
+    multiEditorComponentRefs[key]
+      .getEditorState()
+      .setInitialText(initialSettings.scripts[i]);
+
+    // Watch all editor text and when changes occur, rerun diagnostics
+    watch(
+      multiEditorComponentRefs[key].getEditorState().text,
+      runDiagnosticsFunction,
+    );
+    watch(() => columnSelectorStates[key], runDiagnosticsFunction, {
+      deep: true,
+    });
+  }
+
+  for (const editor of Object.values(multiEditorComponentRefs)) {
+    editor.getEditorState().editor.value?.updateOptions({
+      readOnly: typeof initialSettings.scriptUsedFlowVariable === "string",
+      readOnlyMessage: {
+        value: `Read-Only-Mode: The script is set by the flow variable '${initialSettings.scriptUsedFlowVariable}'.`,
+      },
+    });
+  }
 
   setActiveEditorStoreForAi(getFirstEditor()?.getEditorState());
   store.activeEditorFileName = orderedEditorKeys[0];
@@ -367,9 +384,8 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
 });
 
 const columnExists = (columnName: string) =>
-  allowedReplacementColumns.value.findIndex(
-    (column) => column.id === columnName,
-  ) !== -1;
+  columnsInInputTable.value.findIndex((column) => column.id === columnName) !==
+  -1;
 
 const columnSelectorStateValid = computed(() => {
   if (numberOfEditors.value === 0) {
@@ -489,20 +505,20 @@ const addNewEditor = async () => {
       >
         <template #editor>
           <MultiEditorPane
-            v-for="index in numberOfEditors"
-            :key="`_${index}.knexp`"
-            :ref="createElementReference(`_${index}.knexp`)"
-            :title="`Expression editor (${index})`"
-            :file-name="`_${index}.knexp`"
+            v-for="(key, index) in orderedEditorKeys"
+            :key="key"
+            :ref="createElementReference(key)"
+            :title="`Expression editor (${1 + index})`"
+            :file-name="key"
             :language="language"
-            @focus="onEditorFocused(`_${index}.knexp`)"
+            @focus="onEditorFocused(key)"
           >
             <!-- Controls displayed once per editor -->
             <template #multi-editor-controls>
               <div class="editor-controls">
                 <ColumnOutputSelector
-                  v-model="columnSelectorStates[`_${index}.knexp`]"
-                  :allowed-replacement-columns="allowedReplacementColumns"
+                  v-model="columnSelectorStates[key]"
+                  :allowed-replacement-columns="allReplaceTargetColumns[index]"
                 />
               </div>
             </template>

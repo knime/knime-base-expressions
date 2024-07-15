@@ -36,6 +36,23 @@ const allowedOperationModes = [
 ];
 
 const paintFocus = useShouldFocusBePainted();
+
+// Since these props can change after the component is mounted, we need to watch
+// for changes to the allowedReplacementColumns prop and update the selected
+// replacementColumn value if it is no longer valid
+watch(
+  () => props.allowedReplacementColumns,
+  (newValue) => {
+    const indexOfReplacementColumnInNewColumns = newValue.find(
+      (value) => value.id === replacementColumn.value,
+    );
+
+    if (typeof indexOfReplacementColumnInNewColumns === "undefined") {
+      replacementColumn.value = newValue[0]?.id;
+    }
+  },
+  { deep: true },
+);
 </script>
 
 <template>
