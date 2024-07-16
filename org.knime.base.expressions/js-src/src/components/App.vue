@@ -244,10 +244,12 @@ onMounted(async () => {
 
   registerKnimeExpressionLanguage({
     columnNamesForCompletion: inputObjects?.[0]?.subItems
-      ? inputObjects[0].subItems.map((column) => ({
-          name: column.name,
-          type: column.type,
-        }))
+      ? inputObjects[0].subItems
+          .filter((column) => column.supported)
+          .map((column) => ({
+            name: column.name,
+            type: column.type,
+          }))
       : [],
     flowVariableNamesForCompletion: flowVariableInputs?.subItems
       ? flowVariableInputs.subItems.map((flowVariable) => ({

@@ -55,6 +55,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionMapperFactory;
@@ -107,6 +108,8 @@ class ExpressionNodeModel extends NodeModel {
     static final VariableType<?>[] SUPPORTED_FLOW_VARIABLE_TYPES =
         new VariableType<?>[]{VariableType.BooleanType.INSTANCE, VariableType.DoubleType.INSTANCE,
             VariableType.LongType.INSTANCE, VariableType.IntType.INSTANCE, VariableType.StringType.INSTANCE};
+
+    static final Set<VariableType<?>> SUPPORTED_FLOW_VARIABLE_TYPES_SET = Set.of(SUPPORTED_FLOW_VARIABLE_TYPES);
 
     /** @return the typed Ast for the configured expression */
     private Ast getPreparedExpression(final DataTableSpec inSpec, final String script)
