@@ -2,7 +2,10 @@ import {
   createScriptingServiceMock,
   DEFAULT_FLOW_VARIABLE_INPUTS,
 } from "@knime/scripting-editor/scripting-service-browser-mock";
-import { getScriptingService } from "@knime/scripting-editor";
+import {
+  getScriptingService,
+  type InputOutputModel,
+} from "@knime/scripting-editor";
 import {
   getExpressionScriptingService,
   type ExpressionNodeSettings,
@@ -22,19 +25,19 @@ const log = (message: any, ...args: any[]) => {
 };
 
 if (import.meta.env.MODE === "development.browser") {
-  const INPUT_OBJECTS = [
+  const INPUT_OBJECTS: InputOutputModel[] = [
     {
       name: "Input table 1",
       subItems: [
-        { name: "Column 1", type: "int" },
-        { name: "Column 2", type: "int" },
-        { name: "Column 3", type: "int" },
-        { name: "Column 4", type: "int" },
-        { name: "Column 5", type: "int" },
-        { name: "Column 6", type: "string" },
-        { name: "Column 7", type: "boolean" },
-        { name: "%<a&b>", type: "problem" },
-        { name: 'b\\lah"blah', type: "problem" },
+        { name: "Column 1", type: "int", supported: true },
+        { name: "Column 2", type: "int", supported: true },
+        { name: "Column 3", type: "int", supported: true },
+        { name: "Column 4", type: "int", supported: true },
+        { name: "Column 5", type: "int", supported: true },
+        { name: "Column 6", type: "string", supported: true },
+        { name: "Column 7", type: "bit vector", supported: false },
+        { name: "%<a&b>", type: "problem", supported: true },
+        { name: 'b\\lah"blah', type: "problem", supported: true },
       ],
       multiSelection: false,
       subItemCodeAliasTemplate: '$["{{{escapeDblQuotes subItems.[0]}}}"]',
@@ -244,7 +247,7 @@ if (import.meta.env.MODE === "development.browser") {
         scripts: ["mocked default script"],
         outputModes: ["APPEND"],
         createdColumns: ["mocked output col"],
-        replacedColumns: [INPUT_OBJECTS[0].subItems[1].name],
+        replacedColumns: [INPUT_OBJECTS[0].subItems![1].name],
         languageVersion: 1,
         builtinFunctionsVersion: 1,
         builtinAggregationsVersion: 1,

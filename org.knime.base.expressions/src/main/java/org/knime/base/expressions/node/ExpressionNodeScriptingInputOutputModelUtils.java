@@ -50,11 +50,9 @@ package org.knime.base.expressions.node;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.core.data.DataTableSpec;
-import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
@@ -85,8 +83,8 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
             FLOWVAR_ALIAS_TEMPLATE, //
             null, // no required import
             false, // no multiple selection
-            type -> Optional.ofNullable(ExpressionRunnerUtils.mapVariableToValueType(type)).map(ValueType::toString)
-                .orElse(type.toString()) // try to convert to an expression type, otherwise fallback to type name
+            type -> ExpressionRunnerUtils.mapVariableToValueType(type).toString(), //
+            ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains //
         );
     }
 
@@ -104,11 +102,10 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
                 COLUMN_ALIAS_TEMPLATE, //
                 false, // no multiple selection
                 null, // no required import
-                type -> Optional.ofNullable(ExpressionRunnerUtils.mapDataTypeToValueType(type)) //
-                    .map(ValueType::baseType) //
-                    .map(ValueType::toString) //
-                    .orElse(null) // extract type name, or null if unsupported
-            ));
+                type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) //
+                    .baseType() //
+                    .name(), //
+                type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null));
         } else {
             return List.of(InputOutputModel.createForNonAvailableTable( //
                 "Input table", //

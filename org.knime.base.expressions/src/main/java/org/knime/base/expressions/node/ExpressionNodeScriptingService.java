@@ -53,10 +53,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
@@ -97,9 +95,6 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
     private static final int PREVIEW_MAX_ROWS = 1000;
 
-    private static final Set<VariableType<?>> SUPPORTED_FLOW_VARIABLE_TYPES_SET =
-        Arrays.stream(ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES).collect(Collectors.toSet());
-
     /**
      * Cached function for mapping column access to output types for checking the expression types. Use
      * {@link #getColumnToTypeMapper()} to access this!
@@ -119,7 +114,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
     ExpressionNodeScriptingService(final AtomicReference<BufferedDataTable> outputTableRef,
         final Runnable cleanUpTableViewDataService) {
-        super(null, flowVar -> SUPPORTED_FLOW_VARIABLE_TYPES_SET.contains(flowVar.getVariableType()));
+        super(null, ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains);
 
         m_inputTableIsAvailable = getWorkflowControl().getInputData()[0] != null;
 
@@ -178,7 +173,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
         @Override
         public InputOutputModel getFlowVariableInputs() {
-            return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(getFlowVariables());
+            return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(getAllFlowVariables());
         }
 
         @Override
@@ -198,7 +193,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                 userPrompt, //
                 currentCode, //
                 getWorkflowControl().getInputSpec(), //
-                getFlowVariables() //
+                getSupportedFlowVariables() //
             );
         }
 
