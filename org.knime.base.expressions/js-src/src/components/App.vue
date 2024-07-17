@@ -16,6 +16,7 @@ import SplitButton from "webapps-common/ui/components/SplitButton.vue";
 import DropdownIcon from "webapps-common/ui/assets/img/icons/arrow-dropdown.svg";
 import SubMenu from "webapps-common/ui/components/SubMenu.vue";
 import Tooltip from "webapps-common/ui/components/Tooltip.vue";
+import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
 import { useWindowSize, onKeyStroke } from "@vueuse/core";
 import { computed, onMounted, ref, reactive, nextTick, watch } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
@@ -51,14 +52,17 @@ const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
 const scriptingService = getExpressionScriptingService();
 const store = useStore();
 
-const numberOfEditors = ref(0);
-
 // Populated by the initial settings
-const columnSelectorStates = reactive<{ [title: string]: ColumnSelectorState }>(
+const columnSelectorStates = reactive<{ [key: string]: ColumnSelectorState }>(
   {},
 );
 
-const indexToKey = (index: number) => `_${index}.knexp`;
+const generateNewKey = () => {
+  // JavaScript doesn't have a nice way to generate a random UUID so for now,
+  // just bodge something random.
+  // TODO: Replace with a proper UUID generator.
+  return Math.random().toString(36).substring(2);
+};
 
 // Overwritten by the initial settings
 const expressionVersion = ref<ExpressionVersion>({
@@ -68,39 +72,43 @@ const expressionVersion = ref<ExpressionVersion>({
 });
 
 const multiEditorComponentRefs = reactive<{
-  [title: string]: MultiEditorPaneExposes;
+  [key: string]: MultiEditorPaneExposes;
 }>({});
+
+const columnStateWatchers = reactive<{ [key: string]: Function }>({});
+const editorStateWatchers = reactive<{ [key: string]: Function }>({});
 
 // The canonical source of ordering truth, used to index the columnSelectorStates
 // and the multiEditorComponentRefs. Things are run in the order defined here,
 // saved in the order defined here, etc.
 const orderedEditorKeys = reactive<string[]>([]);
 
+const numberOfEditors = computed(() => orderedEditorKeys.length);
+
+/** Called by components when they're created, stores a ref to the component in our dict */
 const createElementReference = (title: string) => {
   return (el: any) => {
     multiEditorComponentRefs[title] = el as unknown as MultiEditorPaneExposes;
   };
 };
 
+// Input columns helpers
 const columnsInInputTable = ref<AllowedDropDownValue[]>([]);
-const allReplaceTargetColumns = computed<AllowedDropDownValue[][]>(() => {
-  const output: AllowedDropDownValue[][] = [];
+const getAvailableColumnsForReplacement = (
+  key: string,
+): AllowedDropDownValue[] => {
+  const index = orderedEditorKeys.indexOf(key);
 
-  for (let i = 0; i < numberOfEditors.value; i++) {
-    output.push([
-      ...columnsInInputTable.value,
-      ...orderedEditorKeys
-        .slice(0, i)
-        .filter((key) => columnSelectorStates[key].outputMode === "APPEND")
-        .map((key) => ({
-          id: columnSelectorStates[key].createColumn,
-          text: columnSelectorStates[key].createColumn,
-        })),
-    ]);
-  }
+  const columnsFromPreviousEditors = orderedEditorKeys
+    .slice(0, index)
+    .filter((key) => columnSelectorStates[key].outputMode === "APPEND")
+    .map((key) => columnSelectorStates[key].createColumn)
+    .map((column) => {
+      return { id: column, text: column };
+    });
 
-  return output;
-});
+  return [...columnsInInputTable.value, ...columnsFromPreviousEditors];
+};
 
 const getActiveEditor = (): MultiEditorPaneExposes | null => {
   if (!store.activeEditorFileName) {
@@ -260,7 +268,7 @@ onMounted(async () => {
   });
 
   for (let i = 0; i < initialSettings.scripts.length; ++i) {
-    const key = indexToKey(i);
+    const key = generateNewKey();
 
     orderedEditorKeys.push(key);
 
@@ -270,8 +278,6 @@ onMounted(async () => {
       replaceColumn: initialSettings.replacedColumns[i],
     };
   }
-
-  numberOfEditors.value = initialSettings.scripts.length;
 
   await nextTick(); // Wait for the editors to be rendered
 
@@ -283,13 +289,17 @@ onMounted(async () => {
       .setInitialText(initialSettings.scripts[i]);
 
     // Watch all editor text and when changes occur, rerun diagnostics
-    watch(
+    editorStateWatchers[key] = watch(
       multiEditorComponentRefs[key].getEditorState().text,
       runDiagnosticsFunction,
     );
-    watch(() => columnSelectorStates[key], runDiagnosticsFunction, {
-      deep: true,
-    });
+    columnStateWatchers[key] = watch(
+      () => columnSelectorStates[key],
+      runDiagnosticsFunction,
+      {
+        deep: true,
+      },
+    );
   }
 
   for (const editor of Object.values(multiEditorComponentRefs)) {
@@ -303,6 +313,8 @@ onMounted(async () => {
 
   setActiveEditorStoreForAi(getFirstEditor()?.getEditorState());
   store.activeEditorFileName = orderedEditorKeys[0];
+
+  runDiagnosticsFunction();
 });
 
 const runExpressions = (rows: number) => {
@@ -343,6 +355,62 @@ scriptingService.registerSettingsGetterForApply(
       .map((state) => state.outputMode),
   }),
 );
+
+const onEditorRequestedDelete = (filename: string) => {
+  if (numberOfEditors.value === 1) {
+    return;
+  }
+
+  orderedEditorKeys.splice(orderedEditorKeys.indexOf(filename), 1);
+  delete columnSelectorStates[filename];
+  delete multiEditorComponentRefs[filename];
+
+  // Clean up watchers
+  editorStateWatchers[filename]();
+  columnStateWatchers[filename]();
+  delete editorStateWatchers[filename];
+  delete columnStateWatchers[filename];
+
+  runDiagnosticsFunction();
+};
+
+const onEditorRequestedMoveUp = (filename: string) => {
+  const index = orderedEditorKeys.indexOf(filename);
+  if (index <= 0) {
+    return;
+  }
+
+  // Swap the entries at index and index - 1
+  const temp = orderedEditorKeys[index];
+  orderedEditorKeys[index] = orderedEditorKeys[index - 1];
+  orderedEditorKeys[index - 1] = temp;
+
+  runDiagnosticsFunction();
+
+  // Focus the moved editor after rerendering
+  nextTick().then(() => {
+    multiEditorComponentRefs[filename].getEditorState().editor.value?.focus();
+  });
+};
+
+const onEditorRequestedMoveDown = (filename: string) => {
+  const index = orderedEditorKeys.indexOf(filename);
+  if (index >= orderedEditorKeys.length - 1) {
+    return;
+  }
+
+  // Swap the entries at index and index + 1
+  const temp = orderedEditorKeys[index];
+  orderedEditorKeys[index] = orderedEditorKeys[index + 1];
+  orderedEditorKeys[index + 1] = temp;
+
+  runDiagnosticsFunction();
+
+  // Focus the moved editor after rerendering
+  nextTick().then(() => {
+    multiEditorComponentRefs[filename].getEditorState().editor.value?.focus();
+  });
+};
 
 const onFunctionInsertionTriggered = (payload: {
   eventSource: string;
@@ -456,12 +524,10 @@ const calculateInitialPaneSizes = () => {
 
 const initialPaneSizes = calculateInitialPaneSizes();
 
-const addNewEditor = async () => {
-  numberOfEditors.value += 1;
+const addNewEditorBelowExisting = async (fileNameAbove: string) => {
+  const latestKey = generateNewKey();
+  const desiredInsertionIndex = orderedEditorKeys.indexOf(fileNameAbove) + 1;
 
-  await nextTick();
-
-  const latestKey = orderedEditorKeys[orderedEditorKeys.length - 1];
   columnSelectorStates[latestKey] = {
     outputMode: "APPEND",
     createColumn: "New Column",
@@ -469,17 +535,26 @@ const addNewEditor = async () => {
       (await scriptingService.getInputObjects())[0].subItems?.[0].name ?? "",
   };
 
-  onEditorFocused(latestKey);
+  orderedEditorKeys.splice(desiredInsertionIndex, 0, latestKey);
+
+  // Wait for the editor to render and populate the ref
+  await nextTick();
 
   runDiagnosticsFunction();
 
-  watch(
+  editorStateWatchers[latestKey] = watch(
     multiEditorComponentRefs[latestKey].getEditorState().text,
     runDiagnosticsFunction,
   );
-  watch(() => columnSelectorStates[latestKey], runDiagnosticsFunction, {
-    deep: true,
-  });
+  columnStateWatchers[latestKey] = watch(
+    () => columnSelectorStates[latestKey],
+    runDiagnosticsFunction,
+    {
+      deep: true,
+    },
+  );
+
+  multiEditorComponentRefs[latestKey].getEditorState().editor.value?.focus();
 };
 </script>
 
@@ -487,7 +562,9 @@ const addNewEditor = async () => {
   <main>
     <template v-if="numberOfEditors === 0">
       <div class="no-editors">
-        <p>No expression editors available. Please add an expression editor.</p>
+        <div class="loading-icon">
+          <LoadingIcon />
+        </div>
       </div>
     </template>
     <template v-else>
@@ -511,14 +588,23 @@ const addNewEditor = async () => {
             :title="`Expression editor (${1 + index})`"
             :file-name="key"
             :language="language"
+            :is-first="index === 0"
+            :is-last="index === numberOfEditors - 1"
+            :is-only="numberOfEditors === 1"
             @focus="onEditorFocused(key)"
+            @delete="onEditorRequestedDelete"
+            @move-down="onEditorRequestedMoveDown"
+            @move-up="onEditorRequestedMoveUp"
+            @add-below="addNewEditorBelowExisting"
           >
             <!-- Controls displayed once per editor -->
             <template #multi-editor-controls>
               <div class="editor-controls">
                 <ColumnOutputSelector
                   v-model="columnSelectorStates[key]"
-                  :allowed-replacement-columns="allReplaceTargetColumns[index]"
+                  :allowed-replacement-columns="
+                    getAvailableColumnsForReplacement(key)
+                  "
                 />
               </div>
             </template>
@@ -578,11 +664,6 @@ const addNewEditor = async () => {
           </Tooltip>
         </template>
       </ScriptingEditor>
-      <div style="position: absolute; z-index: 100; top: 0; left: 0">
-        <Button primary compact @click="addNewEditor">
-          (+) Add new editor
-        </Button>
-      </div>
     </template>
   </main>
 </template>
@@ -607,6 +688,19 @@ const addNewEditor = async () => {
 
 .run-button {
   display: inline;
+}
+
+.no-editors {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+
+  & .loading-icon {
+    width: 50px;
+    height: 50px;
+  }
 }
 
 .submenu {

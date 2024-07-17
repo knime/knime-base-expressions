@@ -1,25 +1,66 @@
 <script setup lang="ts">
 import { editor, type UseCodeEditorReturn } from "@knime/scripting-editor";
 import { onKeyStroke } from "@vueuse/core";
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import {
   useDraggedFunctionStore,
   resetDraggedFunctionStore,
 } from "@/draggedFunctionStore";
+import SubMenu from "webapps-common/ui/components/SubMenu.vue";
+import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
+import TrashIcon from "webapps-common/ui/assets/img/icons/trash.svg";
+import UpArrowIcon from "webapps-common/ui/assets/img/icons/arrow-up.svg";
+import DownArrowIcon from "webapps-common/ui/assets/img/icons/arrow-down.svg";
+import MenuIcon from "webapps-common/ui/assets/img/icons/menu-options.svg";
+import PlusIcon from "webapps-common/ui/assets/img/icons/circle-plus.svg";
 
 export type MultiEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;
 };
 
-const emit = defineEmits<{ focus: [string] }>();
+const emit = defineEmits<{
+  focus: [filname: string];
+  "move-up": [filename: string];
+  "move-down": [filename: string];
+  delete: [filename: string];
+  "add-below": [filename: string];
+}>();
 
 interface Props {
   language: string;
   fileName: string;
   title: string;
+  isFirst?: boolean;
+  isLast?: boolean;
+  isOnly?: boolean;
 }
-
 const props = defineProps<Props>();
+
+const submenuItems = computed<MenuItem[]>(() => [
+  {
+    text: "Move upwards",
+    icon: UpArrowIcon,
+    metadata: "move-up",
+    disabled: props.isFirst,
+  },
+  {
+    text: "Move downwards",
+    icon: DownArrowIcon,
+    metadata: "move-down",
+    disabled: props.isLast,
+  },
+  {
+    text: "Add editor below",
+    icon: PlusIcon,
+    metadata: "add-below",
+  },
+  {
+    text: "Delete",
+    icon: TrashIcon,
+    metadata: "delete",
+    disabled: props.isOnly,
+  },
+]);
 
 // Main editor
 const editorContainer = ref<HTMLDivElement>();
@@ -82,12 +123,23 @@ onKeyStroke("z", (e) => {
     editorState.editor.value?.trigger("window", "undo", {});
   }
 });
+
+const onMenuItemClicked = (evt: Event, item: MenuItem) => {
+  emit(item.metadata, props.fileName);
+};
 </script>
 
 <template>
   <div class="editor-container">
     <span class="editor-title-bar">
-      {{ props.title }}
+      <span class="title-text">{{ props.title }}</span>
+      <SubMenu
+        :items="submenuItems"
+        class="title-menu"
+        @item-click="onMenuItemClicked"
+      >
+        <MenuIcon class="open-icon" />
+      </SubMenu>
     </span>
     <div
       ref="editorContainer"
@@ -148,7 +200,12 @@ Basically gives us some nice margin collapsing. */
   background-color: var(--knime-porcelain);
   flex-shrink: 0;
   display: flex;
+  justify-content: space-between;
   align-items: center;
+
+  & .title-menu {
+    background-color: transparent;
+  }
 }
 
 .editor-control-bar {
