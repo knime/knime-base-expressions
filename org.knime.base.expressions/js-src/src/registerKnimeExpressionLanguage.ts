@@ -316,12 +316,11 @@ const registerKnimeExpressionLanguage = ({
             };
           });
 
-        // If column suggestions are available, return those only.
         return {
-          suggestions:
-            columnNameSuggestions.length > 0
-              ? columnNameSuggestions
-              : staticSuggestions,
+          suggestions: [
+            ...columnNameSuggestions,
+            ...staticSuggestions,
+          ] as monaco.languages.CompletionItem[],
         };
       },
     });

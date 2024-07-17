@@ -183,6 +183,13 @@ onMounted(async () => {
       : [],
     extraCompletionItems: [
       ...convertFunctionsToInsertionItems(functionCatalog.functions),
+      ...["$[ROW_ID]", "$[ROW_INDEX]", "$[ROW_NUMBER]"].map((item) => ({
+        text: item,
+        kind: monaco.languages.CompletionItemKind.Variable,
+        extraDetailForMonaco: {
+          detail: "Type: INTEGER",
+        },
+      })),
     ],
     functionData: functionCatalog.functions,
     languageName: language,
