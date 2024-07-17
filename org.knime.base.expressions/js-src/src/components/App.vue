@@ -261,15 +261,6 @@ onMounted(async () => {
     );
   }
 
-  for (const editor of Object.values(multiEditorComponentRefs)) {
-    editor.getEditorState().editor.value?.updateOptions({
-      readOnly: typeof initialSettings.scriptUsedFlowVariable === "string",
-      readOnlyMessage: {
-        value: `Read-Only-Mode: The script is set by the flow variable '${initialSettings.scriptUsedFlowVariable}'.`,
-      },
-    });
-  }
-
   setActiveEditorStoreForAi(getFirstEditor()?.getEditorState());
   store.activeEditorFileName = orderedEditorKeys[0];
 
