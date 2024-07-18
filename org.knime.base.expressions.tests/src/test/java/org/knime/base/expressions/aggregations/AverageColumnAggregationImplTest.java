@@ -78,8 +78,10 @@ final class AverageColumnAggregationImplTest {
             .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), Double.NaN) //
             .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 1.0) //
             .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
-            .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 1.5) //
+            .implDouble("doubleNoNaNIgnore", listOf(1.0, 2.0), List.of(BOOL(true)), 1.5) //
             .unsupportedTypeString("string") //
+            .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
+            .warnsDouble("allMissing", listOf(null, null)) //
             .tests();
     }
 }

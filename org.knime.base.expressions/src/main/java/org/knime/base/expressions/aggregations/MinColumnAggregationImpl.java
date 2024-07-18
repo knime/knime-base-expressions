@@ -48,6 +48,8 @@
  */
 package org.knime.base.expressions.aggregations;
 
+import static org.knime.base.expressions.aggregations.ColumnAggregations.missingWithWarning;
+
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -60,6 +62,8 @@ import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.FloatComputer;
+import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
@@ -137,10 +141,16 @@ final class MinColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
+            boolean shouldWarn = (m_ignoreNaN && m_allValuesNaN) || m_isMissing;
+            if (shouldWarn) {
+                return FloatComputer.of(ctx -> Double.NaN,
+                    missingWithWarning("COLUMN_MIN returned MISSING because all values were either MISSING or NaN"));
+            }
+
             if (!m_ignoreNaN && m_anyValuesNaN) {
-                return Computer.FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
+                return FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
             } else {
-                return Computer.FloatComputer.of(ctx -> m_min, ctx -> m_isMissing || m_allValuesNaN);
+                return FloatComputer.of(ctx -> m_min, ctx -> m_isMissing || m_allValuesNaN);
             }
         }
     }
@@ -163,7 +173,13 @@ final class MinColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
-            return Computer.IntegerComputer.of(ctx -> m_min, ctx -> m_isMissing);
+            boolean shouldWarn = m_isMissing;
+            if (shouldWarn) {
+                return IntegerComputer.of(ctx -> 0,
+                    missingWithWarning("COLUMN_MIN returned MISSING because all values were MISSING"));
+            }
+
+            return IntegerComputer.of(ctx -> m_min, ctx -> m_isMissing);
         }
     }
 }

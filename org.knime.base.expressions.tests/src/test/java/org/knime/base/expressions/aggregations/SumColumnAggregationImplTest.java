@@ -83,6 +83,9 @@ final class SumColumnAggregationImplTest {
             .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 1.0) //
             .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), 0.0) //
             .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 3.0) //
+            .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
+            .warnsDouble("allMissingDouble", listOf(null, null)) //
+            .warnsLong("allMissingLong", listOf(null, null)) //
             .unsupportedTypeString("string") //
             .tests();
     }

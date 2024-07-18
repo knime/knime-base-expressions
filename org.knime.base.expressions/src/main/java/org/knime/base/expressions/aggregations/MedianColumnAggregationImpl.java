@@ -48,6 +48,8 @@
  */
 package org.knime.base.expressions.aggregations;
 
+import static org.knime.base.expressions.aggregations.ColumnAggregations.missingWithWarning;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -130,7 +132,8 @@ final class MedianColumnAggregationImpl {
             if (m_allNumbers.isEmpty()) {
                 // Either all values were NaN and ignored, or all missing. So
                 // we return a missing value.
-                return FloatComputer.of(ctx -> Double.NaN, ctx -> true);
+                return FloatComputer.of(ctx -> Double.NaN,
+                    missingWithWarning("COLUMN_MEDIAN returned MISSING because all values were either MISSING or NaN"));
             } else if (Double.isNaN(m_allNumbers.get(m_allNumbers.size() - 1))) {
                 // sort puts NaN at the end, so we can check if there's >=1 NaN by checking the last value.
                 return FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);

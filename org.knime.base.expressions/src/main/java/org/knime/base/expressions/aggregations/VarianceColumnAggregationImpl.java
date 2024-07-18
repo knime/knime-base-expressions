@@ -48,6 +48,8 @@
  */
 package org.knime.base.expressions.aggregations;
 
+import static org.knime.base.expressions.aggregations.ColumnAggregations.missingWithWarning;
+
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -59,6 +61,7 @@ import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
@@ -137,6 +140,12 @@ final class VarianceColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
+            boolean shouldWarn = (m_ignoreNaN && m_allValuesNaN) || m_isMissing;
+            if (shouldWarn) {
+                return FloatComputer.of(ctx -> Double.NaN, missingWithWarning(
+                    "COLUMN_VARIANCE returned MISSING because all values were either MISSING or NaN"));
+            }
+
             if (!m_ignoreNaN && m_anyValuesNaN) {
                 return Computer.FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
             } else {

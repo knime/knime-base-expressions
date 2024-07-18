@@ -48,6 +48,8 @@
  */
 package org.knime.base.expressions.aggregations;
 
+import static org.knime.base.expressions.aggregations.ColumnAggregations.missingWithWarning;
+
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -148,13 +150,27 @@ final class StdDevColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
+            boolean shouldWarn = (m_ignoreNaN && m_allValuesNaN) || m_isMissing;
+            if (shouldWarn) {
+                return FloatComputer.of(ctx -> Double.NaN,
+                    missingWithWarning("COLUMN_STDDEV returned MISSING because all values were either MISSING or NaN"));
+            }
+
             if (!m_ignoreNaN && m_anyValuesNaN) {
                 return FloatComputer.of(ctx -> Double.NaN, ctx -> m_isMissing);
             } else {
                 var variance = m_runningMeanSq - m_runningMean * m_runningMean;
                 var unBiasedVariance = variance * (m_count / ((double)(m_count - m_degreesOfFreedom)));
 
-                return FloatComputer.of(ctx -> Math.sqrt(unBiasedVariance), ctx -> m_isMissing || m_allValuesNaN);
+                return FloatComputer.of(ctx -> {
+                    if (m_degreesOfFreedom >= m_count) {
+                        ctx.addWarning(
+                            "COLUMN_STDDEV returned NaN because it got a value for degrees of freedom greater than or equal to the number of values");
+                        return Double.NaN;
+                    } else {
+                        return Math.sqrt(unBiasedVariance);
+                    }
+                }, ctx -> m_isMissing || m_allValuesNaN);
             }
         }
     }

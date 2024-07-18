@@ -48,6 +48,8 @@
  */
 package org.knime.base.expressions.aggregations;
 
+import static org.knime.base.expressions.aggregations.ColumnAggregations.missingWithWarning;
+
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -60,6 +62,8 @@ import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.FloatComputer;
+import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
@@ -109,6 +113,10 @@ final class SumColumnAggregationImpl {
 
         private final boolean m_ignoreNaN;
 
+        private boolean m_anyValuesNaN = false;
+
+        private boolean m_allValuesNaN = true;
+
         private SumFloatAggregation(final int columnIdx, final boolean ignoreNaN) {
             super(columnIdx);
 
@@ -119,6 +127,9 @@ final class SumColumnAggregationImpl {
         protected void addNonMissingRow(final RowRead row) {
             var value = ((DoubleValue)row.getValue(m_columnIdx)).getDoubleValue();
 
+            m_anyValuesNaN = m_anyValuesNaN || Double.isNaN(value);
+            m_allValuesNaN = m_allValuesNaN && Double.isNaN(value);
+
             if (m_ignoreNaN && Double.isNaN(value)) {
                 return;
             }
@@ -128,7 +139,17 @@ final class SumColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
-            return Computer.FloatComputer.of(ctx -> m_sum, ctx -> m_isMissing);
+            if (m_isMissing) {
+                return FloatComputer.of(ctx -> 0.0,
+                    missingWithWarning("COLUMN_SUM returned MISSING because all values were MISSING"));
+            } else if (m_ignoreNaN && m_allValuesNaN) {
+                return FloatComputer.of(ctx -> {
+                    ctx.addWarning("COLUMN_SUM returned 0 because all values were NaN");
+                    return 0;
+                }, ctx -> m_isMissing);
+            }
+
+            return FloatComputer.of(ctx -> m_sum, ctx -> m_isMissing);
         }
     }
 
@@ -150,7 +171,13 @@ final class SumColumnAggregationImpl {
 
         @Override
         public Computer createResultComputer() {
-            return Computer.IntegerComputer.of(ctx -> m_sum, ctx -> m_isMissing);
+            boolean shouldWarn = m_isMissing;
+            if (shouldWarn) {
+                return IntegerComputer.of(ctx -> 0,
+                    missingWithWarning("COLUMN_SUM returned MISSING because all values were MISSING"));
+            }
+
+            return IntegerComputer.of(ctx -> m_sum, ctx -> m_isMissing);
         }
     }
 }

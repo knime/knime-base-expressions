@@ -49,6 +49,7 @@
 package org.knime.base.expressions.aggregations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.knime.base.expressions.aggregations.TestRow.tr;
@@ -154,6 +155,8 @@ public class AggregationTestUtils {
         private final List<DynamicTest> m_implTests = new ArrayList<>();
 
         private final List<DynamicTest> m_unsupportedTypeTests = new ArrayList<>();
+
+        private final List<DynamicTest> m_warnTests = new ArrayList<>();
 
         /** Tolerance for double comparisons in impl tests */
         private double m_doubleEqTolerance = 0.0;
@@ -269,6 +272,61 @@ public class AggregationTestUtils {
             return this;
         }
 
+        /**
+         * Run a test on the column of type long that expects the aggregation to warn about something, with both
+         * positional and named args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraPositionalArgs
+         * @param extraNamedArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsLong(final String testName, final List<Long> tableValues,
+            final List<ConstantAst> extraPositionalArgs, final Map<String, ConstantAst> extraNamedArgs) {
+            return warnsGeneric(testName, tableValues, extraPositionalArgs, extraNamedArgs, LONG_COL_NAME,
+                LONG_COL_IDX);
+        }
+
+        /**
+         * Run a test on the column of type long that expects the aggregation to warn about something, with positional
+         * args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraPositionalArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsLong(final String testName, final List<Long> tableValues,
+            final List<ConstantAst> extraPositionalArgs) {
+            return warnsLong(testName, tableValues, extraPositionalArgs, new HashMap<>());
+        }
+
+        /**
+         * Run a test on the column of type long that expects the aggregation to warn about something, with named args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraNamedArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsLong(final String testName, final List<Long> tableValues,
+            final Map<String, ConstantAst> extraNamedArgs) {
+            return warnsLong(testName, tableValues, new ArrayList<>(), extraNamedArgs);
+        }
+
+        /**
+         * Run a test on the column of type long that expects the aggregation to warn about something, with no extra
+         * args.
+         *
+         * @param testName
+         * @param tableValues
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsLong(final String testName, final List<Long> tableValues) {
+            return warnsLong(testName, tableValues, new ArrayList<>(), new HashMap<>());
+        }
+
         // ======= INT AGGREGATION TESTS =======
 
         /**
@@ -330,7 +388,6 @@ public class AggregationTestUtils {
          */
         public AggregationTestBuilder implInt(final String testName, final List<Integer> tableValues,
             final Object expectedResult) {
-
             return implInt(testName, tableValues, new ArrayList<>(), new HashMap<>(), expectedResult);
         }
 
@@ -344,6 +401,62 @@ public class AggregationTestUtils {
         public AggregationTestBuilder unsupportedTypeInt(final String testName) {
             unsupportedTypeGeneric(testName, INT_COL_NAME);
             return this;
+        }
+
+        /**
+         * Run a test on the column of type int that expects the aggregation to warn about something, with both
+         * positional and named args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraPositionalArgs
+         * @param extraNamedArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsInt(final String testName, final List<Integer> tableValues,
+            final List<ConstantAst> extraPositionalArgs, final Map<String, ConstantAst> extraNamedArgs) {
+
+            return warnsGeneric(testName, tableValues, extraPositionalArgs, extraNamedArgs, INT_COL_NAME, INT_COL_IDX);
+        }
+
+        /**
+         * Run a test on the column of type int that expects the aggregation to warn about something, with positional
+         * args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraPositionalArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsInt(final String testName, final List<Integer> tableValues,
+            final List<ConstantAst> extraPositionalArgs) {
+            return warnsInt(testName, tableValues, extraPositionalArgs, new HashMap<>());
+        }
+
+        /**
+         * Run a test on the column of type int that expects the aggregation to warn about something, with named args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraNamedArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsInt(final String testName, final List<Integer> tableValues,
+            final Map<String, ConstantAst> extraNamedArgs) {
+
+            return warnsInt(testName, tableValues, new ArrayList<>(), extraNamedArgs);
+        }
+
+        /**
+         * Run a test on the column of type int that expects the aggregation to warn about something, with no extra
+         * args.
+         *
+         * @param testName
+         * @param tableValues
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsInt(final String testName, final List<Integer> tableValues) {
+            return warnsInt(testName, tableValues, new ArrayList<>(), new HashMap<>());
         }
 
         // ======= DOUBLE AGGREGATION TESTS =======
@@ -421,6 +534,64 @@ public class AggregationTestUtils {
         public AggregationTestBuilder unsupportedTypeDouble(final String testName) {
             unsupportedTypeGeneric(testName, DOUBLE_COL_NAME);
             return this;
+        }
+
+        /**
+         * Run a test on the column of type double that expects the aggregation to warn about something, with both
+         * positional and named args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraPositionalArgs
+         * @param extraNamedArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsDouble(final String testName, final List<Double> tableValues,
+            final List<ConstantAst> extraPositionalArgs, final Map<String, ConstantAst> extraNamedArgs) {
+
+            return warnsGeneric(testName, tableValues, extraPositionalArgs, extraNamedArgs, DOUBLE_COL_NAME,
+                DOUBLE_COL_IDX);
+        }
+
+        /**
+         * Run a test on the column of type double that expects the aggregation to warn about something, with positional
+         * args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraPositionalArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsDouble(final String testName, final List<Double> tableValues,
+            final List<ConstantAst> extraPositionalArgs) {
+            return warnsDouble(testName, tableValues, extraPositionalArgs, new HashMap<>());
+        }
+
+        /**
+         * Run a test on the column of type double that expects the aggregation to warn about something, with named
+         * args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraNamedArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsDouble(final String testName, final List<Double> tableValues,
+            final Map<String, ConstantAst> extraNamedArgs) {
+
+            return warnsDouble(testName, tableValues, new ArrayList<>(), extraNamedArgs);
+        }
+
+        /**
+         * Run a test on the column of type double that expects the aggregation to warn about something, with no extra
+         * args.
+         *
+         * @param testName
+         * @param tableValues
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsDouble(final String testName, final List<Double> tableValues) {
+            return warnsDouble(testName, tableValues, new ArrayList<>(), new HashMap<>());
         }
 
         // ======= STRING AGGREGATION TESTS =======
@@ -501,6 +672,104 @@ public class AggregationTestUtils {
         }
 
         /**
+         * Run a test on a column of type string that expects the aggregation to warn about something, with both
+         * positional and named args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraPositionalArgs
+         * @param extraNamedArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsString(final String testName, final List<String> tableValues,
+            final List<ConstantAst> extraPositionalArgs, final Map<String, ConstantAst> extraNamedArgs) {
+
+            return warnsGeneric(testName, tableValues, extraPositionalArgs, extraNamedArgs, STRING_COL_NAME,
+                STRING_COL_IDX);
+        }
+
+        /**
+         * Run a test on a column of type string that expects the aggregation to warn about something, with positional
+         * args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraPositionalArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsString(final String testName, final List<String> tableValues,
+            final List<ConstantAst> extraPositionalArgs) {
+            return warnsString(testName, tableValues, extraPositionalArgs, new HashMap<>());
+        }
+
+        /**
+         * Run a test on a column of type string that expects the aggregation to warn about something, with named args.
+         *
+         * @param testName
+         * @param tableValues
+         * @param extraNamedArgs
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsString(final String testName, final List<String> tableValues,
+            final Map<String, ConstantAst> extraNamedArgs) {
+
+            return warnsString(testName, tableValues, new ArrayList<>(), extraNamedArgs);
+        }
+
+        /**
+         * Run a test on a column of type string that expects the aggregation to warn about something, with no extra
+         * args.
+         *
+         * @param testName
+         * @param tableValues
+         * @return this, for builder-style chaining
+         */
+        public AggregationTestBuilder warnsString(final String testName, final List<String> tableValues) {
+            return warnsString(testName, tableValues, new ArrayList<>(), new HashMap<>());
+        }
+
+        /**
+         * Run a test that expects the aggregation to warn about something.
+         *
+         * @param testName
+         * @param colName
+         * @param tableValues the values of the column to aggregate. They'll be fed to the aggregation via
+         *            {@link Aggregation#addRow}.
+         * @param extraPositionalArgs extra positional arguments to pass to the aggregation (not including the column
+         *            name)
+         * @param extraNamedArgs extra named arguments to pass to the aggregation (not including the column name)
+         * @return this, for builder-style chaining
+         */
+        private <T> AggregationTestBuilder warnsGeneric(final String testName, final List<T> tableValues,
+            final List<ConstantAst> extraPositionalArgs, final Map<String, ConstantAst> extraNamedArgs,
+            final String colName, final int colIdx) {
+
+            m_warnTests.add(DynamicTest.dynamicTest(testName, () -> {
+                List<Ast.ConstantAst> allPositionalArgs = new ArrayList<>(extraPositionalArgs);
+                allPositionalArgs.add(0, STR(colName));
+
+                var args = new Arguments<>(allPositionalArgs, extraNamedArgs);
+
+                var actualResult = populateAggRows( //
+                    m_aggregationSupplier.apply(args, TEST_TABLE_SPEC), //
+                    colIdx, //
+                    tableValues //
+                ).createResultComputer();
+
+                List<String> warnings = new ArrayList<String>();
+                EvaluationContext ctx = warnings::add;
+
+                if (!actualResult.isMissing(ctx)) {
+                    computeGenericComputer(actualResult, ctx);
+                }
+
+                assertFalse(warnings.isEmpty(), "Expected a warning but got none");
+            }));
+
+            return this;
+        }
+
+        /**
          * Compile the tests and end the builder. Suitable for returning from a function marked with the @TestFactory
          * annotation.
          *
@@ -508,8 +777,9 @@ public class AggregationTestUtils {
          */
         public List<DynamicNode> tests() {
             return List.of( //
-                DynamicContainer.dynamicContainer("implementation tests", m_implTests),
-                DynamicContainer.dynamicContainer("unsupported type tests", m_unsupportedTypeTests) //
+                DynamicContainer.dynamicContainer("implementation tests", m_implTests), //
+                DynamicContainer.dynamicContainer("unsupported type tests", m_unsupportedTypeTests), //
+                DynamicContainer.dynamicContainer("warning tests", m_warnTests) //
             );
         }
 
@@ -576,6 +846,9 @@ public class AggregationTestUtils {
                     assertTrue(actualResult.isMissing(DUMMY_WML),
                         "Expected column aggregation to return missing value. Args: %s".formatted(args));
                 } else {
+                    assertFalse(actualResult.isMissing(DUMMY_WML),
+                        "Expected column aggregation to return non-missing value. Args: %s".formatted(args));
+
                     if (expectedResult instanceof Integer) {
                         // Since IntegerComputer returns a Long, we need to convert it to an int if
                         // the expected result is an int
@@ -617,14 +890,26 @@ public class AggregationTestUtils {
          * @return the result of the computer's compute method
          */
         private static Object computeGenericComputer(final Computer c) {
+            return computeGenericComputer(c, DUMMY_WML);
+        }
+
+        /**
+         * Evaluate a generic computer by trying to cast to every known computer subtype. Also takes an evaluation
+         * context for warnings.
+         *
+         * @param c the computer
+         * @param ctx the evaluation context
+         * @return the result of the computer's compute method
+         */
+        private static Object computeGenericComputer(final Computer c, final EvaluationContext ctx) {
             if (c instanceof IntegerComputer ic) {
-                return ic.compute(DUMMY_WML);
+                return ic.compute(ctx);
             } else if (c instanceof FloatComputer fc) {
-                return fc.compute(DUMMY_WML);
+                return fc.compute(ctx);
             } else if (c instanceof BooleanComputer bc) {
-                return bc.compute(DUMMY_WML);
+                return bc.compute(ctx);
             } else if (c instanceof StringComputer sc) {
-                return sc.compute(DUMMY_WML);
+                return sc.compute(ctx);
             } else {
                 throw new IllegalArgumentException("Unsupported computer type: " + c);
             }

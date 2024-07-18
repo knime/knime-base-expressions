@@ -80,6 +80,8 @@ final class MedianColumnAggregationImplTest {
             .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 1.0) //
             .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
             .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 1.5) //
+            .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
+            .warnsDouble("allMissingDouble", listOf(null, null)) //
             .unsupportedTypeString("string") //
             .tests();
     }

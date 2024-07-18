@@ -82,6 +82,12 @@ final class StdDevColumnAggregationImplTest {
             .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
             .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 0.5) //
             .implDouble("doubleWithDdof", List.of(1.0, 2.0, 3.0), Map.of("ddof", INT(1)), 1.0) //
+            .implDouble("ddof == N", listOf(1.0, 2.0, 3.0), Map.of("ddof", INT(3)), Double.NaN) //
+            .implDouble("ddof >= N", listOf(1.0, 2.0, 3.0), Map.of("ddof", INT(4)), Double.NaN) //
+            .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
+            .warnsDouble("allMissingDouble", listOf(null, null)) //
+            .warnsDouble("ddof < 0", listOf(1.0, 2.0, 3.0), Map.of("ddof", INT(3))) //
+            .warnsDouble("ddof < 0", listOf(1.0, 2.0, 3.0), Map.of("ddof", INT(4))) //
             .unsupportedTypeString("string") //
             .tests();
     }
