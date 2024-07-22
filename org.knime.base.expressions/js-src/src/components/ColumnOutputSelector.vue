@@ -18,6 +18,7 @@ export type AllowedDropDownValue = {
 
 type PropType = {
   allowedReplacementColumns: AllowedDropDownValue[];
+  readonly?: boolean;
 };
 
 const props = defineProps<PropType>();
@@ -48,7 +49,7 @@ const paintFocus = useShouldFocusBePainted();
     <ValueSwitch
       v-model="modelValue.outputMode"
       :possible-values="allowedOperationModes"
-      :disabled="props.allowedReplacementColumns.length === 0"
+      :disabled="props.allowedReplacementColumns.length === 0 || readonly"
       class="switch-button"
       :class="{ 'focus-painted': paintFocus }"
       compact

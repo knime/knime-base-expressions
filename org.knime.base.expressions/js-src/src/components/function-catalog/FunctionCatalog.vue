@@ -25,10 +25,14 @@ import {
 
 const FUNCTION_CATALOG_WIDTH = `${MIN_WIDTH_FUNCTION_CATALOG}px`;
 
-const props = defineProps<{
+type PropType = {
   functionCatalogData: FunctionCatalogData;
   initiallyExpanded: boolean;
-}>();
+  readonly?: boolean;
+};
+const props = withDefaults(defineProps<PropType>(), {
+  readonly: false,
+});
 
 const catalogData = mapFunctionCatalogData(props.functionCatalogData);
 
@@ -346,6 +350,7 @@ const expandAll = () => {
                 name: categoryName,
               }),
               empty: categoryData.length === 0,
+              readonly: readonly,
             }"
             tabindex="-1"
             @click="toggleCategoryExpansion(categoryName)"
@@ -379,9 +384,10 @@ const expandAll = () => {
                 class="function-header"
                 :class="{
                   selected: isSelected({ type: 'function', functionData }),
+                  readonly: readonly,
                 }"
                 tabindex="-1"
-                :draggable="true"
+                :draggable="!readonly"
                 @click="
                   selectEntry({
                     type: 'function',
@@ -428,6 +434,10 @@ const expandAll = () => {
   display: flex;
   flex-direction: row;
   height: 100%;
+}
+
+.readonly {
+  opacity: 0.5;
 }
 
 .function-catalog-container.slim-mode {
