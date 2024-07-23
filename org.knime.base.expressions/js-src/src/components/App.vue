@@ -48,6 +48,7 @@ import {
 } from "@/components/function-catalog/contraints";
 import { convertFunctionsToInsertionItems } from "./convertFunctionsToInsertionItems";
 import * as monaco from "monaco-editor";
+import { v4 as uuidv4 } from "uuid";
 
 const language = "knime-expression";
 
@@ -61,11 +62,12 @@ const columnSelectorStates = reactive<{ [key: string]: ColumnSelectorState }>(
   {},
 );
 
+/**
+ * Generate a new key for a new editor. This is used to index the columnSelectorStates
+ * and the multiEditorComponentRefs, plus it's used to keep track of the order of the editors.
+ */
 const generateNewKey = () => {
-  // JavaScript doesn't have a nice way to generate a random UUID so for now,
-  // just bodge something random.
-  // TODO: Replace with a proper UUID generator.
-  return Math.random().toString(36).substring(2);
+  return uuidv4();
 };
 
 // Overwritten by the initial settings
