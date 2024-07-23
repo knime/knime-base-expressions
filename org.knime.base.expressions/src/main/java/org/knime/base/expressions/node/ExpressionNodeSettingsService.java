@@ -67,14 +67,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
+ * Communicates settings between the node model and the web UI.
+ *
  * @author David Hickey, TNG Technology Consulting GmbH
  */
 @SuppressWarnings("restriction")
 public class ExpressionNodeSettingsService implements NodeSettingsService {
 
-    public ExpressionNodeSettingsService() {
-    }
-
+    /**
+     * Add additional settings to the node settings by reading the JSON object, which came from the frontend.
+     *
+     * @param settingsJson
+     * @param settings
+     */
     protected void addAdditionalSettingsToNodeSettings(final ObjectNode settingsJson,
         final Map<SettingsType, ? extends NodeSettingsWO> settings) {
 
@@ -83,8 +88,14 @@ public class ExpressionNodeSettingsService implements NodeSettingsService {
         expressionSettings.saveModelSettingsTo(settings.get(SettingsType.MODEL));
     }
 
+    /**
+     * Add additional settings to the JSON object, which will be sent to the frontend.
+     *
+     * @param settings
+     * @param settingsJson
+     */
     protected void putAdditionalSettingsToJson(final Map<SettingsType, NodeAndVariableSettingsRO> settings,
-        final PortObjectSpec[] specs, final ObjectNode settingsJson) {
+        final ObjectNode settingsJson) {
         // load settings
 
         try {
@@ -111,7 +122,7 @@ public class ExpressionNodeSettingsService implements NodeSettingsService {
             var settingsJson = new ObjectMapper().createObjectNode() //
                 .put("scriptUsedFlowVariable", scriptUsedFlowVariable);
 
-            putAdditionalSettingsToJson(settings, specs, settingsJson);
+            putAdditionalSettingsToJson(settings, settingsJson);
 
             return settingsJson.toString();
         } catch (InvalidSettingsException e) {
@@ -128,7 +139,7 @@ public class ExpressionNodeSettingsService implements NodeSettingsService {
         try {
             var settingsJson = (ObjectNode)new ObjectMapper().readTree(textSettings);
             addAdditionalSettingsToNodeSettings(settingsJson, settings);
-            setVariableSettings(settingsJson, previousSettings, settings);
+            setVariableSettings(previousSettings, settings);
         } catch (JsonProcessingException e) {
             // Should not happen because the frontend gives a correct JSON settings
             throw new IllegalStateException(e);
@@ -136,8 +147,7 @@ public class ExpressionNodeSettingsService implements NodeSettingsService {
 
     }
 
-    private static void setVariableSettings(final ObjectNode settingsJson,
-        final Map<SettingsType, ? extends VariableSettingsRO> previousSettings,
+    private static void setVariableSettings(final Map<SettingsType, ? extends VariableSettingsRO> previousSettings,
         final Map<SettingsType, ? extends VariableSettingsWO> settings) {
         for (var settingsType : settings.keySet()) {
             copyVariableSettings(previousSettings.get(settingsType), settings.get(settingsType));

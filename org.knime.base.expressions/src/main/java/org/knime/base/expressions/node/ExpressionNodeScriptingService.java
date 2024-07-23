@@ -233,7 +233,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
             var flowVarToTypeMapper = ExpressionRunnerUtils.flowVarToTypeForTypeInference(
                 getAvailableFlowVariables(ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES));
 
-            Function<String, ReturnResult<ValueType>> columnToTypeMapper = (columName) -> {
+            Function<String, ReturnResult<ValueType>> columnToTypeMapper = columName -> {
                 if (Arrays.stream(additionalColumnNames).anyMatch(columName::equals)) {
                     return ReturnResult
                         .success(additionalColumnTypes[Arrays.asList(additionalColumnNames).indexOf(columName)]);
@@ -251,7 +251,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
          *
          * @param expressions
          * @param newColumnNames
-         * @return
+         * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
          */
         public List<List<Diagnostic>> getDiagnostics(final String[] expressions, final String[] newColumnNames) {
             List<ValueType> inferredColumnTypes = new ArrayList<>();

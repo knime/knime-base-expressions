@@ -21,6 +21,8 @@ export type ExpressionNodeSettings = ExpressionVersion &
   };
 
 const scriptingService = getScriptingService();
+
+// TODO(AP-22975) initial data should go via the ScriptingNodeSettingsService
 const expressionScriptingService = {
   ...scriptingService,
   registerSettingsGetterForApply: (

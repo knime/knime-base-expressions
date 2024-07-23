@@ -16,16 +16,16 @@ export const convertFunctionsToInsertionItems = (
   return entries.map((entry) => {
     if (entry.entryType === "function") {
       // closest we can get to a list comprehension over a range in JS
-      const listOfIndices = [...Array(entry.arguments!.length).keys()];
+      const listOfIndices = [...Array(entry.arguments.length).keys()];
 
       // This snippet syntax is used to allow for tabbing through the arguments
       // when the function is inserted.
       const argumentsWithSnippetSyntax = listOfIndices
-        .map((i) => `$\{${i + 1}:${entry.arguments![i].name}}`)
+        .map((i) => `$\{${i + 1}:${entry.arguments[i].name}}`)
         .join(", ");
 
       const argumentsWithoutSnippetSyntax =
-        entry.arguments!.length > 0 ? "..." : "";
+        entry.arguments.length > 0 ? "..." : "";
 
       return {
         text: `${entry.name}(${argumentsWithSnippetSyntax})`,
