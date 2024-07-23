@@ -174,9 +174,6 @@ onMounted(async () => {
     scriptingService.getFunctions(),
   ]);
 
-  // Run initial diagnostics now that we've set the initial text
-  runDiagnosticsFunction();
-
   expressionVersion.value = {
     languageVersion: initialSettings.languageVersion,
     builtinFunctionsVersion: initialSettings.builtinFunctionsVersion,
@@ -265,6 +262,7 @@ onMounted(async () => {
   setActiveEditorStoreForAi(getFirstEditor()?.getEditorState());
   store.activeEditorFileName = orderedEditorKeys[0];
 
+  // Run initial diagnostics now that we've set the initial text
   runDiagnosticsFunction();
 });
 
