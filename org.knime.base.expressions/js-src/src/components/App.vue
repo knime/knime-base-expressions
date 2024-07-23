@@ -32,9 +32,9 @@ import ColumnOutputSelector, {
   type AllowedDropDownValue,
   type ColumnSelectorState,
 } from "@/components/ColumnOutputSelector.vue";
-import MultiEditorPane, {
-  type MultiEditorPaneExposes,
-} from "./MultiEditorPane.vue";
+import ExpressionEditorPane, {
+  type ExpressionEditorPaneExposes,
+} from "./ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "./functionCatalogTypes";
 import { useStore } from "@/store";
 import { runDiagnostics } from "@/expressionDiagnostics";
@@ -76,7 +76,7 @@ const expressionVersion = ref<ExpressionVersion>({
 });
 
 const multiEditorComponentRefs = reactive<{
-  [key: string]: MultiEditorPaneExposes;
+  [key: string]: ExpressionEditorPaneExposes;
 }>({});
 
 const columnStateWatchers = reactive<{ [key: string]: Function }>({});
@@ -92,7 +92,8 @@ const numberOfEditors = computed(() => orderedEditorKeys.length);
 /** Called by components when they're created, stores a ref to the component in our dict */
 const createElementReference = (title: string) => {
   return (el: Element | ComponentPublicInstance | null) => {
-    multiEditorComponentRefs[title] = el as unknown as MultiEditorPaneExposes;
+    multiEditorComponentRefs[title] =
+      el as unknown as ExpressionEditorPaneExposes;
   };
 };
 
@@ -114,7 +115,7 @@ const getAvailableColumnsForReplacement = (
   return [...columnsInInputTable.value, ...columnsFromPreviousEditors];
 };
 
-const getActiveEditor = (): MultiEditorPaneExposes | null => {
+const getActiveEditor = (): ExpressionEditorPaneExposes | null => {
   if (!store.activeEditorFileName) {
     return null;
   }
@@ -141,7 +142,7 @@ const onEditorFocused = (filename: string) => {
 const functionCatalogData = ref<FunctionCatalogData>();
 const inputsAvailable = ref(false);
 
-const getFirstEditor = (): MultiEditorPaneExposes => {
+const getFirstEditor = (): ExpressionEditorPaneExposes => {
   return multiEditorComponentRefs[orderedEditorKeys[0]];
 };
 
@@ -531,7 +532,7 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
         @input-output-item-insertion="onInputOutputItemInsertionTriggered"
       >
         <template #editor>
-          <MultiEditorPane
+          <ExpressionEditorPane
             v-for="(key, index) in orderedEditorKeys"
             :key="key"
             :ref="createElementReference(key)"
@@ -558,7 +559,7 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
                 />
               </div>
             </template>
-          </MultiEditorPane>
+          </ExpressionEditorPane>
         </template>
         <template #right-pane>
           <template v-if="functionCatalogData">

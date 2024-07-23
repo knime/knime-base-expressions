@@ -14,7 +14,7 @@ import DownArrowIcon from "webapps-common/ui/assets/img/icons/arrow-down.svg";
 import MenuIcon from "webapps-common/ui/assets/img/icons/menu-options.svg";
 import PlusIcon from "webapps-common/ui/assets/img/icons/circle-plus.svg";
 
-export type MultiEditorPaneExposes = {
+export type ExpressionEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;
 };
 
@@ -72,7 +72,7 @@ const editorState = editor.useCodeEditor({
 });
 
 const getEditorState = () => editorState;
-defineExpose<MultiEditorPaneExposes>({
+defineExpose<ExpressionEditorPaneExposes>({
   getEditorState,
 });
 

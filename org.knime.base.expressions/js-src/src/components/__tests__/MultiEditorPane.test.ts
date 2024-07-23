@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils";
 import { onKeyStroke } from "@vueuse/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { editor } from "@knime/scripting-editor";
-import MultiEditorPane from "../MultiEditorPane.vue";
+import ExpressionEditorPane from "../ExpressionEditorPane.vue";
 
 vi.mock("@vueuse/core", async (importOriginal) => {
   const original = await importOriginal<typeof import("@vueuse/core")>();
@@ -12,14 +12,14 @@ vi.mock("@vueuse/core", async (importOriginal) => {
   };
 });
 
-describe("MultiEditorPane", () => {
+describe("ExpressionEditorPane", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
   const doMount = (
     args: {
-      props: Partial<InstanceType<typeof MultiEditorPane>["$props"]>;
+      props: Partial<InstanceType<typeof ExpressionEditorPane>["$props"]>;
       slots?: any;
     } = {
       props: {
@@ -29,7 +29,7 @@ describe("MultiEditorPane", () => {
       },
     },
   ) => {
-    const wrapper = mount(MultiEditorPane, {
+    const wrapper = mount(ExpressionEditorPane, {
       props: { title: "", language: "", fileName: "", ...args.props },
       slots: args.slots,
     });
