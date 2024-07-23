@@ -25,9 +25,11 @@ const expressionScriptingService = {
   ...scriptingService,
   registerSettingsGetterForApply: (
     settingsGetter: () => ExpressionNodeSettings,
+    // @ts-ignore - incompatibility between NodeSettings and ExpressionNodeSettings
   ) => scriptingService.registerSettingsGetterForApply(settingsGetter),
   getInitialSettings: (): Promise<ExpressionNodeSettings> =>
-    scriptingService.getInitialSettings() as Promise<ExpressionNodeSettings>,
+    // @ts-ignore - incompatibility between NodeSettings and ExpressionNodeSettings
+    scriptingService.getInitialSettings(),
   getFunctions: () =>
     scriptingService.sendToService(
       "getFunctionCatalog",
