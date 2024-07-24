@@ -1,10 +1,13 @@
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import FunctionCatalog from "../function-catalog/FunctionCatalog.vue";
+import FunctionCatalog, {
+  FUNCTION_INSERTION_EVENT,
+} from "../function-catalog/FunctionCatalog.vue";
 import type { FunctionData, ConstantData } from "../functionCatalogTypes";
 import { useElementBounding } from "@vueuse/core";
 import { ref } from "vue";
 import { SearchInput } from "@knime/components";
+import { insertionEventHelper } from "@knime/scripting-editor";
 
 // Beware: This constant is duplicated in the component and the test
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 600;
@@ -271,34 +274,32 @@ describe("FunctionCatalog", () => {
   });
 
   it("fires an event when functions are double-clicked or spacebar/enter is pressed", async () => {
-    type FunctionInsertionEvent = {
-      functionName: string;
-      functionArgs: string[];
-    };
-
     const { wrapper } = doMount();
     const functionList = wrapper.find(".function-list");
     await functionList.trigger("focus");
 
     const functionInFirstCategory = wrapper.findAll(".function-header")[0];
 
+    const insertionListener = vi.fn();
+    insertionEventHelper
+      .getInsertionEventHelper(FUNCTION_INSERTION_EVENT)
+      .registerInsertionListener(insertionListener);
+
     // We don't expect it to trigger on single click
     await functionInFirstCategory.trigger("click");
-    expect(wrapper.emitted("functionInsertionEvent")).toBeUndefined();
+    expect(insertionListener).not.toHaveBeenCalled();
 
     // Should fire three events
     await functionInFirstCategory.trigger("dblclick");
     await functionList.trigger("keydown", { key: "Enter" });
     await functionList.trigger("keydown", { key: " " });
-    expect(wrapper.emitted("functionInsertionEvent")?.length).toBe(3);
-    for (const e of wrapper.emitted("functionInsertionEvent")!) {
-      expect((e[0] as FunctionInsertionEvent).functionName).toContain(
-        function1.name,
-      );
-      expect((e[0] as FunctionInsertionEvent).functionArgs.length).toEqual(
-        function1.arguments.length,
-      );
-    }
+    expect(insertionListener).toHaveBeenCalledTimes(3);
+    expect(insertionListener).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        textToInsert: function1.name,
+      }),
+    );
 
     // Fire three more events
     const functionInSecondCategory = wrapper.findAll(".function-header")[1];
@@ -306,15 +307,13 @@ describe("FunctionCatalog", () => {
     await functionInSecondCategory.trigger("dblclick");
     await functionList.trigger("keydown", { key: "Enter" });
     await functionList.trigger("keydown", { key: " " });
-    expect(wrapper.emitted("functionInsertionEvent")?.length).toBe(3 + 3);
-    for (const e of wrapper.emitted("functionInsertionEvent")!.slice(3)) {
-      expect((e[0] as FunctionInsertionEvent).functionName).toContain(
-        function2.name,
-      );
-      expect((e[0] as FunctionInsertionEvent).functionArgs.length).toEqual(
-        function2.arguments.length,
-      );
-    }
+    expect(insertionListener).toHaveBeenCalledTimes(3 + 3);
+    expect(insertionListener).toHaveBeenNthCalledWith(
+      4,
+      expect.objectContaining({
+        textToInsert: function2.name,
+      }),
+    );
   });
 
   const testCases = [

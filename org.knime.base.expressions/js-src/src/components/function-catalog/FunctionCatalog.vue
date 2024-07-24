@@ -1,3 +1,7 @@
+<script lang="ts">
+export const FUNCTION_INSERTION_EVENT = "functionInsertion";
+</script>
+
 <script setup lang="ts">
 import { computed, ref, reactive, type ComponentPublicInstance } from "vue";
 import {
@@ -24,6 +28,7 @@ import {
   MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION,
   MIN_WIDTH_FUNCTION_CATALOG,
 } from "@/components/function-catalog/contraints";
+import { insertionEventHelper } from "@knime/scripting-editor";
 
 const FUNCTION_CATALOG_WIDTH = `${MIN_WIDTH_FUNCTION_CATALOG}px`;
 
@@ -90,17 +95,21 @@ const onDragEnd = () => {
   removeGhostsRef.value();
 };
 
-const emit = defineEmits(["functionInsertionEvent"]);
 const triggerFunctionInsertionEvent = (
   evt: Event,
   f: FunctionCatalogEntryData,
 ) => {
-  emit("functionInsertionEvent", {
-    functionName: f.name,
-    functionArgs:
-      f.entryType === "constant" ? null : f.arguments?.map((arg) => arg.name),
-    eventSource: "function-catalog",
-  });
+  insertionEventHelper
+    .getInsertionEventHelper(FUNCTION_INSERTION_EVENT)
+    .handleInsertion({
+      textToInsert: f.name,
+      extraArgs: {
+        functionArgs:
+          f.entryType === "constant"
+            ? null
+            : f.arguments?.map((arg) => arg.name),
+      },
+    });
 };
 
 const catalogRoot = ref();

@@ -4,6 +4,10 @@ import {
   ScriptingEditor,
   setActiveEditorStoreForAi,
   MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE,
+  insertionEventHelper,
+  OutputTablePreview,
+  type InsertionEvent,
+  COLUMN_INSERTION_EVENT,
 } from "@knime/scripting-editor";
 import {
   type ExpressionVersion,
@@ -31,7 +35,9 @@ import {
   watch,
   type ComponentPublicInstance,
 } from "vue";
-import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
+import FunctionCatalog, {
+  FUNCTION_INSERTION_EVENT,
+} from "@/components/function-catalog/FunctionCatalog.vue";
 import ColumnOutputSelector, {
   type AllowedDropDownValue,
   type ColumnSelectorState,
@@ -439,31 +445,30 @@ const onEditorRequestedCopyBelow = async (filename: string) => {
     );
 };
 
-const onFunctionInsertionTriggered = (payload: {
-  eventSource: string;
-  functionName: string;
-  functionArgs: string[] | null;
-}) => {
-  getActiveEditor()?.getEditorState().editor.value?.focus();
+insertionEventHelper
+  .getInsertionEventHelper(FUNCTION_INSERTION_EVENT)
+  .registerInsertionListener((insertionEvent: InsertionEvent) => {
+    getActiveEditor()?.getEditorState().editor.value?.focus();
 
-  if (payload.functionArgs === null) {
+    const functionArgs = insertionEvent.extraArgs?.functionArgs;
+    const functionName = insertionEvent.textToInsert;
+
     getActiveEditor()
       ?.getEditorState()
-      .insertFunctionReference(payload.functionName, null);
-  } else {
-    getActiveEditor()
-      ?.getEditorState()
-      .insertFunctionReference(payload.functionName, payload.functionArgs);
-  }
-};
+      .insertFunctionReference(functionName, functionArgs);
+  });
 
-const onInputOutputItemInsertionTriggered = (codeToInsert: string) => {
-  getActiveEditor()?.getEditorState().editor.value?.focus();
+insertionEventHelper
+  .getInsertionEventHelper(COLUMN_INSERTION_EVENT)
+  .registerInsertionListener((insertionEvent: InsertionEvent) => {
+    getActiveEditor()?.getEditorState().editor.value?.focus();
 
-  // Note that we're ignoring requiredImport, because the expression editor
-  // doesn't need imports.
-  getActiveEditor()?.getEditorState().insertColumnReference(codeToInsert);
-};
+    const codeToInsert = insertionEvent.textToInsert;
+
+    // Note that we're ignoring requiredImport, because the expression editor
+    // doesn't need imports.
+    getActiveEditor()?.getEditorState().insertColumnReference(codeToInsert);
+  });
 
 // Shift+Enter while editor has focus runs expressions
 onKeyStroke("Enter", (evt: KeyboardEvent) => {
@@ -542,7 +547,6 @@ const initialPaneSizes = calculateInitialPaneSizes();
           left: initialPaneSizes.left,
           bottom: 30,
         }"
-        @input-output-item-insertion="onInputOutputItemInsertionTriggered"
       >
         <template #editor>
           <ExpressionEditorPane
@@ -588,7 +592,6 @@ const initialPaneSizes = calculateInitialPaneSizes();
             <FunctionCatalog
               :function-catalog-data="functionCatalogData"
               :initially-expanded="false"
-              @function-insertion-event="onFunctionInsertionTriggered"
             />
           </template>
         </template>
