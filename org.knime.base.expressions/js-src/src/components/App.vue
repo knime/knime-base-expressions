@@ -547,7 +547,18 @@ const initialPaneSizes = calculateInitialPaneSizes();
           left: initialPaneSizes.left,
           bottom: 30,
         }"
+        :additional-bottom-pane-tab-content="[
+          {
+            label: 'Output preview',
+            value: 'outputPreview',
+          },
+        ]"
       >
+        <!-- Extra content in the bottom tab pane -->
+        <template #outputPreview="{ grabFocus }">
+          <OutputTablePreview @output-table-updated="grabFocus()" />
+        </template>
+
         <template #editor>
           <ExpressionEditorPane
             v-for="(key, index) in orderedEditorKeys"
@@ -587,6 +598,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
             <PlusIcon /><span>Add new editor</span>
           </FunctionButton>
         </template>
+
         <template #right-pane>
           <template v-if="functionCatalogData">
             <FunctionCatalog
@@ -595,7 +607,8 @@ const initialPaneSizes = calculateInitialPaneSizes();
             />
           </template>
         </template>
-        <!-- Controls for the very bottom bar -->
+
+        <!-- Controls displayed once only -->
         <template #code-editor-controls="{ showButtonText }">
           <Tooltip :text="runButtonDisabledErrorReason ?? ''">
             <SplitButton>
