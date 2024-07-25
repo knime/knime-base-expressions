@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { watch } from "vue";
 import ValueSwitch from "webapps-common/ui/components/forms/ValueSwitch.vue";
 import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
 import InputField from "webapps-common/ui/components/forms/InputField.vue";
@@ -31,29 +30,16 @@ const modelValue = defineModel<ColumnSelectorState>({
   } satisfies ColumnSelectorState,
 });
 
+const isValid = defineModel<boolean>("isValid", {
+  default: true,
+});
+
 const allowedOperationModes = [
   { id: "APPEND", text: "Append" },
   { id: "REPLACE_EXISTING", text: "Replace" },
 ];
 
 const paintFocus = useShouldFocusBePainted();
-
-// Since these props can change after the component is mounted, we need to watch
-// for changes to the allowedReplacementColumns prop and update the selected
-// replacementColumn value if it is no longer valid
-watch(
-  () => props.allowedReplacementColumns,
-  (newColumns) => {
-    const indexOfReplacementColumnInNewColumns = newColumns.find(
-      (value) => value.id === modelValue.value.replaceColumn,
-    );
-
-    if (typeof indexOfReplacementColumnInNewColumns === "undefined") {
-      modelValue.value.replaceColumn = newColumns[0]?.id;
-    }
-  },
-  { deep: true },
-);
 </script>
 
 <template>
@@ -77,6 +63,7 @@ watch(
         type="text"
         class="column-input"
         placeholder="New column..."
+        :is-valid="isValid"
         compact
       />
     </div>
@@ -89,6 +76,7 @@ watch(
         :possible-values="allowedReplacementColumns"
         class="column-input"
         direction="up"
+        :is-valid="isValid"
         compact
       />
     </div>

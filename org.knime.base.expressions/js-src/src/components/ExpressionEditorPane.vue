@@ -1,29 +1,37 @@
 <script setup lang="ts">
 import { editor, type UseCodeEditorReturn } from "@knime/scripting-editor";
 import { onKeyStroke } from "@vueuse/core";
-import { ref, watch, computed } from "vue";
+import {
+  ref,
+  watch,
+  computed,
+  type FunctionalComponent,
+  type SVGAttributes,
+} from "vue";
 import {
   useDraggedFunctionStore,
   resetDraggedFunctionStore,
 } from "@/draggedFunctionStore";
-import SubMenu from "webapps-common/ui/components/SubMenu.vue";
-import type { MenuItem } from "webapps-common/ui/components/MenuItems.vue";
 import TrashIcon from "webapps-common/ui/assets/img/icons/trash.svg";
 import UpArrowIcon from "webapps-common/ui/assets/img/icons/arrow-up.svg";
 import DownArrowIcon from "webapps-common/ui/assets/img/icons/arrow-down.svg";
-import MenuIcon from "webapps-common/ui/assets/img/icons/menu-options.svg";
-import PlusIcon from "webapps-common/ui/assets/img/icons/circle-plus.svg";
+import CopyIcon from "webapps-common/ui/assets/img/icons/copy.svg";
+import FunctionButton from "webapps-common/ui/components/FunctionButton.vue";
+import { type ErrorLevel } from "@/expressionDiagnostics";
 
 export type ExpressionEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;
+  setErrorLevel: (errorLevel: ErrorLevel) => void;
 };
+
+const errorLevel = ref<ErrorLevel>("OK");
 
 const emit = defineEmits<{
   focus: [filname: string];
   "move-up": [filename: string];
   "move-down": [filename: string];
   delete: [filename: string];
-  "add-below": [filename: string];
+  "copy-below": [filename: string];
 }>();
 
 interface Props {
@@ -33,31 +41,39 @@ interface Props {
   isFirst?: boolean;
   isLast?: boolean;
   isOnly?: boolean;
+  isActive?: boolean;
 }
 const props = defineProps<Props>();
 
-const submenuItems = computed<MenuItem[]>(() => [
+type ButtonItem = {
+  text: string;
+  icon: FunctionalComponent<SVGAttributes>;
+  eventName: string;
+  disabled?: boolean;
+};
+
+const buttonActions = computed<ButtonItem[]>(() => [
   {
     text: "Move upwards",
     icon: UpArrowIcon,
-    metadata: "move-up",
+    eventName: "move-up",
     disabled: props.isFirst,
   },
   {
     text: "Move downwards",
     icon: DownArrowIcon,
-    metadata: "move-down",
+    eventName: "move-down",
     disabled: props.isLast,
   },
   {
-    text: "Add editor below",
-    icon: PlusIcon,
-    metadata: "add-below",
+    text: "Duplicate below",
+    icon: CopyIcon,
+    eventName: "copy-below",
   },
   {
     text: "Delete",
     icon: TrashIcon,
-    metadata: "delete",
+    eventName: "delete",
     disabled: props.isOnly,
   },
 ]);
@@ -72,8 +88,12 @@ const editorState = editor.useCodeEditor({
 });
 
 const getEditorState = () => editorState;
+const setErrorLevel = (level: ErrorLevel) => {
+  errorLevel.value = level;
+};
 defineExpose<ExpressionEditorPaneExposes>({
   getEditorState,
+  setErrorLevel,
 });
 
 onKeyStroke("Escape", () => {
@@ -124,99 +144,154 @@ onKeyStroke("z", (e) => {
   }
 });
 
-const onMenuItemClicked = (evt: Event, item: MenuItem) => {
-  emit(item.metadata, props.fileName);
+const onMenuItemClicked = (item: ButtonItem) => {
+  // @ts-ignore TS doesn't like dyanmic event names
+  emit(item.eventName, props.fileName);
 };
 </script>
 
 <template>
-  <div class="editor-container">
+  <div
+    class="editor-container"
+    :class="{
+      error: errorLevel === 'ERROR',
+      active: isActive,
+    }"
+    @focusin="onFocus"
+  >
     <span class="editor-title-bar">
       <span class="title-text">{{ props.title }}</span>
-      <SubMenu
-        :items="submenuItems"
-        class="title-menu"
-        @item-click="onMenuItemClicked"
-      >
-        <MenuIcon class="open-icon" />
-      </SubMenu>
+      <span class="title-menu">
+        <FunctionButton
+          v-for="item in buttonActions"
+          :key="item.text"
+          :disabled="item.disabled"
+          class="menu-button"
+          compact
+          @click="onMenuItemClicked(item)"
+        >
+          <component :is="item.icon" />
+        </FunctionButton>
+      </span>
     </span>
-    <div
-      ref="editorContainer"
-      class="code-editor"
-      @drop="onDropEvent"
-      @focusin="onFocus"
-    />
+    <div ref="editorContainer" class="code-editor" @drop="onDropEvent" />
     <span class="editor-control-bar">
       <slot name="multi-editor-controls" />
     </span>
   </div>
 </template>
 
-<style scoped>
-.code-editor {
-  flex-grow: 1;
-  flex-shrink: 1;
-  display: flex;
-  min-height: 70px;
-}
-
+<style lang="postcss" scoped>
 .editor-container {
-  --title-bar-height: 30px;
-  --min-editor-height: 70px;
-
-  margin-bottom: var(--space-8);
-  margin-left: var(--space-8);
-  margin-right: var(--space-8);
+  margin: var(--space-12) var(--space-8);
   box-shadow: var(--shadow-elevation-1);
   position: relative;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
 
+  --border-colour: var(--knime-cornflower);
+
+  &.error {
+    --border-colour: var(--knime-coral-dark);
+  }
+
+  &.warning {
+    --border-colour: var(--knime-carrot);
+  }
+
+  &.warning,
+  &.error {
+    &::after {
+      position: absolute;
+      content: "";
+      border: 1px solid var(--border-colour);
+      pointer-events: none;
+      z-index: 1;
+      inset: -1px;
+    }
+  }
+
+  &:hover {
+    box-shadow: var(--shadow-elevation-2);
+  }
+
   /* Max height should be parent height */
   max-height: 100%;
   min-height: 200px;
-}
 
-.editor-container:focus-within::after {
-  position: absolute;
-  content: "";
-  border: 2px solid var(--knime-cornflower);
-  pointer-events: none;
-  z-index: 1;
-  inset: -3px;
-}
-
-/* Editor gets an extra margin iff it's the first one of its type.
-Basically gives us some nice margin collapsing. */
-.editor-container:first-child {
-  margin-top: var(--space-8);
-}
-
-.editor-title-bar {
-  height: var(--title-bar-height);
-  padding-left: var(--space-16);
-  background-color: var(--knime-porcelain);
-  flex-shrink: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  & .title-menu {
-    background-color: transparent;
+  &:first-child {
+    /* Editor gets an extra margin iff it's the first one of its type. */
+    margin-top: var(--space-24);
   }
-}
 
-.editor-control-bar {
-  display: flex;
-  align-items: center;
-  flex-direction: row;
-  justify-content: flex-end;
-  margin: 0;
-  background-color: var(--knime-gray-light-semi);
-  border-top: 1px solid var(--knime-silver-sand);
-  height: fit-content;
-  flex-grow: 1;
+  & .editor-title-bar {
+    height: 30px;
+    padding: 0 var(--space-16);
+    background-color: var(--knime-porcelain);
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 400;
+    font-family: Roboto, sans-serif;
+
+    & .title-menu {
+      background-color: transparent;
+      display: flex;
+      gap: var(--space-8);
+    }
+  }
+
+  & .code-editor {
+    flex-grow: 1;
+    flex-shrink: 1;
+    display: flex;
+    min-height: 70px;
+    position: relative;
+  }
+
+  & .editor-control-bar {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    justify-content: flex-end;
+    margin: 0;
+    background-color: var(--knime-gray-light-semi);
+    border-top: 1px solid var(--knime-silver-sand);
+    height: fit-content;
+    flex-grow: 1;
+  }
+
+  &:focus-within,
+  &.active {
+    &::after {
+      position: absolute;
+      content: "";
+      border: 1px solid var(--border-colour);
+      pointer-events: none;
+      z-index: 1;
+      inset: -1px;
+    }
+
+    & .code-editor::after {
+      position: absolute;
+      content: "";
+      background-color: var(--knime-cornflower);
+      opacity: 0.075;
+      pointer-events: none;
+      z-index: 1;
+      inset: 0;
+    }
+
+    & .editor-title-bar {
+      background-color: var(--knime-cornflower);
+      color: var(--knime-porcelain);
+
+      & .title-menu .menu-button :deep(svg) {
+        stroke: var(--knime-porcelain);
+      }
+    }
+  }
 }
 </style>

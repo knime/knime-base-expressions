@@ -17,6 +17,7 @@ import DropdownIcon from "webapps-common/ui/assets/img/icons/arrow-dropdown.svg"
 import SubMenu from "webapps-common/ui/components/SubMenu.vue";
 import Tooltip from "webapps-common/ui/components/Tooltip.vue";
 import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
+import PlusIcon from "webapps-common/ui/assets/img/icons/circle-plus.svg";
 import { useWindowSize, onKeyStroke } from "@vueuse/core";
 import {
   computed,
@@ -37,7 +38,10 @@ import ExpressionEditorPane, {
 } from "./ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "./functionCatalogTypes";
 import { useStore } from "@/store";
-import { runDiagnostics } from "@/expressionDiagnostics";
+import {
+  runDiagnostics,
+  runColumnOutputDiagnostics,
+} from "@/expressionDiagnostics";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import {
   COMBINED_SPLITTER_WIDTH,
@@ -49,6 +53,7 @@ import {
 import { convertFunctionsToInsertionItems } from "./convertFunctionsToInsertionItems";
 import * as monaco from "monaco-editor";
 import { v4 as uuidv4 } from "uuid";
+import FunctionButton from "webapps-common/ui/components/FunctionButton.vue";
 
 const language = "knime-expression";
 
@@ -61,6 +66,7 @@ const store = useStore();
 const columnSelectorStates = reactive<{ [key: string]: ColumnSelectorState }>(
   {},
 );
+const columnSelectorStatesValid = reactive<{ [key: string]: boolean }>({});
 
 /**
  * Generate a new key for a new editor. This is used to index the columnSelectorStates
@@ -148,8 +154,8 @@ const getFirstEditor = (): ExpressionEditorPaneExposes => {
   return multiEditorComponentRefs[orderedEditorKeys[0]];
 };
 
-const runDiagnosticsFunction = () => {
-  runDiagnostics(
+const runDiagnosticsFunction = async () => {
+  const severityLevels = await runDiagnostics(
     orderedEditorKeys
       .map((key) => multiEditorComponentRefs[key])
       .map((editor) => editor.getEditorState()),
@@ -159,6 +165,23 @@ const runDiagnosticsFunction = () => {
         state.outputMode === "APPEND" ? state.createColumn : null,
       ),
   );
+
+  const columnValidities = runColumnOutputDiagnostics(
+    orderedEditorKeys.map((key) => columnSelectorStates[key]),
+    columnsInInputTable.value.map((column) => column.id),
+  );
+
+  for (let i = 0; i < orderedEditorKeys.length; i++) {
+    const key = orderedEditorKeys[i];
+
+    columnSelectorStatesValid[key] = columnValidities[i];
+
+    if (severityLevels[i] === "ERROR" || !columnValidities[i]) {
+      multiEditorComponentRefs[key].setErrorLevel("ERROR");
+    } else {
+      multiEditorComponentRefs[key].setErrorLevel("OK");
+    }
+  }
 };
 
 onMounted(async () => {
@@ -307,6 +330,45 @@ scriptingService.registerSettingsGetterForApply(
   }),
 );
 
+const addNewEditorBelowExisting = async (fileNameAbove: string) => {
+  const latestKey = generateNewKey();
+  const desiredInsertionIndex = orderedEditorKeys.indexOf(fileNameAbove) + 1;
+
+  columnSelectorStates[latestKey] = {
+    outputMode: "APPEND",
+    createColumn: "New Column",
+    replaceColumn:
+      (await scriptingService.getInputObjects())[0].subItems?.[0].name ?? "",
+  };
+
+  orderedEditorKeys.splice(desiredInsertionIndex, 0, latestKey);
+
+  // Wait for the editor to render and populate the ref
+  await nextTick();
+
+  runDiagnosticsFunction();
+
+  editorStateWatchers[latestKey] = watch(
+    multiEditorComponentRefs[latestKey].getEditorState().text,
+    runDiagnosticsFunction,
+  );
+  columnStateWatchers[latestKey] = watch(
+    () => columnSelectorStates[latestKey],
+    runDiagnosticsFunction,
+    {
+      deep: true,
+    },
+  );
+
+  multiEditorComponentRefs[latestKey].getEditorState().editor.value?.focus();
+
+  return latestKey;
+};
+
+const addEditorAtBottom = () => {
+  addNewEditorBelowExisting(orderedEditorKeys[orderedEditorKeys.length - 1]);
+};
+
 const onEditorRequestedDelete = (filename: string) => {
   if (numberOfEditors.value === 1) {
     return;
@@ -363,6 +425,18 @@ const onEditorRequestedMoveDown = (filename: string) => {
   });
 };
 
+const onEditorRequestedCopyBelow = async (filename: string) => {
+  const newKey = await addNewEditorBelowExisting(filename);
+
+  // Copy state from the editor above to the new editor
+  columnSelectorStates[newKey] = { ...columnSelectorStates[filename] };
+  multiEditorComponentRefs[newKey]
+    .getEditorState()
+    .setInitialText(
+      multiEditorComponentRefs[filename].getEditorState().text.value,
+    );
+};
+
 const onFunctionInsertionTriggered = (payload: {
   eventSource: string;
   functionName: string;
@@ -402,43 +476,13 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
   }
 });
 
-const columnExists = (columnName: string) =>
-  columnsInInputTable.value.findIndex((column) => column.id === columnName) !==
-  -1;
-
-const columnSelectorStateValid = computed(() => {
-  if (numberOfEditors.value === 0) {
-    return true;
-  }
-
-  const appendedColumnsSoFar: string[] = [];
-
-  for (const state of orderedEditorKeys.map(
-    (key) => columnSelectorStates[key],
-  )) {
-    if (
-      state.outputMode === "APPEND" &&
-      (columnExists(state.createColumn) ||
-        appendedColumnsSoFar.includes(state.createColumn))
-    ) {
-      return false;
-    }
-
-    if (state.outputMode === "APPEND") {
-      appendedColumnsSoFar.push(state.createColumn);
-    }
-  }
-  return true;
-});
-
 const runButtonDisabledErrorReason = computed(() => {
   if (!inputsAvailable.value) {
     return "No input available. Connect an executed node.";
   } else if (!store.expressionValid) {
     return "Expression is not valid.";
-    // eslint-disable-next-line no-negated-condition
-  } else if (!columnSelectorStateValid.value) {
-    return "Output column exists in input table.";
+  } else if (Object.values(columnSelectorStatesValid).some((valid) => !valid)) {
+    return "Output columns are not valid.";
   } else {
     return null;
   }
@@ -474,39 +518,6 @@ const calculateInitialPaneSizes = () => {
 };
 
 const initialPaneSizes = calculateInitialPaneSizes();
-
-const addNewEditorBelowExisting = async (fileNameAbove: string) => {
-  const latestKey = generateNewKey();
-  const desiredInsertionIndex = orderedEditorKeys.indexOf(fileNameAbove) + 1;
-
-  columnSelectorStates[latestKey] = {
-    outputMode: "APPEND",
-    createColumn: "New Column",
-    replaceColumn:
-      (await scriptingService.getInputObjects())[0].subItems?.[0].name ?? "",
-  };
-
-  orderedEditorKeys.splice(desiredInsertionIndex, 0, latestKey);
-
-  // Wait for the editor to render and populate the ref
-  await nextTick();
-
-  runDiagnosticsFunction();
-
-  editorStateWatchers[latestKey] = watch(
-    multiEditorComponentRefs[latestKey].getEditorState().text,
-    runDiagnosticsFunction,
-  );
-  columnStateWatchers[latestKey] = watch(
-    () => columnSelectorStates[latestKey],
-    runDiagnosticsFunction,
-    {
-      deep: true,
-    },
-  );
-
-  multiEditorComponentRefs[latestKey].getEditorState().editor.value?.focus();
-};
 </script>
 
 <template>
@@ -536,23 +547,25 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
             v-for="(key, index) in orderedEditorKeys"
             :key="key"
             :ref="createElementReference(key)"
-            :title="`Expression editor (${1 + index})`"
+            :title="`Expression (${1 + index})`"
             :file-name="key"
             :language="language"
             :is-first="index === 0"
             :is-last="index === numberOfEditors - 1"
             :is-only="numberOfEditors === 1"
+            :is-active="store.activeEditorFileName === key"
             @focus="onEditorFocused(key)"
             @delete="onEditorRequestedDelete"
             @move-down="onEditorRequestedMoveDown"
             @move-up="onEditorRequestedMoveUp"
-            @add-below="addNewEditorBelowExisting"
+            @copy-below="onEditorRequestedCopyBelow"
           >
             <!-- Controls displayed once per editor -->
             <template #multi-editor-controls>
               <div class="editor-controls">
                 <ColumnOutputSelector
                   v-model="columnSelectorStates[key]"
+                  v-model:is-valid="columnSelectorStatesValid[key]"
                   :allowed-replacement-columns="
                     getAvailableColumnsForReplacement(key)
                   "
@@ -560,6 +573,13 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
               </div>
             </template>
           </ExpressionEditorPane>
+
+          <FunctionButton
+            class="add-new-editor-button"
+            @click="addEditorAtBottom"
+          >
+            <PlusIcon /><span>Add new editor</span>
+          </FunctionButton>
         </template>
         <template #right-pane>
           <template v-if="functionCatalogData">
@@ -652,6 +672,12 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
     width: 50px;
     height: 50px;
   }
+}
+
+.add-new-editor-button {
+  width: fit-content;
+  margin: var(--space-16) auto;
+  outline: 1px solid var(--knime-silver-sand);
 }
 
 .submenu {

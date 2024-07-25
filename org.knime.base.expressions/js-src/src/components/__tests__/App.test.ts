@@ -97,6 +97,7 @@ vi.mock("@/expressionScriptingService", () => ({
 
 vi.mock("@/expressionDiagnostics", () => ({
   runDiagnostics: vi.fn(() => Promise.resolve([[]])),
+  runColumnOutputDiagnostics: vi.fn(() => Promise.resolve([])),
 }));
 
 describe("App.vue", () => {
