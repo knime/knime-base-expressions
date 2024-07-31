@@ -139,7 +139,7 @@ class ExpressionNodeModel extends NodeModel {
             var outputType = Expressions.getInferredType(ast);
             if (ValueType.MISSING.equals(outputType)) {
                 throw new InvalidSettingsException(
-                    "The %sth expression evaluates to MISSING. Enter an expression that has an output type."
+                    "Expression (%d) evaluates to MISSING. Enter an expression that has an output type."
                         .formatted(indexInScripts + 1));
             }
             var outputDataSpec = Exec.valueTypeToDataSpec(outputType);
@@ -155,11 +155,12 @@ class ExpressionNodeModel extends NodeModel {
                     .createSpec();
             } else {
                 throw new InvalidSettingsException(
-                    "The output column '%s' exists in the input table. Choose another column name."
-                        .formatted(outputColumn));
+                    "The output column '%s' of Expression (%d) exists in the input table. Choose another column name."
+                        .formatted(outputColumn, indexInScripts + 1));
             }
         } catch (final ExpressionCompileException e) {
-            throw new InvalidSettingsException(e.getMessage(), e);
+            throw new InvalidSettingsException(
+                "Error in Expression (%d): %s".formatted(indexInScripts + 1, e.getMessage()), e);
         }
     }
 
