@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { ValueSwitch, Dropdown, InputField } from "@knime/components";
 import { useShouldFocusBePainted } from "@knime/scripting-editor";
 import { type OutputInsertionMode } from "@/expressionScriptingService";
@@ -28,9 +29,11 @@ const modelValue = defineModel<ColumnSelectorState>({
   } satisfies ColumnSelectorState,
 });
 
-const isValid = defineModel<boolean>("isValid", {
-  default: true,
+const errorMessage = defineModel<string | null>("errorMessage", {
+  default: null,
 });
+
+const isValid = computed(() => errorMessage.value === null);
 
 const allowedOperationModes = [
   { id: "APPEND", text: "Append" },

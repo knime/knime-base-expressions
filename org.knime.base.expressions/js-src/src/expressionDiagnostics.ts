@@ -3,7 +3,6 @@ import {
   type UseCodeEditorReturn,
 } from "@knime/scripting-editor";
 import { editor as MonacoEditor, MarkerSeverity, Range } from "monaco-editor";
-import { useStore } from "./store";
 import type { ColumnSelectorState } from "./components/ColumnOutputSelector.vue";
 
 type Diagnostic = {
@@ -25,8 +24,6 @@ const DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY = {
   INFO: MarkerSeverity.Info,
   HINT: MarkerSeverity.Hint,
 };
-
-const store = useStore();
 
 /**
  * Run the diagnostics for all editors and set the markers in the respective editors.
@@ -67,10 +64,6 @@ export const runDiagnostics = async (
     );
   });
 
-  store.expressionValid = !diagnostics.some((diagnosticsForThisEditor) =>
-    diagnosticsForThisEditor.some((d) => d.severity === "ERROR"),
-  );
-
   return diagnostics.map((diagnosticsForThisEditor) => {
     if (diagnosticsForThisEditor.some((d) => d.severity === "ERROR")) {
       return "ERROR";
@@ -85,34 +78,29 @@ export const runDiagnostics = async (
 export const runColumnOutputDiagnostics = (
   orderedStates: ColumnSelectorState[],
   inputColumns: string[],
-): boolean[] => {
+): (string | null)[] => {
   const appendedColumnsSoFar: string[] = [];
 
-  const stateValidities: boolean[] = [];
+  return orderedStates.map((state) => {
+    if (state.outputMode === "APPEND") {
+      if (appendedColumnsSoFar.includes(state.createColumn)) {
+        return `Column "${state.createColumn}" was appended twice!`;
+      }
+      if (inputColumns.includes(state.createColumn)) {
+        return `Column "${state.createColumn}" already exists in input columns`;
+      }
+      appendedColumnsSoFar.push(state.createColumn);
+    }
 
-  for (const state of orderedStates) {
     if (
-      state.outputMode === "APPEND" &&
-      (inputColumns.includes(state.createColumn) ||
-        appendedColumnsSoFar.includes(state.createColumn))
-    ) {
-      stateValidities.push(false);
-    } else if (
       state.outputMode === "REPLACE_EXISTING" &&
       !(
         inputColumns.includes(state.replaceColumn) ||
         appendedColumnsSoFar.includes(state.replaceColumn)
       )
     ) {
-      stateValidities.push(false);
-    } else {
-      stateValidities.push(true);
+      return `Column "${state.replaceColumn}" does not exist in input or appended columns`;
     }
-
-    if (state.outputMode === "APPEND") {
-      appendedColumnsSoFar.push(state.createColumn);
-    }
-  }
-
-  return stateValidities;
+    return null;
+  });
 };

@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import {
   consoleHandler,
+  MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE,
   ScriptingEditor,
   setActiveEditorStoreForAi,
-  MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE,
   insertionEventHelper,
   OutputTablePreview,
   type InsertionEvent,
   COLUMN_INSERTION_EVENT,
 } from "@knime/scripting-editor";
 import {
-  type ExpressionVersion,
   type ExpressionNodeSettings,
+  type ExpressionVersion,
   getExpressionScriptingService,
 } from "@/expressionScriptingService";
 import {
@@ -25,15 +25,15 @@ import {
 import PlayIcon from "@knime/styles/img/icons/play.svg";
 import DropdownIcon from "@knime/styles/img/icons/arrow-dropdown.svg";
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
-import { useWindowSize, onKeyStroke } from "@vueuse/core";
+import { onKeyStroke, useWindowSize } from "@vueuse/core";
 import {
-  computed,
-  onMounted,
-  ref,
-  reactive,
-  nextTick,
-  watch,
   type ComponentPublicInstance,
+  computed,
+  nextTick,
+  onMounted,
+  reactive,
+  ref,
+  watch,
 } from "vue";
 import FunctionCatalog, {
   FUNCTION_INSERTION_EVENT,
@@ -46,10 +46,9 @@ import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
 } from "./ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "./functionCatalogTypes";
-import { useStore } from "@/store";
 import {
-  runDiagnostics,
   runColumnOutputDiagnostics,
+  runDiagnostics,
 } from "@/expressionDiagnostics";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import {
@@ -68,13 +67,17 @@ const language = "knime-expression";
 const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
 
 const scriptingService = getExpressionScriptingService();
-const store = useStore();
+
+const activeEditorFileName = ref<string | null>(null);
 
 // Populated by the initial settings
 const columnSelectorStates = reactive<{ [key: string]: ColumnSelectorState }>(
   {},
 );
-const columnSelectorStatesValid = reactive<{ [key: string]: boolean }>({});
+
+const columnSelectorStateErrorMessages = reactive<{
+  [key: string]: string | null;
+}>({});
 
 /**
  * Generate a new key for a new editor. This is used to index the columnSelectorStates
@@ -102,6 +105,10 @@ const editorStateWatchers = reactive<{ [key: string]: Function }>({});
 // and the multiEditorComponentRefs. Things are run in the order defined here,
 // saved in the order defined here, etc.
 const orderedEditorKeys = reactive<string[]>([]);
+
+const createEditorTitle = (index: number) => `Expression (${index + 1})`;
+const getEditorTitleFromKey = (key: string) =>
+  createEditorTitle(orderedEditorKeys.indexOf(key));
 
 const numberOfEditors = computed(() => orderedEditorKeys.length);
 
@@ -132,15 +139,15 @@ const getAvailableColumnsForReplacement = (
 };
 
 const getActiveEditor = (): ExpressionEditorPaneExposes | null => {
-  if (!store.activeEditorFileName) {
+  if (activeEditorFileName.value === null) {
     return null;
   }
 
-  return multiEditorComponentRefs[store.activeEditorFileName];
+  return multiEditorComponentRefs[activeEditorFileName.value];
 };
 
 const onEditorFocused = (filename: string) => {
-  store.activeEditorFileName = filename;
+  activeEditorFileName.value = filename;
   setActiveEditorStoreForAi(
     multiEditorComponentRefs[filename]?.getEditorState(),
   );
@@ -157,13 +164,14 @@ const onEditorFocused = (filename: string) => {
 
 const functionCatalogData = ref<FunctionCatalogData>();
 const inputsAvailable = ref(false);
+const severityLevels = ref<string[]>([]);
 
 const getFirstEditor = (): ExpressionEditorPaneExposes => {
   return multiEditorComponentRefs[orderedEditorKeys[0]];
 };
 
 const runDiagnosticsFunction = async () => {
-  const severityLevels = await runDiagnostics(
+  severityLevels.value = await runDiagnostics(
     orderedEditorKeys
       .map((key) => multiEditorComponentRefs[key])
       .map((editor) => editor.getEditorState()),
@@ -182,9 +190,9 @@ const runDiagnosticsFunction = async () => {
   for (let i = 0; i < orderedEditorKeys.length; i++) {
     const key = orderedEditorKeys[i];
 
-    columnSelectorStatesValid[key] = columnValidities[i];
+    columnSelectorStateErrorMessages[key] = columnValidities[i];
 
-    if (severityLevels[i] === "ERROR" || !columnValidities[i]) {
+    if (severityLevels.value[i] === "ERROR" || columnValidities[i] !== null) {
       multiEditorComponentRefs[key].setErrorLevel("ERROR");
     } else {
       multiEditorComponentRefs[key].setErrorLevel("OK");
@@ -293,14 +301,14 @@ onMounted(async () => {
   }
 
   setActiveEditorStoreForAi(getFirstEditor()?.getEditorState());
-  store.activeEditorFileName = orderedEditorKeys[0];
+  activeEditorFileName.value = orderedEditorKeys[0];
 
   // Run initial diagnostics now that we've set the initial text
   runDiagnosticsFunction();
 });
 
 const runExpressions = (rows: number) => {
-  if (store.expressionValid) {
+  if (severityLevels.value.every((severity) => severity !== "ERROR")) {
     scriptingService.sendToService("runExpression", [
       orderedEditorKeys
         .map((key) => multiEditorComponentRefs[key])
@@ -484,15 +492,37 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
 });
 
 const runButtonDisabledErrorReason = computed(() => {
+  const errors = [];
+
   if (!inputsAvailable.value) {
-    return "No input available. Connect an executed node.";
-  } else if (!store.expressionValid) {
-    return "Expression is not valid.";
-  } else if (Object.values(columnSelectorStatesValid).some((valid) => !valid)) {
-    return "Output columns are not valid.";
-  } else {
+    errors.push("No input available. Connect an executed node.");
+  }
+
+  severityLevels.value.forEach((severity, index) => {
+    if (severity === "ERROR") {
+      errors.push(`${createEditorTitle(index)} is invalid.`);
+    }
+  });
+
+  const columnErrors = Object.entries(columnSelectorStateErrorMessages)
+    .map(([key, message]) =>
+      message === null ? null : `${getEditorTitleFromKey(key)}: ${message}`,
+    )
+    .filter((message) => message !== null);
+
+  errors.push(...columnErrors);
+
+  if (errors.length === 0) {
     return null;
   }
+
+  let result = errors[0];
+
+  if (errors.length > 1) {
+    result += ` And ${errors.length - 1} more error${errors.length - 1 > 1 ? "s" : ""} not shown.`;
+  }
+
+  return result;
 });
 
 const calculateInitialPaneSizes = () => {
@@ -564,13 +594,13 @@ const initialPaneSizes = calculateInitialPaneSizes();
             v-for="(key, index) in orderedEditorKeys"
             :key="key"
             :ref="createElementReference(key)"
-            :title="`Expression (${1 + index})`"
+            :title="createEditorTitle(index)"
             :file-name="key"
             :language="language"
             :is-first="index === 0"
             :is-last="index === numberOfEditors - 1"
             :is-only="numberOfEditors === 1"
-            :is-active="store.activeEditorFileName === key"
+            :is-active="activeEditorFileName === key"
             @focus="onEditorFocused(key)"
             @delete="onEditorRequestedDelete"
             @move-down="onEditorRequestedMoveDown"
@@ -582,7 +612,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
               <div class="editor-controls">
                 <ColumnOutputSelector
                   v-model="columnSelectorStates[key]"
-                  v-model:is-valid="columnSelectorStatesValid[key]"
+                  v-model:is-valid="columnSelectorStateErrorMessages[key]"
                   :allowed-replacement-columns="
                     getAvailableColumnsForReplacement(key)
                   "
@@ -610,7 +640,10 @@ const initialPaneSizes = calculateInitialPaneSizes();
 
         <!-- Controls displayed once only -->
         <template #code-editor-controls="{ showButtonText }">
-          <Tooltip :text="runButtonDisabledErrorReason ?? ''">
+          <Tooltip
+            class="tooltip-word-wrap"
+            :text="runButtonDisabledErrorReason ?? ''"
+          >
             <SplitButton>
               <Button
                 primary
@@ -696,6 +729,14 @@ const initialPaneSizes = calculateInitialPaneSizes();
   width: fit-content;
   margin: var(--space-16) auto;
   outline: 1px solid var(--knime-silver-sand);
+}
+
+.tooltip-word-wrap .text {
+  white-space: normal;
+  overflow: visible;
+  width: auto;
+  height: auto;
+  z-index: 9999;
 }
 
 .submenu {
