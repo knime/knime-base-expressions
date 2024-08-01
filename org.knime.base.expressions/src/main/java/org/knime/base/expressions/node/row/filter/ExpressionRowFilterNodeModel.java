@@ -55,7 +55,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
-import org.knime.base.expressions.node.ExpressionNodeSettings;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
@@ -85,11 +84,11 @@ import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 final class ExpressionRowFilterNodeModel extends NodeModel {
 
     // TODO(AP-23189) wait for refactor of NodeSettings
-    private final ExpressionNodeSettings m_settings;
+    private final ExpressionRowFilterSettings m_settings;
 
     ExpressionRowFilterNodeModel() {
         super(1, 1);
-        m_settings = new ExpressionNodeSettings();
+        m_settings = new ExpressionRowFilterSettings(null);
     }
 
     /** @return the typed Ast for the configured expression */
@@ -105,8 +104,7 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
 
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
-        if (m_settings.getNumScripts() == 1
-            && ExpressionNodeSettings.DEFAULT_SCRIPT.equals(m_settings.getScripts().get(0))) {
+        if (ExpressionRowFilterSettings.DEFAULT_SCRIPT.equals(m_settings.getScript())) {
             throw new InvalidSettingsException("The expression node has not yet been configured. Enter an expression.");
         }
 
@@ -119,23 +117,16 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws Exception {
 
-        int numberOfScripts = m_settings.getNumScripts();
-
-        if (numberOfScripts != 1) {
-            throw new IllegalStateException("Only one expression is supported");
-        }
-
         var inTable = inData[0];
         var numberOfRows = inTable.size();
 
         var messageBuilder = createMessageBuilder();
         EvaluationContext ctx = messageBuilder::addTextIssue;
 
-        int i = 0;
-        exec.setProgress(0, "Evaluating expression ");
+        exec.setProgress(0, "Evaluating expression");
 
         // Prepare the expression
-        var expression = getPreparedExpression(inTable.getDataTableSpec(), m_settings.getScripts().get(i));
+        var expression = getPreparedExpression(inTable.getDataTableSpec(), m_settings.getScript());
 
         // Create a reference table for the input table
         var inRefTable = ExpressionRunnerUtils.createReferenceTable(inTable, exec, exec.createSubProgress(0.33));
@@ -192,17 +183,17 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
 
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {
-        m_settings.saveModelSettingsTo(settings);
+        m_settings.saveSettingsTo(settings);
     }
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        new ExpressionNodeSettings().loadModelSettings(settings);
+        new ExpressionRowFilterSettings().validate(settings);
     }
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_settings.loadModelSettings(settings);
+        m_settings.loadSettingsFrom(settings);
     }
 
     @Override

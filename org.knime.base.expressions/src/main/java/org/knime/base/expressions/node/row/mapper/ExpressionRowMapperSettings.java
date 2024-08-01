@@ -44,14 +44,15 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 11, 2024 (benjamin): created
+ *   Aug 26, 2024 (david): created
  */
-package org.knime.base.expressions.node;
+package org.knime.base.expressions.node.row.mapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -63,20 +64,23 @@ import org.knime.core.expressions.functions.BuiltInFunctions;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.webui.node.dialog.NodeSettingsService;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Streams;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
+import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.scripting.editor.GenericSettingsIOManager;
+import org.knime.scripting.editor.ScriptingNodeSettings;
 
 /**
- * Settings of the Expression node.
+ * Settings for an Expression Row Mapper node, with loading, saving, and validation.
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
 @SuppressWarnings("restriction") // SettingsType is not yet public API
-public final class ExpressionNodeSettings {
+public class ExpressionRowMapperSettings extends ScriptingNodeSettings implements GenericSettingsIOManager {
 
+    /**
+     * The script shown in a new expression node.
+     */
     public static final String DEFAULT_SCRIPT = """
             # Examples:
             # 1. Calculate the sine of values in column "My Column":
@@ -92,43 +96,54 @@ public final class ExpressionNodeSettings {
             # or have a look at the node description!
             """;
 
+    /**
+     * The default name of the column that is created by the expression when in append mode.
+     */
     public static final String DEFAULT_CREATED_COLUMN = "New Column";
 
-    public static final String DEFAULT_REPLACED_COLUMN = "";
-
+    /**
+     * The default output mode for the expression node.
+     */
     public static final ColumnInsertionMode DEFAULT_OUTPUT_MODE = ColumnInsertionMode.APPEND;
 
-    public static final int DEFAULT_NUM_ADDITIONAL_SCRIPTS = 0;
+    private static final String CFG_KEY_SCRIPT = "script";
 
-    public static final String CFG_KEY_SCRIPT = "script";
+    private static final String CFG_KEY_CREATED_COLUMN = "createdColumn";
 
-    public static final String CFG_KEY_CREATED_COLUMN = "createdColumn";
+    private static final String CFG_KEY_REPLACED_COLUMN = "replacedColumn";
 
-    public static final String CFG_KEY_REPLACED_COLUMN = "replacedColumn";
+    private static final String CFG_KEY_OUTPUT_MODE = "columnOutputMode";
 
-    public static final String CFG_KEY_OUTPUT_MODE = "columnOutputMode";
+    private static final String CFG_KEY_LANGUAGE_VERSION = "languageVersion";
 
-    public static final String CFG_KEY_LANGUAGE_VERSION = "languageVersion";
+    private static final String CFG_KEY_BUILTIN_FUNCTIONS_VERSION = "builtinFunctionsVersion";
 
-    public static final String CFG_KEY_BUILTIN_FUNCTIONS_VERSION = "builtinFunctionsVersion";
+    private static final String CFG_KEY_BUILTIN_AGGREGATIONS_VERSION = "builtinAggregationsVersion";
 
-    public static final String CFG_KEY_BUILTIN_AGGREGATIONS_VERSION = "builtinAggregationsVersion";
+    private static final String CFG_KEY_ADDITIONAL_SCRIPTS = "additionalScripts";
 
-    public static final String CFG_KEY_ADDITIONAL_SCRIPTS = "additionalScripts";
+    private static final String CFG_KEY_ADDITIONAL_OUTPUT_MODES = "additionalOutputModes";
 
-    public static final String CFG_KEY_ADDITIONAL_OUTPUT_MODES = "additionalOutputModes";
+    private static final String CFG_KEY_ADDITIONAL_CREATED_COLUMNS = "additionalCreatedColumns";
 
-    public static final String CFG_KEY_ADDITIONAL_CREATED_COLUMNS = "additionalCreatedColumns";
+    private static final String CFG_KEY_ADDITIONAL_REPLACED_COLUMNS = "additionalReplacedColumns";
 
-    public static final String CFG_KEY_ADDITIONAL_REPLACED_COLUMNS = "additionalReplacedColumns";
+    private static final String JSON_KEY_SCRIPTS = "scripts";
 
-    public static final String JSON_KEY_SCRIPTS = "scripts";
+    private static final String JSON_KEY_OUTPUT_MODES = "outputModes";
 
-    public static final String JSON_KEY_OUTPUT_MODES = "outputModes";
+    private static final String JSON_KEY_CREATED_COLUMNS = "createdColumns";
 
-    public static final String JSON_KEY_CREATED_COLUMNS = "createdColumns";
+    private static final String JSON_KEY_REPLACED_COLUMNS = "replacedColumns";
 
-    public static final String JSON_KEY_REPLACED_COLUMNS = "replacedColumns";
+    private static final String JSON_KEY_LANGUAGE_VERSION = CFG_KEY_LANGUAGE_VERSION;
+
+    private static final String JSON_KEY_FUNCTION_VERSION = CFG_KEY_BUILTIN_FUNCTIONS_VERSION;
+
+    private static final String JSON_KEY_AGGREGATION_VERSION = CFG_KEY_BUILTIN_AGGREGATIONS_VERSION;
+
+    private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES =
+        "settingsAreOverriddenByFlowVariable";
 
     private List<ColumnInsertionMode> m_outputModes;
 
@@ -144,12 +159,33 @@ public final class ExpressionNodeSettings {
 
     private List<String> m_scripts;
 
-    public ExpressionNodeSettings() {
-        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, DEFAULT_REPLACED_COLUMN);
+    /**
+     * Create a new ExpressionNodeSettings object with the default script. The replacement column has to be specified so
+     * that the frontend can display the correct column name in the drop-down box for replacement columns, but if you
+     * don't anticipate it being used (e.g. because you're creating this for a node model, not a dialogue) then it can
+     * be null.
+     *
+     * @param defaultReplacementColumn
+     */
+    public ExpressionRowMapperSettings(final String defaultReplacementColumn) {
+        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, defaultReplacementColumn);
     }
 
-    public ExpressionNodeSettings(final String script, final ColumnInsertionMode outputMode, final String createdColumn,
-        final String replacedColumn) {
+    /**
+     * Create a new ExpressionNodeSettings object with the specified script, output mode, created column, and replaced
+     * column.
+     *
+     * Assumes a single script.
+     *
+     * @param script
+     * @param outputMode
+     * @param createdColumn
+     * @param replacedColumn
+     */
+    public ExpressionRowMapperSettings(final String script, final ColumnInsertionMode outputMode,
+        final String createdColumn, final String replacedColumn) {
+
+        super(SettingsType.MODEL);
 
         // Set to the latest version by default
         // The version will be overwritten if we load an older version from the model settings
@@ -163,12 +199,8 @@ public final class ExpressionNodeSettings {
         this.m_replacedColumns = new ArrayList<>(Arrays.asList(replacedColumn));
     }
 
-    static void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        // Just try to load the settings - if this works they are valid
-        new ExpressionNodeSettings().loadModelSettings(settings);
-    }
-
-    public void loadModelSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+    @Override
+    public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
 
         m_languageVersion = settings.getInt(CFG_KEY_LANGUAGE_VERSION);
         m_builtinFunctionsVersion = settings.getInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION);
@@ -206,65 +238,62 @@ public final class ExpressionNodeSettings {
         if (Stream.of(m_scripts, m_outputModes, m_createdColumns, m_replacedColumns).mapToInt(List::size).distinct()
             .count() != 1) {
 
-            throw new InvalidSettingsException(
-                "Different number of scripts, output modes, created columns, or replaced columns found in model settings.");
+            throw new InvalidSettingsException("Different number of scripts, output modes, created columns, "
+                + "or replaced columns found in model settings.");
         }
     }
 
-    public void readModelSettingsFromJson(final ObjectNode settingsJson) {
-        m_languageVersion = settingsJson.get(CFG_KEY_LANGUAGE_VERSION).asInt();
-        m_builtinFunctionsVersion = settingsJson.get(CFG_KEY_BUILTIN_FUNCTIONS_VERSION).asInt();
-        m_builtinAggregationsVersion = settingsJson.get(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION).asInt();
-
-        m_scripts =
-            Streams.stream(settingsJson.get(JSON_KEY_SCRIPTS)).map(JsonNode::asText).collect(Collectors.toList());
-        m_outputModes = Streams.stream(settingsJson.get(JSON_KEY_OUTPUT_MODES)).map(JsonNode::asText)
-            .map(ColumnInsertionMode::valueOf).collect(Collectors.toList());
-        m_createdColumns = Streams.stream(settingsJson.get(JSON_KEY_CREATED_COLUMNS)).map(JsonNode::asText)
-            .collect(Collectors.toList());
-        m_replacedColumns = Streams.stream(settingsJson.get(JSON_KEY_REPLACED_COLUMNS)).map(JsonNode::asText)
-            .collect(Collectors.toList());
-    }
-
-    public void writeModelSettingsToJson(final ObjectNode settingsJson) {
-        settingsJson.put(CFG_KEY_LANGUAGE_VERSION, m_languageVersion);
-        settingsJson.put(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, m_builtinFunctionsVersion);
-        settingsJson.put(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION, m_builtinAggregationsVersion);
-
-        m_scripts.forEach(script -> settingsJson.withArray(JSON_KEY_SCRIPTS).add(script));
-        m_outputModes.forEach(mode -> settingsJson.withArray(JSON_KEY_OUTPUT_MODES).add(mode.name()));
-        m_createdColumns.forEach(column -> settingsJson.withArray(JSON_KEY_CREATED_COLUMNS).add(column));
-        m_replacedColumns.forEach(column -> settingsJson.withArray(JSON_KEY_REPLACED_COLUMNS).add(column));
-    }
-
+    /**
+     * @return the unmodifiable list of all column output modes
+     */
     public List<ColumnInsertionMode> getColumnInsertionModes() {
         return Collections.unmodifiableList(m_outputModes);
     }
 
+    /**
+     * @return the unmodifiable list of all created columns
+     */
     public List<String> getCreatedColumns() {
         return Collections.unmodifiableList(m_createdColumns);
     }
 
+    /**
+     * @return the unmodifiable list of all columns
+     */
     public List<String> getReplacedColumns() {
         return Collections.unmodifiableList(m_replacedColumns);
     }
 
+    /**
+     * @return the unmodifiable list of all scripts
+     */
     public List<String> getScripts() {
         return Collections.unmodifiableList(m_scripts);
     }
 
+    /**
+     * Get the list of columns that are being actively used, i.e. for each editor, if the output mode is APPEND, return
+     * the column that will be appended, and if the output mode is REPLACE_EXISTING, return the column that would be
+     * replaced.
+     *
+     * @return the unmodifiable list of columns that are being actively used
+     */
     public List<String> getActiveOutputColumns() {
         return IntStream.range(0, getNumScripts()) //
             .mapToObj(i -> m_outputModes.get(i) == ColumnInsertionMode.REPLACE_EXISTING ? m_replacedColumns.get(i)
                 : m_createdColumns.get(i)) //
-            .collect(Collectors.toList());
+            .toList();
     }
 
+    /**
+     * @return the number of scripts
+     */
     public int getNumScripts() {
         return m_scripts.size();
     }
 
-    public void saveModelSettingsTo(final NodeSettingsWO settings) {
+    @Override
+    public void saveSettingsTo(final NodeSettingsWO settings) {
         settings.addString(CFG_KEY_SCRIPT, m_scripts.get(0));
         settings.addString(CFG_KEY_OUTPUT_MODE, m_outputModes.get(0).name());
         settings.addString(CFG_KEY_CREATED_COLUMN, m_createdColumns.get(0));
@@ -284,10 +313,52 @@ public final class ExpressionNodeSettings {
             m_replacedColumns.subList(1, m_replacedColumns.size()).toArray(new String[0]));
     }
 
-    /**
-     * Needs some thought about visibility. This is generic so will be used by different expression nodes
-     */
-    public static NodeSettingsService createNodeSettingsService() {
-        return new ExpressionNodeSettingsService();
+    @Override
+    public Map<String, Object> convertNodeSettingsToMap(final Map<SettingsType, NodeAndVariableSettingsRO> settings)
+        throws InvalidSettingsException {
+
+        loadSettingsFrom(settings);
+
+        var configOverWrittenByFlowVars =
+            isEditorConfigurationOverwrittenByFlowVariable(settings.get(m_scriptSettingsType));
+
+        return Map.of( //
+            JSON_KEY_SCRIPTS, m_scripts, //
+            JSON_KEY_OUTPUT_MODES, m_outputModes, //
+            JSON_KEY_CREATED_COLUMNS, m_createdColumns, //
+            JSON_KEY_REPLACED_COLUMNS, m_replacedColumns, //
+            JSON_KEY_LANGUAGE_VERSION, m_languageVersion, //
+            JSON_KEY_FUNCTION_VERSION, m_builtinFunctionsVersion, //
+            JSON_KEY_AGGREGATION_VERSION, m_builtinAggregationsVersion, //
+            JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES, configOverWrittenByFlowVars //
+        );
+    }
+
+    @SuppressWarnings("unchecked") // these casts are fine if the settings are correct
+    @Override
+    public void writeMapToNodeSettings(final Map<String, Object> data,
+        final Map<SettingsType, NodeAndVariableSettingsWO> settings) throws InvalidSettingsException {
+
+        m_scripts = (List<String>)data.get(JSON_KEY_SCRIPTS);
+        m_outputModes = ((List<String>)data.get(JSON_KEY_OUTPUT_MODES)).stream().map(ColumnInsertionMode::valueOf)
+            .collect(Collectors.toList());
+        m_createdColumns = (List<String>)data.get(JSON_KEY_CREATED_COLUMNS);
+        m_replacedColumns = (List<String>)data.get(JSON_KEY_REPLACED_COLUMNS);
+        m_languageVersion = (int)data.get(JSON_KEY_LANGUAGE_VERSION);
+        m_builtinFunctionsVersion = (int)data.get(JSON_KEY_FUNCTION_VERSION);
+        m_builtinAggregationsVersion = (int)data.get(JSON_KEY_AGGREGATION_VERSION);
+
+        saveSettingsTo(settings);
+    }
+
+    private static boolean isEditorConfigurationOverwrittenByFlowVariable(final NodeAndVariableSettingsRO settings) {
+        return isOverriddenByFlowVariable(settings, CFG_KEY_SCRIPT)
+            || isOverriddenByFlowVariable(settings, CFG_KEY_OUTPUT_MODE)
+            || isOverriddenByFlowVariable(settings, CFG_KEY_CREATED_COLUMN)
+            || isOverriddenByFlowVariable(settings, CFG_KEY_REPLACED_COLUMN)
+            || isOverriddenByFlowVariable(settings, CFG_KEY_ADDITIONAL_SCRIPTS)
+            || isOverriddenByFlowVariable(settings, CFG_KEY_ADDITIONAL_OUTPUT_MODES)
+            || isOverriddenByFlowVariable(settings, CFG_KEY_ADDITIONAL_CREATED_COLUMNS)
+            || isOverriddenByFlowVariable(settings, CFG_KEY_ADDITIONAL_REPLACED_COLUMNS);
     }
 }

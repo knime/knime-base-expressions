@@ -49,7 +49,6 @@
 package org.knime.base.expressions.node.row.mapper;
 
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
-import org.knime.base.expressions.node.ExpressionNodeSettings;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -84,16 +83,16 @@ public final class ExpressionRowMapperNodeFunc implements NodeFunc {
             replacedColumn = columnName;
         }
 
-        new ExpressionNodeSettings(expression, outputMode, createdColumn, replacedColumn).saveModelSettingsTo(settings);
+        new ExpressionRowMapperSettings(expression, outputMode, createdColumn, replacedColumn).saveSettingsTo(settings);
     }
 
     @Override
     public NodeFuncApi getApi() {
-        return NodeFuncApi.builder("run_dataframe_operation_via_llm")//
-            .withInputTable("df", "")//
-            .withStringArgument("query", "")//
-            .withStringArgument("column_name", "")//
-            .withOptionalBooleanArgument("create_new", "")//
+        return NodeFuncApi.builder("run_dataframe_operation_via_llm") //
+            .withInputTable("df", "") //
+            .withStringArgument("query", "") //
+            .withStringArgument("column_name", "") //
+            .withOptionalBooleanArgument("create_new", "") //
             .build();
     }
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   consoleHandler,
-  MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE,
   ScriptingEditor,
   setActiveEditorStoreForAi,
   insertionEventHelper,
@@ -9,12 +8,16 @@ import {
   type InsertionEvent,
   COLUMN_INSERTION_EVENT,
   useReadonlyStore,
+  MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE,
+  getScriptingService,
 } from "@knime/scripting-editor";
-import {
-  type ExpressionNodeSettings,
-  type ExpressionVersion,
-  getExpressionScriptingService,
-} from "@/expressionScriptingService";
+import { getExpressionInitialDataService } from "@/expressionInitialDataService";
+import { getExpressionSettingsService } from "@/expressionSettingsService";
+import type {
+  ExpressionNodeSettings,
+  ExpressionVersion,
+  ExpressionInitialData,
+} from "@/types";
 import {
   Button,
   SplitButton,
@@ -66,8 +69,6 @@ import { v4 as uuidv4 } from "uuid";
 const language = "knime-expression";
 
 const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
-
-const scriptingService = getExpressionScriptingService();
 
 const activeEditorFileName = ref<string | null>(null);
 
@@ -204,29 +205,30 @@ const runDiagnosticsFunction = async () => {
   }
 };
 
+const initialData = ref<ExpressionInitialData | null>(null);
+
 onMounted(async () => {
-  const [
-    initialSettings,
-    availableInputs,
-    inputObjects,
-    flowVariableInputs,
-    functionCatalog,
-  ] = await Promise.all([
-    scriptingService.getInitialSettings(),
-    scriptingService.inputsAvailable(),
-    scriptingService.getInputObjects(),
-    scriptingService.getFlowVariableInputs(),
-    scriptingService.getFunctions(),
+  const [initialDataLocal, settings] = await Promise.all([
+    getExpressionInitialDataService().getInitialData(),
+    getExpressionSettingsService().getSettings(),
   ]);
+  initialData.value = initialDataLocal;
+
+  const {
+    inputsAvailable: inputsAvailableLocal,
+    functionCatalog,
+    inputObjects,
+    flowVariables,
+  } = initialData.value;
 
   expressionVersion.value = {
-    languageVersion: initialSettings.languageVersion,
-    builtinFunctionsVersion: initialSettings.builtinFunctionsVersion,
-    builtinAggregationsVersion: initialSettings.builtinAggregationsVersion,
+    languageVersion: settings.languageVersion,
+    builtinFunctionsVersion: settings.builtinFunctionsVersion,
+    builtinAggregationsVersion: settings.builtinAggregationsVersion,
   };
 
-  inputsAvailable.value = availableInputs;
-  if (!availableInputs) {
+  inputsAvailable.value = inputsAvailableLocal;
+  if (!inputsAvailable.value) {
     consoleHandler.writeln({
       warning: "No input available. Connect an executed node.",
     });
@@ -251,8 +253,8 @@ onMounted(async () => {
             type: column.type,
           }))
       : [],
-    flowVariableNamesForCompletion: flowVariableInputs?.subItems
-      ? flowVariableInputs.subItems.map((flowVariable) => ({
+    flowVariableNamesForCompletion: flowVariables?.subItems
+      ? flowVariables.subItems.map((flowVariable) => ({
           name: flowVariable.name,
           type: flowVariable.type,
         }))
@@ -271,28 +273,28 @@ onMounted(async () => {
     languageName: language,
   });
 
-  for (let i = 0; i < initialSettings.scripts.length; ++i) {
+  for (let i = 0; i < settings.scripts.length; ++i) {
     const key = generateNewKey();
 
     orderedEditorKeys.push(key);
 
     columnSelectorStates[key] = {
-      outputMode: initialSettings.outputModes[i],
-      createColumn: initialSettings.createdColumns[i],
-      replaceColumn: initialSettings.replacedColumns[i],
+      outputMode: settings.outputModes[i],
+      createColumn: settings.createdColumns[i],
+      replaceColumn: settings.replacedColumns[i],
     };
   }
 
   await nextTick(); // Wait for the editors to be rendered
 
-  useReadonlyStore().value = initialSettings.setByFlowVariables || false;
+  useReadonlyStore().value = settings.settingsOverriddenByFlowVariable ?? false;
 
-  for (let i = 0; i < initialSettings.scripts.length; i++) {
+  for (let i = 0; i < settings.scripts.length; i++) {
     const key = orderedEditorKeys[i];
 
     multiEditorComponentRefs[key]
       .getEditorState()
-      .setInitialText(initialSettings.scripts[i]);
+      .setInitialText(settings.scripts[i]);
 
     multiEditorComponentRefs[key].getEditorState().editor.value?.updateOptions({
       readOnly: useReadonlyStore().value,
@@ -325,7 +327,7 @@ onMounted(async () => {
 
 const runExpressions = (rows: number) => {
   if (severityLevels.value.every((severity) => severity !== "ERROR")) {
-    scriptingService.sendToService("runExpression", [
+    getScriptingService().sendToService("runExpression", [
       orderedEditorKeys
         .map((key) => multiEditorComponentRefs[key])
         .map((ref) => ref.getEditorState().text.value),
@@ -344,7 +346,7 @@ const runExpressions = (rows: number) => {
   }
 };
 
-scriptingService.registerSettingsGetterForApply(
+getExpressionSettingsService().registerSettingsGetterForApply(
   (): ExpressionNodeSettings => ({
     ...expressionVersion.value,
     createdColumns: orderedEditorKeys
@@ -369,8 +371,7 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
   columnSelectorStates[latestKey] = {
     outputMode: "APPEND",
     createColumn: "New Column",
-    replaceColumn:
-      (await scriptingService.getInputObjects())[0].subItems?.[0].name ?? "",
+    replaceColumn: initialData.value?.inputObjects[0].subItems?.[0].name ?? "",
   };
 
   orderedEditorKeys.splice(desiredInsertionIndex, 0, latestKey);
@@ -578,9 +579,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
   <main>
     <template v-if="numberOfEditors === 0">
       <div class="no-editors">
-        <div class="loading-icon">
-          <LoadingIcon />
-        </div>
+        <LoadingIcon />
       </div>
     </template>
     <template v-else>
@@ -730,16 +729,10 @@ const initialPaneSizes = calculateInitialPaneSizes();
 }
 
 .no-editors {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  width: 100%;
-
-  & .loading-icon {
-    width: 50px;
-    height: 50px;
-  }
+  position: absolute;
+  inset: calc(50% - 25px);
+  width: 50px;
+  height: 50px;
 }
 
 .add-new-editor-button {

@@ -57,7 +57,6 @@ import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
-import org.knime.base.expressions.node.ExpressionNodeScriptingInputOutputModelUtils;
 import org.knime.base.expressions.node.FunctionCatalogData;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
@@ -81,7 +80,6 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType;
-import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -115,7 +113,8 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
         final Runnable cleanUpTableViewDataService) {
         super(null, ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains);
 
-        m_inputTableIsAvailable = getWorkflowControl().getInputData()[0] != null;
+        var inputData = getWorkflowControl().getInputData();
+        m_inputTableIsAvailable = inputData.length > 0 && inputData[0] != null;
 
         if (m_inputTableIsAvailable) {
             m_outputBufferTableReference = outputTableRef;
@@ -178,21 +177,6 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
     }
 
     public final class ExpressionNodeRpcService extends RpcService {
-
-        @Override
-        public InputOutputModel getFlowVariableInputs() {
-            return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(getAllFlowVariables());
-        }
-
-        @Override
-        public List<InputOutputModel> getInputObjects() {
-            return ExpressionNodeScriptingInputOutputModelUtils.getInputObjects(getWorkflowControl().getInputInfo());
-        }
-
-        @Override
-        public List<InputOutputModel> getOutputObjects() {
-            return ExpressionNodeScriptingInputOutputModelUtils.getOutputObjects();
-        }
 
         @Override
         protected String getCodeSuggestion(final String userPrompt, final String currentCode) throws IOException {

@@ -57,7 +57,6 @@ import java.io.IOException;
 import org.knime.base.expressions.ExpressionMapperFactory;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
-import org.knime.base.expressions.node.ExpressionNodeSettings;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
@@ -90,11 +89,12 @@ import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 @SuppressWarnings("restriction") // webui node dialogs are not API yet
 final class ExpressionRowMapperNodeModel extends NodeModel {
 
-    private final ExpressionNodeSettings m_settings;
+    private final ExpressionRowMapperSettings m_settings;
 
     public ExpressionRowMapperNodeModel() {
         super(1, 1);
-        m_settings = new ExpressionNodeSettings();
+
+        m_settings = new ExpressionRowMapperSettings(null);
     }
 
     /** @return the typed Ast for the configured expression */
@@ -156,7 +156,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
         if (m_settings.getNumScripts() == 1
-            && ExpressionNodeSettings.DEFAULT_SCRIPT.equals(m_settings.getScripts().get(0))) {
+            && ExpressionRowMapperSettings.DEFAULT_SCRIPT.equals(m_settings.getScripts().get(0))) {
             throw new InvalidSettingsException("The expression node has not yet been configured. Enter an expression.");
         }
 
@@ -241,17 +241,17 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
 
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {
-        m_settings.saveModelSettingsTo(settings);
+        m_settings.saveSettingsTo(settings);
     }
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        new ExpressionNodeSettings().loadModelSettings(settings);
+        new ExpressionRowMapperSettings(null).validate(settings);
     }
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_settings.loadModelSettings(settings);
+        m_settings.loadSettingsFrom(settings);
     }
 
     @Override

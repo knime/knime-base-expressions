@@ -63,9 +63,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Platform;
-import org.knime.base.expressions.node.ExpressionNodeSettings;
+import org.knime.base.expressions.node.ExpressionNodeScriptingInputOutputModelUtils;
+import org.knime.base.expressions.node.FunctionCatalogData;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.ui.CoreUIPlugin;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
@@ -80,9 +82,11 @@ import org.knime.core.webui.node.view.table.TableViewViewSettings.VerticalPaddin
 import org.knime.core.webui.node.view.table.data.TableViewDataService;
 import org.knime.core.webui.node.view.table.data.TableViewInitialDataImpl;
 import org.knime.core.webui.page.Page;
+import org.knime.scripting.editor.GenericInitialDataBuilder;
+import org.knime.scripting.editor.ScriptingNodeSettingsService;
+import org.knime.scripting.editor.WorkflowControl;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
-
 
 // TODO(AP-23188): find an abstraction for all node dialogs of different expression nodes
 
@@ -142,7 +146,21 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
 
     @Override
     public NodeSettingsService getNodeSettingsService() {
-        return ExpressionNodeSettings.createNodeSettingsService();
+        var workflowControl = new WorkflowControl(NodeContext.getContext().getNodeContainer());
+
+        var initialDataBuilder = GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
+            .addDataSupplier("inputObjects",
+                () -> ExpressionNodeScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo())) //
+            .addDataSupplier("flowVariables",
+                () -> ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(
+                    workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().values())) //
+            .addDataSupplier("outputObjects", ExpressionNodeScriptingInputOutputModelUtils::getOutputObjects) //
+            .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN);
+
+        return new ScriptingNodeSettingsService( //
+            ExpressionRowFilterSettings::new, //
+            initialDataBuilder //
+        );
     }
 
     /**
