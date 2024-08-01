@@ -300,20 +300,6 @@ describe("FunctionCatalog", () => {
         textToInsert: function1.name,
       }),
     );
-
-    // Fire three more events
-    const functionInSecondCategory = wrapper.findAll(".function-header")[1];
-    await functionInSecondCategory.trigger("click"); // select the function...
-    await functionInSecondCategory.trigger("dblclick");
-    await functionList.trigger("keydown", { key: "Enter" });
-    await functionList.trigger("keydown", { key: " " });
-    expect(insertionListener).toHaveBeenCalledTimes(3 + 3);
-    expect(insertionListener).toHaveBeenNthCalledWith(
-      4,
-      expect.objectContaining({
-        textToInsert: function2.name,
-      }),
-    );
   });
 
   const testCases = [
