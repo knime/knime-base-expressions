@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import {
   consoleHandler,
-  MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE,
   ScriptingEditor,
   setActiveEditorStoreForAi,
   insertionEventHelper,
   OutputTablePreview,
   type InsertionEvent,
   COLUMN_INSERTION_EVENT,
+  MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE,
+  getInitialDataService,
+  getScriptingService,
 } from "@knime/scripting-editor";
 import {
   type ExpressionNodeSettings,
   type ExpressionVersion,
-  getExpressionScriptingService,
-} from "@/expressionScriptingService";
+  type ExpressionInitialData,
+} from "@/expressionInitialDataTypes";
 import {
   Button,
   SplitButton,
@@ -65,8 +67,6 @@ import { v4 as uuidv4 } from "uuid";
 const language = "knime-expression";
 
 const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
-
-const scriptingService = getExpressionScriptingService();
 
 const activeEditorFileName = ref<string | null>(null);
 
@@ -200,29 +200,28 @@ const runDiagnosticsFunction = async () => {
   }
 };
 
+const initialData = ref<ExpressionInitialData | null>(null);
+
 onMounted(async () => {
-  const [
-    initialSettings,
-    availableInputs,
-    inputObjects,
-    flowVariableInputs,
+  initialData.value =
+    (await getInitialDataService().getInitialData()) as ExpressionInitialData;
+
+  const {
+    inputsAvailable: inputsAvailableLocal,
     functionCatalog,
-  ] = await Promise.all([
-    scriptingService.getInitialSettings(),
-    scriptingService.inputsAvailable(),
-    scriptingService.getInputObjects(),
-    scriptingService.getFlowVariableInputs(),
-    scriptingService.getFunctions(),
-  ]);
+    inputObjects,
+    flowVariables,
+    settings,
+  } = initialData.value;
 
   expressionVersion.value = {
-    languageVersion: initialSettings.languageVersion,
-    builtinFunctionsVersion: initialSettings.builtinFunctionsVersion,
-    builtinAggregationsVersion: initialSettings.builtinAggregationsVersion,
+    languageVersion: settings.languageVersion,
+    builtinFunctionsVersion: settings.builtinFunctionsVersion,
+    builtinAggregationsVersion: settings.builtinAggregationsVersion,
   };
 
-  inputsAvailable.value = availableInputs;
-  if (!availableInputs) {
+  inputsAvailable.value = inputsAvailableLocal;
+  if (!inputsAvailable.value) {
     consoleHandler.writeln({
       warning: "No input available. Connect an executed node.",
     });
@@ -245,8 +244,8 @@ onMounted(async () => {
           type: column.type,
         }))
       : [],
-    flowVariableNamesForCompletion: flowVariableInputs?.subItems
-      ? flowVariableInputs.subItems.map((flowVariable) => ({
+    flowVariableNamesForCompletion: flowVariables?.subItems
+      ? flowVariables.subItems.map((flowVariable) => ({
           name: flowVariable.name,
           type: flowVariable.type,
         }))
@@ -265,26 +264,26 @@ onMounted(async () => {
     languageName: language,
   });
 
-  for (let i = 0; i < initialSettings.scripts.length; ++i) {
+  for (let i = 0; i < settings.scripts.length; ++i) {
     const key = generateNewKey();
 
     orderedEditorKeys.push(key);
 
     columnSelectorStates[key] = {
-      outputMode: initialSettings.outputModes[i],
-      createColumn: initialSettings.createdColumns[i],
-      replaceColumn: initialSettings.replacedColumns[i],
+      outputMode: settings.outputModes[i],
+      createColumn: settings.createdColumns[i],
+      replaceColumn: settings.replacedColumns[i],
     };
   }
 
   await nextTick(); // Wait for the editors to be rendered
 
-  for (let i = 0; i < initialSettings.scripts.length; i++) {
+  for (let i = 0; i < settings.scripts.length; i++) {
     const key = orderedEditorKeys[i];
 
     multiEditorComponentRefs[key]
       .getEditorState()
-      .setInitialText(initialSettings.scripts[i]);
+      .setInitialText(settings.scripts[i]);
 
     // Watch all editor text and when changes occur, rerun diagnostics
     editorStateWatchers[key] = watch(
@@ -309,7 +308,7 @@ onMounted(async () => {
 
 const runExpressions = (rows: number) => {
   if (severityLevels.value.every((severity) => severity !== "ERROR")) {
-    scriptingService.sendToService("runExpression", [
+    getScriptingService().sendToService("runExpression", [
       orderedEditorKeys
         .map((key) => multiEditorComponentRefs[key])
         .map((ref) => ref.getEditorState().text.value),
@@ -328,7 +327,7 @@ const runExpressions = (rows: number) => {
   }
 };
 
-scriptingService.registerSettingsGetterForApply(
+getScriptingService().registerSettingsGetterForApply(
   (): ExpressionNodeSettings => ({
     ...expressionVersion.value,
     createdColumns: orderedEditorKeys
@@ -353,8 +352,7 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
   columnSelectorStates[latestKey] = {
     outputMode: "APPEND",
     createColumn: "New Column",
-    replaceColumn:
-      (await scriptingService.getInputObjects())[0].subItems?.[0].name ?? "",
+    replaceColumn: initialData.value?.inputObjects[0].subItems?.[0].name ?? "",
   };
 
   orderedEditorKeys.splice(desiredInsertionIndex, 0, latestKey);

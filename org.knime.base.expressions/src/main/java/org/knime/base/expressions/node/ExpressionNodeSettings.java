@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -63,11 +64,12 @@ import org.knime.core.expressions.functions.BuiltInFunctions;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.webui.node.dialog.NodeSettingsService;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Streams;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
+import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
+import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.scripting.editor.GenericSettingsLoader;
+import org.knime.scripting.editor.GenericSettingsSaver;
+import org.knime.scripting.editor.ScriptingNodeSettings;
 
 /**
  * Settings of the Expression node.
@@ -75,7 +77,8 @@ import com.google.common.collect.Streams;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("restriction") // SettingsType is not yet public API
-final class ExpressionNodeSettings {
+final class ExpressionNodeSettings extends ScriptingNodeSettings
+    implements GenericSettingsLoader, GenericSettingsSaver {
 
     public static final String DEFAULT_SCRIPT = """
             # Examples:
@@ -93,8 +96,6 @@ final class ExpressionNodeSettings {
             """;
 
     public static final String DEFAULT_CREATED_COLUMN = "New Column";
-
-    public static final String DEFAULT_REPLACED_COLUMN = "";
 
     public static final ColumnInsertionMode DEFAULT_OUTPUT_MODE = ColumnInsertionMode.APPEND;
 
@@ -144,12 +145,14 @@ final class ExpressionNodeSettings {
 
     private List<String> m_scripts;
 
-    ExpressionNodeSettings() {
-        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, DEFAULT_REPLACED_COLUMN);
+    ExpressionNodeSettings(final String defaultReplacementColumn) {
+        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, defaultReplacementColumn);
     }
 
     ExpressionNodeSettings(final String script, final ColumnInsertionMode outputMode, final String createdColumn,
         final String replacedColumn) {
+
+        super(SettingsType.MODEL);
 
         // Set to the latest version by default
         // The version will be overwritten if we load an older version from the model settings
@@ -163,12 +166,8 @@ final class ExpressionNodeSettings {
         this.m_replacedColumns = new ArrayList<>(Arrays.asList(replacedColumn));
     }
 
-    static void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        // Just try to load the settings - if this works they are valid
-        new ExpressionNodeSettings().loadModelSettings(settings);
-    }
-
-    public void loadModelSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+    @Override
+    public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
 
         m_languageVersion = settings.getInt(CFG_KEY_LANGUAGE_VERSION);
         m_builtinFunctionsVersion = settings.getInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION);
@@ -211,32 +210,6 @@ final class ExpressionNodeSettings {
         }
     }
 
-    public void readModelSettingsFromJson(final ObjectNode settingsJson) {
-        m_languageVersion = settingsJson.get(CFG_KEY_LANGUAGE_VERSION).asInt();
-        m_builtinFunctionsVersion = settingsJson.get(CFG_KEY_BUILTIN_FUNCTIONS_VERSION).asInt();
-        m_builtinAggregationsVersion = settingsJson.get(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION).asInt();
-
-        m_scripts =
-            Streams.stream(settingsJson.get(JSON_KEY_SCRIPTS)).map(JsonNode::asText).collect(Collectors.toList());
-        m_outputModes = Streams.stream(settingsJson.get(JSON_KEY_OUTPUT_MODES)).map(JsonNode::asText)
-            .map(ColumnInsertionMode::valueOf).collect(Collectors.toList());
-        m_createdColumns = Streams.stream(settingsJson.get(JSON_KEY_CREATED_COLUMNS)).map(JsonNode::asText)
-            .collect(Collectors.toList());
-        m_replacedColumns = Streams.stream(settingsJson.get(JSON_KEY_REPLACED_COLUMNS)).map(JsonNode::asText)
-            .collect(Collectors.toList());
-    }
-
-    public void writeModelSettingsToJson(final ObjectNode settingsJson) {
-        settingsJson.put(CFG_KEY_LANGUAGE_VERSION, m_languageVersion);
-        settingsJson.put(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, m_builtinFunctionsVersion);
-        settingsJson.put(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION, m_builtinAggregationsVersion);
-
-        m_scripts.forEach(script -> settingsJson.withArray(JSON_KEY_SCRIPTS).add(script));
-        m_outputModes.forEach(mode -> settingsJson.withArray(JSON_KEY_OUTPUT_MODES).add(mode.name()));
-        m_createdColumns.forEach(column -> settingsJson.withArray(JSON_KEY_CREATED_COLUMNS).add(column));
-        m_replacedColumns.forEach(column -> settingsJson.withArray(JSON_KEY_REPLACED_COLUMNS).add(column));
-    }
-
     public List<ColumnInsertionMode> getColumnInsertionModes() {
         return Collections.unmodifiableList(m_outputModes);
     }
@@ -264,7 +237,8 @@ final class ExpressionNodeSettings {
         return m_scripts.size();
     }
 
-    public void saveModelSettingsTo(final NodeSettingsWO settings) {
+    @Override
+    public void saveSettingsTo(final NodeSettingsWO settings) {
         settings.addString(CFG_KEY_SCRIPT, m_scripts.get(0));
         settings.addString(CFG_KEY_OUTPUT_MODE, m_outputModes.get(0).name());
         settings.addString(CFG_KEY_CREATED_COLUMN, m_createdColumns.get(0));
@@ -284,7 +258,39 @@ final class ExpressionNodeSettings {
             m_replacedColumns.subList(1, m_replacedColumns.size()).toArray(new String[0]));
     }
 
-    static NodeSettingsService createNodeSettingsService() {
-        return new ExpressionNodeSettingsService();
+    @Override
+    public Map<String, Object> convertNodeSettingsToMap(final Map<SettingsType, NodeAndVariableSettingsRO> settings)
+        throws InvalidSettingsException {
+
+        loadSettingsFrom(settings);
+
+        return Map.of( //
+            "scripts", m_scripts, //
+            "outputModes", m_outputModes, //
+            "createdColumns", m_createdColumns, //
+            "replacedColumns", m_replacedColumns, //
+            "languageVersion", m_languageVersion, //
+            "builtinFunctionsVersion", m_builtinFunctionsVersion, //
+            "builtinAggregationsVersion", m_builtinAggregationsVersion //
+        );
+    }
+
+    @Override
+    public void writeMapToNodeSettings(final Map<String, Object> data,
+        final Map<SettingsType, NodeAndVariableSettingsWO> settings) throws InvalidSettingsException {
+
+        System.out.println("writeMapToNodeSettings");
+        System.out.println(data);
+
+        m_scripts = (List<String>)data.get("scripts");
+        m_outputModes = ((List<String>)data.get("outputModes")).stream().map(ColumnInsertionMode::valueOf)
+            .collect(Collectors.toList());
+        m_createdColumns = (List<String>)data.get("createdColumns");
+        m_replacedColumns = (List<String>)data.get("replacedColumns");
+        m_languageVersion = (int)data.get("languageVersion");
+        m_builtinFunctionsVersion = (int)data.get("builtinFunctionsVersion");
+        m_builtinAggregationsVersion = (int)data.get("builtinAggregationsVersion");
+
+        saveSettingsTo(settings);
     }
 }

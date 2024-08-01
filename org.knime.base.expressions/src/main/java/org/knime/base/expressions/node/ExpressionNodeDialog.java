@@ -61,8 +61,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Platform;
+import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.ui.CoreUIPlugin;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
@@ -76,6 +78,8 @@ import org.knime.core.webui.node.view.table.TableViewViewSettings.RowHeightMode;
 import org.knime.core.webui.node.view.table.data.TableViewDataService;
 import org.knime.core.webui.node.view.table.data.TableViewInitialDataImpl;
 import org.knime.core.webui.page.Page;
+import org.knime.scripting.editor.GenericInitialDataService;
+import org.knime.scripting.editor.WorkflowControl;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
@@ -135,7 +139,27 @@ final class ExpressionNodeDialog implements NodeDialog {
 
     @Override
     public NodeSettingsService getNodeSettingsService() {
-        return ExpressionNodeSettings.createNodeSettingsService();
+        var workflowControl = new WorkflowControl(NodeContext.getContext().getNodeContainer());
+        var spec = (DataTableSpec)workflowControl.getInputInfo()[0].portSpec();
+        var firstColumName = spec.getNumColumns() > 0 ? spec.getColumnNames()[0] : "";
+
+        return GenericInitialDataService.createDefaultInitialDataService( //
+            () -> new ExpressionNodeSettings(firstColumName), //
+            () -> new ExpressionNodeSettings(firstColumName), //
+            NodeContext.getContext()) //
+            .addDataSupplier("inputObjects", (settings, specs) -> {
+                return ExpressionNodeScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo());
+            }) //
+            .addDataSupplier("flowVariables", (settings, specs) -> {
+                return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(
+                    workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().values());
+            }) //
+            .addDataSupplier("outputObjects", (settings, specs) -> {
+                return ExpressionNodeScriptingInputOutputModelUtils.getOutputObjects();
+            }) //
+            .addDataSupplier("functionCatalog", (settings, specs) -> {
+                return FunctionCatalogData.BUILT_IN;
+            });
     }
 
     public static class OutputPreviewTableInitialDataRpcSupplier {
@@ -171,6 +195,7 @@ final class ExpressionNodeDialog implements NodeDialog {
                 return null;
             }
         }
+
     }
 
     @Override
@@ -178,11 +203,10 @@ final class ExpressionNodeDialog implements NodeDialog {
 
         final AtomicReference<BufferedDataTable> previewTable = new AtomicReference<>();
         var tableId = "previewTable.dummyId";
-        var outputPreviewTableDataService =
-            TableViewUtil.createTableViewDataService(previewTable::get, null, tableId);
+        var outputPreviewTableDataService = TableViewUtil.createTableViewDataService(previewTable::get, null, tableId);
 
         Runnable cleanUpTableViewDataService =
-            () -> TableViewUtil.deactivateTableViewDataService(outputPreviewTableDataService,tableId);
+            () -> TableViewUtil.deactivateTableViewDataService(outputPreviewTableDataService, tableId);
 
         var scriptingService = new ExpressionNodeScriptingService(previewTable, cleanUpTableViewDataService);
 

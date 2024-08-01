@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { ValueSwitch, Dropdown, InputField } from "@knime/components";
 import { useShouldFocusBePainted } from "@knime/scripting-editor";
-import { type OutputInsertionMode } from "@/expressionScriptingService";
+import { type OutputInsertionMode } from "@/expressionInitialDataTypes";
 
 export type ColumnSelectorState = {
   outputMode: OutputInsertionMode;

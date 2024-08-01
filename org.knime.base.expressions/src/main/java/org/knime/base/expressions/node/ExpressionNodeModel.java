@@ -101,7 +101,8 @@ class ExpressionNodeModel extends NodeModel {
 
     ExpressionNodeModel() {
         super(1, 1);
-        m_settings = new ExpressionNodeSettings();
+
+        m_settings = new ExpressionNodeSettings(null);
     }
 
     static final VariableType<?>[] SUPPORTED_FLOW_VARIABLE_TYPES =
@@ -251,17 +252,17 @@ class ExpressionNodeModel extends NodeModel {
 
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {
-        m_settings.saveModelSettingsTo(settings);
+        m_settings.saveSettingsTo(settings);
     }
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        new ExpressionNodeSettings().loadModelSettings(settings);
+        new ExpressionNodeSettings(null).validate(settings);
     }
 
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_settings.loadModelSettings(settings);
+        m_settings.loadSettingsFrom(settings);
     }
 
     @Override
