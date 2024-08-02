@@ -53,25 +53,25 @@ import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_FLOAT_MIS
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_INTEGER_MISSING;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_STRING;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_STRING_MISSING;
+import static org.knime.core.expressions.SignatureUtils.arg;
+import static org.knime.core.expressions.SignatureUtils.isAnything;
+import static org.knime.core.expressions.SignatureUtils.isBoolean;
+import static org.knime.core.expressions.SignatureUtils.isBooleanOrOpt;
+import static org.knime.core.expressions.SignatureUtils.isInteger;
+import static org.knime.core.expressions.SignatureUtils.isIntegerOrOpt;
+import static org.knime.core.expressions.SignatureUtils.isString;
+import static org.knime.core.expressions.SignatureUtils.isStringOrOpt;
+import static org.knime.core.expressions.SignatureUtils.optarg;
+import static org.knime.core.expressions.SignatureUtils.vararg;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.arg;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isAnything;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isBoolean;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isBooleanOrOpt;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isInteger;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isIntegerOrOpt;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isString;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isStringOrOpt;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.optarg;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.vararg;
 
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.function.Function;
@@ -81,6 +81,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
+import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
@@ -164,13 +165,13 @@ public final class StringFunctions {
             arg("string_2", "Second string", isStringOrOpt()) //
         ) //
         .returnType("Lexicographical distance `x - y`; if the strings are equal this is 0", RETURN_INTEGER_MISSING,
-            args -> ValueType.INTEGER(anyOptional(args))) //
+            args -> ValueType.INTEGER(anyOptional(args)))//
         .impl(StringFunctions::compareImpl) //
         .build();
 
-    private static Computer compareImpl(final List<Computer> args) {
-        var c1 = toString(args.get(0));
-        var c2 = toString(args.get(1));
+    private static Computer compareImpl(final Arguments<Computer> args) {
+        var c1 = toString(args.get("string_1"));
+        var c2 = toString(args.get("string_2"));
 
         return IntegerComputer.of( //
             ctx -> c1.compute(ctx).compareTo(c2.compute(ctx)), //
@@ -205,17 +206,13 @@ public final class StringFunctions {
         .impl(StringFunctions::containsImpl) //
         .build();
 
-    private static Computer containsImpl(final List<Computer> args) {
-        var c1 = toString(args.get(0));
-        var c2 = toString(args.get(1));
+    private static Computer containsImpl(final Arguments<Computer> args) {
+        var c1 = toString(args.get("string"));
+        var c2 = toString(args.get("search"));
 
-        final Predicate<EvaluationContext> ignoreCase;
-        if (args.size() == 3) {
-            var modifier = (StringComputer)args.get(2);
-            ignoreCase = ctx -> modifier.compute(ctx).contains("i");
-        } else {
-            ignoreCase = ctx -> false;
-        }
+        final Predicate<EvaluationContext> ignoreCase = args.has("modifiers") //
+            ? (ctx -> ((StringComputer)args.get("modifiers")).compute(ctx).contains("i")) //
+            : ctx -> false;
 
         return BooleanComputer.of(ctx -> {
             if (ignoreCase.test(ctx)) {
@@ -251,17 +248,16 @@ public final class StringFunctions {
         .impl(StringFunctions::startsWithImpl) //
         .build();
 
-    private static Computer startsWithImpl(final List<Computer> args) {
-        var c1 = toString(args.get(0));
-        var c2 = toString(args.get(1));
+    private static Computer startsWithImpl(final Arguments<Computer> args) {
+        var c1 = toString(args.get("string"));
+        var c2 = toString(args.get("prefix"));
 
         return BooleanComputer.of( //
             ctx -> {
                 String s1 = c1.compute(ctx);
                 String s2 = c2.compute(ctx);
-                String modifiers = extractModifiersOrDefault(args, 2, ctx);
 
-                if (modifiers.contains("i")) {
+                if (computeIgnoreCase(args, ctx)) {
                     s1 = s1.toLowerCase(Locale.ROOT);
                     s2 = s2.toLowerCase(Locale.ROOT);
                 }
@@ -294,21 +290,20 @@ public final class StringFunctions {
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
         .returnType("`TRUE` if the string ends with suffix, `FALSE` otherwise", RETURN_BOOLEAN_MISSING, //
-            args -> ValueType.BOOLEAN(anyOptional(args))) //
+            args -> ValueType.BOOLEAN(anyOptional(args)))//
         .impl(StringFunctions::endsWithImpl) //
         .build();
 
-    private static Computer endsWithImpl(final List<Computer> args) {
-        var c1 = toString(args.get(0));
-        var c2 = toString(args.get(1));
+    private static Computer endsWithImpl(final Arguments<Computer> args) {
+        var c1 = toString(args.get("string"));
+        var c2 = toString(args.get("suffix"));
 
         return BooleanComputer.of( //
             ctx -> {
                 String s1 = c1.compute(ctx);
                 String s2 = c2.compute(ctx);
-                String modifiers = extractModifiersOrDefault(args, 2, ctx);
 
-                if (modifiers.contains("i")) {
+                if (computeIgnoreCase(args, ctx)) {
                     s1 = s1.toLowerCase(Locale.ROOT);
                     s2 = s2.toLowerCase(Locale.ROOT);
                 }
@@ -362,16 +357,15 @@ public final class StringFunctions {
 
     private static final Pattern regexCharsExceptSquareBracketsPattern = Pattern.compile("[{}().+*?^$\\\\|]");
 
-    private static Computer likeImpl(final List<Computer> args) {
-        var c1 = toString(args.get(0));
-        var c2 = toString(args.get(1));
+    private static Computer likeImpl(final Arguments<Computer> args) {
+        var c1 = toString(args.get("string"));
+        var c2 = toString(args.get("pattern"));
 
         ToBooleanFunction<EvaluationContext> value = ctx -> {
             String escapedPattern = c2.compute(ctx);
             String toMatch = c1.compute(ctx);
-            var ignoreCase = extractModifiersOrDefault(args, 2, ctx).contains("i");
 
-            if (ignoreCase) {
+            if (computeIgnoreCase(args, ctx)) {
                 escapedPattern = escapedPattern.toLowerCase(Locale.ROOT);
                 toMatch = toMatch.toLowerCase(Locale.ROOT);
             }
@@ -425,22 +419,21 @@ public final class StringFunctions {
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
         .returnType("`TRUE` if the string matches the pattern, `FALSE` otherwise", RETURN_BOOLEAN_MISSING, //
-            args -> ValueType.BOOLEAN(anyOptional(args))) //
+            args -> ValueType.BOOLEAN(anyOptional(args)))//
         .impl(StringFunctions::regexMatchImpl) //
         .build();
 
     // TODO(AP-22345) emit a warning on potentially slow regexes
-    private static Computer regexMatchImpl(final List<Computer> args) {
-        var c1 = toString(args.get(0));
-        var c2 = toString(args.get(1));
+    private static Computer regexMatchImpl(final Arguments<Computer> args) {
+        var c1 = toString(args.get("string"));
+        var c2 = toString(args.get("pattern"));
 
         return BooleanComputer.of( //
             ctx -> {
                 String str = c1.compute(ctx);
                 String patternString = c2.compute(ctx);
-                String modifiers = extractModifiersOrDefault(args, 2, ctx);
 
-                return Pattern.compile(patternString, modifiers.contains("i") ? Pattern.CASE_INSENSITIVE : 0) //
+                return Pattern.compile(patternString, computeIgnoreCase(args, ctx) ? Pattern.CASE_INSENSITIVE : 0) //
                     .matcher(str) //
                     .matches();
             }, //
@@ -482,9 +475,7 @@ public final class StringFunctions {
         .build();
 
     private static String extractGroupOrReturnNull(final String toMatch, final String pattern, final int group,
-        final String modifiers) {
-
-        boolean ignoreCase = modifiers.contains("i");
+        final boolean ignoreCase) {
 
         var matcher = Pattern.compile(pattern, ignoreCase ? Pattern.CASE_INSENSITIVE : 0).matcher(toMatch);
 
@@ -496,17 +487,17 @@ public final class StringFunctions {
     }
 
     // TODO(AP-22345) emit a warning on potentially slow regexes
-    private static Computer regexExtractImpl(final List<Computer> args) {
-        var c1 = toString(args.get(0));
-        var c2 = toString(args.get(1));
-        var c3 = toInteger(args.get(2));
+    private static Computer regexExtractImpl(final Arguments<Computer> args) {
+        var c1 = toString(args.get("string"));
+        var c2 = toString(args.get("pattern"));
+        var c3 = toInteger(args.get("group"));
 
         ToBooleanFunction<EvaluationContext> isMissing = ctx -> anyMissing(args).applyAsBoolean(ctx) //
             || extractGroupOrReturnNull(c1.compute(ctx), c2.compute(ctx), (int)c3.compute(ctx),
-                extractModifiersOrDefault(args, 3, ctx)) == null;
+                computeIgnoreCase(args, ctx)) == null;
 
         Function<EvaluationContext, String> value = ctx -> extractGroupOrReturnNull(c1.compute(ctx), c2.compute(ctx),
-            (int)c3.compute(ctx), extractModifiersOrDefault(args, 3, ctx));
+            (int)c3.compute(ctx), computeIgnoreCase(args, ctx));
 
         return StringComputer.of(value, isMissing);
     }
@@ -549,16 +540,14 @@ public final class StringFunctions {
         .impl(StringFunctions::regexReplaceImpl) //
         .build();
 
-    private static Computer regexReplaceImpl(final List<Computer> args) {
+    private static Computer regexReplaceImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            String search = toString(args.get(1)).compute(ctx);
-            String replacement = toString(args.get(2)).compute(ctx);
 
-            String modifiers = extractModifiersOrDefault(args, 3, ctx);
-            boolean ignoreCase = modifiers.contains("i");
+            var str = toString(args.get("string")).compute(ctx);
+            var search = toString(args.get("pattern")).compute(ctx);
+            var replacement = toString(args.get("replace")).compute(ctx);
 
-            var pattern = Pattern.compile(search, ignoreCase ? Pattern.CASE_INSENSITIVE : 0);
+            var pattern = Pattern.compile(search, computeIgnoreCase(args, ctx) ? Pattern.CASE_INSENSITIVE : 0);
             return pattern.matcher(str).replaceAll(replacement);
         };
 
@@ -595,17 +584,18 @@ public final class StringFunctions {
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (root locale), " //
                 + "\"w\" to match whole words only", isString()) //
         ) //
-        .returnType("String with pattern replaced", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String with pattern replaced", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::replaceImpl) //
         .build();
 
-    private static Computer replaceImpl(final List<Computer> args) {
+    private static Computer replaceImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            String search = toString(args.get(1)).compute(ctx);
-            String replacement = toString(args.get(2)).compute(ctx);
+            var str = toString(args.get("string")).compute(ctx);
+            var search = toString(args.get("pattern")).compute(ctx);
+            var replacement = toString(args.get("replace")).compute(ctx);
 
-            String modifiers = extractModifiersOrDefault(args, 3, ctx);
+            var modifiers = args.has("modifiers") ? toString(args.get("modifiers")).compute(ctx) : ""; //
+
             boolean ignoreCase = modifiers.contains("i");
             boolean wholeWords = modifiers.contains("w");
 
@@ -653,18 +643,17 @@ public final class StringFunctions {
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (root locale)", isString()) //
         ) //
         .returnType("String with (old) characters replaced by (new) characters", RETURN_STRING_MISSING,
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::replaceCharsImpl) //
         .build();
 
-    private static Computer replaceCharsImpl(final List<Computer> args) {
+    private static Computer replaceCharsImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            char[] oldChars = toString(args.get(1)).compute(ctx).toCharArray();
-            char[] newChars = toString(args.get(2)).compute(ctx).toCharArray();
+            var str = toString(args.get("string")).compute(ctx);
+            var oldChars = toString(args.get("old_chars")).compute(ctx).toCharArray();
+            var newChars = toString(args.get("new_chars")).compute(ctx).toCharArray();
 
-            String modifiers = extractModifiersOrDefault(args, 3, ctx);
-            boolean ignoreCase = modifiers.contains("i");
+            boolean ignoreCase = computeIgnoreCase(args, ctx);
 
             for (int i = 0; i < oldChars.length; ++i) {
                 // if newChars is shorter, replace the extra chars in oldChars
@@ -725,13 +714,13 @@ public final class StringFunctions {
         .impl(StringFunctions::replaceUmlautsImpl) //
         .build();
 
-    private static Computer replaceUmlautsImpl(final List<Computer> args) {
+    private static Computer replaceUmlautsImpl(final Arguments<Computer> args) {
         var umlauts = "äüö";
         var umlautReplacements = "auo";
 
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            boolean noE = toBoolean(args.get(1)).compute(ctx);
+            var str = toString(args.get("string")).compute(ctx);
+            boolean noE = toBoolean(args.get("no_e")).compute(ctx);
 
             for (int i = 0; i < umlauts.length(); i++) {
                 str = str.replace( //
@@ -745,13 +734,17 @@ public final class StringFunctions {
                 );
             }
 
-            if (args.size() < 3 || toBoolean(args.get(2)).compute(ctx)) {
-                str = str //
-                    .replace("ß", "ss") //
-                    .replace("ẞ", "SS");
+            var replaceEsszett = args.has("replace_eszett") //
+                ? toBoolean(args.get("replace_eszett")).compute(ctx) //
+                : true;
+
+            if (!replaceEsszett) {
+                return str;
             }
 
-            return str;
+            return str //
+                .replace("ß", "ss") //
+                .replace("ẞ", "SS");
         };
 
         return StringComputer.of(value, anyMissing(args));
@@ -784,9 +777,9 @@ public final class StringFunctions {
         .impl(StringFunctions::replaceDiacriticsImpl) //
         .build();
 
-    private static Computer replaceDiacriticsImpl(final List<Computer> args) {
+    private static Computer replaceDiacriticsImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
+            var str = toString(args.get("string")).compute(ctx);
             str = Normalizer.normalize(str, Normalizer.Form.NFKD);
             str = str.replaceAll("\\p{M}", "");
             return str;
@@ -814,13 +807,13 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String in lower case", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String in lower case", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::lowerCaseImpl) //
         .build();
 
-    private static Computer lowerCaseImpl(final List<Computer> args) {
+    private static Computer lowerCaseImpl(final Arguments<Computer> args) {
         return StringComputer.of( //
-            ctx -> toString(args.get(0)).compute(ctx).toLowerCase(Locale.ROOT), //
+            ctx -> toString(args.get("string")).compute(ctx).toLowerCase(Locale.ROOT), //
             anyMissing(args));
     }
 
@@ -843,13 +836,13 @@ public final class StringFunctions {
         .args( //
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
-        .returnType("String in upper case", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args))) //
+        .returnType("String in upper case", RETURN_STRING_MISSING, args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::upperCaseImpl) //
         .build();
 
-    private static Computer upperCaseImpl(final List<Computer> args) {
+    private static Computer upperCaseImpl(final Arguments<Computer> args) {
         return StringComputer.of( //
-            ctx -> toString(args.get(0)).compute(ctx).toUpperCase(Locale.ROOT), //
+            ctx -> toString(args.get("string")).compute(ctx).toUpperCase(Locale.ROOT), //
             anyMissing(args));
     }
 
@@ -878,9 +871,9 @@ public final class StringFunctions {
         .impl(StringFunctions::titleCaseImpl) //
         .build();
 
-    private static Computer titleCaseImpl(final List<Computer> args) {
+    private static Computer titleCaseImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
+            String str = toString(args.get("string")).compute(ctx);
             var output = new StringBuilder(str.length());
 
             var capitaliseNextChar = true;
@@ -938,17 +931,17 @@ public final class StringFunctions {
             optarg("char", "Char with which to pad (default: space)", isString()) //
         ) //
         .returnType("String padded to specified length", RETURN_STRING_MISSING,
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::padEndImpl) //
         .build();
 
-    private static Computer padEndImpl(final List<Computer> args) {
+    private static Computer padEndImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            int targetLength = (int)toInteger(args.get(1)).compute(ctx);
+            String str = toString(args.get("string")).compute(ctx);
+            int targetLength = (int)toInteger(args.get("length")).compute(ctx);
 
-            String charToAppend = args.size() == 3 //
-                ? takeFirstChar(toString(args.get(2)).compute(ctx), " ") //
+            String charToAppend = args.has("char") //
+                ? takeFirstChar(toString(args.get("char")).compute(ctx), " ") //
                 : " ";
 
             var output = new StringBuilder(str);
@@ -998,16 +991,18 @@ public final class StringFunctions {
             optarg("char", "Char with which to pad (default: space)", isString()) //
         ) //
         .returnType("String padded to specified length", RETURN_STRING_MISSING,
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::padStartImpl) //
         .build();
 
-    private static Computer padStartImpl(final List<Computer> args) {
+    private static Computer padStartImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            int targetLength = (int)toInteger(args.get(1)).compute(ctx);
-            String charToPrepend = args.size() == 3 //
-                ? takeFirstChar(toString(args.get(2)).compute(ctx), " ") //
+
+            String str = toString(args.get("string")).compute(ctx);
+            int targetLength = (int)toInteger(args.get("length")).compute(ctx);
+
+            String charToPrepend = args.has("char") //
+                ? takeFirstChar(toString(args.get("char")).compute(ctx), " ") //
                 : " ";
 
             StringBuilder output = new StringBuilder(targetLength);
@@ -1044,20 +1039,22 @@ public final class StringFunctions {
             vararg("strings...", "More strings", isStringOrOpt()) //
         ) //
         .returnType("Strings joined with the specified separator", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::joinImpl) //
         .build();
 
-    private static Computer joinImpl(final List<Computer> args) {
+    private static Computer joinImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String sep = toString(args.get(0)).compute(ctx);
-            String[] toJoin = args.stream() //
-                .skip(1) // skip over the first arg, which is the separator
-                .map(StringFunctions::toString) //
-                .map(sc -> sc.compute(ctx)) //
-                .toArray(String[]::new);
+            String sep = toString(args.get("seperator")).compute(ctx);
 
-            return String.join(sep, toJoin);
+            ArrayList<String> strings = new ArrayList<>();
+            strings.add(toString(args.get("string_1")).compute(ctx));
+
+            for (var arg : args.getVariableArgument()) {
+                strings.add(toString(arg).compute(ctx));
+            }
+
+            return String.join(sep, strings);
         };
 
         return StringComputer.of( //
@@ -1092,16 +1089,17 @@ public final class StringFunctions {
                 isInteger()) //
         ) //
         .returnType("Extracted substring", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::substrImpl) //
         .build();
 
-    private static Computer substrImpl(final List<Computer> args) {
+    private static Computer substrImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            int start = (int)toInteger(args.get(1)).compute(ctx);
-            int length = args.size() == 3 //
-                ? (int)toInteger(args.get(2)).compute(ctx) //
+            String str = toString(args.get("string")).compute(ctx);
+            int start = (int)toInteger(args.get("start")).compute(ctx);
+
+            int length = args.has("length") //
+                ? ((int)toInteger(args.get("length")).compute(ctx)) //
                 : (str.length() - start + 1);
 
             // We do one-indexing in expressions editor
@@ -1141,14 +1139,14 @@ public final class StringFunctions {
             arg("n", "Number of characters to get from start", isIntegerOrOpt()) //
         ) //
         .returnType("Substring with only the first `n` chars", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::firstCharsImpl) //
         .build();
 
-    private static Computer firstCharsImpl(final List<Computer> args) {
+    private static Computer firstCharsImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            int numChars = (int)toInteger(args.get(1)).compute(ctx);
+            String str = toString(args.get("string")).compute(ctx);
+            int numChars = (int)toInteger(args.get("n")).compute(ctx);
 
             // Clamp indices rather than erroring
             return str.substring( //
@@ -1189,10 +1187,10 @@ public final class StringFunctions {
         .impl(StringFunctions::lastCharsImpl) //
         .build();
 
-    private static Computer lastCharsImpl(final List<Computer> args) {
+    private static Computer lastCharsImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            int numChars = (int)toInteger(args.get(1)).compute(ctx);
+            String str = toString(args.get("string")).compute(ctx);
+            int numChars = (int)toInteger(args.get("n")).compute(ctx);
 
             // Clamp indices rather than erroring
             return str.substring( //
@@ -1229,17 +1227,17 @@ public final class StringFunctions {
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (root locale)", isString()) //)
         ) //
         .returnType("String with characters removed", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::removeCharsImpl) //
         .build();
 
-    private static Computer removeCharsImpl(final List<Computer> args) {
+    private static Computer removeCharsImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            String toRemove = toString(args.get(1)).compute(ctx);
-            String modifiers = extractModifiersOrDefault(args, 2, ctx);
 
-            boolean ignoreCase = modifiers.contains("i");
+            String str = toString(args.get("string")).compute(ctx);
+            String toRemove = toString(args.get("chars")).compute(ctx);
+
+            boolean ignoreCase = computeIgnoreCase(args, ctx);
 
             for (int i = 0; i < toRemove.length(); ++i) {
                 var charToRemove = String.valueOf(toRemove.charAt(i));
@@ -1280,13 +1278,13 @@ public final class StringFunctions {
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
         .returnType("String with leading/trailing whitespace removed", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::stripImpl) //
         .build();
 
-    private static Computer stripImpl(final List<Computer> args) {
+    private static Computer stripImpl(final Arguments<Computer> args) {
         return StringComputer.of( //
-            ctx -> toString(args.get(0)).compute(ctx).strip(), //
+            ctx -> toString(args.get("string")).compute(ctx).strip(), //
             anyMissing(args) //
         );
     }
@@ -1315,9 +1313,9 @@ public final class StringFunctions {
         .impl(StringFunctions::stripstartImpl) //
         .build();
 
-    private static Computer stripstartImpl(final List<Computer> args) {
+    private static Computer stripstartImpl(final Arguments<Computer> args) {
         return StringComputer.of( //
-            ctx -> toString(args.get(0)).compute(ctx).stripLeading(), //
+            ctx -> toString(args.get("string")).compute(ctx).stripLeading(), //
             anyMissing(args) //
         );
     }
@@ -1342,13 +1340,13 @@ public final class StringFunctions {
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
         .returnType("String with trailing whitespace removed", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::stripEndImpl) //
         .build();
 
-    private static Computer stripEndImpl(final List<Computer> args) {
+    private static Computer stripEndImpl(final Arguments<Computer> args) {
         return StringComputer.of( //
-            ctx -> toString(args.get(0)).compute(ctx).stripTrailing(), //
+            ctx -> toString(args.get("string")).compute(ctx).stripTrailing(), //
             anyMissing(args) //
         );
     }
@@ -1376,13 +1374,13 @@ public final class StringFunctions {
             arg("string", "String to clean up", isStringOrOpt()) //
         ) //
         .returnType("String with all repeated spaces replaced", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::removeDuplicateSpacesImpl) //
         .build();
 
-    private static Computer removeDuplicateSpacesImpl(final List<Computer> args) {
+    private static Computer removeDuplicateSpacesImpl(final Arguments<Computer> args) {
         return StringComputer.of( //
-            ctx -> multiSpacePattern.matcher(toString(args.get(0)).compute(ctx)).replaceAll(" "), //
+            ctx -> multiSpacePattern.matcher(toString(args.get("string")).compute(ctx)).replaceAll(" "), //
             anyMissing(args) //
         );
     }
@@ -1412,9 +1410,10 @@ public final class StringFunctions {
         .impl(StringFunctions::nullToEmptyImpl) //
         .build();
 
-    private static Computer nullToEmptyImpl(final List<Computer> args) {
+    private static Computer nullToEmptyImpl(final Arguments<Computer> args) {
+        var stringComputer = args.get("string");
         return StringComputer.of( //
-            ctx -> args.get(0).isMissing(ctx) ? "" : toString(args.get(0)).compute(ctx), //
+            ctx -> stringComputer.isMissing(ctx) ? "" : toString(stringComputer).compute(ctx), //
             ctx -> false //
         );
     }
@@ -1441,10 +1440,11 @@ public final class StringFunctions {
         .impl(StringFunctions::emptyToNull) //
         .build();
 
-    private static Computer emptyToNull(final List<Computer> args) {
+    private static Computer emptyToNull(final Arguments<Computer> args) {
+        var stringComputer = args.get("string");
         return StringComputer.of( //
-            ctx -> toString(args.get(0)).compute(ctx), //
-            ctx -> args.get(0).isMissing(ctx) || toString(args.get(0)).compute(ctx).isEmpty() //
+            ctx -> toString(stringComputer).compute(ctx), //
+            ctx -> stringComputer.isMissing(ctx) || toString(stringComputer).compute(ctx).isEmpty() //
         );
     }
 
@@ -1465,13 +1465,14 @@ public final class StringFunctions {
             arg("string", "String to reverse", isStringOrOpt()) //
         ) //
         .returnType("Reversed string", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::reverseImpl) //
         .build();
 
-    private static Computer reverseImpl(final List<Computer> args) {
+    private static Computer reverseImpl(final Arguments<Computer> args) {
         return StringComputer.of( //
-            ctx -> new StringBuilder(toString(args.get(0)).compute(ctx)).reverse().toString(), //
+            ctx -> new StringBuilder(toString(args.get("string")).compute(ctx)) //
+                .reverse().toString(), //
             anyMissing(args) //
         );
     }
@@ -1492,13 +1493,13 @@ public final class StringFunctions {
             arg("string", "String to count chars for", isStringOrOpt()) //
         ) //
         .returnType("Length of the string", RETURN_INTEGER_MISSING, //
-            args -> ValueType.INTEGER(anyOptional(args))) //
+            args -> ValueType.INTEGER(anyOptional(args)))//
         .impl(StringFunctions::lengthImpl) //
         .build();
 
-    private static Computer lengthImpl(final List<Computer> args) {
+    private static Computer lengthImpl(final Arguments<Computer> args) {
         return IntegerComputer.of( //
-            ctx -> toString(args.get(0)).compute(ctx).length(), //
+            ctx -> toString(args.get("string")).compute(ctx).length(), //
             anyMissing(args) //
         );
     }
@@ -1539,15 +1540,18 @@ public final class StringFunctions {
                 + "\"w\" to match only whole words", isString()) //
         ) //
         .returnType("Number of occurences", RETURN_INTEGER_MISSING, //
-            args -> ValueType.INTEGER(anyOptional(args))) //
+            args -> ValueType.INTEGER(anyOptional(args)))//
         .impl(StringFunctions::countImpl) //
         .build();
 
-    private static Computer countImpl(final List<Computer> args) {
+    private static Computer countImpl(final Arguments<Computer> args) {
         ToLongFunction<EvaluationContext> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            String search = toString(args.get(1)).compute(ctx);
-            String modifiers = extractModifiersOrDefault(args, 2, ctx);
+            String str = toString(args.get("string")).compute(ctx);
+            String search = toString(args.get("search")).compute(ctx);
+
+            String modifiers = args.has("modifiers") //
+                ? toString(args.get("modifiers")).compute(ctx) //
+                : "";
 
             boolean ignoreCase = modifiers.contains("i");
             boolean wholeWords = modifiers.contains("w");
@@ -1612,11 +1616,14 @@ public final class StringFunctions {
         .impl(StringFunctions::countCharsImpl) //
         .build();
 
-    private static Computer countCharsImpl(final List<Computer> args) {
+    private static Computer countCharsImpl(final Arguments<Computer> args) {
         ToLongFunction<EvaluationContext> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            String searchChars = toString(args.get(1)).compute(ctx);
-            String modifiers = extractModifiersOrDefault(args, 2, ctx);
+            String str = toString(args.get("string")).compute(ctx);
+            String searchChars = toString(args.get("search")).compute(ctx);
+
+            String modifiers = args.has("modifiers") //
+                ? toString(args.get("modifiers")).compute(ctx) //
+                : "";
 
             boolean ignoreCase = modifiers.contains("i");
             boolean matchInvert = modifiers.contains("v");
@@ -1675,11 +1682,14 @@ public final class StringFunctions {
         .impl(StringFunctions::findImpl) //
         .build();
 
-    private static Computer findImpl(final List<Computer> args) {
+    private static Computer findImpl(final Arguments<Computer> args) {
         ToLongFunction<EvaluationContext> indexSupplier = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            String search = toString(args.get(1)).compute(ctx);
-            String modifiers = extractModifiersOrDefault(args, 2, ctx);
+            String str = toString(args.get("string")).compute(ctx);
+            String search = toString(args.get("search")).compute(ctx);
+
+            String modifiers = args.has("modifiers") //
+                ? toString(args.get("modifiers")).compute(ctx) //
+                : "";
 
             boolean ignoreCase = modifiers.contains("i");
             boolean wholeWords = modifiers.contains("w");
@@ -1757,11 +1767,14 @@ public final class StringFunctions {
         .impl(StringFunctions::findCharsImpl) //
         .build();
 
-    private static Computer findCharsImpl(final List<Computer> args) {
+    private static Computer findCharsImpl(final Arguments<Computer> args) {
         ToLongFunction<EvaluationContext> value = ctx -> {
-            String str = toString(args.get(0)).compute(ctx);
-            String search = toString(args.get(1)).compute(ctx);
-            String modifiers = extractModifiersOrDefault(args, 2, ctx);
+            String str = toString(args.get("string")).compute(ctx);
+            String search = toString(args.get("chars")).compute(ctx);
+
+            String modifiers = args.has("modifiers") //
+                ? toString(args.get("modifiers")).compute(ctx) //
+                : "";
 
             boolean ignoreCase = modifiers.contains("i");
             boolean backwards = modifiers.contains("b");
@@ -1818,8 +1831,9 @@ public final class StringFunctions {
         .impl(StringFunctions::xmlEncodeImpl) //
         .build();
 
-    private static Computer xmlEncodeImpl(final List<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> toString(args.get(0)).compute(ctx) //
+    private static Computer xmlEncodeImpl(final Arguments<Computer> args) {
+        Function<EvaluationContext, String> value = ctx -> toString(args.get("string")) //
+            .compute(ctx) //
             .replace("&", "&amp;") //
             .replace("<", "&lt;") //
             .replace(">", "&gt;") //
@@ -1855,13 +1869,13 @@ public final class StringFunctions {
             arg("string", "String to convert", isStringOrOpt()) //
         ) //
         .returnType("String with forbidden characters escaped", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::urlEncodeImpl) //
         .build();
 
-    private static Computer urlEncodeImpl(final List<Computer> args) {
+    private static Computer urlEncodeImpl(final Arguments<Computer> args) {
         return StringComputer.of( //
-            ctx -> URLEncoder.encode(toString(args.get(0)).compute(ctx), StandardCharsets.UTF_8), //
+            ctx -> URLEncoder.encode(toString(args.get("string")).compute(ctx), StandardCharsets.UTF_8), //
             anyMissing(args) //
         );
     }
@@ -1884,13 +1898,13 @@ public final class StringFunctions {
             arg("string", "String with escaped URL-specific chars", isStringOrOpt()) //
         ) //
         .returnType("Original URL, with encoding undone", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args))) //
+            args -> ValueType.STRING(anyOptional(args)))//
         .impl(StringFunctions::urlDecodeImpl) //
         .build();
 
-    private static Computer urlDecodeImpl(final List<Computer> args) {
+    private static Computer urlDecodeImpl(final Arguments<Computer> args) {
         return StringComputer.of( //
-            ctx -> URLDecoder.decode(toString(args.get(0)).compute(ctx), StandardCharsets.UTF_8), //
+            ctx -> URLDecoder.decode(toString(args.get("string")).compute(ctx), StandardCharsets.UTF_8), //
             anyMissing(args) //
         );
     }
@@ -1921,13 +1935,13 @@ public final class StringFunctions {
         .args( //
             arg("input", "Input to convert to a string", isAnything()) //
         ) //
-        .returnType("Input as string", RETURN_STRING, args -> ValueType.STRING) //
+        .returnType("Input as string", RETURN_STRING, args -> ValueType.STRING)//
         .impl(StringFunctions::toStringImpl) //
         .build();
 
-    private static Computer toStringImpl(final List<Computer> args) {
+    private static Computer toStringImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            var c = args.get(0);
+            var c = args.get("input");
 
             if (c.isMissing(ctx)) {
                 return "MISSING";
@@ -1972,16 +1986,16 @@ public final class StringFunctions {
         .impl(StringFunctions::parseFloatImpl) //
         .build();
 
-    private static Computer parseFloatImpl(final List<Computer> args) {
+    private static Computer parseFloatImpl(final Arguments<Computer> args) {
         return FloatComputer.of( //
-            ctx -> Float.parseFloat(toString(args.get(0)).compute(ctx)), //
+            ctx -> Float.parseFloat(toString(args.get("string")).compute(ctx)), //
             ctx -> {
                 if (anyMissing(args).applyAsBoolean(ctx)) {
                     return true;
                 }
 
                 try {
-                    Float.parseFloat(toString(args.get(0)).compute(ctx));
+                    Float.parseFloat(toString(args.get("string")).compute(ctx));
                 } catch (NumberFormatException ex) {
                     return true;
                 }
@@ -2015,16 +2029,17 @@ public final class StringFunctions {
         .impl(StringFunctions::parseIntImpl) //
         .build();
 
-    private static Computer parseIntImpl(final List<Computer> args) {
+    private static Computer parseIntImpl(final Arguments<Computer> args) {
+        var stringComputer = toString(args.get("string"));
         return IntegerComputer.of( //
-            ctx -> Integer.parseInt(toString(args.get(0)).compute(ctx)), //
+            ctx -> Integer.parseInt(stringComputer.compute(ctx)), //
             ctx -> {
                 if (anyMissing(args).applyAsBoolean(ctx)) {
                     return true;
                 }
 
                 try {
-                    Integer.parseInt(toString(args.get(0)).compute(ctx));
+                    Integer.parseInt(stringComputer.compute(ctx));
                 } catch (NumberFormatException ex) {
                     return true;
                 }
@@ -2060,15 +2075,16 @@ public final class StringFunctions {
         .impl(StringFunctions::parseBoolImpl) //
         .build();
 
-    private static Computer parseBoolImpl(final List<Computer> args) {
+    private static Computer parseBoolImpl(final Arguments<Computer> args) {
+        var stringComputer = toString(args.get("string"));
         return BooleanComputer.of( //
-            ctx -> toString(args.get(0)).compute(ctx).equalsIgnoreCase("true"), //
+            ctx -> stringComputer.compute(ctx).equalsIgnoreCase("true"), //
             ctx -> {
                 if (anyMissing(args).applyAsBoolean(ctx)) {
                     return true;
                 }
 
-                var stringArg = toString(args.get(0)).compute(ctx);
+                var stringArg = stringComputer.compute(ctx);
 
                 return (!stringArg.equalsIgnoreCase("true") && !stringArg.equalsIgnoreCase("false"));
             });
@@ -2088,7 +2104,6 @@ public final class StringFunctions {
         if (c instanceof BooleanComputer bc) {
             return bc;
         }
-
         throw FunctionUtils.calledWithIllegalArgs();
     }
 
@@ -2114,12 +2129,12 @@ public final class StringFunctions {
         }
     }
 
-    private static String extractModifiersOrDefault(final List<Computer> args, final int index,
-        final EvaluationContext ctx) {
-        if (args.size() > index) {
-            return toString(args.get(index)).compute(ctx);
-        } else {
-            return "";
-        }
+    /*
+     *  Looks up the 'modifier' argument in args and if its present
+     *  and contains an "i" it returns true and false otherwise
+     */
+    private static boolean computeIgnoreCase(final Arguments<Computer> args, final EvaluationContext ctx) {
+
+        return args.has("modifiers") && toString(args.get("modifiers")).compute(ctx).contains("i");
     }
 }

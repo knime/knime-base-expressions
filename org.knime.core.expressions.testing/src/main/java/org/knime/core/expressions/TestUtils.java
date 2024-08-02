@@ -84,16 +84,14 @@ public final class TestUtils {
     public static Function<ColumnAccess, ColumnId> COLUMN_ID = ColumnAccess::columnId;
 
     /**
-     * Function that maps from a {@link ColumnId} to its name. The names For the
-     * (un-named) {@link RowId} and {@link RowIndex} columns, "ROW_INDEX" and
-     * "ROW_ID" are returned, respectively.
+     * Function that maps from a {@link ColumnId} to its name. The names For the (un-named) {@link RowId} and
+     * {@link RowIndex} columns, "ROW_INDEX" and "ROW_ID" are returned, respectively.
      */
-    public static final Function<ColumnId, String> COLUMN_NAME = columnId -> switch(columnId.type()) {
+    public static final Function<ColumnId, String> COLUMN_NAME = columnId -> switch (columnId.type()) {
         case NAMED -> columnId.name();
         case ROW_INDEX -> "ROW_INDEX";
         case ROW_ID -> "ROW_ID";
     };
-
 
     /** Function that maps from a {@link FlowVarAccess} to its name */
     public static Function<FlowVarAccess, String> FLOW_VAR_NAME = FlowVarAccess::name;
@@ -227,4 +225,5 @@ public final class TestUtils {
             assertEquals(expected, ((StringComputer)c).compute(DUMMY_WML), computerDesc + " should eval correctly");
         };
     }
+
 }

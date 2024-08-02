@@ -208,28 +208,20 @@ final class Typing {
 
         @Override
         public ValueType visit(final FunctionCall node) {
-            var argTypes = node.args().asList().stream().map(Typing::getType).toList();
+            var argTypes = node.args().map(Typing::getType);
 
-            if (argTypes.stream().anyMatch(ErrorValueType.class::isInstance)) {
-                return ErrorValueType.combined(argTypes);
+            if (argTypes.anyMatch(ErrorValueType.class::isInstance)) {
+                return ErrorValueType.combined(argTypes.toList());
             }
 
-            // TODO(AP-22303) show better error if the function is not applicable
             return node.function().returnType(argTypes)
-                .orElseGet(() -> ErrorValueType.functionNotApplicable(node, argTypes));
+                .orElseGet(cause -> ErrorValueType.functionNotApplicable(cause, node));
         }
 
         @Override
         public ValueType visit(final AggregationCall node) throws RuntimeException {
-            var resolvedAggregation = node.aggregation();
-
-            var ret = resolvedAggregation.returnType(node.args(), m_columnType);
-
-            if (ret.isOk()) {
-                return ret.getValue();
-            } else {
-                return ErrorValueType.aggregationNotApplicable(node, ret.getErrorMessage());
-            }
+            return node.aggregation().returnType(node.args(), m_columnType)
+                .orElseGet(cause -> ErrorValueType.aggregationNotApplicable(cause, node));
         }
 
         private static ValueType arithmeticType(final BinaryOp node, final ValueType typeA, final ValueType typeB) {
@@ -352,6 +344,17 @@ final class Typing {
                 List.of(ExpressionCompileError.typingError(message, Parser.getTextLocation(node))));
         }
 
+        static ErrorValueType functionNotApplicable(final String message, final FunctionCall node) {
+            return new ErrorValueType(List.of(ExpressionCompileError.typingError(
+                "In function '" + node.function().name() + "': " + message,
+                Parser.getTextLocation(node))));
+        }
+
+        static ErrorValueType aggregationNotApplicable(final String message, final AggregationCall node) {
+            return new ErrorValueType(List.of(ExpressionCompileError.typingError(
+                "In aggregation '" + node.aggregation().name() + "': " + message, Parser.getTextLocation(node))));
+        }
+
         static ErrorValueType binaryOpNotApplicable(final BinaryOp node, final ValueType t1, final ValueType t2) {
             return typingError(
                 "Operator '" + node.op().symbol() + "' is not applicable for " + t1.name() + " and " + t2.name() + ".",
@@ -360,15 +363,6 @@ final class Typing {
 
         static ErrorValueType unaryOpNotApplicable(final UnaryOp node, final ValueType t) {
             return typingError("Operator '" + node.op().symbol() + "' is not applicable for " + t.name() + ".", node);
-        }
-
-        static ErrorValueType functionNotApplicable(final FunctionCall node, final List<ValueType> args) {
-            return typingError("The function " + node.function().name() + " is not applicable to the arguments " + args,
-                node);
-        }
-
-        static ErrorValueType aggregationNotApplicable(final AggregationCall node, final String errorMessage) {
-            return typingError(errorMessage, node);
         }
 
         static ErrorValueType nullishOpNotApplicable(final BinaryOp node, final ValueType t1, final ValueType t2) {

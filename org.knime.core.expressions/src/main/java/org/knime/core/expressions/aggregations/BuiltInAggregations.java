@@ -48,6 +48,12 @@
  */
 package org.knime.core.expressions.aggregations;
 
+import static org.knime.core.expressions.SignatureUtils.arg;
+import static org.knime.core.expressions.SignatureUtils.isBoolean;
+import static org.knime.core.expressions.SignatureUtils.isInteger;
+import static org.knime.core.expressions.SignatureUtils.optarg;
+import static org.knime.core.expressions.ValueType.STRING;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -59,9 +65,10 @@ import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.OperatorCategory;
-import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ReturnTypeDescriptions;
+import org.knime.core.expressions.SignatureUtils;
+import org.knime.core.expressions.SignatureUtils.Arg;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -98,17 +105,21 @@ public final class BuiltInAggregations {
     public static final List<OperatorCategory> BUILT_IN_CATEGORIES = List.of(AGGREGATION_CATEGORY);
 
     // Helper constants
-
-    /** The name of the argument which holds the column name */
     private static final String COLUMN_ARG_ID = "column";
 
-    // Some error messages that we reuse a lot
+    private static final Arg COLUMN_ARG = arg(COLUMN_ARG_ID, "The name of the column to aggregate",
+        new SignatureUtils.ArgMatcherImpl("COLUMN", STRING::equals));
+
+    private static final String IGNORE_NAN_ARG_ID = "ignore_nan";
+
+    private static final Arg IGNORE_NAN_ARG =
+        optarg(IGNORE_NAN_ARG_ID, "Whether to skip `NaN` values (defaults to `FALSE`)", isBoolean());
+
     private static final String COLUMN_ARG_MUST_BE_STRING_ERR = "Column argument must be a string.";
 
-    private static final String ARGUMENTS_NOT_MATCHED_ERR = "Invalid arguments provided to aggregation.";
+    private static final String IGNORE_NAN_MUST_BE_BOOLEAN = "ignore_nan must be a boolean.";
 
     // Aggregation implementations
-
     /** Aggregation that returns the maximum value of a column. */
     public static final ColumnAggregation MAX = AggregationBuilder.aggregationBuilder() //
         .name("COLUMN_MAX") //
@@ -132,10 +143,7 @@ public final class BuiltInAggregations {
                 """) //
         .keywords("maximum", "max") //
         .category(AGGREGATION_CATEGORY.name()) //
-        .args( //
-            new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
-        ) //
+        .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The maximum value of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING,
             BuiltInAggregations::maxReturnType) //
         .build();
@@ -143,12 +151,10 @@ public final class BuiltInAggregations {
     private static ReturnResult<ValueType> maxReturnType(final Arguments<ConstantAst> arguments,
         final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(MAX.description().arguments(), arguments);
-
-        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+        return ReturnResult.success(arguments.getNamedArguments()) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .filter(optArgHasType(IGNORE_NAN_ARG_ID, Ast.BooleanConstant.class), IGNORE_NAN_MUST_BE_BOOLEAN) //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
@@ -179,10 +185,7 @@ public final class BuiltInAggregations {
                 """) //
         .keywords("minimum") //
         .category(AGGREGATION_CATEGORY.name()) //
-        .args( //
-            new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
-        ) //
+        .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The minimum value of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING,
             BuiltInAggregations::minReturnType) //
         .build();
@@ -190,12 +193,10 @@ public final class BuiltInAggregations {
     private static ReturnResult<ValueType> minReturnType(final Arguments<ConstantAst> arguments,
         final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(MIN.description().arguments(), arguments);
-
-        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+        return ReturnResult.success(arguments.getNamedArguments()) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .filter(optArgHasType(IGNORE_NAN_ARG_ID, Ast.BooleanConstant.class), IGNORE_NAN_MUST_BE_BOOLEAN) //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
@@ -225,10 +226,7 @@ public final class BuiltInAggregations {
                 """) //
         .keywords("column_mean", "avg") //
         .category(AGGREGATION_CATEGORY.name()) //
-        .args( //
-            new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
-        ) //
+        .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The mean value of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
             BuiltInAggregations::meanReturnType) //
         .build();
@@ -236,12 +234,11 @@ public final class BuiltInAggregations {
     private static ReturnResult<ValueType> meanReturnType(final Arguments<ConstantAst> arguments,
         final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(AVERAGE.description().arguments(), arguments);
-
-        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+        // TODO(AP-23168) replace some of these checks with the usage of SignatureUtils.checkTypes
+        return ReturnResult.success(arguments.getNamedArguments()) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .filter(optArgHasType(IGNORE_NAN_ARG_ID, Ast.BooleanConstant.class), IGNORE_NAN_MUST_BE_BOOLEAN) //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
@@ -272,10 +269,7 @@ public final class BuiltInAggregations {
                 """) //
         .keywords("average", "avg") //
         .category(AGGREGATION_CATEGORY.name()) //
-        .args( //
-            new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
-        ) //
+        .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The median value of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
             BuiltInAggregations::medianReturnType) //
         .build();
@@ -283,12 +277,10 @@ public final class BuiltInAggregations {
     private static ReturnResult<ValueType> medianReturnType(final Arguments<ConstantAst> arguments,
         final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(MEDIAN.description().arguments(), arguments);
-
-        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+        return ReturnResult.success(arguments.getNamedArguments()) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .filter(optArgHasType(IGNORE_NAN_ARG_ID, Ast.BooleanConstant.class), IGNORE_NAN_MUST_BE_BOOLEAN) //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
@@ -320,10 +312,7 @@ public final class BuiltInAggregations {
                 """) //
         .keywords("sum", "total") //
         .category(AGGREGATION_CATEGORY.name()) //
-        .args( //
-            new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
-        ) //
+        .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The sum of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT,
             BuiltInAggregations::sumReturnType) //
         .build();
@@ -331,12 +320,10 @@ public final class BuiltInAggregations {
     private static ReturnResult<ValueType> sumReturnType(final Arguments<ConstantAst> arguments,
         final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(SUM.description().arguments(), arguments);
-
-        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+        return ReturnResult.success(arguments.getNamedArguments()) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .filter(optArgHasType(IGNORE_NAN_ARG_ID, Ast.BooleanConstant.class), IGNORE_NAN_MUST_BE_BOOLEAN) //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
@@ -366,10 +353,7 @@ public final class BuiltInAggregations {
                 """) //
         .keywords("var", "variation") //
         .category(AGGREGATION_CATEGORY.name()) //
-        .args( //
-            new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)") //
-        ) //
+        .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The variance of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
             BuiltInAggregations::varianceReturnType) //
         .build();
@@ -377,12 +361,10 @@ public final class BuiltInAggregations {
     private static ReturnResult<ValueType> varianceReturnType(final Arguments<ConstantAst> arguments,
         final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(VARIANCE.description().arguments(), arguments);
-
-        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+        return ReturnResult.success(arguments.getNamedArguments()) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .filter(optArgHasType(IGNORE_NAN_ARG_ID, Ast.BooleanConstant.class), IGNORE_NAN_MUST_BE_BOOLEAN) //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //
@@ -422,9 +404,9 @@ public final class BuiltInAggregations {
         .keywords("standard deviation", "std") //
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
-            new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_nan", "BOOLEAN", "Whether to skip `NaN` values (defaults to `FALSE`)"), //
-            new Argument("ddof", "INTEGER", "The delta degrees of freedom to use (defaults to 0)") //
+            COLUMN_ARG, //
+            IGNORE_NAN_ARG, //
+            optarg("ddof", "The delta degrees of freedom to use (defaults to 0)", isInteger()) //
         ) //
         .returnType("The standard deviation of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
             BuiltInAggregations::stddevReturnType) //
@@ -433,12 +415,10 @@ public final class BuiltInAggregations {
     private static ReturnResult<ValueType> stddevReturnType(final Arguments<ConstantAst> arguments,
         final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(STD_DEV.description().arguments(), arguments); //
-
-        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+        return ReturnResult.success(arguments.getNamedArguments()) //
             .filter(hasNtoMArguments(1, 3), "Should have 1-3 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(optArgHasType("ignore_nan", Ast.BooleanConstant.class), "ignore_nan must be a boolean") //
+            .filter(optArgHasType(IGNORE_NAN_ARG_ID, Ast.BooleanConstant.class), IGNORE_NAN_MUST_BE_BOOLEAN) //
             .filter(optArgHasType("ddof", Ast.IntegerConstant.class), "ddof must be an integer") //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
@@ -469,8 +449,8 @@ public final class BuiltInAggregations {
         .keywords("number", "rows") //
         .category(AGGREGATION_CATEGORY.name()) //
         .args( //
-            new Argument(COLUMN_ARG_ID, "COLUMN", "The name of the column to aggregate"), //
-            new Argument("ignore_missing", "BOOLEAN", "Whether to skip `MISSING` values (defaults to `FALSE`)") //
+            COLUMN_ARG, //
+            optarg("ignore_missing", "Whether to skip `MISSING` values (defaults to `FALSE`)", isBoolean()) //
         ) //
         .returnType("The number of values in the column", ReturnTypeDescriptions.RETURN_INTEGER,
             BuiltInAggregations::countReturnType) //
@@ -479,12 +459,10 @@ public final class BuiltInAggregations {
     private static ReturnResult<ValueType> countReturnType(final Arguments<ConstantAst> arguments,
         final Function<String, ReturnResult<ValueType>> columnTypeMapper) {
 
-        var matchedArgs = Argument.matchSignature(COUNT.description().arguments(), arguments); //
-
-        return ReturnResult.fromOptional(matchedArgs, ARGUMENTS_NOT_MATCHED_ERR) //
+        return ReturnResult.success(arguments.getNamedArguments()) //
             .filter(hasNtoMArguments(1, 2), "Should have 1-2 arguments") //
             .filter(columnArgumentIsString(), COLUMN_ARG_MUST_BE_STRING_ERR) //
-            .filter(optArgHasType("ignore_missing", Ast.BooleanConstant.class), "ignore_missing must be a boolean") //
+            .filter(optArgHasType("ignore_missing", Ast.BooleanConstant.class), IGNORE_NAN_MUST_BE_BOOLEAN) //
             .map(args -> args.get(COLUMN_ARG_ID)) //
             .map(Ast.StringConstant.class::cast) //
             .map(Ast.StringConstant::value) //

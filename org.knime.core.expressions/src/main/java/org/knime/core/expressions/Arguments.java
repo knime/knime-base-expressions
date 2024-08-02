@@ -49,66 +49,189 @@
 package org.knime.core.expressions;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
- * A container for the arguments of a function or aggregation. Supports both positional and named arguments.
+ * A container for the arguments of a function or aggregation. Consists of a map of named arguments and a list of
+ * variable arguments. Operators decide how they want to handle named and variable arguments.
  *
  * @param <T> the type of the arguments
- * @param positionalArguments a list of positional arguments
- * @param namedArguments a map of named arguments
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author Tobias Kampmann, TNG, Schwerte, Germany
  */
-public record Arguments<T>(List<T> positionalArguments, Map<String, T> namedArguments) {
+public class Arguments<T> {
+
+    private final Map<String, T> m_namedArguments;
+
+    private final List<T> m_varArgument;
 
     /**
-     * @return all arguments as a list. The named arguments are positioned after the positional arguments but the order
-     *         of the named arguments is not guaranteed.
+     * @param namedArguments a map of named arguments. Can be empty but not null.
+     * @param varArgument a list of arguments. Can be empty but not null.
      */
-    public List<T> asList() {
-        var l = new ArrayList<>(positionalArguments);
-        l.addAll(namedArguments.values());
-        return l;
+    public Arguments(final Map<String, T> namedArguments, final List<T> varArgument) {
+        Objects.requireNonNull(namedArguments, "Named arguments must not be null.");
+        Objects.requireNonNull(varArgument, "Variable argument must not be null.");
+        m_namedArguments = namedArguments;
+        m_varArgument = varArgument;
     }
 
     /**
-     * Applies a mapping function to all arguments.
+     * Get an argument by name or the default if it is missing.
      *
-     * @param <O> the type of the mapped arguments
-     * @param mapper the mapping function
-     * @return a new {@link Arguments} object with the mapped arguments
+     * @param name
+     * @param defaultIfMissing
+     * @return the argument
      */
-    public <O> Arguments<O> map(final Function<T, O> mapper) {
-        return new Arguments<>( //
-            positionalArguments.stream().map(mapper).toList(), //
-            namedArguments.entrySet().stream().collect( //
-                Collectors.toMap(Entry::getKey, e -> mapper.apply(e.getValue())) //
-            ) //
-        );
+    public T get(final String name, final T defaultIfMissing) {
+        return m_namedArguments.getOrDefault(name, defaultIfMissing);
     }
 
     /**
-     * Renders the arguments as a string.
+     * Get an argument by name. Throws if the argument is missing.
      *
-     * @param argRenderer a function that renders an individual argument
-     * @return a string representation of the arguments
+     * @param name
+     * @return the argument
+     * @throws NoSuchElementException if the argument is missing
      */
-    public String renderArgumentList(final Function<T, String> argRenderer) {
-        return "(" //
-            + Stream.concat( //
-                positionalArguments.stream().map(argRenderer), //
-                namedArguments.entrySet().stream().map(e -> e.getKey() + "=" + argRenderer.apply(e.getValue())) //
-            ).collect(Collectors.joining(", ")) //
-            + ")";
+    public T get(final String name) {
+        if (m_namedArguments.containsKey(name)) {
+            return m_namedArguments.get(name);
+        }
+        throw new NoSuchElementException("Argument '" + name + "' does not exist.");
+    }
+
+    /**
+     * @param name
+     * @return <code>true</code> if the argument is present, <code>false</code> otherwise
+     */
+    public boolean has(final String name) {
+        return m_namedArguments.containsKey(name);
+    }
+
+    /**
+     * Get the variable argument. Can be empty.
+     *
+     * @return the variable argument
+     */
+    public List<T> getVariableArgument() {
+        return Collections.unmodifiableList(m_varArgument);
+    }
+
+    /**
+     * @return all named arguments
+     */
+    public Map<String, T> getNamedArguments() {
+        return Collections.unmodifiableMap(m_namedArguments);
+    }
+
+    /**
+     * Create a list of all arguments. Named arguments are followed my variable arguments.
+     *
+     * @return a list of arguments
+     */
+    public List<T> toList() {
+        var list = new ArrayList<>(m_namedArguments.values());
+        list.addAll(m_varArgument);
+        return list;
+    }
+
+    /**
+     * Allow to conveniently stream over all arguments.
+     *
+     * @return a stream of all arguments
+     */
+    public Stream<T> stream() {
+        return this.toList().stream();
+    }
+
+    /**
+     * @return the number of arguments stored in this object
+     */
+    public int getNumberOfArguments() {
+        return m_namedArguments.size() + m_varArgument.size();
+    }
+
+    /**
+     * Check if any argument matches the predicate.
+     *
+     * @param predicate the predicate to test
+     * @return true if any argument matches, false otherwise
+     */
+    public boolean anyMatch(final Predicate<? super T> predicate) {
+        return this.stream().anyMatch(predicate);
+    }
+
+    /**
+     * Check if all arguments match the predicate
+     *
+     * @param predicate
+     * @return true if all arguments match the predicate, false otherwise
+     */
+    public boolean allMatch(final Predicate<? super T> predicate) {
+        return this.stream().allMatch(predicate);
+    }
+
+    /**
+     * Map all arguments to new objects using the given mapper.
+     *
+     * @param <O> the type of the output arguments
+     * @param <E> the type of the exception if the mapper throws
+     * @param mapper the mapper to apply to all arguments
+     * @return a new Arguments object with the mapped arguments
+     * @throws E if the mapper throws an exception
+     */
+    public <O, E extends Exception> Arguments<O> map(final FunctionWithException<T, O, E> mapper) throws E {
+        var mappedNamedArguments = new HashMap<String, O>();
+        for (Entry<String, T> arg : m_namedArguments.entrySet()) {
+            mappedNamedArguments.put(arg.getKey(), mapper.apply(arg.getValue()));
+        }
+
+        var mappedVarArgument = new ArrayList<O>();
+        for (T arg : m_varArgument) {
+            mappedVarArgument.add(mapper.apply(arg));
+        }
+        return new Arguments<>(mappedNamedArguments, mappedVarArgument);
+    }
+
+    /**
+     * @param <T> the type of the parameter
+     * @param <O> the type of the mapped parameter
+     * @param <E> the type of the exception
+     */
+    @FunctionalInterface
+    public interface FunctionWithException<T, O, E extends Exception> {
+        /**
+         * @param t the input argument
+         * @return the result of the function
+         * @throws E
+         */
+        O apply(T t) throws E;
     }
 
     @Override
     public String toString() {
-        return renderArgumentList(Object::toString);
+        return "Arguments[named=" + m_namedArguments + ", var=" + m_varArgument + "]";
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj instanceof Arguments<?> other) {
+            return m_namedArguments.equals(other.m_namedArguments) && m_varArgument.equals(other.m_varArgument);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(m_namedArguments, m_varArgument);
     }
 }

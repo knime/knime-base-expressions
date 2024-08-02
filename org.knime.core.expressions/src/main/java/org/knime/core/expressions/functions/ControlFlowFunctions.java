@@ -48,27 +48,28 @@
  */
 package org.knime.core.expressions.functions;
 
+import static org.knime.core.expressions.SimplifiedSignatureUtils.arg;
+import static org.knime.core.expressions.SimplifiedSignatureUtils.isAnything;
+import static org.knime.core.expressions.SimplifiedSignatureUtils.isBoolean;
+import static org.knime.core.expressions.SimplifiedSignatureUtils.vararg;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.STRING;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.arg;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isAnything;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isBoolean;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.isOneOfBaseTypes;
-import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.vararg;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
+import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorCategory;
+import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -88,6 +89,13 @@ public final class ControlFlowFunctions {
             within expressions. These functions allow users to define conditions and return specific values based on
             those conditions, thus making expressions more dynamic and context-sensitive.
             """);
+
+    /** Argument identifier */
+    private static final String IF_CONDITION = "condition_1";
+
+    private static final String IF_TRUE_BRANCH = "value_1";
+
+    private static final String IF_ELSE = "additional_conditions__value_if_all_false";
 
     /** The "if*" function */
     public static final ExpressionFunction IF = functionBuilder() //
@@ -126,10 +134,10 @@ public final class ControlFlowFunctions {
         .keywords("conditional") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("condition_1", "Boolean condition. See how to chain multiple conditions in description below.",
+            arg(IF_CONDITION, "Boolean condition. See how to chain multiple conditions in description below.",
                 isBoolean()), //
-            arg("value_1", "Expression if condition 1 is `TRUE`.", isAnything()), //
-            vararg("additional_conditions, value_if_all_false",
+            arg(IF_TRUE_BRANCH, "Expression if condition 1 is `TRUE`.", isAnything()), //
+            vararg(IF_ELSE,
                 "Pairs of conditions and related expressions executed when the condition evaluates to `TRUE`. "
                     + "Last argument is the mandatory default (\"else\" case) to be returned when no condition is fulfilled.",
                 isAnything()) //
@@ -139,42 +147,68 @@ public final class ControlFlowFunctions {
         .impl(ControlFlowFunctions::ifImpl) //
         .build();
 
-    private static ValueType ifReturnType(final ValueType[] arguments) {
-        var ifStatementHasNoElseCase = arguments.length % 2 != 1;
+    private static ReturnResult<ValueType> ifReturnType(final Arguments<ValueType> arguments) {
 
-        if (ifStatementHasNoElseCase || arguments.length < 3) {
-            // TODO(AP-22303) better message about what arguments are supported
-            return null;
+        // At this point we already validated the arguments, so we can safely assume that the arguments are present
+        // and the types are correct. Nevertheless, the vararg is not checked for the correct number of arguments.
+        var elseIf = arguments.getVariableArgument();
+        if (elseIf.isEmpty()) {
+            return ReturnResult.failure("If statements must have at least one else branch.");
         }
+        if (elseIf.size() % 2 == 0) {
+            return ReturnResult
+                .failure("Parameter " + IF_ELSE + " has to be a series of n [condition,value] pairs (n can be 0) + "
+                    + "followed by a mandatory else value. Please provide at least one else value.");
+        }
+
+        var firstBranch = arguments.get("value_1");
 
         ArrayList<ValueType> branchExpressions = new ArrayList<>();
+        branchExpressions.add(firstBranch);
 
-        for (int i = 1; i < arguments.length - 1; i += 2) {
-            branchExpressions.add(arguments[i]);
+        for (int i = 1; i < elseIf.size() - 1; i += 2) {
+            branchExpressions.add(elseIf.get(i));
         }
-        branchExpressions.add(arguments[arguments.length - 1]);
+        branchExpressions.add(elseIf.get(elseIf.size() - 1));
 
         return calculateReturnTypeFromBranchExpressionValues(branchExpressions);
 
     }
 
-    private static ValueType ifReturnType(final List<Computer> arguments) {
-        return ifReturnType(arguments.stream().map(Computer::getReturnTypeFromComputer).toArray(ValueType[]::new));
+    private static ReturnResult<ValueType> ifReturnTypeFromComputer(final Arguments<Computer> arguments) {
+        return ifReturnType(arguments.map(Computer::getReturnTypeFromComputer));
     }
 
-    private static Computer computeMatchingBranchIf(final List<Computer> arguments, final EvaluationContext ctx) {
-        for (int i = 0; i < arguments.size() - 1; i += 2) {
-            if (((BooleanComputer)arguments.get(i)).compute(ctx)) {
-                return arguments.get(i + 1);
+    private static Computer computeMatchingBranchIf(final Arguments<Computer> arguments, final EvaluationContext ctx) {
+        var condition = arguments.get(IF_CONDITION);
+
+        if (((BooleanComputer)condition).compute(ctx)) {
+            return arguments.get(IF_TRUE_BRANCH);
+        }
+
+        var elseIf = arguments.getVariableArgument();
+
+        for (int i = 0; i < elseIf.size() - 1; i += 2) {
+            if (((BooleanComputer)elseIf.get(i)).compute(ctx)) {
+                return elseIf.get(i + 1);
             }
         }
-        return arguments.get(arguments.size() - 1);
+        return elseIf.get(elseIf.size() - 1);
     }
 
-    private static Computer ifImpl(final List<Computer> arguments) {
+    private static Computer ifImpl(final Arguments<Computer> arguments) {
         return Computer.createTypedResultComputer(ctx -> computeMatchingBranchIf(arguments, ctx),
-            ifReturnType(arguments));
+            ifReturnTypeFromComputer(arguments).getValue());
     }
+
+    /** Argument identifier for switch */
+    private static final String SWITCH_EXPRESSION = "expression";
+
+    private static final String SWITCH_CASE = "case_1";
+
+    private static final String SWITCH_VALUE = "value_1";
+
+    private static final String SWITCH_DEFAULT = "value_if_none_matched";
 
     /** The "switch" function: switch(value, A, exprInCaseA, B, exprInCaseB, ...) */
     public static final ExpressionFunction SWITCH = functionBuilder() //
@@ -203,15 +237,14 @@ public final class ControlFlowFunctions {
                 ```
                 """ //
 
-        ) //
+        ) // isOneOfBaseTypes(STRING,BOOLEAN)
         .keywords("conditional") //
         .category(CATEGORY.name()) //
         .args( //
-            arg("expression", "Value to switch on. Only accepts string or integer types.",
-                isOneOfBaseTypes(STRING, INTEGER)), //
-            arg("case_1", "Case to check equality against `expression`.", isOneOfBaseTypes(STRING, INTEGER)), //
-            arg("value_1", "Expression to execute, when `case_1` matches the `expression`.", isAnything()), //
-            vararg("additional_cases, value_if_none_matched",
+            arg(SWITCH_EXPRESSION, "Value to switch on. Only accepts string or integer types.", isAnything()), //
+            arg(SWITCH_CASE, "Case to check equality against `expression`.", isAnything()), //
+            arg(SWITCH_VALUE, "Expression to execute, when `case_1` matches the `expression`.", isAnything()), //
+            vararg(SWITCH_DEFAULT,
                 "Optional pairs of `case_N` values to check for equality with the `expression` and `value_N` expressions. "
                     + "The last argument can be an optional `value_if_none_matched` expression to be applied as a default when no match is found. "
                     + "If no `value_if_none_matched` expression is provided, the default is `MISSING`.",
@@ -222,103 +255,118 @@ public final class ControlFlowFunctions {
         .impl(ControlFlowFunctions::switchImpl) //
         .build();
 
-    private static ValueType switchReturnType(final ValueType[] arguments) {
-        if (arguments.length < 3) {
-            return null;
+    private static ReturnResult<ValueType> switchReturnType(final Arguments<ValueType> arguments) {
+
+        var switchExpression = arguments.get(SWITCH_EXPRESSION);
+        if (switchExpression.baseType() != STRING && switchExpression.baseType() != INTEGER
+            && switchExpression.baseType() != MISSING) {
+            return ReturnResult.failure("Switch expression, i.e., the value to switch on, must be "
+                + "of type STRING or INTEGER. First argument is of type " + switchExpression.baseType() + ".");
         }
 
-        ValueType switchValue = arguments[0];
-        if (switchValue.baseType() != STRING && switchValue.baseType() != INTEGER && switchValue != MISSING) {
-            return null;
+        if (arguments.get(SWITCH_CASE).baseType() != switchExpression.baseType()) {
+            return ReturnResult.failure("Case and switch expressions must have the same type. "
+                + "Switch expression is of type " + switchExpression.baseType() + " and first case is of type "
+                + arguments.get(SWITCH_CASE).baseType() + ".");
         }
-        for (int i = 1; i < arguments.length - 1; i += 2) {
-            if (arguments[i] == MISSING) {
+
+        var cases = arguments.getVariableArgument();
+        for (int i = 0; i < cases.size() - 1; i += 2) {
+            if (cases.get(i) == MISSING) {
                 continue;
             }
-            if (arguments[i].baseType() != switchValue.baseType()) {
-                return null;
+            if (cases.get(i).baseType() != switchExpression.baseType()) {
+                return ReturnResult.failure("Case and switch expressions must have the same type. "
+                    + "Switch expression is of type " + switchExpression.baseType() + " and case " + i + 1
+                    + " is of type " + arguments.get(SWITCH_CASE).baseType() + ".");
             }
         }
 
-        boolean hasDefaultCase = arguments.length % 2 == 0;
         ArrayList<ValueType> branchExpressions = new ArrayList<>();
+        branchExpressions.add(arguments.get(SWITCH_VALUE));
 
-        for (int i = 2; i < arguments.length - (hasDefaultCase ? 1 : 0); i += 2) {
-            branchExpressions.add(arguments[i]);
+        int defaultIndex = cases.size() - (cases.size() % 2);
+        for (int i = 1; i < defaultIndex; i += 2) {
+            branchExpressions.add(cases.get(i));
         }
 
+        boolean hasDefaultCase = cases.size() % 2 == 1;
         if (hasDefaultCase) {
-            branchExpressions.add(arguments[arguments.length - 1]);
+            branchExpressions.add(cases.get(cases.size() - 1));
         }
 
-        var returnType = calculateReturnTypeFromBranchExpressionValues(branchExpressions);
-
-        if (returnType == null) {
-            return null;
-        }
-        return hasDefaultCase ? returnType : returnType.optionalType();
+        return calculateReturnTypeFromBranchExpressionValues(branchExpressions)
+            .map(type -> hasDefaultCase ? type : type.optionalType());
     }
 
-    private static ValueType switchReturnType(final List<Computer> arguments) {
-        return switchReturnType(arguments.stream().map(Computer::getReturnTypeFromComputer).toArray(ValueType[]::new));
+    private static ReturnResult<ValueType> switchReturnTypeFromComputer(final Arguments<Computer> arguments) {
+        return switchReturnType(arguments.map(Computer::getReturnTypeFromComputer));
     }
 
-    private static Computer switchImpl(final List<Computer> arguments) {
-        var returnType = switchReturnType(arguments);
-        if (returnType == null) {
-            return ctx -> true;
-        }
+    private static Computer switchImpl(final Arguments<Computer> arguments) {
         return Computer.createTypedResultComputer(ctx -> computeMatchingCaseSwitch(arguments, ctx),
-            returnType.baseType());
+            switchReturnTypeFromComputer(arguments).getValue());
     }
 
-    private static Computer computeMatchingCaseSwitch(final List<Computer> arguments, final EvaluationContext ctx) { // NOSONAR
+    private static Computer computeMatchingCaseSwitch(final Arguments<Computer> arguments,
+        final EvaluationContext ctx) {
 
-        Computer computerToSwitchOn = arguments.get(0);
-        final boolean hasDefaultCase = arguments.size() % 2 == 0;
+        Computer switchExpression = arguments.get(SWITCH_EXPRESSION);
+        Computer firstCase = arguments.get(SWITCH_CASE);
+        var cases = arguments.getVariableArgument();
 
-        if (computerToSwitchOn.isMissing(ctx)) {
-            for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing(ctx)) {
-                    return arguments.get(i + 1);
+        if (switchExpression.isMissing(ctx)) {
+            if (firstCase.isMissing(ctx)) {
+                return arguments.get(SWITCH_VALUE);
+            }
+            for (int i = 0; i < cases.size() - 1; i += 2) {
+                if (cases.get(i).isMissing(ctx)) {
+                    return cases.get(i + 1);
                 }
             }
-        } else if (computerToSwitchOn instanceof StringComputer stringComputer) {
+        } else if (switchExpression instanceof StringComputer stringComputer) {
             String evaluatedSwitchValue = stringComputer.compute(ctx);
-            for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing(ctx)) {
-                    continue;
-                }
-                if (arguments.get(i) instanceof StringComputer stringComputerToCompare
+
+            if (!firstCase.isMissing(ctx) && firstCase instanceof StringComputer stringComputerToCompare
+                && evaluatedSwitchValue.equals(stringComputerToCompare.compute(ctx))) {
+                return arguments.get(SWITCH_VALUE);
+            }
+
+            for (int i = 0; i < cases.size() - 1; i += 2) {
+                if (!cases.get(i).isMissing(ctx) && cases.get(i) instanceof StringComputer stringComputerToCompare
                     && evaluatedSwitchValue.equals(stringComputerToCompare.compute(ctx))) {
-                    return arguments.get(i + 1);
+                    return cases.get(i + 1);
                 }
             }
-        } else if (computerToSwitchOn instanceof IntegerComputer integerComputer) {
+        } else if (switchExpression instanceof IntegerComputer integerComputer) {
             long evaluatedSwitchValue = integerComputer.compute(ctx);
-            for (int i = 1; i < arguments.size() - 1; i += 2) {
-                if (arguments.get(i).isMissing(ctx)) {
-                    continue;
-                }
-                if (arguments.get(i) instanceof IntegerComputer integerComputerToCompare
+
+            if (!firstCase.isMissing(ctx) && firstCase instanceof IntegerComputer integerComputerToCompare
+                && integerComputerToCompare.compute(ctx) == evaluatedSwitchValue) {
+                return arguments.get(SWITCH_VALUE);
+            }
+
+            for (int i = 0; i < cases.size() - 1; i += 2) {
+                if (!cases.get(i).isMissing(ctx) && cases.get(i) instanceof IntegerComputer integerComputerToCompare
                     && integerComputerToCompare.compute(ctx) == evaluatedSwitchValue) {
-                    return arguments.get(i + 1);
+                    return cases.get(i + 1);
                 }
             }
         }
 
-        return hasDefaultCase ? arguments.get(arguments.size() - 1) : w -> true;
+        final boolean hasDefaultCase = cases.size() % 2 != 0;
+        return hasDefaultCase ? cases.get(cases.size() - 1) : missing -> true;
     }
 
-    private static ValueType calculateReturnTypeFromBranchExpressionValues(final List<ValueType> expressions) {
+    private static ReturnResult<ValueType>
+        calculateReturnTypeFromBranchExpressionValues(final List<ValueType> expressions) {
         if (expressions.stream().allMatch(type -> type == MISSING)) {
-            // TODO(AP-22303) better message about what arguments are supported
-            return null;
+            return ReturnResult.failure("All branch expressions are missing. "
+                + "At least one branch has to be present to infer the return type for conditional functions.");
         }
 
         if (!expressions.stream().allMatch(isCompatibleTo(expressions.get(0)))) {
-            // TODO(AP-22303) better message about what arguments are supported
-            return null;
+            return ReturnResult.failure("All branch expressions must have the same type.");
         }
 
         ValueType commonReturnBaseType =
@@ -328,9 +376,9 @@ public final class ControlFlowFunctions {
         }
 
         if (expressions.stream().anyMatch(ValueType::isOptional)) {
-            return commonReturnBaseType.optionalType();
+            return ReturnResult.success(commonReturnBaseType.optionalType());
         } else {
-            return commonReturnBaseType;
+            return ReturnResult.success(commonReturnBaseType);
         }
     }
 

@@ -117,7 +117,7 @@ final class ControlFlowFunctionTests {
                 List.of(arg(true), arg("true branch"), arg(true), arg("false branch"), arg(true), arg("fake branch"),
                     arg(true), arg("some name branch"), arg("else branch")),
                 "true branch") //
-            .impl("MISSING else case",List.of(arg(true),arg("true branch"), mis()), "true branch") //
+            .impl("MISSING else case", List.of(arg(true), arg("true branch"), mis()), "true branch") //
             .tests();
     }
 
@@ -137,14 +137,18 @@ final class ControlFlowFunctionTests {
             .typing("optinal string case", List.of(OPT_STRING, STRING, INTEGER, OPT_STRING, INTEGER, INTEGER), INTEGER) //
             .typing("missing string case", List.of(OPT_STRING, STRING, INTEGER, MISSING, INTEGER, INTEGER), INTEGER) //
             .typing("MISSING case expression", List.of(OPT_STRING, STRING, MISSING, INTEGER), OPT_INTEGER) //
+            .illegalArgs("no arguments", List.of())//
             .illegalArgs("incompatible return expressions", List.of(INTEGER, INTEGER, FLOAT, STRING))//
             .illegalArgs("two few Arguments", List.of(STRING, INTEGER)) //
             .illegalArgs("no float as case/value", List.of(FLOAT, FLOAT, STRING, STRING)) //
             .illegalArgs("no boolean as case/value", List.of(BOOLEAN, BOOLEAN, STRING, STRING)) //
             .illegalArgs("mixing case types", List.of(STRING, STRING, INTEGER, INTEGER, INTEGER, INTEGER)) //
+            .illegalArgs("mixing first case type", List.of(STRING, INTEGER, INTEGER))
             .illegalArgs("MISSING as type of value", List.of(MISSING, STRING, INTEGER, STRING, INTEGER)) //
             .impl("integer with default",
                 List.of(arg(1), arg(2), arg(false), arg(3), arg(false), arg(1), arg(true), arg(false)), true) //
+            .impl("integer with default matching first case",
+                List.of(arg(1), arg(1), arg(true), arg(2), arg(false), arg(false)), true) //
             .impl("integer without default", List.of(arg(1), arg(2), arg(false), arg(3), arg(false), arg(1), arg(true)),
                 true) //
             .impl("string matching",
@@ -160,7 +164,8 @@ final class ControlFlowFunctionTests {
                     arg("thirdCase"), arg(false))) //
             .impl("optional string case #1", List.of(misString(), arg("a"), arg(1), arg("b"), arg(2), arg(3)), 3) //
             .impl("optional string case #2", List.of(arg("b"), misString(), arg(1), arg("b"), arg(2), arg(3)), 2) //
-            .impl("missing string case #1", List.of(misString(), arg("a"), arg(1), mis(), arg(2), arg(3)), 2) //
+            .impl("missing string case #1", List.of(misString(), arg("a"), arg(false), mis(), arg(true), arg(false)),
+                true) //
             .impl("missing string case #2", List.of(arg("b"), arg("a"), arg(1), mis(), arg(2), arg(3)), 3) //
             .impl("MISSING case expression", List.of(misString(), arg("a"), arg("column is a"), mis())) //
             .tests();

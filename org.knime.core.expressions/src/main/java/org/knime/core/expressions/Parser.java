@@ -358,11 +358,6 @@ final class Parser {
                     + ". This ambiguity stems from the provided lists of available functions and aggregations.");
             }
 
-            // TODO (AP-22303):
-            //  Here we have the full information of the function/aggregation and we could resolve args too.
-            // I still think it should be possible to convert all named args to positional ones
-            // and only handle positional ones afterwards.
-            // Could make things easier
             if (resolvedAggregation.isPresent()) {
                 return visitAggregationCall(ctx, resolvedAggregation.get());
             }
@@ -391,36 +386,31 @@ final class Parser {
 
         public Ast visitFunctionCall(final FunctionOrAggregationCallContext ctx, final ExpressionFunction function) {
 
-            if (ctx.arguments() == null) {
-                return functionCall(function, new Arguments<>(List.of(), Map.of()), createData(getLocation(ctx)));
-            }
+            Map<String, Ast> namedArgs = ctx.arguments() == null ? Map.of() //
+                : ctx.arguments().namedArgument().stream() //
+                    .collect(Collectors.toMap(arg -> arg.argName.getText(), arg -> arg.expr().accept(this)));
 
-            if (!ctx.arguments().namedArgument().isEmpty()) {
-                throw syntaxError("Named arguments are not supported for functions.", getLocation(ctx));
-            }
+            List<Ast> positionalArgs = ctx.arguments() == null ? List.of() //
+                : ctx.arguments().positionalArgument().stream() //
+                    .map(arg -> arg.accept(this)).toList();
 
-            var positionalArgs = ctx.arguments().positionalArgument() //
-                .stream() //
-                .map(arg -> arg.accept(this)) //
-                .toList();
+            var args = function.signature(positionalArgs, namedArgs)
+                .orElseThrow(cause -> syntaxError(cause, getLocation(ctx)));
 
-            return functionCall(function, new Arguments<>(positionalArgs, Map.of()), createData(getLocation(ctx)));
+            return functionCall(function, args, createData(getLocation(ctx)));
         }
 
         public static Ast visitAggregationCall(final FunctionOrAggregationCallContext ctx,
             final ColumnAggregation aggregation) {
 
-            if (ctx.arguments() == null) {
-                return aggregationCall(aggregation, new Arguments<>(List.of(), Map.of()), createData(getLocation(ctx)));
-            }
+            List<ConstantAst> positionalArgs = ctx.arguments() == null ? List.of() //
+                : ctx.arguments().positionalArgument() //
+                    .stream() //
+                    .map(arg -> visitAggregationArg(arg.expr())) //
+                    .toList();
 
-            var positionalArgs = ctx.arguments().positionalArgument() //
-                .stream() //
-                .map(arg -> visitAggregationArg(arg.expr())) //
-                .toList();
-
-            var namedArgs = //
-                ctx.arguments().namedArgument() //
+            Map<String, ConstantAst> namedArgs = ctx.arguments() == null ? Map.of() //
+                : ctx.arguments().namedArgument() //
                     .stream() //
                     .collect( //
                         Collectors.toMap( //
@@ -429,8 +419,10 @@ final class Parser {
                         ) //
                     );
 
-            return aggregationCall(aggregation, new Arguments<>(positionalArgs, namedArgs),
-                createData(getLocation(ctx)));
+            var args = aggregation.signature(positionalArgs, namedArgs)
+                .orElseThrow(cause -> syntaxError(cause, getLocation(ctx)));
+
+            return aggregationCall(aggregation, args, createData(getLocation(ctx)));
         }
 
         private static ConstantAst visitAggregationArg(final KnimeExpressionParser.ExprContext expr) {

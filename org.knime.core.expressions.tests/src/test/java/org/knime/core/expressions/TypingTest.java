@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.knime.core.expressions.Ast.BinaryOperator.CONDITIONAL_AND;
 import static org.knime.core.expressions.Ast.BinaryOperator.CONDITIONAL_OR;
 import static org.knime.core.expressions.Ast.BinaryOperator.DIVIDE;
@@ -77,6 +78,8 @@ import static org.knime.core.expressions.AstTestUtils.OP;
 import static org.knime.core.expressions.AstTestUtils.ROW_ID;
 import static org.knime.core.expressions.AstTestUtils.ROW_INDEX;
 import static org.knime.core.expressions.AstTestUtils.STR;
+import static org.knime.core.expressions.SignatureUtils.arg;
+import static org.knime.core.expressions.SignatureUtils.hasType;
 import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
@@ -90,13 +93,13 @@ import static org.knime.core.expressions.ValueType.STRING;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.SignatureUtils.Arg;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
@@ -221,15 +224,12 @@ final class TypingTest {
             // === Function calls
             FUNCTION_CALL(FUN(TestFunctions.INT_TO_FLOAT_FN, INT(1)), FLOAT), //
             FUNCTION_CALL_NO_ARGS(FUN(TestFunctions.FN_WITH_NO_ARGS), MISSING), //
-            FUNCTION_CALL_WITH_TWO_SIGS_1(FUN(TestFunctions.TWO_SIG_FN, INT(1)), FLOAT), //
-            FUNCTION_CALL_WITH_TWO_SIGS_2(FUN(TestFunctions.TWO_SIG_FN, FLOAT(1), STR("bar")), INTEGER), //
 
             // === Aggregation calls
             AGG_CALL_WITH_INT_ARG_I(AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("i")), INTEGER), //
             AGG_CALL_WITH_INT_ARG_OPT_F(AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("f?")), OPT_FLOAT), //
             AGG_CALL_WITH_NAMED_ARG(
-                AGG(TestAggregations.EXPECT_POS_AND_NAMED_ARG, List.of(INT(1)), Map.of("named_arg_id", FLOAT(2.0))),
-                MISSING), //
+                AGG(TestAggregations.EXPECT_NAMED_ARG, List.of(), Map.of("named_arg_id", FLOAT(2.0))), MISSING), //
 
             // === Complex Expressions
             NESTED_BINARY_OPS(OP(OP(INT(2), PLUS, COL("i?")), MULTIPLY, FLOAT(4.0)), OPT_FLOAT), //
@@ -261,41 +261,44 @@ final class TypingTest {
 
     private static enum TypingErrorTestCase {
             // === Arithmetic Operations
-            ARITHMETICS_ON_BOOLEANS(OP(BOOL(true), PLUS, BOOL(false)), "+", "BOOLEAN"), //
-            ARITHMETICS_ON_STRING_AND_BOOLEAN(OP(STR("foo"), DIVIDE, COL("b?")), "/", "STRING", "BOOLEAN?"), //
-            ARITHMETICS_ON_INT_AND_BOOLEAN(OP(INT(5), PLUS, BOOL(false)), "+", "INTEGER", "BOOLEAN"), //
-            ARITHMETICS_ON_INT_MISSING(OP(INT(5), PLUS, MIS()), "+", "INTEGER", "MISSING"), //
-            FLOOR_DIVISION_ON_FLOAT(OP(FLOAT(10.1), FLOOR_DIVIDE, FLOAT(2)), "//", "FLOAT"), //
-            FLOOR_DIVISION_ON_INT_AND_FLOAT(OP(INT(2), FLOOR_DIVIDE, FLOAT(2.0)), "//", "FLOAT", "INTEGER"), //
-            NEGATE_STRING(OP(MINUS, STR("foo")), "-", "STRING"), //
-            NEGATE_MISSING(OP(MINUS, MIS()), "-", "MISSING"), //
+            ARITHMETICS_ON_BOOLEANS(OP(BOOL(true), PLUS, BOOL(false)), "+", BOOLEAN.name()), //
+            ARITHMETICS_ON_STRING_AND_BOOLEAN(OP(STR("foo"), DIVIDE, COL("b?")), "/", STRING.name(),
+                OPT_BOOLEAN.name()), //
+            ARITHMETICS_ON_INT_AND_BOOLEAN(OP(INT(5), PLUS, BOOL(false)), "+", INTEGER.name(), BOOLEAN.name()), //
+            ARITHMETICS_ON_INT_MISSING(OP(INT(5), PLUS, MIS()), "+", INTEGER.name(), MISSING.name()), //
+            FLOOR_DIVISION_ON_FLOAT(OP(FLOAT(10.1), FLOOR_DIVIDE, FLOAT(2)), "//", FLOAT.name()), //
+            FLOOR_DIVISION_ON_INT_AND_FLOAT(OP(INT(2), FLOOR_DIVIDE, FLOAT(2.0)), "//", FLOAT.name(), INTEGER.name()), //
+            NEGATE_STRING(OP(MINUS, STR("foo")), "-", STRING.name()), //
+            NEGATE_MISSING(OP(MINUS, MIS()), "-", MISSING.name()), //
 
             // === Comparison Operations
-            ORDERING_ON_INT_AND_BOOLEAN(OP(INT(100), GREATER_THAN, BOOL(false)), ">", "INTEGER", "BOOLEAN"), //
-            ORDERING_ON_STRING(OP(STR("a"), LESS_THAN, STR("b")), "<", "STRING"), //
-            ORDERING_ON_INT_AND_MISSING(OP(INT(20), LESS_THAN, MIS()), "<", "INTEGER", "MISSING"), //
-            EQUALITY_ON_STRING_AND_BOOLEAN(OP(STR("a"), NOT_EQUAL_TO, BOOL(false)), "!=", "STRING", "BOOLEAN"), //
-            EQUALITY_ON_INT_AND_STRING(OP(INT(20), EQUAL_TO, STR("bar")), "==", "INTEGER", "STRING"), //
+            ORDERING_ON_INT_AND_BOOLEAN(OP(INT(100), GREATER_THAN, BOOL(false)), ">", INTEGER.name(), BOOLEAN.name()), //
+            ORDERING_ON_STRING(OP(STR("a"), LESS_THAN, STR("b")), "<", STRING.name()), //
+            ORDERING_ON_INT_AND_MISSING(OP(INT(20), LESS_THAN, MIS()), "<", INTEGER.name(), MISSING.name()), //
+            EQUALITY_ON_STRING_AND_BOOLEAN(OP(STR("a"), NOT_EQUAL_TO, BOOL(false)), "!=", STRING.name(),
+                BOOLEAN.name()), //
+            EQUALITY_ON_INT_AND_STRING(OP(INT(20), EQUAL_TO, STR("bar")), "==", INTEGER.name(), STRING.name()), //
 
             // === Logical Operations
-            LOGICAL_ON_INTEGER(OP(INT(10), CONDITIONAL_AND, INT(20)), "and", "INTEGER"), //
-            LOGICAL_ON_BOOL_AND_FLOAT(OP(BOOL(false), CONDITIONAL_OR, FLOAT(10.1)), "or", "FLOAT", "BOOLEAN"), //
-            LOGICAL_ON_MISSING_AND_BOOL(OP(MIS(), CONDITIONAL_AND, BOOL(false)), "and", "MISSING", "BOOLEAN"), //
-            LOGICAL_NOT_ON_STRING(OP(NOT, STR("foo")), "not", "STRING"), //
-            LOGICAL_NOT_ON_MISSING(OP(NOT, MIS()), "not", "MISSING"), //
+            LOGICAL_ON_INTEGER(OP(INT(10), CONDITIONAL_AND, INT(20)), "and", INTEGER.name()), //
+            LOGICAL_ON_BOOL_AND_FLOAT(OP(BOOL(false), CONDITIONAL_OR, FLOAT(10.1)), "or", FLOAT.name(), BOOLEAN.name()), //
+            LOGICAL_ON_MISSING_AND_BOOL(OP(MIS(), CONDITIONAL_AND, BOOL(false)), "and", MISSING.name(), BOOLEAN.name()), //
+            LOGICAL_NOT_ON_STRING(OP(NOT, STR("foo")), "not", STRING.name()), //
+            LOGICAL_NOT_ON_MISSING(OP(NOT, MIS()), "not", MISSING.name()), //
 
             // === MISSING Fallback Operator
-            FALLBACK_BOTH_MISSING(OP(MIS(), MISSING_FALLBACK, MIS()), "one", "must", "not", "MISSING"),
+            FALLBACK_BOTH_MISSING(OP(MIS(), MISSING_FALLBACK, MIS()), "one", "must", "not", MISSING.name()),
             FALLBACK_NOT_SAME_TYPE(OP(INT(0), MISSING_FALLBACK, BOOL(false)), "must", "compatible"),
             FALLBACK_NOT_SAME_OPTIONAL_TYPES(OP(COL("f?"), MISSING_FALLBACK, COL("s?")), "must", "compatible"),
             FALLBACK_NOT_SAME_MIXED_TYPES(OP(INT(0), MISSING_FALLBACK, COL("s?")), "must", "compatible"),
 
             // === String Concatenation
-            STRING_CONCAT_STRING_AND_MISSING(OP(STR("foo"), PLUS, MIS()), "+", "STRING", "MISSING"), //
-            STRING_CONCAT_MISSING_AND_STRING(OP(MIS(), PLUS, STR("foo")), "+", "STRING", "MISSING"), //
+            STRING_CONCAT_STRING_AND_MISSING(OP(STR("foo"), PLUS, MIS()), "+", STRING.name(), MISSING.name()), //
+            STRING_CONCAT_MISSING_AND_STRING(OP(MIS(), PLUS, STR("foo")), "+", STRING.name(), MISSING.name()), //
 
             // === Function calls
-            FUNCTION_CALL_WRONG_ARG_TYPES(FUN(TestFunctions.INT_TO_FLOAT_FN, FLOAT(1.0)), "INT_TO_FLOAT_FN", "FLOAT"), //
+            FUNCTION_CALL_WRONG_ARG_TYPES(FUN(TestFunctions.INT_TO_FLOAT_FN, FLOAT(1.0)), "INT_TO_FLOAT_FN",
+                FLOAT.name()), //
 
             // === Aggregation calls
             AGG_CALL_WRONG_ARG_TYPES(AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("s?")),
@@ -352,35 +355,40 @@ final class TypingTest {
     }
 
     private static enum TestFunctions implements ExpressionFunction {
-            FN_WITH_NO_ARGS(List.of(), MISSING), //
-            INT_TO_FLOAT_FN(List.of(INTEGER), FLOAT), //
-            TWO_SIG_FN(Map.of(List.of(INTEGER), FLOAT, List.of(FLOAT, STRING), INTEGER)), //
-            FN_WITH_NO_XXXX(List.of(), MISSING); // here to test error message - note similarity to FN_WITH_NO_ARGS
+            FN_WITH_NO_ARGS(Map.of(), MISSING), //
+            INT_TO_FLOAT_FN(Map.of("arg1", INTEGER), FLOAT), //
+            FN_WITH_NO_XXXX(Map.of(), MISSING); // here to test error message - note similarity to FN_WITH_NO_ARGS
 
-        private final Map<List<ValueType>, ValueType> m_argsToOutputs;
+        private final ValueType m_output;
 
-        private TestFunctions(final List<ValueType> args, final ValueType output) {
-            this(Map.of(args, output));
-        }
+        private final List<Arg> m_signature;
 
-        private TestFunctions(final Map<List<ValueType>, ValueType> argsToOutput) {
-            m_argsToOutputs = argsToOutput;
-        }
-
-        @Override
-        public Optional<ValueType> returnType(final List<ValueType> argTypes) {
-            return Optional.ofNullable(m_argsToOutputs.get(argTypes));
+        private TestFunctions(final Map<String, ValueType> args, final ValueType output) {
+            m_output = output;
+            m_signature = args.entrySet().stream() //
+                .map(e -> arg(e.getKey(), "", hasType(e.getValue()))) //
+                .toList();
         }
 
         @Override
-        public Computer apply(final List<Computer> args) {
-            throw new IllegalStateException("Should not be called during type inferrence");
+        public <T> ReturnResult<Arguments<T>> signature(final List<T> positionalArguments,
+            final Map<String, T> namedArguments) {
+            return SignatureUtils.matchSignature(m_signature, positionalArguments, namedArguments);
+        }
+
+        @Override
+        public ReturnResult<ValueType> returnType(final Arguments<ValueType> argTypes) {
+            return SignatureUtils.checkTypes(m_signature, argTypes).map(valid -> m_output);
+        }
+
+        @Override
+        public Computer apply(final Arguments<Computer> args) {
+            return fail("Should not be called during type inference");
         }
 
         @Override
         public OperatorDescription description() {
-            return new OperatorDescription(this.name(), "Test function", List.of(), "Some return type",
-                "Some return description", List.of(), "Test category", OperatorDescription.FUNCTION_ENTRY_TYPE);
+            return fail("Should not be called during type inference");
         }
     }
 }

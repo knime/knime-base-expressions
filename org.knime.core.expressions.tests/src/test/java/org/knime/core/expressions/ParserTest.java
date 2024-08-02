@@ -264,22 +264,21 @@ final class ParserTest {
             )),
 
             // Function calls
-            FUNC_NO_ARGS("sin()", FUN(MathFunctions.SIN)), //
             FUNC_SINGLE_ARG("sin(1)", FUN(MathFunctions.SIN, INT(1))), //
-            FUNC_TRAILING_COMMA("sin(1,2,)", FUN(MathFunctions.SIN, INT(1), INT(2))), //
-            FUNC_COLUMN_ACCESS_PARM("sin($[\"col\"] , 2)", FUN(MathFunctions.SIN, COL("col"), INT(2))), //
+            FUNC_TRAILING_COMMA("max(1,2,)", FUN(MathFunctions.MAX, INT(1), INT(2))), //
+            FUNC_COLUMN_ACCESS_PARM("sin($[\"col\"])", FUN(MathFunctions.SIN, COL("col"))), //
             FUNC_NESTED_EXPR("sin(1 + 2)", FUN(MathFunctions.SIN, OP(INT(1), PLUS, INT(2)))), //
             FUNC_NESTED_FUNC("sin(cos(1))", FUN(MathFunctions.SIN, FUN(MathFunctions.COS, INT(1)))), //
 
             // Aggregation functions
             COL_AGG("COLUMN_AVERAGE(\"column name\")", AGG(BuiltInAggregations.AVERAGE, STR("column name"))), //
-            COL_AGG_NAMED_ARG("COLUMN_AVERAGE(\"column name\", ignore_missing=TRUE)",
-                AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
-            COL_AGG_NAMED_ARG_WITH_WHITESPACE("COLUMN_AVERAGE(\"column name\", ignore_missing =TRUE)",
-                AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
-            COL_AGG_ONLY_NAMED_ARGS("COLUMN_AVERAGE(column=\"column name\", ignore_missing=TRUE)",
+            COL_AGG_NAMED_ARG("COLUMN_AVERAGE(\"column name\", ignore_nan=TRUE)",
+                AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_nan", BOOL(true)))), //
+            COL_AGG_NAMED_ARG_WITH_WHITESPACE("COLUMN_AVERAGE(\"column name\", ignore_nan =TRUE)",
+                AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_nan", BOOL(true)))), //
+            COL_AGG_ONLY_NAMED_ARGS("COLUMN_AVERAGE(column=\"column name\", ignore_nan=TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(),
-                    Map.of("column", STR("column name"), "ignore_missing", BOOL(true)))), //
+                    Map.of("column", STR("column name"),"ignore_nan", BOOL(true)))), //
             COL_AGG_ONLY_POS_ARGS("COLUMN_AVERAGE(\"column name\", TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, STR("column name"), BOOL(true))), //
 
@@ -311,10 +310,10 @@ final class ParserTest {
                     OP(COL("price"), MINUS, FLOW("min_savings")) //
                 ) //
             ), //
-            COMPLEX_3("round(average($age), 0) >= 30 and lower_case($department) = \"marketing\"", //
+            COMPLEX_3("round(average($age,$age), 0) >= 30 and lower_case($department) = \"marketing\"", //
                 OP( //
                     OP( //
-                        FUN(MathFunctions.ROUNDHALFEVEN, FUN(MathFunctions.AVERAGE, COL("age")), INT(0)), //
+                        FUN(MathFunctions.ROUNDHALFEVEN, FUN(MathFunctions.AVERAGE, COL("age"), COL("age")), INT(0)), //
                         GREATER_THAN_EQUAL, //
                         INT(30) //
                     ), //
@@ -401,7 +400,6 @@ final class ParserTest {
             FUNC_STARTING_UNDERSCORE("_func(1,2,3)", "token recognition error"), //
             FUNC_WITH_INVALID_ID("func(1,2,3)", "no", "name", "func"), //
             FUNC_WITH_POSITIONAL_AFTER_NAMED_ARGS(MathFunctions.AVERAGE.name() + "(x=100, 10)", "named", "positional"), //)
-            FUNC_WITH_NAMED_ARGS(MathFunctions.AVERAGE.name() + "(x=100)", "named", "not", "supported", "functions"), //)
 
             // Invalid aggregation calls
             AGG_WITH_INVALID_ID("AB_00(1,2,3)", "AB_00"),
@@ -427,35 +425,46 @@ final class ParserTest {
     }
 
     @Test
-    void testTextLocation() throws ExpressionCompileException {
-        // An expression with all the Ast node types
-        var expr = "10 + sin(MISSING + TRUE, -10, 1.0, 'bar', $col, $$flow)";
-        //          0    ^    1    ^    2    ^    3    ^    4    ^    5    ^
+    void testNewExpression() throws ExpressionCompileException {
+        // A new expression with all the AST node types
+        var expr = "10 + if(FALSE,-atan2(-20,2.5), parse_float('4' + $var + $$context))";
+        //      0    ^    1    ^    2    ^    3    ^    4    ^    5    ^
+
         var ast = Parser.parse(expr);
 
-        // foo(...)
+        // if
         var functionCall = ast.children().get(1);
-        assertTextLocation(5, 55, functionCall);
+        assertTextLocation(5, 67, functionCall);
 
-        // MISSING + true
-        var binOp = functionCall.children().get(0);
-        assertTextLocation(9, 23, binOp);
-        // MISSING
-        assertTextLocation(9, 16, binOp.children().get(0));
-        // true
-        assertTextLocation(19, 23, binOp.children().get(1));
+        // FALSE
+        assertTextLocation(8, 13, functionCall.children().get(0));
 
-        // -10
-        assertTextLocation(25, 28, functionCall.children().get(1));
+        // -atan2(-20, 2.5)
+        var unaryOp = functionCall.children().get(1);
+        assertTextLocation(14, 29, unaryOp);
+        var nestedFunctionCall = unaryOp.children().get(0);
+        // atan2(-20, 2.5)
+        assertTextLocation(15, 29, nestedFunctionCall);
 
-        // 1.0
-        assertTextLocation(30, 33, functionCall.children().get(2));
-        // 'bar'
-        assertTextLocation(35, 40, functionCall.children().get(3));
-        // $col
-        assertTextLocation(42, 46, functionCall.children().get(4));
-        // $$flow
-        assertTextLocation(48, 54, functionCall.children().get(5));
+        // -20
+        var innerUnaryOp = nestedFunctionCall.children().get(0);
+        assertTextLocation(21, 24, innerUnaryOp);
+
+        // 2.5
+        assertTextLocation(25, 28, nestedFunctionCall.children().get(1));
+
+        // parse_float('4' + $var + $$context)
+        var toFloatCall = functionCall.children().get(2);
+        assertTextLocation(31, 66, toFloatCall);
+
+        // '4' + $var
+        var nestedBinOp = toFloatCall.children().get(0);
+        assertTextLocation(43, 65, nestedBinOp);
+
+        // '4' + $var
+        assertTextLocation(43, 53, nestedBinOp.children().get(0));
+        //  $$context
+        assertTextLocation(56, 65, nestedBinOp.children().get(1));
     }
 
     @Test

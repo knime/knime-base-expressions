@@ -142,6 +142,17 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
     T orElseGet(Function<String, ? extends T> other);
 
     /**
+     * Get the value or if it is an error, throw an exception with the error message.
+     *
+     * @param <E> the type of the exception
+     * @param exceptionSupplier a function that provides an exception if this return result
+     * @return the value if it is present
+     * @throws E if the return result is an error
+     *
+     */
+    <E extends Exception> T orElseThrow(Function<String, E> exceptionSupplier) throws E;
+
+    /**
      * Return result that contains a return value. Use {@link ReturnResult#success} to create a new {@link Success}.
      *
      * @param <T>
@@ -152,6 +163,10 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
 
         private Success(final T returnValue) {
             m_returnValue = Objects.requireNonNull(returnValue);
+        }
+
+        private Success() {
+            m_returnValue = null;
         }
 
         @Override
@@ -193,6 +208,11 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
         public T orElseGet(final Function<String, ? extends T> other) {
             return getValue();
         }
+
+        @Override
+        public <E extends Exception> T orElseThrow(final Function<String, E> exceptionSupplier) throws E {
+            return getValue();
+        }
     }
 
     /**
@@ -215,7 +235,8 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
 
         @Override
         public T getValue() {
-            throw new IllegalStateException("No value available for error return value");
+            throw new IllegalStateException(
+                "No value available for error return value. Error message is: " + m_errorMessage);
         }
 
         @Override
@@ -247,6 +268,11 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
         public T orElseGet(final Function<String, ? extends T> other) {
             return other.apply(m_errorMessage);
         }
+
+        @Override
+        public <E extends Exception> T orElseThrow(final Function<String, E> exceptionSupplier) throws E {
+            throw exceptionSupplier.apply(m_errorMessage);
+        }
     }
 
     /**
@@ -257,6 +283,15 @@ public sealed interface ReturnResult<T> permits ReturnResult.Success, ReturnResu
      */
     static <T> ReturnResult<T> success(final T value) {
         return new Success<>(value);
+    }
+
+    /**
+     * Create a successful return result without a value just indicating success.
+     *
+     * @return the new successful return result
+     */
+    static ReturnResult<Void> success() {
+        return new Success<>();
     }
 
     /**

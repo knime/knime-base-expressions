@@ -85,6 +85,7 @@ final class MathFunctionTests {
             .illegalArgs("BOOLEAN", List.of(BOOLEAN)) //
             .illegalArgs("MISSING", List.of(MISSING)) //
             .illegalArgs("TOO FEW", List.of(INTEGER)) //
+            .illegalArgs("Test varargs",List.of(INTEGER, INTEGER, STRING)) //
             .impl("INTEGER", List.of(arg(1), arg(2), arg(-1)), 2) //
             .impl("FLOAT", List.of(arg(1.2), arg(1.4), arg(1.5)), 1.5) //
             .impl("missing INTEGER", List.of(misInteger(), arg(1))) //

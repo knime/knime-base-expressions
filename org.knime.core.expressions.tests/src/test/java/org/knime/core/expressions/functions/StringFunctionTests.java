@@ -203,7 +203,7 @@ final class StringFunctionTests {
             .impl("group too big", List.of(arg("12-_a"), arg("(\\d+)(?:[_-]+)(\\w+)"), arg(3))) //
             .impl("group < 0", List.of(arg("12-_a"), arg("(\\d+)(?:[_-]+)(\\w+)"), arg(-1))) //
             .impl("regex doesn't match", List.of(arg("14a"), arg("q"), arg(0))) //
-            .impl("case insensitive", List.of(arg("HELLO"), arg("h(el)lo"), arg(1), arg("i"), arg(0)), "EL") //
+            .impl("case insensitive", List.of(arg("HELLO"), arg("h(el)lo"), arg(1), arg("i")), "EL") //
             .impl("missing STRING", List.of(misString(), arg("foo"), arg(0))) //
             .tests();
     }

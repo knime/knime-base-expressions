@@ -54,7 +54,6 @@ import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.STRING;
 
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -203,13 +202,7 @@ final class Evaluation {
 
         @Override
         public Computer visit(final FunctionCall node) throws ExpressionCompileException {
-
-            // Create computers for the arguments
-            var argComputers = new ArrayList<Computer>(node.args().asList().size());
-            for (var arg : node.args().asList()) {
-                argComputers.add(arg.accept(this));
-            }
-
+            var argComputers = node.args().map(arg -> arg.accept(this));
             return node.function().apply(argComputers);
         }
 

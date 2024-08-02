@@ -49,14 +49,16 @@
 package org.knime.core.expressions.aggregations;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.OperatorDescription;
-import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.ReturnResult;
+import org.knime.core.expressions.SignatureUtils;
+import org.knime.core.expressions.SignatureUtils.Arg;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -116,7 +118,7 @@ public class AggregationBuilder {
          * @param args the argument declarations
          * @return the next stage of the builder
          */
-        RequiresReturnType args(Argument... args);
+        RequiresReturnType args(Arg... args);
     }
 
     /** Type helper for the function mapping from input arguments to the output type. */
@@ -145,7 +147,7 @@ public class AggregationBuilder {
     }
 
     record FinalStage( // NOSONAR - equals and hashCode are not important for this record
-        String name, String description, String[] keywords, String category, Argument[] args, String returnDesc,
+        String name, String description, String[] keywords, String category, Arg[] args, String returnDesc,
         String returnType, ReturnTypeMapper returnTypeMapping) {
 
         public ColumnAggregation build() {
@@ -154,10 +156,13 @@ public class AggregationBuilder {
                 throw new IllegalArgumentException("Aggregation name must be screaming snake case");
             }
 
-            var desc = new OperatorDescription(name, description, List.of(args), returnType, returnDesc,
-                List.of(keywords), category, OperatorDescription.FUNCTION_ENTRY_TYPE);
+            var argsList = List.of(args);
+            SignatureUtils.checkSignature(argsList);
 
-            return new AggregationImpl(name, desc, returnTypeMapping);
+            var desc = new OperatorDescription(name, description, Arg.toOperatorDescription(argsList), returnType,
+                returnDesc, List.of(keywords), category, OperatorDescription.FUNCTION_ENTRY_TYPE);
+
+            return new AggregationImpl(name, desc, argsList, returnTypeMapping);
         }
     }
 
@@ -167,11 +172,15 @@ public class AggregationBuilder {
 
         private final OperatorDescription m_desc;
 
+        private final List<Arg> m_signature;
+
         private final ReturnTypeMapper m_returnTypeMapping; // NOSONAR
 
-        AggregationImpl(final String name, final OperatorDescription desc, final ReturnTypeMapper returnTypeMapping) {
+        AggregationImpl(final String name, final OperatorDescription desc, final List<Arg> signature,
+            final ReturnTypeMapper returnTypeMapping) {
             m_name = name;
             m_desc = desc;
+            m_signature = signature;
             m_returnTypeMapping = returnTypeMapping;
         }
 
@@ -186,7 +195,13 @@ public class AggregationBuilder {
         }
 
         @Override
-        public ReturnResult returnType(final Arguments<ConstantAst> arguments,
+        public <T> ReturnResult<Arguments<T>> signature(final List<T> positionalArguments,
+            final Map<String, T> namedArguments) {
+            return SignatureUtils.matchSignature(m_signature, positionalArguments, namedArguments);
+        }
+
+        @Override
+        public ReturnResult<ValueType> returnType(final Arguments<ConstantAst> arguments,
             final Function<String, ReturnResult<ValueType>> columnType) {
 
             return m_returnTypeMapping.returnType(arguments, columnType);

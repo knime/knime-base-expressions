@@ -56,20 +56,22 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
+import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.TestUtils;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.EvaluationContext;
 
 /**
  * Builder for dynamic tests for an {@link ExpressionFunction}. Add tests via {@link #typing}, {@link #illegalArgs}, and
@@ -124,6 +126,9 @@ public final class FunctionTestBuilder {
             }
         }
 
+        /**
+         * @param ctx unused parameter
+         */
         private boolean isMissing(final EvaluationContext ctx) {
             return this.isMissing();
         }
@@ -238,163 +243,303 @@ public final class FunctionTestBuilder {
      * Add a test that checks that the return type is inferred correctly for the given argument types.
      *
      * @param name display name of the test
-     * @param argTypes the types of the input arguments
-     * @param expectedReturn the expected return type of {@link ExpressionFunction#returnType(List)}
+     * @param positionalArgTypes
+     * @param namedArgTypes
+     * @param expectedReturn the expected return type of {@link ExpressionFunction#returnType(Arguments)}
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder typing(final String name, final List<ValueType> argTypes,
-        final ValueType expectedReturn) {
+    public FunctionTestBuilder typing(final String name, final List<ValueType> positionalArgTypes,
+        final Map<String, ValueType> namedArgTypes, final ValueType expectedReturn) {
+
+        var args = m_function.signature(positionalArgTypes, namedArgTypes);
+
         m_typingTests.add(DynamicTest.dynamicTest(name, () -> {
-            var returnType = m_function.returnType(argTypes);
-            assertTrue(returnType.isPresent(), "should fit arguments");
-            assertEquals(expectedReturn, returnType.get(), "should return correct type for " + argTypes);
+            assertTrue(args.isOk(), "typing test: arguments should match signature");
+            var returnType = m_function.returnType(args.getValue());
+            assertTrue(returnType.isOk(),
+                "should fit arguments: " + (returnType.isError() ? returnType.getErrorMessage() : ""));
+            assertEquals(expectedReturn, returnType.getValue(),
+                "should return correct type for " + args.getValue().toString());
         }));
         return this;
     }
 
     /**
-     * Add a test that checks that the function does not accept the given argument types.
-     *
-     * @param name display name of the test
-     * @param argTypes the types of the input arguments
+     * @param name
+     * @param positionalArgTypes
+     * @param expectedReturn
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder illegalArgs(final String name, final List<ValueType> argTypes) {
+    public FunctionTestBuilder typing(final String name, final List<ValueType> positionalArgTypes,
+        final ValueType expectedReturn) {
+        return typing(name, positionalArgTypes, Map.of(), expectedReturn);
+    }
+
+    /**
+     * Add a test that checks that the function does not accept the given argument types.
+     *
+     * TODO(AP-23143): Test error messages in case of manual argument checks
+     *
+     * @param name display name of the test
+     * @param positionalArgTypes
+     * @param namedArgTypes
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder illegalArgs(final String name, final List<ValueType> positionalArgTypes,
+        final Map<String, ValueType> namedArgTypes) {
+
+        var invalidArgs = m_function.signature(positionalArgTypes, namedArgTypes);
+
         m_illegalArgsTests.add(DynamicTest.dynamicTest(name, () -> {
-            var returnType = m_function.returnType(argTypes);
-            assertTrue(returnType.isEmpty(), "should not fit arguments. return type is not empty: " + returnType);
+
+            var returnType = invalidArgs.flatMap(m_function::returnType);
+            assertTrue(invalidArgs.isError() || returnType.isError(), "should not fit arguments.  " + //
+                (invalidArgs.isOk() ? invalidArgs.getValue().toString() : invalidArgs.getErrorMessage()) + " -> " //
+                + (returnType.isOk() ? returnType.getValue().toString() : returnType.getErrorMessage()) + " ("
+                + m_function.name() + ": " + m_function.description().arguments() + " -> "
+                + m_function.description().returnType() + ").");
         }));
         return this;
+    }
+
+    /**
+     * @param name
+     * @param positionalArgTypes
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder illegalArgs(final String name, final List<ValueType> positionalArgTypes) {
+        return illegalArgs(name, positionalArgTypes, Map.of());
     }
 
     /**
      * Add a test that checks that the function evaluates to "MISSING".
      *
      * @param name display name of the test
-     * @param args function arguments
+     * @param positionalArgs
+     * @param namedArgs
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder impl(final String name, final List<TestingArgument> args) {
-        return impl(name, args, c -> {
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs) {
+        return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(Computer.class, c, m_function.name() + " should eval to Computer");
             assertTrue(c.isMissing(DUMMY_WML), m_function.name() + " should be missing");
         });
     }
 
     /**
+     * @param name
+     * @param positionalArgs
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs) {
+        return impl(name, positionalArgs, Map.of());
+    }
+
+    /**
      * Add a test that checks that the function evaluates to the expected BOOLEAN value;
      *
      * @param name display name of the test
-     * @param args function arguments
+     * @param positionalArgs
+     * @param namedArgs
      * @param expected
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final boolean expected) {
-        return impl(name, args, c -> {
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final boolean expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(BooleanComputer.class, c, m_function.name() + " should eval to BOOLEAN");
             assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            args.forEach(TestingArgument::resetAccessed);
+            positionalArgs.forEach(TestingArgument::resetAccessed);
+            namedArgs.values().forEach(TestingArgument::resetAccessed);
             assertEquals(expected, ((BooleanComputer)c).compute(DUMMY_WML),
                 m_function.name() + " should eval correctly");
         });
     }
 
     /**
-     * Add a test that checks that the function evaluates to the expected INTEGER value;
-     *
-     * @param name display name of the test
-     * @param args function arguments
+     * @param name
+     * @param positionalArgs
      * @param expected
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final long expected) {
-        return impl(name, args, c -> {
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final boolean expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * Add a test that checks that the function evaluates to the expected INTEGER value;
+     *
+     * @param name display name of the test
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final long expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(IntegerComputer.class, c, m_function.name() + " should eval to INTEGER");
             assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            args.forEach(TestingArgument::resetAccessed);
+            positionalArgs.forEach(TestingArgument::resetAccessed);
+            namedArgs.values().forEach(TestingArgument::resetAccessed);
             assertEquals(expected, ((IntegerComputer)c).compute(DUMMY_WML),
                 m_function.name() + " should eval correctly");
         });
     }
 
     /**
-     * Add a test that checks that the function evaluates to the expected FLOAT value;
-     *
-     * @param name display name of the test
-     * @param args function arguments
+     * @param name
+     * @param positionalArgs
      * @param expected
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final double expected) {
-        return impl(name, args, c -> {
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final long expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * Add a test that checks that the function evaluates to the expected FLOAT value;
+     *
+     * @param name display name of the test
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final double expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(FloatComputer.class, c, m_function.name() + " should eval to FLOAT");
             assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            args.forEach(TestingArgument::resetAccessed);
+            positionalArgs.forEach(TestingArgument::resetAccessed);
+            namedArgs.values().forEach(TestingArgument::resetAccessed);
             assertEquals(expected, ((FloatComputer)c).compute(DUMMY_WML), m_function.name() + " should eval correctly");
         });
     }
 
     /**
-     * Add a test that checks that the function evaluates to the expected FLOAT value (with specified tolerance)
-     *
-     * @param name display name of the test
-     * @param args function arguments
-     * @param expected
-     * @param tolerance absolute tolerance for floating point values
-     * @return <code>this</code> for chaining
-     */
-    public FunctionTestBuilder implWithTolerance(final String name, final List<TestingArgument> args,
-        final double expected, final double tolerance) {
-        return impl(name, args, TestUtils.computerResultChecker(m_function.name(), expected, tolerance));
-    }
-
-    /**
-     * Add a test that checks that the function evaluates to the expected FLOAT value (with tolerance of 1e-10);
-     *
-     * @param name display name of the test
-     * @param args function arguments
+     * @param name
+     * @param positionalArgs
      * @param expected
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder implWithTolerance(final String name, final List<TestingArgument> args,
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final double expected) {
-
-        return implWithTolerance(name, args, expected, 1e-10);
+        return impl(name, positionalArgs, Map.of(), expected);
     }
 
     /**
      * Add a test that checks that the function evaluates to the expected STRING value;
      *
      * @param name display name of the test
-     * @param args function arguments
+     * @param positionalArgs
+     * @param namedArgs
      * @param expected
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder impl(final String name, final List<TestingArgument> args, final String expected) {
-        return impl(name, args, c -> {
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final String expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(StringComputer.class, c, m_function.name() + " should eval to STRING");
             assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            args.forEach(TestingArgument::resetAccessed);
+            positionalArgs.forEach(TestingArgument::resetAccessed);
+            namedArgs.values().forEach(TestingArgument::resetAccessed);
             assertEquals(expected, ((StringComputer)c).compute(DUMMY_WML),
                 m_function.name() + " should eval correctly");
         });
     }
 
     /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final String expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * Add a test that checks that the function evaluates to the expected FLOAT value (with specified tolerance)
+     *
+     * @param name display name of the test
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @param tolerance absolute tolerance for floating point values
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder implWithTolerance(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final double expected, final double tolerance) {
+        return impl(name, positionalArgs, namedArgs,
+            TestUtils.computerResultChecker(m_function.name(), expected, tolerance));
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @param tolerance
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder implWithTolerance(final String name, final List<TestingArgument> positionalArgs,
+        final double expected, final double tolerance) {
+        return implWithTolerance(name, positionalArgs, Map.of(), expected, tolerance);
+    }
+
+    /**
+     * Add a test that checks that the function evaluates to the expected FLOAT value (with tolerance of 1e-10);
+     *
+     * @param name display name of the test
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder implWithTolerance(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final double expected) {
+
+        return implWithTolerance(name, positionalArgs, namedArgs, expected, 1e-10);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder implWithTolerance(final String name, final List<TestingArgument> positionalArgs,
+        final double expected) {
+        return implWithTolerance(name, positionalArgs, Map.of(), expected, 1e-10);
+    }
+
+    /**
      * Add a test that checks that the function evaluates such that the result checker succeeds.
      *
      * @param name display name of the test
-     * @param args function arguments
+     * @param positionalArgs
+     * @param namedArgs
      * @param resultChecker a consumer that checks if the returned computer evaluates to the correct value
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder impl(final String name, final List<TestingArgument> args,
-        final Consumer<Computer> resultChecker) {
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final Consumer<Computer> resultChecker) {
 
         m_implTests.add(DynamicTest.dynamicTest("impl - " + name, () -> {
-            var result = m_function.apply(args.stream().map(TestingArgument::computer).toList());
+
+            var args = m_function.signature(positionalArgs, namedArgs);
+
+            if (args.isError()) {
+                fail("Arguments do not match signature: " + args.getErrorMessage());
+            }
+            var result = m_function.apply(args.getValue().map(TestingArgument::computer));
             // NB: we open the args after calling apply to make sure that apply does not access the computers
-            args.forEach(TestingArgument::setOpen);
+            positionalArgs.forEach(TestingArgument::setOpen);
+            namedArgs.values().forEach(TestingArgument::setOpen);
             resultChecker.accept(result);
         }));
         return this;
@@ -404,14 +549,20 @@ public final class FunctionTestBuilder {
      * A test that checks that the given arguments produce a warning.
      *
      * @param name display name of the test
-     * @param args function arguments
+     * @param positionalArgs
+     * @param namedArgs
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder warns(final String name, final List<TestingArgument> args) {
+    public FunctionTestBuilder warns(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs) {
         m_warningTests.add(DynamicTest.dynamicTest("warns - " + name, () -> {
-            var resultComputer = m_function.apply(args.stream().map(TestingArgument::computer).toList());
 
-            args.forEach(TestingArgument::setOpen);
+            var args = m_function.signature(positionalArgs, namedArgs)
+                .orElseThrow(cause -> new IllegalStateException("Arguments should match signature: " + cause));
+
+            var resultComputer = m_function.apply(args.map(TestingArgument::computer));
+
+            args.stream().forEach(TestingArgument::setOpen);
 
             var warnings = new ArrayList<String>();
             EvaluationContext ctx = w -> warnings.add(w);
@@ -436,6 +587,15 @@ public final class FunctionTestBuilder {
 
     }
 
+    /**
+     * @param name
+     * @param positionalArgs
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder warns(final String name, final List<TestingArgument> positionalArgs) {
+        return warns(name, positionalArgs, Map.of());
+    }
+
     /** @return the dynamic tests */
     public List<DynamicNode> tests() {
         List<DynamicNode> tests = new ArrayList<>();
@@ -453,4 +613,5 @@ public final class FunctionTestBuilder {
         }
         return tests;
     }
+
 }

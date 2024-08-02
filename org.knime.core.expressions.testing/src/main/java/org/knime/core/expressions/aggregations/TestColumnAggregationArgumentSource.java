@@ -49,14 +49,16 @@
 package org.knime.core.expressions.aggregations;
 
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.knime.core.expressions.aggregations.ArgumentsBuilder.args;
 
+import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
@@ -70,15 +72,28 @@ import org.knime.core.expressions.ValueType;
  */
 public class TestColumnAggregationArgumentSource implements ArgumentsProvider {
 
+    /** Name of the long column in the test table */
+    public static final String LONG_COL_NAME = "LONG_COL";
+
+    /** Name of the int column in the test table */
+    public static final String INT_COL_NAME = "INT_COL";
+
+    /** Name of the double column in the test table */
+    public static final String DOUBLE_COL_NAME = "DOUBLE_COL";
+
+    /** Name of the string column in the test table */
+    public static final String STRING_COL_NAME = "STRING_COL";
+
     /** Test columns used in the testing aggregations */
-    public static final Map<String, ValueType> TEST_COLUMNS =
-        Map.of("INT_COL", ValueType.INTEGER, "FLOAT_COL", ValueType.FLOAT, "STRING_COL", ValueType.STRING);
+    public static final Map<String, ValueType> TEST_COLUMNS = Map.of(LONG_COL_NAME, ValueType.INTEGER, INT_COL_NAME,
+        ValueType.INTEGER, DOUBLE_COL_NAME, ValueType.FLOAT, STRING_COL_NAME, ValueType.STRING);
 
     @Override
-    public Stream<? extends Arguments> provideArguments(final ExtensionContext context) throws Exception {
+    public Stream<? extends org.junit.jupiter.params.provider.Arguments>
+        provideArguments(final ExtensionContext context) throws Exception {
         return BuiltInAggregations.BUILT_IN_AGGREGATIONS.stream() //
             .map(TestColumnAggregationArgumentSource::getTestAstFor) //
-            .map(Arguments::of);
+            .map(org.junit.jupiter.params.provider.Arguments::of);
     }
 
     private static Ast.AggregationCall getTestAstFor(final ColumnAggregation agg) {
@@ -94,22 +109,32 @@ public class TestColumnAggregationArgumentSource implements ArgumentsProvider {
     }
 
     private static org.knime.core.expressions.Arguments<Ast.ConstantAst> getTestArgsFor(final ColumnAggregation call) {
+
+        BiFunction<Ast.ConstantAst, Map<String, Ast.ConstantAst>, Arguments<Ast.ConstantAst>> makeArgs =
+            (final Ast.ConstantAst columnAst, final Map<String, Ast.ConstantAst> additionalArgs) -> call
+                .signature(List.of(columnAst), additionalArgs).orElseThrow(cause -> new IllegalArgumentException(
+                    "Failed to match signature for " + call.name() + "with cause:" + cause + "."));
+
+        Function<String, Arguments<Ast.ConstantAst>> defaultArgs = (final String columnType) -> makeArgs
+            .apply(Ast.stringConstant(columnType), Map.of("ignore_nan", Ast.booleanConstant(false)));
+
         if (BuiltInAggregations.MAX.equals(call)) {
-            return args().p(Ast.stringConstant("INT_COL")).build();
+            return defaultArgs.apply(DOUBLE_COL_NAME);
         } else if (BuiltInAggregations.MIN.equals(call)) {
-            return args().p(Ast.stringConstant("FLOAT_COL")).build();
+            return defaultArgs.apply(DOUBLE_COL_NAME);
         } else if (BuiltInAggregations.SUM.equals(call)) {
-            return args().p(Ast.stringConstant("INT_COL")).build();
+            return defaultArgs.apply(INT_COL_NAME);
         } else if (BuiltInAggregations.AVERAGE.equals(call)) {
-            return args().p(Ast.stringConstant("FLOAT_COL")).build();
+            return defaultArgs.apply(DOUBLE_COL_NAME);
         } else if (BuiltInAggregations.COUNT.equals(call)) {
-            return args().p(Ast.stringConstant("STRING_COL")).n("ignore_missing", Ast.booleanConstant(true)).build();
+            return makeArgs.apply(Ast.stringConstant(STRING_COL_NAME),
+                Map.of("ignore_missing", Ast.booleanConstant(true)));
         } else if (BuiltInAggregations.MEDIAN.equals(call)) {
-            return args().p(Ast.stringConstant("INT_COL")).build();
+            return defaultArgs.apply(INT_COL_NAME);
         } else if (BuiltInAggregations.STD_DEV.equals(call)) {
-            return args().p(Ast.stringConstant("FLOAT_COL")).build();
+            return defaultArgs.apply(DOUBLE_COL_NAME);
         } else if (BuiltInAggregations.VARIANCE.equals(call)) {
-            return args().p(Ast.stringConstant("FLOAT_COL")).build();
+            return defaultArgs.apply(DOUBLE_COL_NAME);
         }
         return fail("No test arguments for aggregation " + call.name());
     }

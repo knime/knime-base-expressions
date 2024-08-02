@@ -48,6 +48,9 @@
  */
 package org.knime.core.expressions;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Super interface for expression operators like functions and aggregations.
  *
@@ -65,4 +68,14 @@ public interface NamedExpressionOperator {
      */
     OperatorDescription description();
 
+    /**
+     * Parses the given positional and named arguments and returns a structured representation of the arguments if they
+     * match the signature of this operator.
+     *
+     * @param <T> the type of the arguments
+     * @param positionalArguments the positional arguments
+     * @param namedArguments the named arguments
+     * @return the structured representation of the arguments
+     */
+    <T> ReturnResult<Arguments<T>> signature(List<T> positionalArguments, Map<String, T> namedArguments);
 }

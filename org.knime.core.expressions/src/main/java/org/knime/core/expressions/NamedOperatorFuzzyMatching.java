@@ -64,7 +64,9 @@ import org.apache.commons.text.similarity.LevenshteinDistance;
  */
 public final class NamedOperatorFuzzyMatching {
 
-    // Based on testing, it seems like 4 is a good maximum Levenshtein distance
+    /**
+     * Based on testing, it seems like 4 is a good maximum Levenshtein distance
+     */
     public static final int MAX_LEVENSHTEIN_DISTANCE = 4;
 
     private NamedOperatorFuzzyMatching() {

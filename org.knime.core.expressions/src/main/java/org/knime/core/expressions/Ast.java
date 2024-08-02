@@ -375,6 +375,7 @@ public sealed interface Ast
      * Create a new {@link ColumnAccess} for the given column name and data.
      *
      * @param name the column name
+     * @param offset
      * @param data
      * @return the node
      */
@@ -492,7 +493,7 @@ public sealed interface Ast
     /**
      * Create a new {@link FunctionCall} with the given arguments and with no data.
      *
-     * @param name the name of the function
+     * @param function the function
      * @param args the arguments
      * @return the node
      */
@@ -503,7 +504,7 @@ public sealed interface Ast
     /**
      * Create a new {@link FunctionCall} with the given arguments and with the given data.
      *
-     * @param name the name of the function
+     * @param function the function
      * @param args the arguments
      * @param data
      * @return the node
@@ -516,7 +517,7 @@ public sealed interface Ast
     /**
      * Create a new {@link AggregationCall} with the given arguments and with no data.
      *
-     * @param name the name of the aggregation
+     * @param aggregation the aggregation
      * @param args the arguments
      * @return the node
      */
@@ -527,7 +528,7 @@ public sealed interface Ast
     /**
      * Create a new {@link AggregationCall} with the given arguments and with the given data.
      *
-     * @param name the name of the aggregation
+     * @param aggregation the aggregation
      * @param args the arguments
      * @param data
      * @return the node
@@ -828,6 +829,11 @@ public sealed interface Ast
         }
     }
 
+    /**
+     * ColumnId representing a named column.
+     *
+     * @param name
+     */
     record ColumnName(String name) implements ColumnId {
 
         @Override
@@ -836,6 +842,9 @@ public sealed interface Ast
         }
     }
 
+    /**
+     * ColumnId representing the row index.
+     */
     record RowIndex() implements ColumnId {
 
         public static final RowIndex INSTANCE = new RowIndex();
@@ -846,6 +855,9 @@ public sealed interface Ast
         }
     }
 
+    /**
+     * ColumnId representing the row id.
+     */
     record RowId() implements ColumnId {
 
         public static final RowId INSTANCE = new RowId();
@@ -860,6 +872,7 @@ public sealed interface Ast
      * {@link Ast} representing a data column access.
      *
      * @param columnId the name of the column
+     * @param offset windowing offset
      * @param data attached data
      */
     record ColumnAccess(ColumnId columnId, long offset, Map<String, Object> data) implements Ast {
@@ -941,8 +954,9 @@ public sealed interface Ast
 
         @Override
         public List<Ast> children() {
-            return args.asList();
+            return args.toList();
         }
+
     }
 
     /**
@@ -962,7 +976,8 @@ public sealed interface Ast
 
         @Override
         public List<Ast> children() {
-            return new ArrayList<>(args.asList());
+            return args.map(Ast.class::cast).toList();
         }
+
     }
 }

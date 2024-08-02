@@ -85,7 +85,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
+import java.util.stream.IntStream;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.knime.core.expressions.Ast.UnaryOperator;
@@ -93,6 +95,7 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.SignatureUtils.Arg;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
@@ -114,10 +117,10 @@ final class EvaluationTest {
                 .andThen(c -> ReturnResult.fromOptional(c, "var missing").map(TestFlowVariable::type)));
         var result = Evaluation.evaluate( //
             ast, //
-            COLUMN_ID
-            .andThen(COLUMN_NAME) //
-            .andThen(FIND_TEST_COLUMN) //
-            .andThen(c -> c.map(TestColumn::computer)), //
+            COLUMN_ID //
+                .andThen(COLUMN_NAME) //
+                .andThen(FIND_TEST_COLUMN) //
+                .andThen(c -> c.map(TestColumn::computer)), //
             TestUtils.FLOW_VAR_NAME.andThen(FIND_TEST_FLOW_VARIABLE).andThen(c -> c.map(TestFlowVariable::computer)), //
             TestAggregations.TEST_AGGREGATIONS_COMPUTER);
         assertNotNull(result, "should output result");
@@ -363,7 +366,7 @@ final class EvaluationTest {
 
             // === Function and Aggregation calls
 
-            FN_PLUS_100(FUN(TestFunctions.plus_100_fn, INT(10)), 110), //
+            FN_PLUS_100(FUN(TestFunctions.PLUS_100_FN, INT(10)), 110), //
             AGG_RETURN_42_WITH_COL_TYPE_I(AstTestUtils.AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("INTEGER")),
                 42), //
             AGG_RETURN_42_WITH_COL_TYPE_F(AstTestUtils.AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("FLOAT")),
@@ -483,38 +486,47 @@ final class EvaluationTest {
     }
 
     private static enum TestFunctions implements ExpressionFunction {
-            plus_100_fn(List.of(ValueType.INTEGER), ValueType.INTEGER,
-                c -> IntegerComputer.of(ctx -> ((IntegerComputer)c.get(0)).compute(ctx) + 100, ctx -> false)), //
+            PLUS_100_FN(List.of(ValueType.INTEGER), ValueType.INTEGER,
+                c -> IntegerComputer.of(ctx -> ((IntegerComputer)c.get("arg0")).compute(ctx) + 100, ctx -> false)), //
         ;
 
-        private final Map<List<ValueType>, ValueType> m_argsToOutputs;
+        private final ValueType m_returnType;
 
-        private final Function<List<Computer>, Computer> m_apply;
+        private final Function<Arguments<Computer>, Computer> m_apply;
 
-        private TestFunctions(final List<ValueType> args, final ValueType output,
-            final Function<List<Computer>, Computer> apply) {
-            this(Map.of(args, output), apply);
-        }
+        private final List<Arg> m_signature;
 
-        private TestFunctions(final Map<List<ValueType>, ValueType> argsToOutput,
-            final Function<List<Computer>, Computer> apply) {
-            m_argsToOutputs = argsToOutput;
+        private TestFunctions(final List<ValueType> args, final ValueType returnType,
+            final Function<Arguments<Computer>, Computer> apply) {
+
             m_apply = apply;
+            m_returnType = returnType;
+
+            m_signature = IntStream.range(0, args.size())
+                .mapToObj(
+                    i -> SignatureUtils.arg("arg" + i, "", SignatureUtils.hasType(args.get(i))))
+                .toList();
         }
 
         @Override
-        public Optional<ValueType> returnType(final List<ValueType> argTypes) {
-            return Optional.ofNullable(m_argsToOutputs.get(argTypes));
+        public <T> ReturnResult<Arguments<T>> signature(final List<T> positionalArguments,
+            final Map<String, T> namedArguments) {
+            return SignatureUtils.matchSignature(m_signature, positionalArguments, namedArguments);
         }
 
         @Override
-        public Computer apply(final List<Computer> args) {
+        public ReturnResult<ValueType> returnType(final Arguments<ValueType> argTypes) {
+            return SignatureUtils.checkTypes(m_signature, argTypes).map(r -> m_returnType);
+        }
+
+        @Override
+        public Computer apply(final Arguments<Computer> args) {
             return m_apply.apply(args);
         }
 
         @Override
         public OperatorDescription description() {
-            throw new IllegalStateException("Should not be called during function evaluation");
+            return Assertions.fail("Should not be called in evaluation tests");
         }
     }
 }

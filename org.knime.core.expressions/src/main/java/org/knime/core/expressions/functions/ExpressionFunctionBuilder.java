@@ -48,27 +48,21 @@
  */
 package org.knime.core.expressions.functions;
 
-import static org.knime.core.expressions.ValueType.BOOLEAN;
-import static org.knime.core.expressions.ValueType.FLOAT;
-import static org.knime.core.expressions.ValueType.INTEGER;
-import static org.knime.core.expressions.ValueType.STRING;
-
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.function.Function;
-import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 
+import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorDescription;
+import org.knime.core.expressions.ReturnResult;
+import org.knime.core.expressions.SignatureUtils;
+import org.knime.core.expressions.SignatureUtils.Arg;
 import org.knime.core.expressions.ToBooleanFunction;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.expressions.functions.ExpressionFunctionBuilder.Arg.ArgKind;
 
 /**
  * A builder for {@link ExpressionFunction}s. Start building with {@link #functionBuilder()}.
@@ -100,8 +94,8 @@ public final class ExpressionFunctionBuilder {
      * @param types the argument types
      * @return <code>true</code> if at least one type is optional
      */
-    public static boolean anyOptional(final ValueType... types) {
-        return Arrays.stream(types).anyMatch(ValueType::isOptional);
+    public static boolean anyOptional(final Arguments<ValueType> types) {
+        return types.anyMatch(ValueType::isOptional);
     }
 
     /**
@@ -111,8 +105,8 @@ public final class ExpressionFunctionBuilder {
      * @param values
      * @return the predicate
      */
-    public static ToBooleanFunction<EvaluationContext> anyMissing(final Collection<Computer> values) {
-        return ctx -> values.stream().anyMatch(c -> c.isMissing(ctx));
+    public static ToBooleanFunction<EvaluationContext> anyMissing(final Arguments<Computer> values) {
+        return ctx -> values.anyMatch(c -> c.isMissing(ctx));
     }
 
     /**
@@ -122,124 +116,8 @@ public final class ExpressionFunctionBuilder {
      * @param types the argument types
      * @return <code>true</code> if the {@link ValueType#baseType()} of all arguments match the predicate
      */
-    public static boolean allBaseTypesMatch(final Predicate<ValueType> matcher, final ValueType... types) {
-        return Arrays.stream(types).map(ValueType::baseType).allMatch(matcher);
-    }
-
-    /**
-     * Creates a {@link ArgKind#REQUIRED} argument.
-     *
-     * @param name
-     * @param description
-     * @param matcher
-     * @return the argument
-     */
-    public static Arg arg(final String name, final String description, final ArgMatcher matcher) {
-        return new Arg(name, description, matcher, ArgKind.REQUIRED);
-    }
-
-    /**
-     * Creates a {@link ArgKind#OPTIONAL} argument.
-     *
-     * @param name
-     * @param description
-     * @param matcher
-     * @return the argument
-     */
-    public static Arg optarg(final String name, final String description, final ArgMatcher matcher) {
-        return new Arg(name, description, matcher, ArgKind.OPTIONAL);
-    }
-
-    /**
-     * Creates a {@link ArgKind#VAR} argument.
-     *
-     * @param name
-     * @param description
-     * @param matcher
-     * @return the argument
-     */
-    public static Arg vararg(final String name, final String description, final ArgMatcher matcher) {
-        return new Arg(name, description, matcher, ArgKind.VAR);
-    }
-
-    /** @return an {@link ArgMatcher} that matches all numeric non-optional types */
-    public static ArgMatcher isNumeric() {
-        return new ArgMatcherImpl("INTEGER | FLOAT", ValueType::isNumeric);
-    }
-
-    /** @return an {@link ArgMatcher} that matches all numeric types (optional or not) */
-    public static ArgMatcher isNumericOrOpt() {
-        return new ArgMatcherImpl("INTEGER? | FLOAT?", ValueType::isNumericOrOpt);
-    }
-
-    /** @return an {@link ArgMatcher} that matches {@link ValueType#INTEGER} */
-    public static ArgMatcher isInteger() {
-        return hasType(INTEGER);
-    }
-
-    /** @return an {@link ArgMatcher} that matches {@link ValueType#INTEGER} and {@link ValueType#OPT_INTEGER} */
-    public static ArgMatcher isIntegerOrOpt() {
-        return hasBaseType(INTEGER);
-    }
-
-    /** @return an {@link ArgMatcher} that matches {@link ValueType#FLOAT} */
-    public static ArgMatcher isFloat() {
-        return hasType(FLOAT);
-    }
-
-    /** @return an {@link ArgMatcher} that matches {@link ValueType#FLOAT} and {@link ValueType#OPT_FLOAT} */
-    public static ArgMatcher isFloatOrOpt() {
-        return hasBaseType(FLOAT);
-    }
-
-    /** @return an {@link ArgMatcher} that matches {@link ValueType#STRING} */
-    public static ArgMatcher isString() {
-        return hasType(STRING);
-    }
-
-    /** @return an {@link ArgMatcher} that matches {@link ValueType#STRING} and {@link ValueType#OPT_STRING} */
-    public static ArgMatcher isStringOrOpt() {
-        return hasBaseType(STRING);
-    }
-
-    /** @return an {@link ArgMatcher} that matches {@link ValueType#BOOLEAN} */
-    public static ArgMatcher isBoolean() {
-        return hasType(BOOLEAN);
-    }
-
-    /** @return an {@link ArgMatcher} that matches {@link ValueType#BOOLEAN} and {@link ValueType#OPT_BOOLEAN} */
-    public static ArgMatcher isBooleanOrOpt() {
-        return hasBaseType(BOOLEAN);
-    }
-
-    /** @return an {@link ArgMatcher} that matches any type (missing or otherwise) */
-    public static ArgMatcher isAnything() {
-        return new ArgMatcherImpl("ANY", arg -> true);
-    }
-
-    /**
-     * @param types the types to match
-     * @return an {@link ArgMatcher} that matches any of the given types
-     */
-    public static ArgMatcher isOneOfBaseTypes(final ValueType... types) {
-        return new ArgMatcherImpl("ANY OF " + Arrays.toString(types),
-            arg -> Arrays.stream(types).anyMatch(validArg -> validArg.baseType().equals(arg.baseType())));
-    }
-
-    /**
-     * @param type the exact type to match
-     * @return an {@link ArgMatcher} that matches only the given type
-     */
-    public static ArgMatcher hasType(final ValueType type) {
-        return new ArgMatcherImpl(type.name(), type::equals);
-    }
-
-    /**
-     * @param baseType the base type to match
-     * @return an {@link ArgMatcher} that matches all types that have the given {@link ValueType#baseType()}
-     */
-    public static ArgMatcher hasBaseType(final ValueType baseType) {
-        return new ArgMatcherImpl(baseType.optionalType().name(), arg -> baseType.equals(arg.baseType()));
+    public static boolean allBaseTypesMatch(final Predicate<ValueType> matcher, final Arguments<ValueType> types) {
+        return types.map(ValueType::baseType).allMatch(matcher);
     }
 
     // ====================== BUILDER ===========================
@@ -292,21 +170,21 @@ public final class ExpressionFunctionBuilder {
          * @return the next stage of the builder
          */
         RequiresImpl returnType(String returnDesc, String returnType,
-            Function<ValueType[], ValueType> returnTypeMapping);
+            Function<Arguments<ValueType>, ValueType> returnTypeMapping);
     }
 
     interface RequiresImpl {
         /**
-         * @param impl the implementation of the function ({@link ExpressionFunction#apply(List)}
+         * @param impl the implementation of the function ({@link ExpressionFunction#apply(Arguments)}
          * @return the next stage of the builder
          */
-        FinalStage impl(Function<List<Computer>, Computer> impl);
+        FinalStage impl(Function<Arguments<Computer>, Computer> impl);
     }
 
     record FinalStage( // NOSONAR - equals and hashCode are not important for this record
         String name, String description, String[] keywords, String category, Arg[] args, String returnDesc,
-        String returnType, Function<ValueType[], ValueType> returnTypeMapping,
-        Function<List<Computer>, Computer> impl) {
+        String returnType, Function<Arguments<ValueType>, ValueType> returnTypeMapping,
+        Function<Arguments<Computer>, Computer> impl) {
 
         public ExpressionFunction build() {
             // Check that the name is snake_case
@@ -314,40 +192,17 @@ public final class ExpressionFunctionBuilder {
                 throw new IllegalArgumentException("Function name must be snake case.");
             }
 
-            if (Arrays.stream(args).limit(args.length - 1L).anyMatch(a -> a.kind != ArgKind.REQUIRED)) {
-                throw new IllegalArgumentException("Only the last argument can be optional or variable.");
-            }
+            var argsList = List.of(args);
+            SignatureUtils.checkSignature(argsList);
 
-            var argsDesc = Arrays.stream(args) //
-                .map(a -> new OperatorDescription.Argument(a.name, a.matcher.allowed(), a.description)) //
-                .toList();
+            var argsDesc = Arg.toOperatorDescription(argsList);
             var desc = new OperatorDescription(name, description, argsDesc, returnType, returnDesc, List.of(keywords),
                 category, OperatorDescription.FUNCTION_ENTRY_TYPE);
 
-            return new FunctionImpl(name, desc, argTypes -> {
-                // Check if the args match the definition
-                if (!argsMatch(argTypes.toArray(ValueType[]::new))) {
-                    return Optional.empty();
-                }
+            Function<Arguments<ValueType>, ReturnResult<ValueType>> typeMappingAndCheck = argTypes -> SignatureUtils
+                .checkTypes(argsList, argTypes).map(valid -> returnTypeMapping.apply(argTypes));
 
-                // Compute the return type
-                return Optional.ofNullable(returnTypeMapping.apply(argTypes.toArray(ValueType[]::new)));
-            }, impl);
-        }
-
-        private boolean argsMatch(final ValueType[] argTypes) {
-            // Check if the number or args is correct
-            var numDefined = args.length;
-            var numArgs = argTypes.length;
-            var correctArgCount = switch (args[numDefined - 1].kind) {
-                case REQUIRED -> numArgs == numDefined;
-                case OPTIONAL -> numArgs == numDefined || numArgs == numDefined - 1;
-                case VAR -> numArgs >= numDefined - 1; // note: count of vararg could be 0
-            };
-
-            // Checks if arg at location i matches definition at i or the last definition
-            IntPredicate argMatches = i -> args[Math.min(i, args.length - 1)].matcher.matches(argTypes[i]);
-            return correctArgCount && IntStream.range(0, numArgs).allMatch(argMatches);
+            return new FunctionImpl(name, desc, List.of(args), typeMappingAndCheck, impl);
         }
     }
 
@@ -355,19 +210,22 @@ public final class ExpressionFunctionBuilder {
 
     private static final class FunctionImpl implements ExpressionFunction {
 
-        private String m_name;
+        private final String m_name;
 
-        private OperatorDescription m_description;
+        private final OperatorDescription m_description;
 
-        private Function<List<ValueType>, Optional<ValueType>> m_typeMapping;
+        private final List<Arg> m_signature;
 
-        private Function<List<Computer>, Computer> m_impl;
+        private final Function<Arguments<ValueType>, ReturnResult<ValueType>> m_typeMapping;
 
-        FunctionImpl(final String name, final OperatorDescription description,
-            final Function<List<ValueType>, Optional<ValueType>> typeMapping,
-            final Function<List<Computer>, Computer> impl) {
+        private final Function<Arguments<Computer>, Computer> m_impl;
+
+        FunctionImpl(final String name, final OperatorDescription description, final List<Arg> signature,
+            final Function<Arguments<ValueType>, ReturnResult<ValueType>> typeMapping,
+            final Function<Arguments<Computer>, Computer> impl) {
             m_name = name;
             m_description = description;
+            m_signature = signature;
             m_typeMapping = typeMapping;
             m_impl = impl;
         }
@@ -383,60 +241,19 @@ public final class ExpressionFunctionBuilder {
         }
 
         @Override
-        public Optional<ValueType> returnType(final List<ValueType> argTypes) {
+        public <T> ReturnResult<Arguments<T>> signature(final List<T> positionalArguments,
+            final Map<String, T> namedArguments) {
+            return SignatureUtils.matchSignature(m_signature, positionalArguments, namedArguments);
+        }
+
+        @Override
+        public ReturnResult<ValueType> returnType(final Arguments<ValueType> argTypes) {
             return m_typeMapping.apply(argTypes);
         }
 
         @Override
-        public Computer apply(final List<Computer> args) {
+        public Computer apply(final Arguments<Computer> args) {
             return m_impl.apply(args);
-        }
-    }
-
-    // ====================== TYPES FOR ARGUMENTS ===========================
-
-    /**
-     * Declaration of a function argument
-     *
-     * @param name the argument name
-     * @param description
-     * @param matcher
-     * @param kind
-     */
-    public record Arg(String name, String description, ArgMatcher matcher, ArgKind kind) {
-
-        /** Kind of a function argument */
-        public enum ArgKind {
-                /** standard arguments */
-                REQUIRED,
-                /** arguments that can be omitted (only allowed at the last position) */
-                OPTIONAL,
-                /** arguments that can occur multiple times (or never) */
-                VAR;
-        }
-    }
-
-    /**
-     * Checks if the type of an argument matches a predicate via {@link #matches(ValueType)} and displays this rule as a
-     * String via {@link #allowed()}.
-     */
-    public interface ArgMatcher {
-
-        /**
-         * @param type the argument type
-         * @return if the argument type matches the predicate
-         */
-        boolean matches(ValueType type);
-
-        /** @return a String representation of the types accepted by this matcher */
-        String allowed();
-    }
-
-    private record ArgMatcherImpl(String allowed, Predicate<ValueType> matcher) implements ArgMatcher {
-
-        @Override
-        public boolean matches(final ValueType type) {
-            return matcher.test(type);
         }
     }
 }

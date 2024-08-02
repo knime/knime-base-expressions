@@ -245,7 +245,7 @@ public interface ValueType {
 
         @Override
         public String name() {
-            return m_baseType.name() + "?";
+            return m_baseType.name() + "| MISSING" ;
         }
 
         @Override

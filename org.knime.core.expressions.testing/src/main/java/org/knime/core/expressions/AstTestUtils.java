@@ -172,9 +172,20 @@ public final class AstTestUtils {
         return FUN(name, List.of(args), Map.of());
     }
 
-    public static Ast.FunctionCall FUN(final ExpressionFunction name, final List<Ast> positionalArgs,
+    /**
+     * @param expressionFunction
+     * @param positionalArgs
+     * @param namedArgs
+     * @return a {@link Ast.FunctionCall}
+     */
+    public static Ast.FunctionCall FUN(final ExpressionFunction expressionFunction, final List<Ast> positionalArgs,
         final Map<String, Ast> namedArgs) { // NOSONAR - name useful for visual clarity
-        return Ast.functionCall(name, new Arguments<Ast>(positionalArgs, namedArgs));
+        var args = expressionFunction.signature(positionalArgs, namedArgs)
+            .orElseThrow(cause -> new IllegalArgumentException(
+                cause + " for function " + expressionFunction.name() + " with arguments " + positionalArgs + " and "
+                    + namedArgs + ". But expected " + expressionFunction.description().arguments()));
+
+        return Ast.functionCall(expressionFunction, args);
     }
 
     /**
@@ -187,13 +198,19 @@ public final class AstTestUtils {
     }
 
     /**
-     * @param name
+     * @param columnAggregation
      * @param positionalArgs
      * @param namedArgs
      * @return a {@link Ast.AggregationCall}
      */
-    public static Ast.AggregationCall AGG(final ColumnAggregation name, final List<ConstantAst> positionalArgs,
-        final Map<String, ConstantAst> namedArgs) { // NOSONAR - name useful for visual clarity
-        return Ast.aggregationCall(name, new Arguments<>(positionalArgs, namedArgs));
+    public static Ast.AggregationCall AGG(final ColumnAggregation columnAggregation,
+        final List<ConstantAst> positionalArgs, final Map<String, ConstantAst> namedArgs) { // NOSONAR - name useful for visual clarity
+
+        var args = columnAggregation.signature(positionalArgs, namedArgs)
+            .orElseThrow(cause -> new IllegalArgumentException(
+                cause + " for aggregration " + columnAggregation.name() + " with arguments " + positionalArgs + " and "
+                    + namedArgs + ". But expected " + columnAggregation.description().arguments()));
+
+        return Ast.aggregationCall(columnAggregation, args);
     }
 }
