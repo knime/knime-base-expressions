@@ -44,40 +44,77 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 27, 2024 (benjamin): created
+ *   Aug 2, 2024 (kampmann): created
  */
 package org.knime.base.expressions.aggregations;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import java.util.HashMap;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.knime.base.expressions.ExpressionMapperFactory;
-import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
-import org.knime.core.expressions.aggregations.TestColumnAggregationArgumentSource;
-import org.knime.core.table.virtual.expression.Exec;
+import org.knime.core.expressions.Ast.ConstantAst;
 
 /**
- * Tests the collection of column aggregations {@link ColumnAggregations}.
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author kampmann
  */
-@SuppressWarnings("static-method")
-final class ColumnAggregationsTest {
+public final class ConstantArgumentResolver {
 
-    private static final DataTableSpec TEST_TABLE_SPEC = new DataTableSpec( //
-        TestColumnAggregationArgumentSource.TEST_COLUMNS.entrySet().stream() //
-            .map(e -> ExpressionMapperFactory
-                .primitiveDataSpecToDataColumnSpec(Exec.valueTypeToDataSpec(e.getValue()).spec(), e.getKey()))
-            .toArray(DataColumnSpec[]::new) //
-    );
+    static final String COLUMN = "column";
 
-    @ParameterizedTest
-    @ArgumentsSource(TestColumnAggregationArgumentSource.class)
-    void testAllAggregationsImplemented(final Ast.AggregationCall agg) {
-        var aggImpl = ColumnAggregations.getAggregationImplementationFor(agg, TEST_TABLE_SPEC);
-        assertNotNull(aggImpl, "No implementation for " + agg);
+    static final String IGNORE_NAN = "ignore_nan";
+
+    static final String IGNORE_MISSING = "ignore_missing";
+
+    private ConstantArgumentResolver() {
     }
+
+    /**
+     * Extracts the column name from the arguments and resolves it to a column index in the table spec. Throws an
+     * exception if the column name is not found in the table spec or if the argument is not a string.
+     *
+     * @param arguments
+     * @param tableSpec
+     * @return the column index
+     */
+    public static Integer resolveColumnIndex(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
+        return arguments.getArgument(COLUMN) //
+            .map(arg -> ((Ast.StringConstant)arg).value()) // get column name
+            .map(tableSpec::findColumnIndex) // get the column index from name
+            .orElseThrow(cause -> new IllegalStateException(
+                "Implementation error - invalid argument for column name (%s). Details: %s".formatted(arguments,
+                    cause)));
+    }
+
+    /**
+     * @param arguments
+     * @param name
+     * @param defaultValue
+     * @return the value of the argument or the default value if the argument
+     */
+    public static boolean resolveOptionalBoolean(final Arguments<ConstantAst> arguments, final String name,
+        final boolean defaultValue) {
+        return arguments.getArgument(name) //
+            .or(() -> new Ast.BooleanConstant(defaultValue, new HashMap<>())) //
+            .map(arg -> ((Ast.BooleanConstant)arg).value()) //
+            .orElseThrow(cause -> new IllegalStateException(
+                "Implementation error - invalid argument for" + name + ". Details: " + cause)); //
+    }
+
+    /**
+     * @param arguments
+     * @param name
+     * @param defaultValue
+     * @return the value of the argument or the default value if the argument
+     */
+    public static Long resolveOptionalInteger(final Arguments<ConstantAst> arguments, final String name,
+        final Integer defaultValue) {
+        return arguments.getArgument(name) //
+            .or(() -> new Ast.IntegerConstant(defaultValue, new HashMap<>())) //
+            .map(arg -> ((Ast.IntegerConstant)arg).value()) //
+            .orElseThrow(cause -> new IllegalStateException(
+                "Implementation error - invalid argument for" + name + ". Details: " + cause)); //
+    }
+
 }

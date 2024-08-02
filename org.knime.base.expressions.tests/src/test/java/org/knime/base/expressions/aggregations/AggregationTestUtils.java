@@ -59,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -82,6 +83,8 @@ import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.aggregations.ColumnAggregation;
+import org.knime.core.expressions.aggregations.TestColumnAggregationArgumentSource;
 
 /**
  * Collection of utilities for running tests on aggregations.
@@ -129,16 +132,16 @@ public class AggregationTestUtils {
         public static final int STRING_COL_IDX = 3;
 
         /** Name of the long column in the test table */
-        public static final String LONG_COL_NAME = "LONG_COL";
+        public static final String LONG_COL_NAME = TestColumnAggregationArgumentSource.LONG_COL_NAME;
 
         /** Name of the int column in the test table */
-        public static final String INT_COL_NAME = "INT_COL";
+        public static final String INT_COL_NAME = TestColumnAggregationArgumentSource.INT_COL_NAME;
 
         /** Name of the double column in the test table */
-        public static final String DOUBLE_COL_NAME = "DOUBLE_COL";
+        public static final String DOUBLE_COL_NAME = TestColumnAggregationArgumentSource.DOUBLE_COL_NAME;
 
         /** Name of the string column in the test table */
-        public static final String STRING_COL_NAME = "STRING_COL";
+        public static final String STRING_COL_NAME = TestColumnAggregationArgumentSource.STRING_COL_NAME;
 
         /** A test table spec with columns of type long, int, double, and string. */
         public static final DataTableSpec TEST_TABLE_SPEC = new DataTableSpec( //
@@ -151,6 +154,8 @@ public class AggregationTestUtils {
         // ======= INSTANCE MEMBERS =======
 
         private final BiFunction<Arguments<ConstantAst>, DataTableSpec, Aggregation> m_aggregationSupplier;
+
+        private final ColumnAggregation m_aggregation;
 
         private final List<DynamicTest> m_implTests = new ArrayList<>();
 
@@ -166,10 +171,12 @@ public class AggregationTestUtils {
          * table spec (e.g. {@link MaxColumnAggregationImpl#maxAggregation}).
          *
          * @param aggregationSupplier the aggregation supplier function
+         * @param aggregation
          */
-        public AggregationTestBuilder(
+        public AggregationTestBuilder(final ColumnAggregation aggregation,
             final BiFunction<Arguments<ConstantAst>, DataTableSpec, Aggregation> aggregationSupplier) {
 
+            m_aggregation = aggregation;
             m_aggregationSupplier = aggregationSupplier;
         }
 
@@ -748,7 +755,9 @@ public class AggregationTestUtils {
                 List<Ast.ConstantAst> allPositionalArgs = new ArrayList<>(extraPositionalArgs);
                 allPositionalArgs.add(0, STR(colName));
 
-                var args = new Arguments<>(allPositionalArgs, extraNamedArgs);
+                var args = Arguments.matchSignature(m_aggregation.description().arguments(), allPositionalArgs,
+                    extraNamedArgs).orElseThrow(
+                        cause -> new IllegalStateException("Error creating arguments: " + cause));
 
                 var actualResult = populateAggRows( //
                     m_aggregationSupplier.apply(args, TEST_TABLE_SPEC), //
@@ -796,10 +805,8 @@ public class AggregationTestUtils {
             final String colName //
         ) {
             m_unsupportedTypeTests.add(DynamicTest.dynamicTest(testName, () -> {
-                List<Ast.ConstantAst> allPositionalArgs = new ArrayList<>();
-                allPositionalArgs.add(0, STR(colName));
 
-                var args = new Arguments<>(allPositionalArgs, new HashMap<>());
+                var args = new Arguments<ConstantAst>(new LinkedHashMap<>(Map.of("column", STR(colName))));
 
                 assertThrows(IllegalStateException.class, () -> {
                     m_aggregationSupplier.apply(args, TEST_TABLE_SPEC);
@@ -831,10 +838,14 @@ public class AggregationTestUtils {
             final String colName //
         ) {
             m_implTests.add(DynamicTest.dynamicTest(testName, () -> {
-                var allPositionalArgs = new ArrayList<>(extraPositionalArgs);
-                allPositionalArgs.add(0, STR(colName));
 
-                var args = new Arguments<>(allPositionalArgs, extraNamedArgs);
+                var positionalArgsWithColumnPrepended = new ArrayList<>(extraPositionalArgs);
+                positionalArgsWithColumnPrepended.add(0, STR(colName));
+
+                var args = Arguments
+                    .matchSignature(m_aggregation.description().arguments(), positionalArgsWithColumnPrepended,
+                        extraNamedArgs)
+                    .orElseThrow(cause -> new IllegalStateException("Error creating arguments: " + cause));
 
                 var actualResult = populateAggRows( //
                     m_aggregationSupplier.apply(args, TEST_TABLE_SPEC), //

@@ -55,6 +55,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
  *
@@ -65,23 +66,24 @@ final class VarianceColumnAggregationImplTest {
 
     @TestFactory
     List<DynamicNode> variance() {
-        return new AggregationTestUtils.AggregationTestBuilder(VarianceColumnAggregationImpl::varianceAggregation) //
-            .setFutureTolerances(1e-10) // all tests use the same tolerance
-            .implInt("int", listOf(1, -10, 10, 5), 54.25) //
-            .implLong("long", listOf(1L, -10L, 10L, 5L), 54.25) //
-            .implLong("longMissing", listOf(1L, null, 5L), 4.0) //
-            .implLong("longOnlyMissing", listOf(null, null), null) //
-            .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), 0.825) //
-            .implDouble("doubleMissing", listOf(1.0, null, 5.4), 4.84) //
-            .implDouble("doubleOnlyMissing", listOf(null, null), null) //
-            .implDouble("doubleNaN", listOf(Double.NaN, 1.0), Double.NaN) //
-            .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), Double.NaN) //
-            .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 0.0) //
-            .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
-            .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 0.25) //
-            .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
-            .warnsDouble("allMissingDouble", listOf(null, null)) //
-            .unsupportedTypeString("string") //
-            .tests();
+        return new AggregationTestUtils.AggregationTestBuilder(BuiltInAggregations.VARIANCE,
+            VarianceColumnAggregationImpl::varianceAggregation) //
+                .setFutureTolerances(1e-10) // all tests use the same tolerance
+                .implInt("int", listOf(1, -10, 10, 5), 54.25) //
+                .implLong("long", listOf(1L, -10L, 10L, 5L), 54.25) //
+                .implLong("longMissing", listOf(1L, null, 5L), 4.0) //
+                .implLong("longOnlyMissing", listOf(null, null), null) //
+                .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), 0.825) //
+                .implDouble("doubleMissing", listOf(1.0, null, 5.4), 4.84) //
+                .implDouble("doubleOnlyMissing", listOf(null, null), null) //
+                .implDouble("doubleNaN", listOf(Double.NaN, 1.0), Double.NaN) //
+                .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), Double.NaN) //
+                .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 0.0) //
+                .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
+                .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 0.25) //
+                .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
+                .warnsDouble("allMissingDouble", listOf(null, null)) //
+                .unsupportedTypeString("string") //
+                .tests();
     }
 }

@@ -55,7 +55,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
-
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
 /**
  *
  * @author David Hickey, TNG Technology Consulting GmbH
@@ -65,7 +65,7 @@ final class AverageColumnAggregationImplTest {
 
     @TestFactory
     List<DynamicNode> average() {
-        return new AggregationTestUtils.AggregationTestBuilder(AverageColumnAggregationImpl::averageAggregation) //
+        return new AggregationTestUtils.AggregationTestBuilder(BuiltInAggregations.AVERAGE,AverageColumnAggregationImpl::averageAggregation) //
             .setFutureTolerances(1e-10) // all tests use the same tolerance
             .implInt("int", listOf(1, -10, 10, 5), 1.5) //
             .implLong("long", listOf(1L, -10L, 10L, 5L), 1.5) //
