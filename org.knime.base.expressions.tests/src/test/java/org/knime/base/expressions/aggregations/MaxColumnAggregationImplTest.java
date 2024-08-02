@@ -55,6 +55,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
  *
@@ -65,25 +66,26 @@ final class MaxColumnAggregationImplTest {
 
     @TestFactory
     List<DynamicNode> max() {
-        return new AggregationTestUtils.AggregationTestBuilder(MaxColumnAggregationImpl::maxAggregation) //
-            .implInt("int", listOf(1, -10, 10, 5), 10) //
-            .implLong("long", listOf(1L, -10L, 10L, 5L), 10L) //
-            .implLong("longMissing", listOf(1L, null, 5L), 5L) //
-            .implLong("longOnlyMissing", listOf(null, null), null) //
-            .implLong("longMinValue", listOf(Long.MIN_VALUE, Long.MIN_VALUE), Long.MIN_VALUE) //
-            .implLong("longMaxValue", listOf(Long.MAX_VALUE, 0L), Long.MAX_VALUE) //
-            .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), 2.2) //
-            .implDouble("doubleMissing", listOf(1.0, null, 5.4), 5.4) //
-            .implDouble("doubleOnlyMissing", listOf(null, null), null) //
-            .implDouble("doubleNaN", listOf(Double.NaN, 1.0), Double.NaN) //
-            .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), Double.NaN) //
-            .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 1.0) //
-            .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
-            .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 2.0) //
-            .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
-            .warnsDouble("allMissingDouble", listOf(null, null)) //
-            .warnsLong("allMissingLong", listOf(null, null)) //
-            .unsupportedTypeString("string") //
-            .tests();
+        return new AggregationTestUtils.AggregationTestBuilder(BuiltInAggregations.MAX,
+            MaxColumnAggregationImpl::maxAggregation) //
+                .implInt("int", listOf(1, -10, 10, 5), 10) //
+                .implLong("long", listOf(1L, -10L, 10L, 5L), 10L) //
+                .implLong("longMissing", listOf(1L, null, 5L), 5L) //
+                .implLong("longOnlyMissing", listOf(null, null), null) //
+                .implLong("longMinValue", listOf(Long.MIN_VALUE, Long.MIN_VALUE), Long.MIN_VALUE) //
+                .implLong("longMaxValue", listOf(Long.MAX_VALUE, 0L), Long.MAX_VALUE) //
+                .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), 2.2) //
+                .implDouble("doubleMissing", listOf(1.0, null, 5.4), 5.4) //
+                .implDouble("doubleOnlyMissing", listOf(null, null), null) //
+                .implDouble("doubleNaN", listOf(Double.NaN, 1.0), Double.NaN) //
+                .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), Double.NaN) //
+                .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 1.0) //
+                .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
+                .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 2.0) //
+                .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
+                .warnsDouble("allMissingDouble", listOf(null, null)) //
+                .warnsLong("allMissingLong", listOf(null, null)) //
+                .unsupportedTypeString("string") //
+                .tests();
     }
 }

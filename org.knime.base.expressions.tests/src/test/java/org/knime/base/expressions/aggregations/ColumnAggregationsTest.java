@@ -60,7 +60,7 @@ import org.knime.core.expressions.aggregations.TestColumnAggregationArgumentSour
 import org.knime.core.table.virtual.expression.Exec;
 
 /**
- * Tests the collection of column aggregatins {@link ColumnAggregations}.
+ * Tests the collection of column aggregations {@link ColumnAggregations}.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */

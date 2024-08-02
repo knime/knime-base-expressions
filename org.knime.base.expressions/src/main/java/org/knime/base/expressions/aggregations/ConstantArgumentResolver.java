@@ -44,46 +44,82 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 27, 2024 (benjamin): created
+ *   Aug 2, 2024 (kampmann): created
  */
 package org.knime.base.expressions.aggregations;
 
-import static org.knime.base.expressions.aggregations.AggregationTestUtils.listOf;
-import static org.knime.core.expressions.AstTestUtils.BOOL;
-
-import java.util.List;
-
-import org.junit.jupiter.api.DynamicNode;
-import org.junit.jupiter.api.TestFactory;
-import org.knime.core.expressions.aggregations.BuiltInAggregations;
+import org.knime.core.data.DataTableSpec;
+import org.knime.core.expressions.Arguments;
+import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Ast.ConstantAst;
 
 /**
+ * This class provides utility methods to resolve arguments for aggregations.
  *
- * @author David Hickey, TNG Technology Consulting GmbH
+ * @author Tobias Kampmann, TNG, Schwerte, Germany
  */
-@SuppressWarnings("static-method")
-final class AverageColumnAggregationImplTest {
+public final class ConstantArgumentResolver {
 
-    @TestFactory
-    List<DynamicNode> average() {
-        return new AggregationTestUtils.AggregationTestBuilder(BuiltInAggregations.AVERAGE,
-            AverageColumnAggregationImpl::averageAggregation) //
-                .setFutureTolerances(1e-10) // all tests use the same tolerance
-                .implInt("int", listOf(1, -10, 10, 5), 1.5) //
-                .implLong("long", listOf(1L, -10L, 10L, 5L), 1.5) //
-                .implLong("longMissing", listOf(1L, null, 5L), 3.0) //
-                .implLong("longOnlyMissing", listOf(null, null), null) //
-                .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), 0.8) //
-                .implDouble("doubleMissing", listOf(1.0, null, 5.4), 3.2) //
-                .implDouble("doubleOnlyMissing", listOf(null, null), null) //
-                .implDouble("doubleNaN", listOf(Double.NaN, 1.0), Double.NaN) //
-                .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), Double.NaN) //
-                .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 1.0) //
-                .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
-                .implDouble("doubleNoNaNIgnore", listOf(1.0, 2.0), List.of(BOOL(true)), 1.5) //
-                .unsupportedTypeString("string") //
-                .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
-                .warnsDouble("allMissing", listOf(null, null)) //
-                .tests();
+    static final String COLUMN = "column";
+
+    static final String IGNORE_NAN = "ignore_nan";
+
+    static final String IGNORE_MISSING = "ignore_missing";
+
+    private ConstantArgumentResolver() {
     }
+
+    /**
+     * Extracts the column name from the arguments and resolves it to a column index in the table spec. Throws an
+     * exception if the column name is not found in the table spec or if the argument is not a string.
+     *
+     * @param arguments
+     * @param tableSpec
+     * @return the column index
+     */
+    public static int resolveColumnIndex(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
+
+        if (!arguments.has(COLUMN)) {
+            throw new IllegalStateException(
+                "Implementation error - missing argument for column name. Details: " + arguments);
+        }
+        var columnArgument = (Ast.StringConstant)arguments.get(COLUMN);
+
+        return tableSpec.findColumnIndex(columnArgument.value());
+    }
+
+    /**
+     * @param arguments
+     * @param name
+     * @param defaultValue
+     * @return the value of the argument or the default value if the argument
+     */
+    public static boolean resolveOptionalBoolean(final Arguments<ConstantAst> arguments, final String name,
+        final boolean defaultValue) {
+
+        if (!arguments.has(name)) {
+            return defaultValue;
+        }
+
+        var argument = (Ast.BooleanConstant)arguments.get(name);
+        return argument.value();
+
+    }
+
+    /**
+     * @param arguments
+     * @param name
+     * @param defaultValue
+     * @return the value of the argument or the default value if the argument
+     */
+    public static long resolveOptionalInteger(final Arguments<ConstantAst> arguments, final String name,
+        final long defaultValue) {
+
+        if (!arguments.has(name)) {
+            return defaultValue;
+        }
+        var argument = (Ast.IntegerConstant)arguments.get(name);
+        return argument.value();
+    }
+
 }

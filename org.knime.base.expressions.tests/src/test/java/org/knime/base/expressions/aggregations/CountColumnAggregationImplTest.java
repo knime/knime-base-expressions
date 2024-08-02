@@ -55,6 +55,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
  *
@@ -65,20 +66,21 @@ final class CountColumnAggregationImplTest {
 
     @TestFactory
     List<DynamicNode> count() {
-        return new AggregationTestUtils.AggregationTestBuilder(CountColumnAggregationImpl::countAggregation) //
-            .implString("string", listOf("a", "b", "c"), 3) //
-            .implInt("int", listOf(1, -10, 10, 5), 4) //
-            .implLong("long", listOf(1L, -10L, 10L, 5L), 4) //
-            .implLong("longMissing", listOf(1L, null, 5L), 3) //
-            .implLong("longOnlyMissing", listOf(null, null), 2) //
-            .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), 4) //
-            .implDouble("doubleMissing", listOf(1.0, null, 5.4), 3) //
-            .implDouble("doubleOnlyMissing", listOf(null, null), 2) //
-            .implDouble("doubleNaN", listOf(Double.NaN, 1.0), 2) //
-            .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), 2) //
-            .implDouble("doubleMissingIgnore", listOf(null, 1.0), List.of(BOOL(true)), 1) //
-            .implDouble("doubleOnlyMissingIgnore", listOf(null, null), List.of(BOOL(true)), 0) //
-            .implDouble("doubleNoMissingIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 2) //
-            .tests();
+        return new AggregationTestUtils.AggregationTestBuilder(BuiltInAggregations.COUNT,
+            CountColumnAggregationImpl::countAggregation) //
+                .implString("string", listOf("a", "b", "c"), 3) //
+                .implInt("int", listOf(1, -10, 10, 5), 4) //
+                .implLong("long", listOf(1L, -10L, 10L, 5L), 4) //
+                .implLong("longMissing", listOf(1L, null, 5L), 3) //
+                .implLong("longOnlyMissing", listOf(null, null), 2) //
+                .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), 4) //
+                .implDouble("doubleMissing", listOf(1.0, null, 5.4), 3) //
+                .implDouble("doubleOnlyMissing", listOf(null, null), 2) //
+                .implDouble("doubleNaN", listOf(Double.NaN, 1.0), 2) //
+                .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), 2) //
+                .implDouble("doubleMissingIgnore", listOf(null, 1.0), List.of(BOOL(true)), 1) //
+                .implDouble("doubleOnlyMissingIgnore", listOf(null, null), List.of(BOOL(true)), 0) //
+                .implDouble("doubleNoMissingIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 2) //
+                .tests();
     }
 }

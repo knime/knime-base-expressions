@@ -50,20 +50,14 @@ package org.knime.base.expressions.aggregations;
 
 import static org.knime.base.expressions.aggregations.ColumnAggregations.missingWithWarning;
 
-import java.util.HashMap;
-import java.util.Optional;
-
 import org.knime.base.expressions.aggregations.ColumnAggregations.Aggregation;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DoubleValue;
 import org.knime.core.data.v2.RowRead;
 import org.knime.core.expressions.Arguments;
-import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.FloatComputer;
-import org.knime.core.expressions.OperatorDescription.Argument;
-import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
  *
@@ -77,20 +71,10 @@ final class AverageColumnAggregationImpl {
     }
 
     static Aggregation averageAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
-        var matchedArgs = Argument.matchSignature(BuiltInAggregations.AVERAGE.description().arguments(), arguments);
 
-        var columnIdx = matchedArgs //
-            .map(args -> args.get("column")) // type of the column argument
-            .map(arg -> ((Ast.StringConstant)arg).value()) // get column name
-            .map(tableSpec::findColumnIndex) // get the column index from name
-            .orElseThrow(() -> new IllegalStateException(
-                "Implementation error - invalid argument for column name (%s).".formatted(arguments)));
+        var columnIdx = ConstantArgumentResolver.resolveColumnIndex(arguments, tableSpec);
 
-        var ignoreNaN = matchedArgs //
-            .map(args -> args.get("ignore_nan")) //
-            .or(() -> Optional.of(new Ast.BooleanConstant(IGNORE_NAN_DEFAULT, new HashMap<>()))) //
-            .map(arg -> ((Ast.BooleanConstant)arg).value()) //
-            .orElseThrow(() -> new IllegalStateException("Implementation error - invalid argument for ignore_nan")); //
+        var ignoreNaN = ConstantArgumentResolver.resolveOptionalBoolean(arguments, "ignore_nan", IGNORE_NAN_DEFAULT);
 
         var columnType = tableSpec.getColumnSpec(columnIdx).getType();
 
@@ -101,7 +85,7 @@ final class AverageColumnAggregationImpl {
         }
     }
 
-    @SuppressWarnings("squid:S3052") // Allow redundant initialisations for clarity
+    @SuppressWarnings("squid:S3052") // Allow redundant initializations for clarity
     private static final class AverageFloatAggregation extends AbstractAggregation {
 
         private double m_runningMean = 0;

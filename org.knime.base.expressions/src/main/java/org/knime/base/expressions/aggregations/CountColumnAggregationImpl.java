@@ -48,18 +48,12 @@
  */
 package org.knime.base.expressions.aggregations;
 
-import java.util.HashMap;
-import java.util.Optional;
-
 import org.knime.base.expressions.aggregations.ColumnAggregations.Aggregation;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.v2.RowRead;
 import org.knime.core.expressions.Arguments;
-import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.OperatorDescription.Argument;
-import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
  *
@@ -73,20 +67,11 @@ final class CountColumnAggregationImpl {
     }
 
     static Aggregation countAggregation(final Arguments<ConstantAst> arguments, final DataTableSpec tableSpec) {
-        var matchedArgs = Argument.matchSignature(BuiltInAggregations.COUNT.description().arguments(), arguments);
 
-        var columnIdx = matchedArgs //
-            .map(args -> args.get("column")) //
-            .map(arg -> ((Ast.StringConstant)arg).value()) // get column name
-            .map(tableSpec::findColumnIndex) // get the column index from name
-            .orElseThrow(() -> new IllegalStateException(
-                "Implementation error - invalid argument for column name (%s).".formatted(arguments)));
+        var columnIdx = ConstantArgumentResolver.resolveColumnIndex(arguments, tableSpec);
 
-        var ignoreMissing = matchedArgs //
-            .map(args -> args.get("ignore_missing")) //
-            .or(() -> Optional.of(new Ast.BooleanConstant(IGNORE_MISSING_DEFAULT, new HashMap<>()))) //
-            .map(arg -> ((Ast.BooleanConstant)arg).value()) //
-            .orElseThrow(() -> new IllegalStateException("Implementation error - invalid argument for ignore_missing"));
+        var ignoreMissing =
+            ConstantArgumentResolver.resolveOptionalBoolean(arguments, "ignore_missing", IGNORE_MISSING_DEFAULT);
 
         return new CountFloatAggregation(columnIdx, ignoreMissing);
     }

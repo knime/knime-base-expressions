@@ -57,6 +57,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
+import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
  *
@@ -67,28 +68,36 @@ final class StdDevColumnAggregationImplTest {
 
     @TestFactory
     List<DynamicNode> stddev() {
-        return new AggregationTestUtils.AggregationTestBuilder(StdDevColumnAggregationImpl::stddevAggregation) //
-            .setFutureTolerances(1e-10) // all tests use the same tolerance
-            .implInt("int", listOf(1, -10, 10, 5), 7.365459931328117) //
-            .implLong("long", listOf(1L, -10L, 10L, 5L), 7.365459931328117) //
-            .implLong("longMissing", listOf(1L, null, 5L), 2.0) //
-            .implLong("longOnlyMissing", listOf(null, null), null) //
-            .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), 0.9082951062292476) //
-            .implDouble("doubleMissing", listOf(1.0, null, 5.4), 2.2) //
-            .implDouble("doubleOnlyMissing", listOf(null, null), null) //
-            .implDouble("doubleNaN", listOf(Double.NaN, 1.0), Double.NaN) //
-            .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), Double.NaN) //
-            .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 0.0) //
-            .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
-            .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 0.5) //
-            .implDouble("doubleWithDdof", List.of(1.0, 2.0, 3.0), Map.of("ddof", INT(1)), 1.0) //
-            .implDouble("ddof == N", listOf(1.0, 2.0, 3.0), Map.of("ddof", INT(3)), Double.NaN) //
-            .implDouble("ddof >= N", listOf(1.0, 2.0, 3.0), Map.of("ddof", INT(4)), Double.NaN) //
-            .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
-            .warnsDouble("allMissingDouble", listOf(null, null)) //
-            .warnsDouble("ddof < 0", listOf(1.0, 2.0, 3.0), Map.of("ddof", INT(3))) //
-            .warnsDouble("ddof < 0", listOf(1.0, 2.0, 3.0), Map.of("ddof", INT(4))) //
-            .unsupportedTypeString("string") //
-            .tests();
+        return new AggregationTestUtils.AggregationTestBuilder(BuiltInAggregations.STD_DEV,
+            StdDevColumnAggregationImpl::stddevAggregation) //
+                .setFutureTolerances(1e-10) // all tests use the same tolerance
+                .implInt("int", listOf(1, -10, 10, 5), List.of(BOOL(false)), 7.365459931328117) //
+                .implLong("long", listOf(1L, -10L, 10L, 5L), List.of(BOOL(false)), 7.365459931328117) //
+                .implLong("longMissing", listOf(1L, null, 5L), List.of(BOOL(false)), 2.0) //
+                .implLong("longOnlyMissing", listOf(null, null), List.of(BOOL(false)), null) //
+                .implDouble("double", listOf(1.0, -0.1, 2.2, 0.1), List.of(BOOL(false)), 0.9082951062292476) //
+                .implDouble("doubleMissing", listOf(1.0, null, 5.4), List.of(BOOL(false)), 2.2) //
+                .implDouble("doubleOnlyMissing", listOf(null, null), List.of(BOOL(false)), null) //
+                .implDouble("doubleNaN", listOf(Double.NaN, 1.0), List.of(BOOL(false)), Double.NaN) //
+                .implDouble("doubleOnlyNaN", listOf(Double.NaN, Double.NaN), List.of(BOOL(false)), Double.NaN) //
+                .implDouble("doubleNaNIgnore", listOf(Double.NaN, 1.0), List.of(BOOL(true)), 0.0) //
+                .implDouble("doubleOnlyNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true)), null) //
+                .implDouble("doubleNoNaNIgnore", List.of(1.0, 2.0), List.of(BOOL(true)), 0.5) //
+                .implDouble("doubleWithDdofNamed", List.of(1.0, 2.0, 3.0), List.of(BOOL(false), INT(1)), Map.of(), 1.0) //
+                .implDouble("doubleWithDdof", List.of(1.0, 2.0, 3.0), List.of(BOOL(false)), Map.of("ddof", INT(1)), 1.0) //
+                .implDouble("doubleWithDdofAllNamed", List.of(1.0, 2.0, 3.0), List.of(),
+                    Map.of("ignore_nan", BOOL(false), "ddof", INT(1)), 1.0) //
+                .implDouble("doubleWithDdofAllNamedWithReversedOrder", List.of(1.0, 2.0, 3.0), List.of(),
+                    Map.of("ddof", INT(1), "ignore_nan", BOOL(false)), 1.0) //
+                .implDouble("ddof == N", listOf(1.0, 2.0, 3.0), List.of(BOOL(false)), Map.of("ddof", INT(3)),
+                    Double.NaN) //
+                .implDouble("ddof >= N", listOf(1.0, 2.0, 3.0), List.of(BOOL(false)), Map.of("ddof", INT(4)),
+                    Double.NaN) //
+                .warnsDouble("allNaNIgnore", listOf(Double.NaN, Double.NaN), List.of(BOOL(true))) //
+                .warnsDouble("allMissingDouble", listOf(null, null), List.of(BOOL(false))) //
+                .warnsDouble("ddof < 0", listOf(1.0, 2.0, 3.0), List.of(BOOL(false)), Map.of("ddof", INT(3))) //
+                .warnsDouble("ddof < 0", listOf(1.0, 2.0, 3.0), List.of(BOOL(false)), Map.of("ddof", INT(4))) //
+                .unsupportedTypeString("string") //
+                .tests();
     }
 }
