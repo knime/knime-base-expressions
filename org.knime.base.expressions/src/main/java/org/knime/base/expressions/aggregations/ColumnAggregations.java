@@ -52,7 +52,6 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.v2.RowRead;
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
@@ -85,7 +84,7 @@ public final class ColumnAggregations {
     public static Aggregation getAggregationImplementationFor(final AggregationCall aggregationCall,
         final DataTableSpec tableSpec) { // NOSONAR the number of returns here is fine
 
-        var columnAggregation = Expressions.getResolvedColumnAggregation(aggregationCall);
+        var columnAggregation = aggregationCall.aggregation();
 
         if (BuiltInAggregations.MAX.equals(columnAggregation)) {
             return MaxColumnAggregationImpl.maxAggregation(aggregationCall.args(), tableSpec);
