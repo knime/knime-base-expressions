@@ -259,24 +259,30 @@ final class ParserTest {
             )),
 
             // Function calls
-            FUNC_NO_ARGS(MathFunctions.SIN.name() + "()", FUN(MathFunctions.SIN)), //
-            FUNC_SINGLE_ARG(MathFunctions.SIN.name() + "(1)", FUN(MathFunctions.SIN, INT(1))), //
-            FUNC_TRAILING_COMMA(MathFunctions.SIN.name() + "(1,2,)", FUN(MathFunctions.SIN, INT(1), INT(2))), //
-            FUNC_COLUMN_ACCESS_PARM(MathFunctions.SIN.name() + "($[\"col\"] , 2)",
+            FUNC_NO_ARGS("sin()", FUN(MathFunctions.SIN)), //
+            FUNC_SINGLE_ARG("sin(1)", FUN(MathFunctions.SIN, INT(1))), //
+            FUNC_TRAILING_COMMA("sin(1,2,)", FUN(MathFunctions.SIN, INT(1), INT(2))), //
+            FUNC_COLUMN_ACCESS_PARM("sin($[\"col\"] , 2)",
                 FUN(MathFunctions.SIN, COL("col"), INT(2))), //
+            FUNC_NESTED_EXPR("sin(1 + 2)", FUN(MathFunctions.SIN, OP(INT(1), PLUS, INT(2)))), //
+            FUNC_NESTED_FUNC("sin(cos(1))", FUN(MathFunctions.SIN, FUN(MathFunctions.COS, INT(1)))), //
+
 
             // Aggregation functions
-            COL_AGG(BuiltInAggregations.AVERAGE.name() + "(\"column name\")",
+            COL_AGG("COLUMN_AVERAGE(\"column name\")",
                 AGG(BuiltInAggregations.AVERAGE, STR("column name"))), //
-            COL_AGG_NAMED_ARG(BuiltInAggregations.AVERAGE.name() + "(\"column name\", ignore_missing=TRUE)",
+            COL_AGG_NAMED_ARG("COLUMN_AVERAGE(\"column name\", ignore_missing=TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
             COL_AGG_NAMED_ARG_WITH_WHITESPACE(
-                BuiltInAggregations.AVERAGE.name() + "(\"column name\", ignore_missing =TRUE)",
+                "COLUMN_AVERAGE(\"column name\", ignore_missing =TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
             COL_AGG_ONLY_NAMED_ARGS(
-                BuiltInAggregations.AVERAGE.name() + "(column=\"column name\", ignore_missing=TRUE)",
+                "COLUMN_AVERAGE(column=\"column name\", ignore_missing=TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(),
                     Map.of("column", STR("column name"), "ignore_missing", BOOL(true)))), //
+            COL_AGG_ONLY_POS_ARGS(
+                "COLUMN_AVERAGE(\"column name\", TRUE)",
+                AGG(BuiltInAggregations.AVERAGE,  STR("column name"),  BOOL(true))), //
 
             // Special stuff
 
@@ -402,9 +408,9 @@ final class ParserTest {
             AGG_WITH_INVALID_ID("AB_00(1,2,3)", "AB_00"),
             AGG_WITH_POSITIONAL_AFTER_NAMED_ARGS(BuiltInAggregations.SUM.name() + "(a=100, 10)", "named", "positional"), //
             AGG_WITH_EXPR_ARG(BuiltInAggregations.SUM.name() + "(1 + 2)", "only", "constant", "expression"), //
-            AGG_WITH_ROW_ID(BuiltInAggregations.SUM.name() + "($[ROW_ID])", "ROW_ID"), //
-            AGG_WITH_ROW_INDEX(BuiltInAggregations.SUM.name() + "($[ROW_INDEX])", "ROW_INDEX"), //
-            AGG_WITH_ROW_NUMBER(BuiltInAggregations.SUM.name() + "($[ROW_NUMBER])", "ROW_NUMBER"), //
+            AGG_WITH_ROW_ID(BuiltInAggregations.SUM.name() + "($[ROW_ID])", "ROW_ID", "cannot"), //
+            AGG_WITH_ROW_INDEX(BuiltInAggregations.SUM.name() + "($[ROW_INDEX])", "ROW_INDEX", "cannot"), //
+            AGG_WITH_ROW_NUMBER(BuiltInAggregations.SUM.name() + "($[ROW_NUMBER])", "ROW_NUMBER", "cannot"), //
 
             // Trying to break it
             NOT_OP_WITHOUT_SPACE("not10"), // NB: can maybe parsed to a constant at some point
@@ -441,8 +447,7 @@ final class ParserTest {
         assertTextLocation(19, 23, binOp.children().get(1));
 
         // -10
-        var unaryOp = functionCall.children().get(1);
-        assertTextLocation(25, 28, unaryOp);
+        assertTextLocation(25, 28, functionCall.children().get(1));
 
         // 1.0
         assertTextLocation(30, 33, functionCall.children().get(2));

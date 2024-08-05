@@ -86,6 +86,8 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.Ast.ConstantAst;
+import org.knime.core.expressions.Ast.FloatConstant;
+import org.knime.core.expressions.Ast.IntegerConstant;
 import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
@@ -94,10 +96,8 @@ import org.knime.core.expressions.antlr.KnimeExpressionBaseVisitor;
 import org.knime.core.expressions.antlr.KnimeExpressionLexer;
 import org.knime.core.expressions.antlr.KnimeExpressionParser;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.AtomContext;
-import org.knime.core.expressions.antlr.KnimeExpressionParser.AtomExprContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.BinaryOpContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.ColAccessContext;
-import org.knime.core.expressions.antlr.KnimeExpressionParser.ConstantContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FlowVarAccessContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FullExprContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FunctionOrAggregationCallContext;
@@ -264,25 +264,17 @@ final class Parser {
 
         @Override
         public Ast visitUnaryOp(final UnaryOpContext ctx) {
-
-            // Handle unary minus on numbers
-            if (ctx.getChild(0) instanceof TerminalNode op && op.getSymbol().getType() == KnimeExpressionParser.MINUS) {
-
-                if (ctx.getChild(1) instanceof AtomExprContext arg) {
-                    if (arg.atom().INTEGER() != null) {
-                        return integerConstant(-Long.parseLong(arg.getText().replace("_", "")),
-                            createData(getLocation(ctx)));
-                    } else if (arg.atom().FLOAT() != null) {
-                        return floatConstant(-Double.parseDouble(arg.getText().replace("_", "")),
-                            createData(getLocation(ctx)));
-                    }
-                } else if (ctx.getChild(1) instanceof ConstantContext arg) {
-                    return resolveConstant(arg).toAst(createData(getLocation(ctx)));
-                }
-            }
-
             var arg = ctx.getChild(1).accept(this);
             var op = mapUnaryOperator(ctx.op);
+            // Handle unary minus on numbers
+            if (op == UnaryOperator.MINUS) {
+                if (arg instanceof IntegerConstant intArg) {
+                    return integerConstant(-intArg.value(), createData(getLocation(ctx)));
+                }
+                if (arg instanceof FloatConstant floatArg) {
+                    return floatConstant(-floatArg.value(), createData(getLocation(ctx)));
+                }
+            }
             return unaryOp(op, arg, createData(getLocation(ctx)));
         }
 
@@ -313,31 +305,8 @@ final class Parser {
 
         @Override
         public ConstantAst visitConstant(final KnimeExpressionParser.ConstantContext ctx) {
-            return resolveConstant(ctx).toAst(createData(getLocation(ctx)));
-        }
-
-        private static boolean checkOrderOfArguments(final FunctionOrAggregationCallContext ctx) {
-            if (ctx.arguments() == null) {
-                return true;
-            }
-
-            boolean namedArgOccured = false;
-            for (int i = 0; i < ctx.arguments().getChildCount(); i++) {
-
-                if (ctx.arguments().getChild(i) instanceof KnimeExpressionParser.NamedArgumentContext) {
-                    namedArgOccured = true;
-                }
-                if (ctx.arguments().getChild(i) instanceof KnimeExpressionParser.PositionalArgumentContext
-                    && namedArgOccured) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private static ExpressionConstants resolveConstant(final ConstantContext ctx) {
             try {
-                return ExpressionConstants.valueOf(ctx.getText());
+                return ExpressionConstants.valueOf(ctx.getText()).toAst(createData(getLocation(ctx)));
             } catch (IllegalArgumentException e) {
                 throw syntaxError("Unexpected constant: " + ctx.getText() + "\nAvailable Constants: "
                     + ExpressionConstants.availableConstants(), getLocation(ctx));
@@ -378,7 +347,7 @@ final class Parser {
                 throw typingError(getMissingExpressionOperatorErrorMessage(ctx.name.getText()), getLocation(ctx));
             }
 
-            if (!checkOrderOfArguments(ctx)) {
+            if (!areArgumentsOrderedCorrectly(ctx)) {
                 throw syntaxError("Named arguments must be after positional arguments.", getLocation(ctx));
             }
 
@@ -401,6 +370,25 @@ final class Parser {
             return visitFunctionCall(ctx, resolvedFunction.get());
         }
 
+        private static boolean areArgumentsOrderedCorrectly(final FunctionOrAggregationCallContext ctx) {
+            if (ctx.arguments() == null) {
+                return true;
+            }
+
+            boolean namedArgOccured = false;
+            for (int i = 0; i < ctx.arguments().getChildCount(); i++) {
+
+                if (ctx.arguments().getChild(i) instanceof KnimeExpressionParser.NamedArgumentContext) {
+                    namedArgOccured = true;
+                }
+                if (ctx.arguments().getChild(i) instanceof KnimeExpressionParser.PositionalArgumentContext
+                    && namedArgOccured) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public Ast visitFunctionCall(final FunctionOrAggregationCallContext ctx, final ExpressionFunction function) {
 
             if (ctx.arguments() == null) {
@@ -419,34 +407,6 @@ final class Parser {
             return functionCall(function, new Arguments<>(positionalArgs, Map.of()), createData(getLocation(ctx)));
         }
 
-        private static boolean isAtom(final KnimeExpressionParser.ExprContext expr) {
-            return expr.getChildCount() == 1 && expr.getChild(0) instanceof AtomContext;
-        }
-
-        private static boolean isConstant(final KnimeExpressionParser.ExprContext expr) {
-            return expr.accept(EXPRESSION_TO_AST_VISITOR) instanceof ConstantAst;
-        }
-
-        private static boolean isSpecialColumnAccessor(final AtomContext atom) throws RuntimeSyntaxError {
-            return (atom.ROW_ID() != null || atom.ROW_INDEX() != null || atom.ROW_NUMBER() != null);
-        }
-
-        private static ConstantAst validateConstantExpression(final KnimeExpressionParser.ExprContext expr) {
-
-            if (isAtom(expr)) {
-                if (isSpecialColumnAccessor((AtomContext)expr.getChild(0))) {
-                    throw typingError(
-                        "`ROW_ID`, `ROW_INDEX` and `ROW_NUMBER` cannot be used as arguments for aggregation functions.",
-                        getLocation(expr));
-                }
-                return (ConstantAst)expr.getChild(0).accept(EXPRESSION_TO_AST_VISITOR);
-            }
-            if (isConstant(expr)) {
-                return (ConstantAst)expr.accept(EXPRESSION_TO_AST_VISITOR);
-            }
-            throw syntaxError("Aggregation functions only allow constant expressions as arguments.", getLocation(expr));
-        }
-
         public static Ast visitAggregationCall(final FunctionOrAggregationCallContext ctx,
             final ColumnAggregation aggregation) {
 
@@ -456,7 +416,7 @@ final class Parser {
 
             var positionalArgs = ctx.arguments().positionalArgument() //
                 .stream() //
-                .map(arg -> validateConstantExpression(arg.expr())) //
+                .map(arg -> visitAggregationArg(arg.expr())) //
                 .toList();
 
             var namedArgs = //
@@ -465,12 +425,30 @@ final class Parser {
                     .collect( //
                         Collectors.toMap( //
                             arg -> arg.argName.getText(), //
-                            arg -> validateConstantExpression(arg.expr()) //
+                            arg -> visitAggregationArg(arg.expr()) //
                         ) //
                     );
 
             return aggregationCall(aggregation, new Arguments<>(positionalArgs, namedArgs),
                 createData(getLocation(ctx)));
+        }
+
+        private static ConstantAst visitAggregationArg(final KnimeExpressionParser.ExprContext expr) {
+            if (isSpecialColumnAccessor(expr)) {
+                throw typingError(
+                    "`ROW_ID`, `ROW_INDEX` and `ROW_NUMBER` cannot be used as arguments for aggregation functions.",
+                    getLocation(expr));
+            }
+            if (expr.accept(EXPRESSION_TO_AST_VISITOR) instanceof ConstantAst constantAst) {
+                return constantAst;
+            }
+
+            throw syntaxError("Aggregation functions only allow constant expressions as arguments.", getLocation(expr));
+        }
+
+        private static boolean isSpecialColumnAccessor(final KnimeExpressionParser.ExprContext expr)  {
+            return (expr.getChildCount() == 1 && expr.getChild(0) instanceof AtomContext atom
+                    && (atom.ROW_ID() != null || atom.ROW_INDEX() != null || atom.ROW_NUMBER() != null));
         }
 
         @Override
