@@ -48,6 +48,8 @@
  */
 package org.knime.base.expressions.node;
 
+import static org.knime.core.webui.node.view.table.RowHeightPersistorUtil.LEGACY_CUSTOM_ROW_HEIGHT_COMPACT;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -73,6 +75,7 @@ import org.knime.core.webui.node.dialog.defaultdialog.setting.selection.Selectio
 import org.knime.core.webui.node.view.table.TableViewUtil;
 import org.knime.core.webui.node.view.table.TableViewViewSettings;
 import org.knime.core.webui.node.view.table.TableViewViewSettings.RowHeightMode;
+import org.knime.core.webui.node.view.table.TableViewViewSettings.VerticalPaddingMode;
 import org.knime.core.webui.node.view.table.data.TableViewDataService;
 import org.knime.core.webui.node.view.table.data.TableViewInitialDataImpl;
 import org.knime.core.webui.page.Page;
@@ -161,7 +164,9 @@ final class ExpressionNodeDialog implements NodeDialog {
             tab.m_enableGlobalSearch = false;
             tab.m_showTableSize = false;
             tab.m_enablePagination = false;
-            tab.m_rowHeightMode = RowHeightMode.COMPACT;
+            tab.m_rowHeightMode = RowHeightMode.CUSTOM;
+            tab.m_verticalPaddingMode = VerticalPaddingMode.COMPACT;
+            tab.m_customRowHeight = LEGACY_CUSTOM_ROW_HEIGHT_COMPACT;
             tab.m_selectionMode = SelectionMode.OFF;
             try {
                 return new DefaultNodeSettingsSerializer<>().serialize(
