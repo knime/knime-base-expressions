@@ -651,7 +651,7 @@ final class StringFunctionTests {
     @TestFactory
     List<DynamicNode> parseFloat() {
         return new FunctionTestBuilder(StringFunctions.PARSE_FLOAT) //
-            .typing("STRING", List.of(STRING), FLOAT) //
+            .typing("STRING", List.of(STRING), OPT_FLOAT) //
             .typing("STRING?", List.of(OPT_STRING), OPT_FLOAT) //
             .illegalArgs("FLOAT", List.of(FLOAT)) //
             .illegalArgs("INTEGER", List.of(FLOAT)) //
@@ -667,7 +667,7 @@ final class StringFunctionTests {
     @TestFactory
     List<DynamicNode> parseInt() {
         return new FunctionTestBuilder(StringFunctions.PARSE_INT) //
-            .typing("STRING", List.of(STRING), INTEGER) //
+            .typing("STRING", List.of(STRING), OPT_INTEGER) //
             .typing("STRING?", List.of(OPT_STRING), OPT_INTEGER) //
             .illegalArgs("FLOAT", List.of(FLOAT)) //
             .illegalArgs("INTEGER", List.of(FLOAT)) //
@@ -682,7 +682,7 @@ final class StringFunctionTests {
     @TestFactory
     List<DynamicNode> parseBool() {
         return new FunctionTestBuilder(StringFunctions.PARSE_BOOL) //
-            .typing("STRING", List.of(STRING), BOOLEAN) //
+            .typing("STRING", List.of(STRING), OPT_BOOLEAN) //
             .typing("STRING?", List.of(OPT_STRING), OPT_BOOLEAN) //
             .illegalArgs("FLOAT", List.of(FLOAT)) //
             .illegalArgs("INTEGER", List.of(FLOAT)) //

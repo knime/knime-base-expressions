@@ -1968,7 +1968,7 @@ public final class StringFunctions {
             arg("string", "String to parse as float", isStringOrOpt()) //
         ) //
         .returnType("Float representation of the string, or `MISSING`", RETURN_FLOAT_MISSING, //
-            args -> ValueType.FLOAT(anyOptional(args))) //
+            args -> ValueType.OPT_FLOAT) //
         .impl(StringFunctions::parseFloatImpl) //
         .build();
 
@@ -2011,7 +2011,7 @@ public final class StringFunctions {
             arg("string", "String to parse as integer", isStringOrOpt()) //
         ) //
         .returnType("Integer representation of the string, or `MISSING`", RETURN_INTEGER_MISSING, //
-            args -> ValueType.INTEGER(anyOptional(args))) //
+            args -> ValueType.OPT_INTEGER) //
         .impl(StringFunctions::parseIntImpl) //
         .build();
 
@@ -2056,7 +2056,7 @@ public final class StringFunctions {
             arg("string", "String to parse as boolean", isStringOrOpt()) //
         ) //
         .returnType("Boolean representation of the string, or `MISSING`", RETURN_BOOLEAN_MISSING, //
-            args -> ValueType.BOOLEAN(anyOptional(args))) //
+            args -> ValueType.OPT_BOOLEAN) //
         .impl(StringFunctions::parseBoolImpl) //
         .build();
 
