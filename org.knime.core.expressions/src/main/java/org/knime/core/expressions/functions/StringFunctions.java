@@ -1996,7 +1996,7 @@ public final class StringFunctions {
                 Convert a string to an integer if possible.
 
                 This function attempts to parse the input string as an integer. If
-                successful, returns the float representation of the string. If the
+                successful, returns the integer representation of the string. If the
                 input string cannot be parsed as an integer (or the input is
                 `MISSING`), returns `MISSING`.
 
