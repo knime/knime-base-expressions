@@ -144,7 +144,7 @@ final class MinColumnAggregationImpl {
             boolean shouldWarn = (m_ignoreNaN && m_allValuesNaN) || m_isMissing;
             if (shouldWarn) {
                 return FloatComputer.of(ctx -> Double.NaN,
-                    missingWithWarning("COLUMN_MIN returned MISSING because all values were either MISSING or NaN"));
+                    missingWithWarning("COLUMN_MIN returned MISSING because all values were either MISSING or NaN."));
             }
 
             if (!m_ignoreNaN && m_anyValuesNaN) {
@@ -176,7 +176,7 @@ final class MinColumnAggregationImpl {
             boolean shouldWarn = m_isMissing;
             if (shouldWarn) {
                 return IntegerComputer.of(ctx -> 0,
-                    missingWithWarning("COLUMN_MIN returned MISSING because all values were MISSING"));
+                    missingWithWarning("COLUMN_MIN returned MISSING because all values were MISSING."));
             }
 
             return IntegerComputer.of(ctx -> m_min, ctx -> m_isMissing);

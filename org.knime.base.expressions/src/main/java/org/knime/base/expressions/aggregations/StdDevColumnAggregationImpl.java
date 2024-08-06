@@ -152,8 +152,8 @@ final class StdDevColumnAggregationImpl {
         public Computer createResultComputer() {
             boolean shouldWarn = (m_ignoreNaN && m_allValuesNaN) || m_isMissing;
             if (shouldWarn) {
-                return FloatComputer.of(ctx -> Double.NaN,
-                    missingWithWarning("COLUMN_STDDEV returned MISSING because all values were either MISSING or NaN"));
+                return FloatComputer.of(ctx -> Double.NaN, missingWithWarning(
+                    "COLUMN_STDDEV returned MISSING because all values were either MISSING or NaN."));
             }
 
             if (!m_ignoreNaN && m_anyValuesNaN) {
@@ -164,8 +164,8 @@ final class StdDevColumnAggregationImpl {
 
                 return FloatComputer.of(ctx -> {
                     if (m_degreesOfFreedom >= m_count) {
-                        ctx.addWarning(
-                            "COLUMN_STDDEV returned NaN because it got a value for degrees of freedom greater than or equal to the number of values");
+                        ctx.addWarning("COLUMN_STDDEV returned NaN because it got a value for degrees of freedom "
+                            + "greater than or equal to the number of values.");
                         return Double.NaN;
                     } else {
                         return Math.sqrt(unBiasedVariance);

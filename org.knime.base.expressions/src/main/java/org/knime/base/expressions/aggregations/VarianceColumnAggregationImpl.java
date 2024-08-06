@@ -143,7 +143,7 @@ final class VarianceColumnAggregationImpl {
             boolean shouldWarn = (m_ignoreNaN && m_allValuesNaN) || m_isMissing;
             if (shouldWarn) {
                 return FloatComputer.of(ctx -> Double.NaN, missingWithWarning(
-                    "COLUMN_VARIANCE returned MISSING because all values were either MISSING or NaN"));
+                    "COLUMN_VARIANCE returned MISSING because all values were either MISSING or NaN."));
             }
 
             if (!m_ignoreNaN && m_anyValuesNaN) {

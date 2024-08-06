@@ -141,10 +141,10 @@ final class SumColumnAggregationImpl {
         public Computer createResultComputer() {
             if (m_isMissing) {
                 return FloatComputer.of(ctx -> 0.0,
-                    missingWithWarning("COLUMN_SUM returned MISSING because all values were MISSING"));
+                    missingWithWarning("COLUMN_SUM returned MISSING because all values were MISSING."));
             } else if (m_ignoreNaN && m_allValuesNaN) {
                 return FloatComputer.of(ctx -> {
-                    ctx.addWarning("COLUMN_SUM returned 0 because all values were NaN");
+                    ctx.addWarning("COLUMN_SUM returned 0 because all values were NaN.");
                     return 0;
                 }, ctx -> m_isMissing);
             }
@@ -174,7 +174,7 @@ final class SumColumnAggregationImpl {
             boolean shouldWarn = m_isMissing;
             if (shouldWarn) {
                 return IntegerComputer.of(ctx -> 0,
-                    missingWithWarning("COLUMN_SUM returned MISSING because all values were MISSING"));
+                    missingWithWarning("COLUMN_SUM returned MISSING because all values were MISSING."));
             }
 
             return IntegerComputer.of(ctx -> m_sum, ctx -> m_isMissing);
