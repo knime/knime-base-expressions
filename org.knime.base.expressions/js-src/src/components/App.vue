@@ -8,6 +8,7 @@ import {
   OutputTablePreview,
   type InsertionEvent,
   COLUMN_INSERTION_EVENT,
+  useReadonlyStore,
 } from "@knime/scripting-editor";
 import {
   type ExpressionNodeSettings,
@@ -279,12 +280,22 @@ onMounted(async () => {
 
   await nextTick(); // Wait for the editors to be rendered
 
+  useReadonlyStore().value = initialSettings.setByFlowVariables || false;
+
   for (let i = 0; i < initialSettings.scripts.length; i++) {
     const key = orderedEditorKeys[i];
 
     multiEditorComponentRefs[key]
       .getEditorState()
       .setInitialText(initialSettings.scripts[i]);
+
+    multiEditorComponentRefs[key].getEditorState().editor.value?.updateOptions({
+      readOnly: initialSettings.setByFlowVariables,
+      readOnlyMessage: {
+        value: "Read-Only-Mode: configuration is set by flow variables.",
+      },
+      renderValidationDecorations: "on",
+    });
 
     // Watch all editor text and when changes occur, rerun diagnostics
     editorStateWatchers[key] = watch(

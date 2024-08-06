@@ -17,7 +17,7 @@ export type ColumnSettings = {
 
 export type ExpressionNodeSettings = ExpressionVersion &
   ColumnSettings & { scripts: string[] } & {
-    scriptUsedFlowVariable?: string | null;
+    setByFlowVariables?: boolean;
   };
 
 const scriptingService = getScriptingService();

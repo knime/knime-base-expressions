@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { editor, type UseCodeEditorReturn } from "@knime/scripting-editor";
+import {
+  editor,
+  type UseCodeEditorReturn,
+  useReadonlyStore,
+} from "@knime/scripting-editor";
 import { onKeyStroke } from "@vueuse/core";
 import {
   ref,
@@ -44,6 +48,7 @@ interface Props {
   isActive?: boolean;
 }
 const props = defineProps<Props>();
+const readonly = useReadonlyStore();
 
 type ButtonItem = {
   text: string;
@@ -57,24 +62,25 @@ const buttonActions = computed<ButtonItem[]>(() => [
     text: "Move upwards",
     icon: UpArrowIcon,
     eventName: "move-up",
-    disabled: props.isFirst,
+    disabled: props.isFirst || readonly.value,
   },
   {
     text: "Move downwards",
     icon: DownArrowIcon,
     eventName: "move-down",
-    disabled: props.isLast,
+    disabled: props.isLast || readonly.value,
   },
   {
     text: "Duplicate below",
     icon: CopyIcon,
     eventName: "copy-below",
+    disabled: readonly.value,
   },
   {
     text: "Delete",
     icon: TrashIcon,
     eventName: "delete",
-    disabled: props.isOnly,
+    disabled: props.isOnly || readonly.value,
   },
 ]);
 

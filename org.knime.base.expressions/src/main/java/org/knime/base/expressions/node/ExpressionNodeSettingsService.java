@@ -107,28 +107,29 @@ public class ExpressionNodeSettingsService implements NodeSettingsService {
         }
     }
 
+    private static boolean isEditorConfigurationOverwrittenByFlowVariable(final NodeAndVariableSettingsRO settings) {
+        return settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_SCRIPT)
+            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_OUTPUT_MODE)
+            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_CREATED_COLUMN)
+            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_REPLACED_COLUMN)
+            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS)
+            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_OUTPUT_MODES)
+            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_CREATED_COLUMNS)
+            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_REPLACED_COLUMNS);
+    }
+
     @Override
     public String fromNodeSettings(final Map<SettingsType, NodeAndVariableSettingsRO> settings,
         final PortObjectSpec[] specs) {
 
-        try {
-            String scriptUsedFlowVariable = null;
-            var settingsForScript = settings.get(SettingsType.MODEL);
-            if (settingsForScript.isVariableSetting(ExpressionNodeSettings.CFG_KEY_SCRIPT)) {
-                scriptUsedFlowVariable = settingsForScript.getUsedVariable(ExpressionNodeSettings.CFG_KEY_SCRIPT);
-            }
+        // Construct the JSON output
+        var settingsJson = new ObjectMapper().createObjectNode();
+        putAdditionalSettingsToJson(settings, settingsJson);
 
-            // Construct the JSON output
-            var settingsJson = new ObjectMapper().createObjectNode() //
-                .put("scriptUsedFlowVariable", scriptUsedFlowVariable);
+        settingsJson.put("setByFlowVariables",
+            isEditorConfigurationOverwrittenByFlowVariable(settings.get(SettingsType.MODEL)));
 
-            putAdditionalSettingsToJson(settings, settingsJson);
-
-            return settingsJson.toString();
-        } catch (InvalidSettingsException e) {
-            // IllegalSettings: Should not happen because we do not save invalid settings
-            throw new IllegalStateException(e);
-        }
+        return settingsJson.toString();
     }
 
     @Override

@@ -28,14 +28,20 @@ import {
   MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION,
   MIN_WIDTH_FUNCTION_CATALOG,
 } from "@/components/function-catalog/contraints";
-import { insertionEventHelper } from "@knime/scripting-editor";
+import {
+  insertionEventHelper,
+  useReadonlyStore,
+} from "@knime/scripting-editor";
 
 const FUNCTION_CATALOG_WIDTH = `${MIN_WIDTH_FUNCTION_CATALOG}px`;
 
-const props = defineProps<{
+type PropType = {
   functionCatalogData: FunctionCatalogData;
   initiallyExpanded: boolean;
-}>();
+};
+const props = defineProps<PropType>();
+
+const readOnly = useReadonlyStore();
 
 const catalogData = mapFunctionCatalogData(props.functionCatalogData);
 
@@ -61,6 +67,10 @@ const removeGhostsRef = ref<() => void>(() => {});
 const draggedFunctionStore = useDraggedFunctionStore();
 
 const onDragStart = (e: DragEvent, f: FunctionCatalogEntryData) => {
+  if (readOnly.value) {
+    e.preventDefault();
+    return;
+  }
   const { removeGhosts } = createDragGhosts({
     badgeCount: null, // don't show a badge at all
     dragStartEvent: e,
@@ -99,6 +109,10 @@ const triggerFunctionInsertionEvent = (
   evt: Event,
   f: FunctionCatalogEntryData,
 ) => {
+  if (readOnly.value) {
+    evt.preventDefault();
+    return;
+  }
   insertionEventHelper
     .getInsertionEventHelper(FUNCTION_INSERTION_EVENT)
     .handleInsertion({
@@ -357,6 +371,7 @@ const expandAll = () => {
                 name: categoryName,
               }),
               empty: categoryData.length === 0,
+              readonly: readOnly,
             }"
             tabindex="-1"
             @click="toggleCategoryExpansion(categoryName)"
@@ -390,9 +405,10 @@ const expandAll = () => {
                 class="function-header"
                 :class="{
                   selected: isSelected({ type: 'function', functionData }),
+                  readonly: readOnly,
                 }"
                 tabindex="-1"
-                :draggable="true"
+                :draggable="!readOnly"
                 @click="
                   selectEntry({
                     type: 'function',
@@ -439,6 +455,10 @@ const expandAll = () => {
   display: flex;
   flex-direction: row;
   height: 100%;
+}
+
+.readonly {
+  opacity: 0.5;
 }
 
 .function-catalog-container.slim-mode {

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { ValueSwitch, Dropdown, InputField } from "@knime/components";
-import { useShouldFocusBePainted } from "@knime/scripting-editor";
+import {
+  useReadonlyStore,
+  useShouldFocusBePainted,
+} from "@knime/scripting-editor";
 import { type OutputInsertionMode } from "@/expressionScriptingService";
 
 export type ColumnSelectorState = {
@@ -20,6 +23,7 @@ type PropType = {
 };
 
 const props = defineProps<PropType>();
+const readOnly = useReadonlyStore();
 
 const modelValue = defineModel<ColumnSelectorState>({
   default: {
@@ -49,7 +53,7 @@ const paintFocus = useShouldFocusBePainted();
     <ValueSwitch
       v-model="modelValue.outputMode"
       :possible-values="allowedOperationModes"
-      :disabled="props.allowedReplacementColumns.length === 0"
+      :disabled="props.allowedReplacementColumns.length === 0 || readOnly"
       class="switch-button"
       :class="{ 'focus-painted': paintFocus }"
       compact
@@ -65,6 +69,7 @@ const paintFocus = useShouldFocusBePainted();
         class="column-input"
         placeholder="New column..."
         :is-valid="isValid"
+        :disabled="readOnly"
         compact
       />
     </div>
@@ -78,6 +83,7 @@ const paintFocus = useShouldFocusBePainted();
         class="column-input"
         direction="up"
         :is-valid="isValid"
+        :disabled="readOnly"
         compact
       />
     </div>
