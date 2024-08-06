@@ -10,7 +10,7 @@ import monacoEditorPlugin, {
 import svgLoader from "vite-svg-loader";
 
 // @ts-ignore
-import { svgoConfig } from "webapps-common/config/svgo.config";
+import { svgoConfig } from "@knime/styles/config/svgo.config";
 
 // Hack because default export of vite-plugin-monaco-editor is wrong (and does not fit types)
 // https://github.com/vdesjs/vite-plugin-monaco-editor/issues/21
