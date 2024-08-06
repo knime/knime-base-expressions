@@ -10,4 +10,8 @@
             hidden="false">
       </node>
    </extension>
+   <extension point="org.knime.core.NodeFunc">
+      <nodeFunc
+            impl="org.knime.base.expressions.node.ExpressionNodeFunc" />
+   </extension>
 </plugin>
