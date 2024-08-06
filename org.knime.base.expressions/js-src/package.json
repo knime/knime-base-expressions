@@ -32,8 +32,7 @@
     "consola": "2.15.3",
     "markdown-it": "14.1.0",
     "uuid": "^10.0.0",
-    "vue": "3.4.21",
-    "webapps-common": "file:webapps-common"
+    "vue": "3.4.21"
   },
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "1.19.0",
