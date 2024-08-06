@@ -57,7 +57,6 @@ import static org.knime.core.expressions.SignatureUtils.arg;
 import static org.knime.core.expressions.SignatureUtils.isAnything;
 import static org.knime.core.expressions.SignatureUtils.isBoolean;
 import static org.knime.core.expressions.SignatureUtils.isBooleanOrOpt;
-import static org.knime.core.expressions.SignatureUtils.isInteger;
 import static org.knime.core.expressions.SignatureUtils.isIntegerOrOpt;
 import static org.knime.core.expressions.SignatureUtils.isString;
 import static org.knime.core.expressions.SignatureUtils.isStringOrOpt;
@@ -1071,7 +1070,13 @@ public final class StringFunctions {
                 index, it returns the entire substring after the start index. The
                 start index begins at 1.
 
-                If any of the arguments are `MISSING`, the result is also `MISSING`.
+                If `string` is `MISSING`, the result is also `MISSING`.
+
+                If `start` is `MISSING`, the substring starts at the beginning of
+                the string.
+
+                If `length` is `MISSING`, it returns the substring from the given
+                `start` to the end of the string.
 
                 **Examples**
                 * `substring("OpenAI", 2, 4)` returns "penA"
@@ -1079,41 +1084,59 @@ public final class StringFunctions {
                   Length is greater than the remaining characters, so returns the rest of the string.
                 * `substring("substring", 5)` returns "tring"\\
                   No length provided, so returns everything after the 5th character
+                * `substring("substring", 4, <MISSING>)` returns "string"\\
+                  If an expression returns `MISSING` for the length parameter,
+                  it will return the substring from the start index to the end of the string.
                 """) //
         .keywords("extract") //
         .category(CATEGORY_EXTRACT_REPLACE.name()) //
         .args( //
             arg("string", "Original string", isStringOrOpt()), //
-            arg("start", "Start index (inclusive, 1-indexed)", isIntegerOrOpt()), //
+            optarg("start", "Start index (inclusive, 1-indexed)", isIntegerOrOpt()), //
             optarg("length", "Length - if unspecified, or bigger than the string, get entire string after the start",
-                isInteger()) //
+                isIntegerOrOpt()) //
         ) //
         .returnType("Extracted substring", RETURN_STRING_MISSING, //
-            args -> ValueType.STRING(anyOptional(args)))//
+            args -> args.get("string"))//
         .impl(StringFunctions::substrImpl) //
         .build();
 
     private static Computer substrImpl(final Arguments<Computer> args) {
+
         Function<EvaluationContext, String> value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
-            int start = (int)toInteger(args.get("start")).compute(ctx);
 
-            int length = args.has("length") //
-                ? ((int)toInteger(args.get("length")).compute(ctx)) //
-                : (str.length() - start + 1);
+            var startingIndex = 1;
 
-            // We do one-indexing in expressions editor
-            // Also: clamp indices rather than erroring
-            int clampedStart = Math.min(Math.max(start - 1, 0), str.length());
-            return str.substring( //
-                clampedStart, //
-                Math.max(clampedStart, Math.min(start - 1 + length, str.length())) //
-            );
+            if (args.has("start")) {
+                var startArgument = args.get("start");
+                startingIndex = startArgument.isMissing(ctx) ? 1 : (int)toInteger(startArgument).compute(ctx);
+
+                if (startingIndex < 1) {
+                    ctx.addWarning("The start index is set to 1 because the index must be 1 or higher.");
+                    startingIndex = 1;
+                }
+            }
+
+            int length = str.length() - startingIndex + 1;
+
+            if (args.has("length") && !args.get("length").isMissing(ctx)) {
+                length = (int)toInteger(args.get("length")).compute(ctx);
+                if (length < 0) {
+                    ctx.addWarning("The length of a substring cannot be negative. The length will be set to 0.");
+                    length = 0;
+                }
+            }
+
+            int clampedStart = Math.min(startingIndex - 1, str.length());
+            int clampedEnd = Math.min(clampedStart + length, str.length());
+
+            return str.substring(clampedStart, clampedEnd);
         };
 
         return StringComputer.of( //
             value, //
-            anyMissing(args) //
+            ctx -> args.get("string").isMissing(ctx)
         );
     }
 

@@ -58,9 +58,11 @@ import static org.knime.core.expressions.ValueType.OPT_INTEGER;
 import static org.knime.core.expressions.ValueType.OPT_STRING;
 import static org.knime.core.expressions.ValueType.STRING;
 import static org.knime.core.expressions.functions.FunctionTestBuilder.arg;
+import static org.knime.core.expressions.functions.FunctionTestBuilder.misInteger;
 import static org.knime.core.expressions.functions.FunctionTestBuilder.misString;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
@@ -366,9 +368,27 @@ final class StringFunctionTests {
             .typing("STRING + start", List.of(STRING, INTEGER), STRING) //
             .typing("STRING?", List.of(OPT_STRING, INTEGER), OPT_STRING) //
             .typing("STRING + start + len", List.of(STRING, INTEGER, INTEGER), STRING) //
-            .illegalArgs("1 string", List.of(STRING)) //
+            .typing("optional length", List.of(STRING, INTEGER, OPT_INTEGER), STRING) //
+            .typing("Optional start and length", List.of(STRING, OPT_INTEGER, OPT_INTEGER), STRING) //
+            .typing("only STRING", List.of(STRING), STRING)
+            .illegalArgs("Integer instead of string", List.of(INTEGER)) //
+            .illegalArgs("only optional length", List.of(),Map.of("length", INTEGER)) //)
+            .warns("negative length",  List.of(arg("abcdefg"), arg(1), arg(-1))) //
+            .warns("non-positive start",    List.of(arg("abcdefg"), arg(0), arg(3))) //
             .impl("substr", List.of(arg("abcdefg"), arg(2), arg(3)), "bcd") //
+            .impl("length is MISSING",List.of(arg("abcdefg"), arg(0), misInteger()), "abcdefg") //))
+            .impl("length is negative",List.of(arg("abcdefg"), arg(1), arg(-1)), "") //
+            .impl("start is negative", List.of(arg("abcdefg"), arg(-1), arg(1)), "a") //
             .impl("noop", List.of(arg("abcdefg"), arg(1), arg(100)), "abcdefg") //
+            .impl("last char", List.of(arg("abc"), arg(3), arg(1)), "c") //
+            .impl("start after last char",  List.of(arg("abc"), arg(4), arg(1)), "") //
+            .impl("empty string1",  List.of(arg(""), arg(0), arg(0)), "") //
+            .impl("empty string2",  List.of(arg(""), arg(1), arg(3)), "") //
+            .impl("string is missing", List.of(misString(), arg(1), arg(3))) //
+            .impl("start and length is missing", List.of(arg("abc"), misInteger(), misInteger()),"abc") //
+            .impl("start is missing", List.of(arg("abc"), misInteger(), arg(3)),"abc") //
+            .impl("length is negative", List.of(arg("abc"), misInteger(), arg(-1)),"") //
+            .impl("length is very large", List.of(arg("abc"), misInteger(), arg(Integer.MAX_VALUE)),"abc") //
             .tests();
     }
 
