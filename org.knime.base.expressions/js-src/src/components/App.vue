@@ -10,14 +10,17 @@ import {
   type ExpressionNodeSettings,
   getExpressionScriptingService,
 } from "@/expressionScriptingService";
-import Button from "webapps-common/ui/components/Button.vue";
-import PlayIcon from "webapps-common/ui/assets/img/icons/play.svg";
-import SplitButton from "webapps-common/ui/components/SplitButton.vue";
-import DropdownIcon from "webapps-common/ui/assets/img/icons/arrow-dropdown.svg";
-import SubMenu from "webapps-common/ui/components/SubMenu.vue";
-import Tooltip from "webapps-common/ui/components/Tooltip.vue";
-import LoadingIcon from "webapps-common/ui/components/LoadingIcon.vue";
-import PlusIcon from "webapps-common/ui/assets/img/icons/circle-plus.svg";
+import {
+  Button,
+  SplitButton,
+  SubMenu,
+  Tooltip,
+  LoadingIcon,
+  FunctionButton,
+} from "@knime/components";
+import PlayIcon from "@knime/styles/img/icons/play.svg";
+import DropdownIcon from "@knime/styles/img/icons/arrow-dropdown.svg";
+import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
 import { useWindowSize, onKeyStroke } from "@vueuse/core";
 import {
   computed,
@@ -53,7 +56,6 @@ import {
 import { convertFunctionsToInsertionItems } from "./convertFunctionsToInsertionItems";
 import * as monaco from "monaco-editor";
 import { v4 as uuidv4 } from "uuid";
-import FunctionButton from "webapps-common/ui/components/FunctionButton.vue";
 
 const language = "knime-expression";
 

@@ -2,7 +2,7 @@
 import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
 import { computed } from "vue";
 import { functionDataToHtml } from "@/components/function-catalog/functionDescriptionToMarkdown";
-import Description from "webapps-common/ui/components/Description.vue";
+import { Description } from "@knime/components";
 
 const props = defineProps<{
   functionData: FunctionCatalogEntryData;

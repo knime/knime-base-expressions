@@ -12,11 +12,11 @@ import {
   useDraggedFunctionStore,
   resetDraggedFunctionStore,
 } from "@/draggedFunctionStore";
-import TrashIcon from "webapps-common/ui/assets/img/icons/trash.svg";
-import UpArrowIcon from "webapps-common/ui/assets/img/icons/arrow-up.svg";
-import DownArrowIcon from "webapps-common/ui/assets/img/icons/arrow-down.svg";
-import CopyIcon from "webapps-common/ui/assets/img/icons/copy.svg";
-import FunctionButton from "webapps-common/ui/components/FunctionButton.vue";
+import TrashIcon from "@knime/styles/img/icons/trash.svg";
+import UpArrowIcon from "@knime/styles/img/icons/arrow-up.svg";
+import DownArrowIcon from "@knime/styles/img/icons/arrow-down.svg";
+import CopyIcon from "@knime/styles/img/icons/copy.svg";
+import { FunctionButton } from "@knime/components";
 import { type ErrorLevel } from "@/expressionDiagnostics";
 
 export type ExpressionEditorPaneExposes = {

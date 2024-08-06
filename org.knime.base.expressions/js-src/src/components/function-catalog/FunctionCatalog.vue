@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, reactive, type ComponentPublicInstance } from "vue";
-import SearchInput from "../../../webapps-common/ui/components/forms/SearchInput.vue";
-import NextIcon from "../../../webapps-common/ui/assets/img/icons/arrow-next.svg";
+import {
+  SearchInput,
+  createDragGhosts,
+  EMPTY_DRAG_IMAGE,
+} from "@knime/components";
+import NextIcon from "@knime/styles/img/icons/arrow-next.svg";
 import { useElementBounding } from "@vueuse/core";
 import { mapFunctionCatalogData } from "@/components/function-catalog/mapFunctionCatalogData";
 import type {
@@ -14,8 +18,6 @@ import type {
   SelectableFunction,
 } from "@/components/function-catalog/catalogTypes";
 import CategoryDescription from "@/components/function-catalog/CategoryDescription.vue";
-import { createDragGhosts } from "webapps-common/ui/components/FileExplorer/dragGhostHelpers";
-import { EMPTY_DRAG_IMAGE } from "webapps-common/ui/components/FileExplorer/useItemDragging";
 import { useDraggedFunctionStore } from "@/draggedFunctionStore";
 import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
 import {
@@ -81,7 +83,7 @@ const onDragStart = (e: DragEvent, f: FunctionCatalogEntryData) => {
       f.entryType === "constant" ? null : f.arguments?.map((arg) => arg.name)!,
   };
 
-  e.dataTransfer?.setDragImage(EMPTY_DRAG_IMAGE, 0, 0);
+  e.dataTransfer?.setDragImage(EMPTY_DRAG_IMAGE!, 0, 0);
 };
 
 const onDragEnd = () => {

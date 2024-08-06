@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import ValueSwitch from "webapps-common/ui/components/forms/ValueSwitch.vue";
-import Dropdown from "webapps-common/ui/components/forms/Dropdown.vue";
-import InputField from "webapps-common/ui/components/forms/InputField.vue";
+import { ValueSwitch, Dropdown, InputField } from "@knime/components";
 import { useShouldFocusBePainted } from "@knime/scripting-editor";
 import { type OutputInsertionMode } from "@/expressionScriptingService";
 
