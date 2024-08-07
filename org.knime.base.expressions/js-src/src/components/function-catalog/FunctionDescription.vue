@@ -24,7 +24,7 @@ const functionDataAsHTML = computed(() =>
 </template>
 
 <style lang="postcss">
-@import url("webapps-common/ui/css/variables/spacings.css");
+@import url("@knime/styles/css/variables/spacings.css");
 
 .markdown-function-desc {
   --description-font-weight: 500;

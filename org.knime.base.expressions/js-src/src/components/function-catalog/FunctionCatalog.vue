@@ -424,7 +424,7 @@ const expandAll = () => {
 </template>
 
 <style scoped>
-@import url("webapps-common/ui/css/variables/spacings.css");
+@import url("@knime/styles/css/variables/spacings.css");
 
 .function-catalog-container {
   display: flex;

@@ -642,7 +642,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
 </template>
 
 <style lang="postcss">
-@import url("webapps-common/ui/css");
+@import url("@knime/styles/css");
 
 .editor-controls {
   width: 100%;
