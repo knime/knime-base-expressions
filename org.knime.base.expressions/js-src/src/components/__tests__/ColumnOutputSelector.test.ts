@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import ColumnOutputSelector, {
   type ColumnSelectorState,
 } from "../ColumnOutputSelector.vue";
+import { Dropdown, InputField, ValueSwitch } from "@knime/components";
 
 describe("ColumnOutputSelector", () => {
   enableAutoUnmount(afterEach);
@@ -42,17 +43,13 @@ describe("ColumnOutputSelector", () => {
       createColumn: "a1",
       replaceColumn: "c",
     });
-    expect(
-      wrapper
-        .findComponent({
-          name: "ValueSwitch",
-        })
-        .props().modelValue,
-    ).equals("APPEND");
-    const inputField = wrapper.findComponent({ name: "InputField" });
+    expect(wrapper.findComponent(ValueSwitch).props().modelValue).equals(
+      "APPEND",
+    );
+    const inputField = wrapper.findComponent(InputField);
     expect(inputField.isVisible()).toBe(true);
     expect(inputField.props("modelValue")).toBe("a1");
-    const dropdown = wrapper.findComponent({ name: "Dropdown" });
+    const dropdown = wrapper.findComponent(Dropdown);
     expect(dropdown.exists()).toBe(false);
     wrapper.unmount();
   });
@@ -63,16 +60,12 @@ describe("ColumnOutputSelector", () => {
       createColumn: "a1",
       replaceColumn: "c",
     });
-    expect(
-      wrapper
-        .findComponent({
-          name: "ValueSwitch",
-        })
-        .props().modelValue,
-    ).equals("REPLACE_EXISTING");
-    const inputField = wrapper.findComponent({ name: "InputField" });
+    expect(wrapper.findComponent(ValueSwitch).props().modelValue).equals(
+      "REPLACE_EXISTING",
+    );
+    const inputField = wrapper.findComponent(InputField);
     expect(inputField.exists()).toBe(false);
-    const dropdown = wrapper.findComponent({ name: "Dropdown" });
+    const dropdown = wrapper.findComponent(Dropdown);
     expect(dropdown.isVisible()).toBe(true);
     expect(dropdown.props("modelValue")).toBe("c");
     wrapper.unmount();

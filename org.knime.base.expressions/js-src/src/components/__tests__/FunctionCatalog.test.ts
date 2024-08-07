@@ -4,6 +4,7 @@ import FunctionCatalog from "../function-catalog/FunctionCatalog.vue";
 import type { FunctionData, ConstantData } from "../functionCatalogTypes";
 import { useElementBounding } from "@vueuse/core";
 import { ref } from "vue";
+import { SearchInput } from "@knime/components";
 
 // Beware: This constant is duplicated in the component and the test
 const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 600;
@@ -115,9 +116,7 @@ describe("FunctionCatalog", () => {
   it("renders the FunctionCatalog and show filter/search bar", () => {
     const { wrapper } = doMount();
 
-    const searchBar = wrapper.findComponent({
-      name: "SearchInput",
-    });
+    const searchBar = wrapper.findComponent(SearchInput);
     expect(searchBar.exists()).toBeTruthy();
   });
 
@@ -334,9 +333,7 @@ describe("FunctionCatalog", () => {
         functionCatalogData.functions.length,
       );
 
-      const searchBar = wrapper.findComponent({
-        name: "SearchInput",
-      });
+      const searchBar = wrapper.findComponent(SearchInput);
       await searchBar.setValue(searchValue);
 
       const filteredCategoryFunctions = wrapper.findAll(".function-header");
