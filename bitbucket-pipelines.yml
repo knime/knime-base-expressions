@@ -1,4 +1,4 @@
-image: node:18.19.0
+image: node:20.15.0
 
 options:
   max-time: 30
@@ -9,9 +9,7 @@ definitions:
         name: Lint, tests and build
         caches:
           - node
-        size: 2x # more memory to accomodate docker container for sonarcloud
         script:
-          - git submodule update --init --recursive
           - cd org.knime.base.expressions/js-src
           - npm ci
           - npm run type-check
