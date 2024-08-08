@@ -407,7 +407,7 @@ final class ParserTest {
             // Invalid aggregation calls
             AGG_WITH_INVALID_ID("AB_00(1,2,3)", "AB_00"),
             AGG_WITH_POSITIONAL_AFTER_NAMED_ARGS(BuiltInAggregations.SUM.name() + "(a=100, 10)", "named", "positional"), //
-            AGG_WITH_EXPR_ARG(BuiltInAggregations.SUM.name() + "(1 + 2)", "only", "constant", "expression"), //
+            AGG_WITH_EXPR_ARG(BuiltInAggregations.SUM.name() + "(1 + 2)", "only", "literal"), //
             AGG_WITH_ROW_ID(BuiltInAggregations.SUM.name() + "($[ROW_ID])", "ROW_ID", "cannot"), //
             AGG_WITH_ROW_INDEX(BuiltInAggregations.SUM.name() + "($[ROW_INDEX])", "ROW_INDEX", "cannot"), //
             AGG_WITH_ROW_NUMBER(BuiltInAggregations.SUM.name() + "($[ROW_NUMBER])", "ROW_NUMBER", "cannot"), //

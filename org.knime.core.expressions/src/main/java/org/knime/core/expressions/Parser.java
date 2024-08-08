@@ -443,7 +443,7 @@ final class Parser {
                 return constantAst;
             }
 
-            throw syntaxError("Aggregation functions only allow constant expressions as arguments.", getLocation(expr));
+            throw syntaxError("Aggregation functions only allow literals as arguments.", getLocation(expr));
         }
 
         private static boolean isSpecialColumnAccessor(final KnimeExpressionParser.ExprContext expr)  {
