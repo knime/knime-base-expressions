@@ -290,7 +290,7 @@ onMounted(async () => {
       .setInitialText(initialSettings.scripts[i]);
 
     multiEditorComponentRefs[key].getEditorState().editor.value?.updateOptions({
-      readOnly: initialSettings.setByFlowVariables,
+      readOnly: useReadonlyStore().value,
       readOnlyMessage: {
         value: "Read-Only-Mode: configuration is set by flow variables.",
       },

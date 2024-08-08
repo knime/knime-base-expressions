@@ -371,7 +371,7 @@ const expandAll = () => {
                 name: categoryName,
               }),
               empty: categoryData.length === 0,
-              readonly: readOnly,
+              'read-only': readOnly,
             }"
             tabindex="-1"
             @click="toggleCategoryExpansion(categoryName)"
@@ -405,7 +405,7 @@ const expandAll = () => {
                 class="function-header"
                 :class="{
                   selected: isSelected({ type: 'function', functionData }),
-                  readonly: readOnly,
+                  'read-only': readOnly,
                 }"
                 tabindex="-1"
                 :draggable="!readOnly"
@@ -457,7 +457,7 @@ const expandAll = () => {
   height: 100%;
 }
 
-.readonly {
+.read-only {
   opacity: 0.5;
 }
 

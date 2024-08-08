@@ -48,7 +48,7 @@ interface Props {
   isActive?: boolean;
 }
 const props = defineProps<Props>();
-const readonly = useReadonlyStore();
+const readOnly = useReadonlyStore();
 
 type ButtonItem = {
   text: string;
@@ -62,25 +62,25 @@ const buttonActions = computed<ButtonItem[]>(() => [
     text: "Move upwards",
     icon: UpArrowIcon,
     eventName: "move-up",
-    disabled: props.isFirst || readonly.value,
+    disabled: props.isFirst || readOnly.value,
   },
   {
     text: "Move downwards",
     icon: DownArrowIcon,
     eventName: "move-down",
-    disabled: props.isLast || readonly.value,
+    disabled: props.isLast || readOnly.value,
   },
   {
     text: "Duplicate below",
     icon: CopyIcon,
     eventName: "copy-below",
-    disabled: readonly.value,
+    disabled: readOnly.value,
   },
   {
     text: "Delete",
     icon: TrashIcon,
     eventName: "delete",
-    disabled: props.isOnly || readonly.value,
+    disabled: props.isOnly || readOnly.value,
   },
 ]);
 

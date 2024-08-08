@@ -107,15 +107,26 @@ public class ExpressionNodeSettingsService implements NodeSettingsService {
         }
     }
 
+    private static boolean isSetByFlowVariable(final NodeAndVariableSettingsRO settings, final String key) {
+        try {
+            return settings.isVariableSetting(key) && settings.getUsedVariable(key) != null;
+        } catch (InvalidSettingsException e) {
+            throw new IllegalStateException(
+                "Implementation error - Could not load expression settings and failed to query if "
+                    + "a flow variable was used for key: " + key + " in the settings.",
+                e);
+        }
+    }
+
     private static boolean isEditorConfigurationOverwrittenByFlowVariable(final NodeAndVariableSettingsRO settings) {
-        return settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_SCRIPT)
-            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_OUTPUT_MODE)
-            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_CREATED_COLUMN)
-            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_REPLACED_COLUMN)
-            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS)
-            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_OUTPUT_MODES)
-            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_CREATED_COLUMNS)
-            || settings.isVariableSetting(ExpressionNodeSettings.CFG_KEY_ADDITIONAL_REPLACED_COLUMNS);
+        return isSetByFlowVariable(settings, ExpressionNodeSettings.CFG_KEY_SCRIPT)
+            || isSetByFlowVariable(settings, ExpressionNodeSettings.CFG_KEY_OUTPUT_MODE)
+            || isSetByFlowVariable(settings, ExpressionNodeSettings.CFG_KEY_CREATED_COLUMN)
+            || isSetByFlowVariable(settings, ExpressionNodeSettings.CFG_KEY_REPLACED_COLUMN)
+            || isSetByFlowVariable(settings, ExpressionNodeSettings.CFG_KEY_ADDITIONAL_SCRIPTS)
+            || isSetByFlowVariable(settings, ExpressionNodeSettings.CFG_KEY_ADDITIONAL_OUTPUT_MODES)
+            || isSetByFlowVariable(settings, ExpressionNodeSettings.CFG_KEY_ADDITIONAL_CREATED_COLUMNS)
+            || isSetByFlowVariable(settings, ExpressionNodeSettings.CFG_KEY_ADDITIONAL_REPLACED_COLUMNS);
     }
 
     @Override
