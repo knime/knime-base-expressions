@@ -555,6 +555,8 @@ const calculateInitialPaneSizes = () => {
 };
 
 const initialPaneSizes = calculateInitialPaneSizes();
+
+const dropdownExpanded = ref(false);
 </script>
 
 <template>
@@ -736,7 +738,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
   overflow: visible;
   width: auto;
   height: auto;
-  z-index: 9999;
+  z-index: 999;
 }
 
 .submenu {

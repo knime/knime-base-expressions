@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { ValueSwitch, Dropdown, InputField } from "@knime/components";
+import { ValueSwitch, Dropdown, InputField, Tooltip } from "@knime/components";
 import { useShouldFocusBePainted } from "@knime/scripting-editor";
 import { type OutputInsertionMode } from "@/expressionScriptingService";
 
@@ -44,44 +44,49 @@ const paintFocus = useShouldFocusBePainted();
 </script>
 
 <template>
-  <span class="output-selector-container">
-    <span class="output-label">Output column</span>
-    <ValueSwitch
-      v-model="modelValue.outputMode"
-      :possible-values="allowedOperationModes"
-      :disabled="props.allowedReplacementColumns.length === 0"
-      class="switch-button"
-      :class="{ 'focus-painted': paintFocus }"
-      compact
-    />
-    <div
-      v-if="modelValue.outputMode === 'APPEND'"
-      class="output-selector-child right"
-    >
-      <InputField
-        id="input-field-to-add-new-column"
-        v-model="modelValue.createColumn"
-        type="text"
-        class="column-input"
-        placeholder="New column..."
-        :is-valid="isValid"
+  <Tooltip
+    class="tooltip-word-wrap output-selector-container"
+    :text="errorMessage"
+  >
+    <span class="output-selector-container">
+      <span class="output-label">Output column</span>
+      <ValueSwitch
+        v-model="modelValue.outputMode"
+        :possible-values="allowedOperationModes"
+        :disabled="props.allowedReplacementColumns.length === 0"
+        class="switch-button"
+        :class="{ 'focus-painted': paintFocus }"
         compact
       />
-    </div>
-    <div v-else class="output-selector-child right">
-      <!-- eslint-disable vue/attribute-hyphenation typescript complains with ':aria-label' instead of ':ariaLabel'-->
-      <Dropdown
-        id="dropdown-box-to-select-column"
-        v-model="modelValue.replaceColumn"
-        ariaLabel="column selection"
-        :possible-values="allowedReplacementColumns"
-        class="column-input"
-        direction="up"
-        :is-valid="isValid"
-        compact
-      />
-    </div>
-  </span>
+      <div
+        v-if="modelValue.outputMode === 'APPEND'"
+        class="output-selector-child right"
+      >
+        <InputField
+          id="input-field-to-add-new-column"
+          v-model="modelValue.createColumn"
+          type="text"
+          class="column-input"
+          placeholder="New column..."
+          :is-valid="isValid"
+          compact
+        />
+      </div>
+      <div v-else class="output-selector-child right">
+        <!-- eslint-disable vue/attribute-hyphenation typescript complains with ':aria-label' instead of ':ariaLabel'-->
+        <Dropdown
+          id="dropdown-box-to-select-column"
+          v-model="modelValue.replaceColumn"
+          ariaLabel="column selection"
+          :possible-values="allowedReplacementColumns"
+          class="column-input"
+          direction="up"
+          :is-valid="isValid"
+          compact
+        />
+      </div>
+    </span>
+  </Tooltip>
 </template>
 
 <style scoped lang="postcss">
