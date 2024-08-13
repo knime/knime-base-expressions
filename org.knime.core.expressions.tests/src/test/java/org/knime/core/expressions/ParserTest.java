@@ -267,27 +267,21 @@ final class ParserTest {
             FUNC_NO_ARGS("sin()", FUN(MathFunctions.SIN)), //
             FUNC_SINGLE_ARG("sin(1)", FUN(MathFunctions.SIN, INT(1))), //
             FUNC_TRAILING_COMMA("sin(1,2,)", FUN(MathFunctions.SIN, INT(1), INT(2))), //
-            FUNC_COLUMN_ACCESS_PARM("sin($[\"col\"] , 2)",
-                FUN(MathFunctions.SIN, COL("col"), INT(2))), //
+            FUNC_COLUMN_ACCESS_PARM("sin($[\"col\"] , 2)", FUN(MathFunctions.SIN, COL("col"), INT(2))), //
             FUNC_NESTED_EXPR("sin(1 + 2)", FUN(MathFunctions.SIN, OP(INT(1), PLUS, INT(2)))), //
             FUNC_NESTED_FUNC("sin(cos(1))", FUN(MathFunctions.SIN, FUN(MathFunctions.COS, INT(1)))), //
 
-
             // Aggregation functions
-            COL_AGG("COLUMN_AVERAGE(\"column name\")",
-                AGG(BuiltInAggregations.AVERAGE, STR("column name"))), //
+            COL_AGG("COLUMN_AVERAGE(\"column name\")", AGG(BuiltInAggregations.AVERAGE, STR("column name"))), //
             COL_AGG_NAMED_ARG("COLUMN_AVERAGE(\"column name\", ignore_missing=TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
-            COL_AGG_NAMED_ARG_WITH_WHITESPACE(
-                "COLUMN_AVERAGE(\"column name\", ignore_missing =TRUE)",
+            COL_AGG_NAMED_ARG_WITH_WHITESPACE("COLUMN_AVERAGE(\"column name\", ignore_missing =TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_missing", BOOL(true)))), //
-            COL_AGG_ONLY_NAMED_ARGS(
-                "COLUMN_AVERAGE(column=\"column name\", ignore_missing=TRUE)",
+            COL_AGG_ONLY_NAMED_ARGS("COLUMN_AVERAGE(column=\"column name\", ignore_missing=TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(),
                     Map.of("column", STR("column name"), "ignore_missing", BOOL(true)))), //
-            COL_AGG_ONLY_POS_ARGS(
-                "COLUMN_AVERAGE(\"column name\", TRUE)",
-                AGG(BuiltInAggregations.AVERAGE,  STR("column name"),  BOOL(true))), //
+            COL_AGG_ONLY_POS_ARGS("COLUMN_AVERAGE(\"column name\", TRUE)",
+                AGG(BuiltInAggregations.AVERAGE, STR("column name"), BOOL(true))), //
 
             // Special stuff
 

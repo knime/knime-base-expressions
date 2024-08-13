@@ -446,9 +446,9 @@ final class Parser {
             throw syntaxError("Aggregation functions only allow literals as arguments.", getLocation(expr));
         }
 
-        private static boolean isSpecialColumnAccessor(final KnimeExpressionParser.ExprContext expr)  {
+        private static boolean isSpecialColumnAccessor(final KnimeExpressionParser.ExprContext expr) {
             return (expr.getChildCount() == 1 && expr.getChild(0) instanceof AtomContext atom
-                    && (atom.ROW_ID() != null || atom.ROW_INDEX() != null || atom.ROW_NUMBER() != null));
+                && (atom.ROW_ID() != null || atom.ROW_INDEX() != null || atom.ROW_NUMBER() != null));
         }
 
         @Override
