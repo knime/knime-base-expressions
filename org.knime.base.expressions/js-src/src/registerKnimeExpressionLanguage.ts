@@ -145,7 +145,7 @@ const registerKnimeExpressionLanguage = ({
         [/./, "", "@popall"],
       ],
       columnOffsetSeparator: [[/\s*,\s*/, "", "@columnOffset"]],
-      columnOffset: [[/\d+/, "number.coloffset", "@columnAccessTerminator"]],
+      columnOffset: [[/[\d_]+/, "number.coloffset", "@columnAccessTerminator"]],
       columnAccessTerminator: [[/\s*\]/, "string.colname.escape", "@popall"]],
     },
   });
