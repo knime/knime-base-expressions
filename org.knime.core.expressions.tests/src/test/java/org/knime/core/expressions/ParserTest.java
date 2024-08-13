@@ -139,6 +139,11 @@ final class ParserTest {
             COL_ROW_INDEX("$[ROW_INDEX]", ROW_INDEX()), //
             COL_ROW_ID("$[ROW_ID]", ROW_ID()), //
 
+            // Column access with offsets
+            COL_ACCESS_OFFSET("$[\"col\", 10]", COL("col", 10)), //
+            COL_ACCESS_OFFSET_NEG("$[\"col\", -10]", COL("col", -10)), //
+            COL_ACCESS_OFFSET_UNDERSCORE("$[\"col\", 10_0]", COL("col", 100)), //
+
             // Flow Variable Access
             FLOW_SHORTHAND_1("$$varname", FLOW("varname")), //
             FLOW_SHORTHAND_2("$$flow_name12_", FLOW("flow_name12_")), //

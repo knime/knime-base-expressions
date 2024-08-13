@@ -107,7 +107,18 @@ public final class AstTestUtils {
      * @return a {@link Ast.ColumnAccess}
      */
     public static Ast.ColumnAccess COL(final String name) { // NOSONAR - name useful for visual clarity
-        return Ast.columnAccess(name);
+        return COL(name, 0);
+    }
+
+    /**
+     * Column access with an offset, accessing an adjacent row.
+     *
+     * @param name
+     * @param offset
+     * @return a {@link Ast.ColumnAccess}
+     */
+    public static Ast.ColumnAccess COL(final String name, final long offset) { // NOSONAR - name useful for visual clarity
+        return Ast.columnAccess(name, offset);
     }
 
     /**
