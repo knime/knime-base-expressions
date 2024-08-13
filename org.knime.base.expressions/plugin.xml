@@ -2,16 +2,31 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension
-         point="org.knime.workbench.repository.nodes">
-      <node
-            category-path="/manipulation"
+   		point="org.knime.workbench.repository.nodes">
+      	<node
+        	category-path="/manipulation"
             deprecated="false"
-            factory-class="org.knime.base.expressions.node.ExpressionNodeFactory"
+            factory-class="org.knime.base.expressions.node.row.mapper.ExpressionRowMapperNodeFactory"
             hidden="false">
-      </node>
+      	</node>
+      	<node
+      		category-path="/manipulation"
+      		factory-class="org.knime.base.expressions.node.row.filter.ExpressionRowFilterNodeFactory"
+      		deprecated="false"
+      		hidden="false">
+      	</node>
+   </extension>  
+    
+   <extension 
+   		point="org.knime.core.NodeFunc">
+      	<nodeFunc
+      		impl="org.knime.base.expressions.node.row.mapper.ExpressionRowMapperNodeFunc" />
    </extension>
-   <extension point="org.knime.core.NodeFunc">
-      <nodeFunc
-            impl="org.knime.base.expressions.node.ExpressionNodeFunc" />
+   
+   <extension
+   		point="org.knime.core.NodeFactoryClassMapper">
+        <NodeFactoryClassMapper
+        	classMapper="org.knime.base.expressions.ExpressionNodeFactoryClassMapper">
+   		</NodeFactoryClassMapper>
    </extension>
 </plugin>

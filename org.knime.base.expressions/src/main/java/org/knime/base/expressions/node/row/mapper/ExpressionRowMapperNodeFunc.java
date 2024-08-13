@@ -46,9 +46,10 @@
  * History
  *   Aug 5, 2024 (Fabian Kuebler, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.base.expressions.node;
+package org.knime.base.expressions.node.row.mapper;
 
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
+import org.knime.base.expressions.node.ExpressionNodeSettings;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -60,7 +61,7 @@ import org.knime.core.node.port.PortObjectSpec;
  *
  * @author Fabian Kuebler, KNIME GmbH, Konstanz, Germany
  */
-public final class ExpressionNodeFunc implements NodeFunc {
+public final class ExpressionRowMapperNodeFunc implements NodeFunc {
 
     @Override
     public void saveSettings(final NodeSettingsRO arguments, final PortObjectSpec[] inputSpecs,
@@ -98,6 +99,6 @@ public final class ExpressionNodeFunc implements NodeFunc {
 
     @Override
     public String getNodeFactoryClassName() {
-        return ExpressionNodeFactory.class.getName();
+        return ExpressionRowMapperNodeFactory.class.getName();
     }
 }

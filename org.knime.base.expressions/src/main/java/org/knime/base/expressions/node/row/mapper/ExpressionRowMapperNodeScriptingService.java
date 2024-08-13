@@ -46,7 +46,7 @@
  * History
  *   Jan 12, 2024 (benjamin): created
  */
-package org.knime.base.expressions.node;
+package org.knime.base.expressions.node.row.mapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,7 +58,10 @@ import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
-import org.knime.base.expressions.node.ExpressionNodeModel.NodeExpressionMapperContext;
+import org.knime.base.expressions.node.ExpressionCodeAssistant;
+import org.knime.base.expressions.node.ExpressionNodeScriptingInputOutputModelUtils;
+import org.knime.base.expressions.node.FunctionCatalogData;
+import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
@@ -91,7 +94,7 @@ import org.knime.scripting.editor.ScriptingService;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("restriction")
-final class ExpressionNodeScriptingService extends ScriptingService {
+final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
     private static final int PREVIEW_MAX_ROWS = 1000;
 
@@ -112,15 +115,15 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
     private final Runnable m_cleanUpTableViewDataService;
 
-    ExpressionNodeScriptingService(final AtomicReference<BufferedDataTable> outputTableRef,
+    ExpressionRowMapperNodeScriptingService(final AtomicReference<BufferedDataTable> outputTableRef,
         final Runnable cleanUpTableViewDataService) {
-        super(null, ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains);
+        super(null, ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains);
 
         m_inputTableIsAvailable = getWorkflowControl().getInputData()[0] != null;
 
         if (m_inputTableIsAvailable) {
             m_outputBufferTableReference = outputTableRef;
-            m_outputBufferTableReference.set(getInputTable().getBufferedTable());
+            m_outputBufferTableReference.set(getInputTable().table.getBufferedTable());
         } else {
             m_outputBufferTableReference = outputTableRef;
         }
@@ -147,13 +150,14 @@ final class ExpressionNodeScriptingService extends ScriptingService {
         return m_columnToType;
     }
 
-    synchronized ReferenceTable getInputTable() {
+    synchronized InputTableWithRowCount getInputTable() {
+        long rowCount = 0;
         if (m_inputTable == null) {
             var inTable = (BufferedDataTable)getWorkflowControl().getInputData()[0];
             if (inTable == null) {
                 throw new IllegalStateException("Input table not available");
             }
-
+            rowCount = inTable.size();
             var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
 
             var executionContext = nodeContainer.createExecutionContext();
@@ -166,7 +170,15 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                 throw new IllegalStateException("Input table preparation for expression cancelled by the user", ex);
             }
         }
-        return m_inputTable;
+        return new InputTableWithRowCount(m_inputTable, rowCount);
+    }
+
+    /*
+     *  If the table is row-based it will be converted on-the-fly to a columnar-based table.
+     *  But in that case it will be sliced to have at most {@link PREVIEW_MAX_ROWS} rows.
+     *  For the output table we need the original row count.
+     */
+    private record InputTableWithRowCount(ReferenceTable table, long rowCount) {
     }
 
     public final class ExpressionNodeRpcService extends RpcService {
@@ -226,7 +238,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
 
             var ast = Expressions.parse(script);
             var flowVarToTypeMapper = ExpressionRunnerUtils.flowVarToTypeForTypeInference(
-                getAvailableFlowVariables(ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES));
+                getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
 
             Function<String, ReturnResult<ValueType>> columnToTypeMapper = columName -> {
                 if (Arrays.stream(additionalColumnNames).anyMatch(columName::equals)) {
@@ -264,7 +276,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                     inferredColumnTypes.add(inferredType);
 
                     if (ValueType.MISSING.equals(inferredType)) {
-                        // Show an error if the full expression has the output type "MISSING" because this is not supported
+                        // Show an error if the full expression has the output type "MISSING"; this is not supported
                         diagnostics
                             .add(List.of(new Diagnostic("The full expression must not have the value type MISSING.",
                                 DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast))));
@@ -290,8 +302,9 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            var inputTable = getInputTable();
-            var inputTableSize = inputTable.getBufferedTable().size();
+            var inputTableWithRowCount = getInputTable();
+            var inputTable = inputTableWithRowCount.table;
+            var inputTableSize = inputTableWithRowCount.rowCount;
 
             List<ValueType> additionalColumnTypes = new ArrayList<>();
 
@@ -308,7 +321,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                     var inferredType = Expressions.getInferredType(expression);
                     additionalColumnTypes.add(inferredType);
                 } catch (ExpressionCompileException ex) {
-                    NodeLogger.getLogger(ExpressionNodeScriptingService.class)
+                    NodeLogger.getLogger(ExpressionRowMapperNodeScriptingService.class)
                         .debug("Error while running expression in dialog. This should not happen because the "
                             + "run button is disabled if the expression is invalid: " + ex.getMessage(), ex);
                     addConsoleOutputEvent(new ConsoleText("Error: " + ex.getMessage(), true));
@@ -349,6 +362,7 @@ final class ExpressionNodeScriptingService extends ScriptingService {
                     new ExpressionRunnerUtils.NewColumnPosition(ColumnInsertionMode.valueOf(columnInsertionModeString),
                         columnName));
 
+                // TODO(AP-23177): reduce materialization to at most one
                 BufferedDataTable outputTable;
                 try {
                     outputTable = ColumnarVirtualTableMaterializer.materializer() //

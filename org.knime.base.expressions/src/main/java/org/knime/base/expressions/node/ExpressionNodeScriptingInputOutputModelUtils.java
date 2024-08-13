@@ -65,7 +65,7 @@ import com.google.common.base.Preconditions;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("restriction")
-final class ExpressionNodeScriptingInputOutputModelUtils {
+public final class ExpressionNodeScriptingInputOutputModelUtils {
 
     // escapeQuotes is a HandleBars helper registered in the frontend
     private static final String COLUMN_ALIAS_TEMPLATE = "$[\"{{{escapeDblQuotes subItems.[0]}}}\"]";
@@ -76,7 +76,11 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
         // utility class
     }
 
-    static InputOutputModel getFlowVariableInputs(final Collection<FlowVariable> flowVariables) {
+    /**
+     * @param flowVariables
+     * @return the {@link InputOutputModel} for the flow variables
+     */
+    public static InputOutputModel getFlowVariableInputs(final Collection<FlowVariable> flowVariables) {
         return InputOutputModel.createFromFlowVariables( //
             flowVariables, //
             null, //
@@ -84,11 +88,15 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
             null, // no required import
             false, // no multiple selection
             type -> ExpressionRunnerUtils.mapVariableToValueType(type).toString(), //
-            ExpressionNodeModel.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains //
+            ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains //
         );
     }
 
-    static List<InputOutputModel> getInputObjects(final InputPortInfo[] inputPorts) {
+    /**
+     * @param inputPorts
+     * @return a list of {@link InputOutputModel} for the input objects
+     */
+    public static List<InputOutputModel> getInputObjects(final InputPortInfo[] inputPorts) {
 
         Preconditions.checkArgument(inputPorts.length == 1, "expected one input port");
 
@@ -117,7 +125,10 @@ final class ExpressionNodeScriptingInputOutputModelUtils {
         }
     }
 
-    static List<InputOutputModel> getOutputObjects() {
+    /**
+     * @return a list of {@link InputOutputModel} for the output objects
+     */
+    public static List<InputOutputModel> getOutputObjects() {
         return List.of(InputOutputModel.createForNonAvailableTable("Output table", null, null, null, false));
     }
 }

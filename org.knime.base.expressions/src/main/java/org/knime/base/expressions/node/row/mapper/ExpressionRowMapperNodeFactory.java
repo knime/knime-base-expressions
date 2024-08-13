@@ -46,7 +46,7 @@
  * History
  *   Jan 11, 2024 (benjamin): created
  */
-package org.knime.base.expressions.node;
+package org.knime.base.expressions.node.row.mapper;
 
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
@@ -61,11 +61,12 @@ import org.knime.core.webui.node.dialog.NodeDialogManager;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("restriction") // webui node dialogs are not API yet
-public class ExpressionNodeFactory extends NodeFactory<ExpressionNodeModel> implements NodeDialogFactory {
+public class ExpressionRowMapperNodeFactory extends NodeFactory<ExpressionRowMapperNodeModel>
+    implements NodeDialogFactory {
 
     @Override
-    public ExpressionNodeModel createNodeModel() {
-        return new ExpressionNodeModel();
+    public ExpressionRowMapperNodeModel createNodeModel() {
+        return new ExpressionRowMapperNodeModel();
     }
 
     @Override
@@ -74,7 +75,8 @@ public class ExpressionNodeFactory extends NodeFactory<ExpressionNodeModel> impl
     }
 
     @Override
-    public NodeView<ExpressionNodeModel> createNodeView(final int viewIndex, final ExpressionNodeModel nodeModel) {
+    public NodeView<ExpressionRowMapperNodeModel> createNodeView(final int viewIndex,
+        final ExpressionRowMapperNodeModel nodeModel) {
         return null;
     }
 
@@ -90,6 +92,6 @@ public class ExpressionNodeFactory extends NodeFactory<ExpressionNodeModel> impl
 
     @Override
     public NodeDialog createNodeDialog() {
-        return new ExpressionNodeDialog();
+        return new ExpressionRowMapperNodeDialog();
     }
 }

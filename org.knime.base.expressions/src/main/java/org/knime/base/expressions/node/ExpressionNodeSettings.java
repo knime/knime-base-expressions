@@ -75,7 +75,7 @@ import com.google.common.collect.Streams;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("restriction") // SettingsType is not yet public API
-final class ExpressionNodeSettings {
+public final class ExpressionNodeSettings {
 
     public static final String DEFAULT_SCRIPT = """
             # Examples:
@@ -144,11 +144,11 @@ final class ExpressionNodeSettings {
 
     private List<String> m_scripts;
 
-    ExpressionNodeSettings() {
+    public ExpressionNodeSettings() {
         this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, DEFAULT_REPLACED_COLUMN);
     }
 
-    ExpressionNodeSettings(final String script, final ColumnInsertionMode outputMode, final String createdColumn,
+    public ExpressionNodeSettings(final String script, final ColumnInsertionMode outputMode, final String createdColumn,
         final String replacedColumn) {
 
         // Set to the latest version by default
@@ -284,7 +284,10 @@ final class ExpressionNodeSettings {
             m_replacedColumns.subList(1, m_replacedColumns.size()).toArray(new String[0]));
     }
 
-    static NodeSettingsService createNodeSettingsService() {
+    /**
+     * Needs some thought about visibility. This is generic so will be used by different expression nodes
+     */
+    public static NodeSettingsService createNodeSettingsService() {
         return new ExpressionNodeSettingsService();
     }
 }

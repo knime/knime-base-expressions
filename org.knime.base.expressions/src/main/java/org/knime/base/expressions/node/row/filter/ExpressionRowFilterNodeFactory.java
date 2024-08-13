@@ -44,53 +44,54 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 5, 2024 (benjamin): created
+ *   Jan 11, 2024 (benjamin): created
  */
-package org.knime.base.expressions.node;
+package org.knime.base.expressions.node.row.filter;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.knime.core.expressions.ExpressionConstants;
-import org.knime.core.expressions.OperatorCategory;
-import org.knime.core.expressions.OperatorDescription;
-import org.knime.core.expressions.aggregations.BuiltInAggregations;
-import org.knime.core.expressions.aggregations.ColumnAggregation;
-import org.knime.core.expressions.functions.BuiltInFunctions;
-import org.knime.core.expressions.functions.ExpressionFunction;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
+import org.knime.core.webui.node.dialog.NodeDialog;
+import org.knime.core.webui.node.dialog.NodeDialogFactory;
+import org.knime.core.webui.node.dialog.NodeDialogManager;
 
 /**
+ * The factory for the Expression node.
+ *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public record FunctionCatalogData(List<OperatorCategory> categories, List<OperatorDescription> functions) {
+@SuppressWarnings("restriction") // webui node dialogs are not API yet
+public class ExpressionRowFilterNodeFactory extends NodeFactory<ExpressionRowFilterNodeModel>
+    implements NodeDialogFactory {
 
-    public static final FunctionCatalogData BUILT_IN =
-        new FunctionCatalogData(getBuiltInCategories(), getBuiltInOperators());
-
-    private static List<OperatorDescription> getBuiltInOperators() {
-        var operators = new ArrayList<OperatorDescription>();
-
-        operators.addAll(BuiltInFunctions.BUILT_IN_FUNCTIONS.stream().map(ExpressionFunction::description).toList());
-        operators
-            .addAll(BuiltInAggregations.BUILT_IN_AGGREGATIONS.stream().map(ColumnAggregation::description).toList());
-        operators.addAll(
-            Arrays.stream(ExpressionConstants.values()).map(ExpressionConstants::toOperatorDescription).toList());
-
-        return operators;
+    @Override
+    public ExpressionRowFilterNodeModel createNodeModel() {
+        return new ExpressionRowFilterNodeModel();
     }
 
-    private static List<OperatorCategory> getBuiltInCategories() {
-        var categories = new ArrayList<OperatorCategory>();
+    @Override
+    protected int getNrNodeViews() {
+        return 0;
+    }
 
-        categories.add(ExpressionConstants.CONSTANTS_CATEGORY);
-        categories.addAll(BuiltInFunctions.META_CATEGORY_CONTROL);
+    @Override
+    public NodeView<ExpressionRowFilterNodeModel> createNodeView(final int viewIndex,
+        final ExpressionRowFilterNodeModel nodeModel) {
+        return null;
+    }
 
-        categories.addAll(BuiltInFunctions.META_CATEGORY_MATH);
-        categories.addAll(BuiltInAggregations.BUILT_IN_CATEGORIES);
+    @Override
+    protected boolean hasDialog() {
+        return true;
+    }
 
-        categories.addAll(BuiltInFunctions.META_CATEGORY_STRING);
+    @Override
+    protected NodeDialogPane createNodeDialogPane() {
+        return NodeDialogManager.createLegacyFlowVariableNodeDialog(createNodeDialog());
+    }
 
-        return categories;
+    @Override
+    public NodeDialog createNodeDialog() {
+        return new ExpressionRowFilterNodeDialog();
     }
 }

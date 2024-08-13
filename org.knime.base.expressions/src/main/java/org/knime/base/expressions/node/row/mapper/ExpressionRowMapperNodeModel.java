@@ -46,31 +46,25 @@
  * History
  *   Jan 11, 2024 (benjamin): created
  */
-package org.knime.base.expressions.node;
+package org.knime.base.expressions.node.row.mapper;
 
 import static org.knime.base.expressions.ExpressionRunnerUtils.columnToTypesForTypeInference;
 import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForTypeInference;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionMapperFactory;
-import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContext;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
+import org.knime.base.expressions.node.ExpressionNodeSettings;
+import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.expressions.Ast;
-import org.knime.core.expressions.Ast.AggregationCall;
-import org.knime.core.expressions.Ast.FlowVarAccess;
-import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
@@ -84,8 +78,6 @@ import org.knime.core.node.Node;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.VariableType;
 import org.knime.core.table.virtual.expression.Exec;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
@@ -96,28 +88,22 @@ import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
 @SuppressWarnings("restriction") // webui node dialogs are not API yet
-class ExpressionNodeModel extends NodeModel {
+final class ExpressionRowMapperNodeModel extends NodeModel {
 
     private final ExpressionNodeSettings m_settings;
 
-    ExpressionNodeModel() {
+    public ExpressionRowMapperNodeModel() {
         super(1, 1);
         m_settings = new ExpressionNodeSettings();
     }
-
-    static final VariableType<?>[] SUPPORTED_FLOW_VARIABLE_TYPES =
-        new VariableType<?>[]{VariableType.BooleanType.INSTANCE, VariableType.DoubleType.INSTANCE,
-            VariableType.LongType.INSTANCE, VariableType.IntType.INSTANCE, VariableType.StringType.INSTANCE};
-
-    static final Set<VariableType<?>> SUPPORTED_FLOW_VARIABLE_TYPES_SET = Set.of(SUPPORTED_FLOW_VARIABLE_TYPES);
 
     /** @return the typed Ast for the configured expression */
     private Ast getPreparedExpression(final DataTableSpec inSpec, final String script)
         throws ExpressionCompileException {
 
         var ast = Expressions.parse(script);
-        Expressions.inferTypes(ast, columnToTypesForTypeInference(inSpec),
-            flowVarToTypeForTypeInference(getAvailableInputFlowVariables(SUPPORTED_FLOW_VARIABLE_TYPES)));
+        Expressions.inferTypes(ast, columnToTypesForTypeInference(inSpec), flowVarToTypeForTypeInference(
+            getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES)));
         return ast;
     }
 
@@ -222,8 +208,8 @@ class ExpressionNodeModel extends NodeModel {
                 newColumnPosition.columnName(), exec, subProgress.createSubProgress(0.34), exprContext, ctx);
 
             // We must avoid using inRefTable.getVirtualTable() directly. Doing so would result in building upon the
-            // transformation of the input table, instead of initiating a new fragment. This approach leads to complications
-            // when loading the virtual table, as it would attempt to resolve the sources of the input table. By creating a
+            // transformation of the input table, instead of initiating a new fragment. This leads to complications
+            // when loading the virtual table, as it attempts to resolve the sources of the input table. By creating a
             // new ColumnarVirtualTable, we establish a new SourceTableTransform that references the input table. This
             // ensures that the input table itself acts as the source, providing a clean slate for transformations.
             // Note that the CursorType is irrelevant because the transform gets re-sourced for running the comp graph.
@@ -283,50 +269,5 @@ class ExpressionNodeModel extends NodeModel {
     @Override
     protected void reset() {
         // nothing to do
-    }
-
-    static class NodeExpressionMapperContext implements ExpressionMapperContext {
-
-        private final Function<VariableType<?>[], Map<String, FlowVariable>> m_getFlowVariable;
-
-        public NodeExpressionMapperContext(
-            final Function<VariableType<?>[], Map<String, FlowVariable>> getFlowVariable) {
-            m_getFlowVariable = getFlowVariable;
-        }
-
-        @Override
-        public Optional<Computer> flowVariableToComputer(final FlowVarAccess flowVariableAccess) {
-            return Optional
-                .ofNullable(m_getFlowVariable.apply(SUPPORTED_FLOW_VARIABLE_TYPES).get(flowVariableAccess.name()))
-                .map(NodeExpressionMapperContext::computerForFlowVariable);
-        }
-
-        @Override
-        public Optional<Computer> aggregationToComputer(final AggregationCall aggregationCall) {
-            return Optional.ofNullable(ExpressionRunnerUtils.getAggregationResultComputer(aggregationCall));
-        }
-
-        private static Computer computerForFlowVariable(final FlowVariable variable) {
-            var variableType = variable.getVariableType();
-
-            if (variableType == VariableType.BooleanType.INSTANCE) {
-                return Computer.BooleanComputer.of(ctx -> variable.getValue(VariableType.BooleanType.INSTANCE),
-                    ctx -> false);
-            } else if (variableType == VariableType.DoubleType.INSTANCE) {
-                return Computer.FloatComputer.of(ctx -> variable.getValue(VariableType.DoubleType.INSTANCE),
-                    ctx -> false);
-            } else if (variableType == VariableType.LongType.INSTANCE) {
-                return Computer.IntegerComputer.of(ctx -> variable.getValue(VariableType.LongType.INSTANCE),
-                    ctx -> false);
-            } else if (variableType == VariableType.IntType.INSTANCE) {
-                return Computer.IntegerComputer.of(ctx -> variable.getValue(VariableType.IntType.INSTANCE),
-                    ctx -> false);
-            } else if (variableType == VariableType.StringType.INSTANCE) {
-                return Computer.StringComputer.of(ctx -> variable.getValue(VariableType.StringType.INSTANCE),
-                    ctx -> false);
-            } else {
-                throw new IllegalArgumentException("Unsupported variable type: " + variableType);
-            }
-        }
     }
 }

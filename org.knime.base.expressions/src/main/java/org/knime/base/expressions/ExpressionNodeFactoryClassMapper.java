@@ -44,53 +44,29 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 5, 2024 (benjamin): created
+ *   Aug 19, 2024 (kampmann): created
  */
-package org.knime.base.expressions.node;
+package org.knime.base.expressions;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.knime.core.expressions.ExpressionConstants;
-import org.knime.core.expressions.OperatorCategory;
-import org.knime.core.expressions.OperatorDescription;
-import org.knime.core.expressions.aggregations.BuiltInAggregations;
-import org.knime.core.expressions.aggregations.ColumnAggregation;
-import org.knime.core.expressions.functions.BuiltInFunctions;
-import org.knime.core.expressions.functions.ExpressionFunction;
+import org.knime.base.expressions.node.row.mapper.ExpressionRowMapperNodeFactory;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeFactoryClassMapper;
+import org.knime.core.node.NodeModel;
 
 /**
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * Maps the factory class name to the actual factory. The row mapper node is mapped to the
+ * {@link ExpressionRowMapperNodeFactory}.
+ *
  */
-public record FunctionCatalogData(List<OperatorCategory> categories, List<OperatorDescription> functions) {
+public class ExpressionNodeFactoryClassMapper extends NodeFactoryClassMapper {
 
-    public static final FunctionCatalogData BUILT_IN =
-        new FunctionCatalogData(getBuiltInCategories(), getBuiltInOperators());
+    @Override
+    public NodeFactory<? extends NodeModel> mapFactoryClassName(final String factoryClassName) {
+        if (factoryClassName.equals("org.knime.base.expressions.node.ExpressionNodeFactory")) {
+            return new ExpressionRowMapperNodeFactory();
+        }
 
-    private static List<OperatorDescription> getBuiltInOperators() {
-        var operators = new ArrayList<OperatorDescription>();
-
-        operators.addAll(BuiltInFunctions.BUILT_IN_FUNCTIONS.stream().map(ExpressionFunction::description).toList());
-        operators
-            .addAll(BuiltInAggregations.BUILT_IN_AGGREGATIONS.stream().map(ColumnAggregation::description).toList());
-        operators.addAll(
-            Arrays.stream(ExpressionConstants.values()).map(ExpressionConstants::toOperatorDescription).toList());
-
-        return operators;
+        return null;
     }
 
-    private static List<OperatorCategory> getBuiltInCategories() {
-        var categories = new ArrayList<OperatorCategory>();
-
-        categories.add(ExpressionConstants.CONSTANTS_CATEGORY);
-        categories.addAll(BuiltInFunctions.META_CATEGORY_CONTROL);
-
-        categories.addAll(BuiltInFunctions.META_CATEGORY_MATH);
-        categories.addAll(BuiltInAggregations.BUILT_IN_CATEGORIES);
-
-        categories.addAll(BuiltInFunctions.META_CATEGORY_STRING);
-
-        return categories;
-    }
 }

@@ -65,7 +65,7 @@ import org.knime.scripting.editor.ai.HubConnection;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @author Benjamin Wilhelm, KNIME GmbH, Konstanz, Germany
  */
-final class ExpressionCodeAssistant {
+public final class ExpressionCodeAssistant {
     private ExpressionCodeAssistant() {
     }
 

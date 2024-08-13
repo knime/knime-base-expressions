@@ -62,11 +62,13 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContext;
 import org.knime.base.expressions.aggregations.ColumnAggregations;
+import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
@@ -101,6 +103,8 @@ import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
+import org.knime.core.table.access.ReadAccess;
+import org.knime.core.table.virtual.expression.Exec;
 
 /**
  * Utility methods to work with expressions on Columnar virtual tables.
@@ -129,6 +133,54 @@ public final class ExpressionRunnerUtils {
     }
 
     /**
+     * A list of supported flow variable types.
+     */
+    public static final VariableType<?>[] SUPPORTED_FLOW_VARIABLE_TYPES =
+        new VariableType<?>[]{VariableType.BooleanType.INSTANCE, VariableType.DoubleType.INSTANCE,
+            VariableType.LongType.INSTANCE, VariableType.IntType.INSTANCE, VariableType.StringType.INSTANCE};
+
+    /**
+     * A set of supported flow variable types
+     */
+    public static final Set<VariableType<?>> SUPPORTED_FLOW_VARIABLE_TYPES_SET = Set.of(SUPPORTED_FLOW_VARIABLE_TYPES);
+
+    /**
+     * Filters a virtual columnar input table by the given expression and return a table where rows that do not satisfy
+     * the expression are removed.
+     *
+     * @param inputTable the input table
+     * @param expression the expression to filter the table
+     * @param numRows number of rows in the input table (no slicing here)
+     * @param evaluationContext
+     * @param exprContext
+     * @return the filtered table
+     *
+     */
+    public static ColumnarVirtualTable filterTableByExpression(final ColumnarVirtualTable inputTable,
+        final Ast expression, final long numRows, final EvaluationContext evaluationContext,
+        final NodeExpressionMapperContext exprContext) {
+
+        var slicedResolvedInputTable = resolveColumns(expression, inputTable, numRows);
+
+        final var columns = Exec.RequiredColumns.of(expression);
+
+        final var inputSchema = slicedResolvedInputTable.getSchema();
+
+        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory = columnIndex -> {
+            int inputIndex = columns.getInputIndex(columnIndex);
+            Function<ReadAccess, ? extends Computer> createComputer =
+                inputSchema.getSpec(columnIndex).accept(Exec.DATA_SPEC_TO_READER_FACTORY);
+            return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
+        };
+
+        var filterFactory = Exec.createRowFilterFactory(expression, columnIndexToComputerFactory,
+            exprContext::flowVariableToComputer, exprContext::aggregationToComputer, evaluationContext);
+
+        return slicedResolvedInputTable.filterRows(columns.columnIndices(), filterFactory)
+            .selectColumns(IntStream.range(0, inputTable.getSchema().numColumns()).toArray());
+    }
+
+    /**
      * Specifies where and with which name a new column should be added to a table
      *
      * @param mode The {@link ColumnInsertionMode}
@@ -150,6 +202,7 @@ public final class ExpressionRunnerUtils {
      */
     public static ColumnarVirtualTable constructOutputTable(final ColumnarVirtualTable inputTable,
         final ColumnarVirtualTable expressionResult, final NewColumnPosition columnInsertionMode) {
+
         if (columnInsertionMode.mode() == ColumnInsertionMode.APPEND) {
             return inputTable.append(expressionResult);
         } else {
@@ -384,13 +437,14 @@ public final class ExpressionRunnerUtils {
      * @return the input {@code ColumnarVirtualTable} with additional columns if required (ROW_INDEX, offset columns,
      *         etc).
      */
-    private static ColumnarVirtualTable resolveColumns(final Ast expression, final ColumnarVirtualTable input,
+    public static ColumnarVirtualTable resolveColumns(final Ast expression, final ColumnarVirtualTable input,
         final long numRows) {
 
         try {
             final ColumnarValueSchema inputTableSchema = input.getSchema();
 
             int numCols = inputTableSchema.numColumns();
+
             ColumnarVirtualTable modifiedInputTable = input;
 
             // -- append ROW_INDEX if required --
@@ -574,7 +628,7 @@ public final class ExpressionRunnerUtils {
                 "Flow variables of the type '" + type + "' are not supported"));
     }
 
-    // Note sonar complains about the number of retruns which is not a problem here
+    // Note sonar complains about the number of returns which is not a problem here
     public static ValueType mapVariableToValueType(final VariableType<?> variableType) { // NOSONAR
         if (variableType == VariableType.DoubleType.INSTANCE) {
             return ValueType.FLOAT;

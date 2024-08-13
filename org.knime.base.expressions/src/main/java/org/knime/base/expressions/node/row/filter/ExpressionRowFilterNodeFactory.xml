@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<knimeNode icon="expression_row_filter.png" type="Manipulator"
+	xmlns="http://knime.org/node/v4.1"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
+	<name>Expression Filter</name>
+	<shortDescription>
+		Allows executing custom expressions on the data
+		table
+		that filters rows.
+	</shortDescription>
+	<fullDescription>
+		<intro>
+			<p>
+				The KNIME Expression node enables generic row-by-row data
+				manipulation within KNIME workflows.
+			</p>
+		</intro>
+		<link
+			href="https://docs.knime.com/latest/knime_expressions_guide/index.html">Expression language specification</link>
+	</fullDescription>
+	<ports>
+		<inPort index="0" name="Input table">The tabular input data which will be
+			used.
+		</inPort>
+		<outPort index="0" name="Output table">The resulting table filtered by
+			applying the
+			expression.
+		</outPort>
+	</ports>
+</knimeNode>

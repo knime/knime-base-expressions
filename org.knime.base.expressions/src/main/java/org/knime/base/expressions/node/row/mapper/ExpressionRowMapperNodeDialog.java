@@ -46,7 +46,7 @@
  * History
  *   Jan 12, 2024 (benjamin): created
  */
-package org.knime.base.expressions.node;
+package org.knime.base.expressions.node.row.mapper;
 
 import static org.knime.core.webui.node.view.table.RowHeightPersistorUtil.LEGACY_CUSTOM_ROW_HEIGHT_COMPACT;
 
@@ -63,6 +63,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Platform;
+import org.knime.base.expressions.node.ExpressionNodeSettings;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.ui.CoreUIPlugin;
@@ -88,12 +89,12 @@ import org.osgi.framework.FrameworkUtil;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
 @SuppressWarnings("restriction")
-final class ExpressionNodeDialog implements NodeDialog {
+final class ExpressionRowMapperNodeDialog implements NodeDialog {
 
     @Override
     public Page getPage() {
         return Page //
-            .builder(ExpressionNodeFactory.class, "js-src/dist", "index.html") //
+            .builder(ExpressionRowMapperNodeFactory.class, "js-src/dist", "index.html") //
             .addResourceDirectory("assets") //
             .addResourceDirectory("monacoeditorwork") //
             .addResource(() -> {
@@ -183,13 +184,12 @@ final class ExpressionNodeDialog implements NodeDialog {
 
         final AtomicReference<BufferedDataTable> previewTable = new AtomicReference<>();
         var tableId = "previewTable.dummyId";
-        var outputPreviewTableDataService =
-            TableViewUtil.createTableViewDataService(previewTable::get, null, tableId);
+        var outputPreviewTableDataService = TableViewUtil.createTableViewDataService(previewTable::get, null, tableId);
 
         Runnable cleanUpTableViewDataService =
-            () -> TableViewUtil.deactivateTableViewDataService(outputPreviewTableDataService,tableId);
+            () -> TableViewUtil.deactivateTableViewDataService(outputPreviewTableDataService, tableId);
 
-        var scriptingService = new ExpressionNodeScriptingService(previewTable, cleanUpTableViewDataService);
+        var scriptingService = new ExpressionRowMapperNodeScriptingService(previewTable, cleanUpTableViewDataService);
 
         return Optional.of(RpcDataService.builder() //
             .addService("ScriptingService", scriptingService.getJsonRpcService()) //
