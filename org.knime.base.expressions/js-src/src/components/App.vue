@@ -159,7 +159,10 @@ const onEditorFocused = (filename: string) => {
     multiEditorComponentRefs[filename]
       ?.getEditorState()
       .editor.value?.getDomNode()
-      ?.scrollIntoView();
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
   });
 };
 
