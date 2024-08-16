@@ -35,6 +35,14 @@ export default defineConfig({
     include: ["@knime/ui-extension-service"],
   },
   base: "./",
+  build: {
+    rollupOptions: {
+      input: [
+        fileURLToPath(new URL("./row-mapper.html", import.meta.url)),
+        fileURLToPath(new URL("./row-filter.html", import.meta.url)),
+      ],
+    },
+  },
   test: {
     setupFiles: [
       fileURLToPath(new URL("./test-setup/setup.ts", import.meta.url)),

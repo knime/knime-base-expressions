@@ -44,7 +44,7 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 12, 2024 (benjamin): created
+ *   Aug 14, 2024 (tobias): created
  */
 package org.knime.base.expressions.node.row.filter;
 
@@ -93,7 +93,7 @@ import org.osgi.framework.FrameworkUtil;
 /**
  * The node dialog implementation of the Expression filter node.
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author Tobias Kampmann, TNG, Germany
  */
 @SuppressWarnings("restriction")
 final class ExpressionRowFilterNodeDialog implements NodeDialog {
@@ -101,7 +101,7 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
     @Override
     public Page getPage() {
         return Page //
-            .builder(ExpressionRowFilterNodeFactory.class, "js-src/dist", "index.html") //
+            .builder(ExpressionRowFilterNodeFactory.class, "js-src/dist", "row-filter.html") //
             .addResourceDirectory("assets") //
             .addResourceDirectory("monacoeditorwork") //
             .addResource(() -> {

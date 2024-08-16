@@ -1,35 +1,18 @@
 <script setup lang="ts">
 import {
   consoleHandler,
+  getScriptingService,
+  OutputTablePreview,
   ScriptingEditor,
   setActiveEditorStoreForAi,
-  insertionEventHelper,
-  OutputTablePreview,
-  type InsertionEvent,
-  COLUMN_INSERTION_EVENT,
   useReadonlyStore,
-  MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE,
-  getScriptingService,
 } from "@knime/scripting-editor";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
-import { getExpressionSettingsService } from "@/expressionSettingsService";
-import type {
-  ExpressionNodeSettings,
-  ExpressionVersion,
-  ExpressionInitialData,
-} from "@/types";
-import {
-  Button,
-  SplitButton,
-  SubMenu,
-  Tooltip,
-  LoadingIcon,
-  FunctionButton,
-} from "@knime/components";
-import PlayIcon from "@knime/styles/img/icons/play.svg";
-import DropdownIcon from "@knime/styles/img/icons/arrow-dropdown.svg";
+import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
+import { FunctionButton, LoadingIcon } from "@knime/components";
+
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
-import { onKeyStroke, useWindowSize } from "@vueuse/core";
+import { onKeyStroke } from "@vueuse/core";
 import {
   type ComponentPublicInstance,
   computed,
@@ -39,36 +22,33 @@ import {
   ref,
   watch,
 } from "vue";
-import FunctionCatalog, {
-  FUNCTION_INSERTION_EVENT,
-} from "@/components/function-catalog/FunctionCatalog.vue";
+import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
+
+import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
+import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
+import { v4 as uuidv4 } from "uuid";
+import ExpressionEditorPane, {
+  type ExpressionEditorPaneExposes,
+} from "@/components/ExpressionEditorPane.vue";
+import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 import ColumnOutputSelector, {
   type AllowedDropDownValue,
   type ColumnSelectorState,
-} from "@/components/ColumnOutputSelector.vue";
-import ExpressionEditorPane, {
-  type ExpressionEditorPaneExposes,
-} from "./ExpressionEditorPane.vue";
-import type { FunctionCatalogData } from "./functionCatalogTypes";
+} from "@/rowMapperApp/ColumnOutputSelector.vue";
 import {
   runColumnOutputDiagnostics,
-  runDiagnostics,
-} from "@/expressionDiagnostics";
-import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
+  runRowMapperDiagnostics,
+} from "@/rowMapperApp/expressionRowMapperDiagnostics";
+import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
 import {
-  COMBINED_SPLITTER_WIDTH,
-  MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION,
-  MIN_WIDTH_FUNCTION_CATALOG,
-  SWITCH_TO_SMALL_DESCRIPTION,
-  WIDTH_OF_INPUT_OUTPUT_PANE,
-} from "@/components/function-catalog/contraints";
-import { convertFunctionsToInsertionItems } from "./convertFunctionsToInsertionItems";
-import * as monaco from "monaco-editor";
-import { v4 as uuidv4 } from "uuid";
-
-const language = "knime-expression";
-
-const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
+  calculateInitialPaneSizes,
+  registerInsertionListener,
+} from "@/common/functions";
+import RunButton from "@/components/RunButton.vue";
+import {
+  type ExpressionRowMapperNodeSettings,
+  getRowMapperSettingsService,
+} from "@/expressionSettingsService";
 
 const activeEditorFileName = ref<string | null>(null);
 
@@ -176,7 +156,7 @@ const getFirstEditor = (): ExpressionEditorPaneExposes => {
 };
 
 const runDiagnosticsFunction = async () => {
-  severityLevels.value = await runDiagnostics(
+  severityLevels.value = await runRowMapperDiagnostics(
     orderedEditorKeys
       .map((key) => multiEditorComponentRefs[key])
       .map((editor) => editor.getEditorState()),
@@ -192,17 +172,18 @@ const runDiagnosticsFunction = async () => {
     columnsInInputTable.value.map((column) => column.id),
   );
 
-  for (let i = 0; i < orderedEditorKeys.length; i++) {
-    const key = orderedEditorKeys[i];
+  orderedEditorKeys.forEach((key, index) => {
+    columnSelectorStateErrorMessages[key] = columnValidities[index];
 
-    columnSelectorStateErrorMessages[key] = columnValidities[i];
-
-    if (severityLevels.value[i] === "ERROR" || columnValidities[i] !== null) {
+    if (
+      severityLevels.value[index] === "ERROR" ||
+      columnValidities[index] !== null
+    ) {
       multiEditorComponentRefs[key].setErrorLevel("ERROR");
     } else {
       multiEditorComponentRefs[key].setErrorLevel("OK");
     }
-  }
+  });
 };
 
 const initialData = ref<ExpressionInitialData | null>(null);
@@ -210,7 +191,7 @@ const initialData = ref<ExpressionInitialData | null>(null);
 onMounted(async () => {
   const [initialDataLocal, settings] = await Promise.all([
     getExpressionInitialDataService().getInitialData(),
-    getExpressionSettingsService().getSettings(),
+    getRowMapperSettingsService().getSettings(),
   ]);
   initialData.value = initialDataLocal;
 
@@ -218,7 +199,6 @@ onMounted(async () => {
     inputsAvailable: inputsAvailableLocal,
     functionCatalog,
     inputObjects,
-    flowVariables,
   } = initialData.value;
 
   expressionVersion.value = {
@@ -244,34 +224,7 @@ onMounted(async () => {
     );
   }
 
-  registerKnimeExpressionLanguage({
-    columnNamesForCompletion: inputObjects?.[0]?.subItems
-      ? inputObjects[0].subItems
-          .filter((column) => column.supported)
-          .map((column) => ({
-            name: column.name,
-            type: column.type,
-          }))
-      : [],
-    flowVariableNamesForCompletion: flowVariables?.subItems
-      ? flowVariables.subItems.map((flowVariable) => ({
-          name: flowVariable.name,
-          type: flowVariable.type,
-        }))
-      : [],
-    extraCompletionItems: [
-      ...convertFunctionsToInsertionItems(functionCatalog.functions),
-      ...["$[ROW_ID]", "$[ROW_INDEX]", "$[ROW_NUMBER]"].map((item) => ({
-        text: item,
-        kind: monaco.languages.CompletionItemKind.Variable,
-        extraDetailForMonaco: {
-          detail: "Type: INTEGER",
-        },
-      })),
-    ],
-    functionData: functionCatalog.functions,
-    languageName: language,
-  });
+  registerKnimeExpressionLanguage(initialDataLocal);
 
   for (let i = 0; i < settings.scripts.length; ++i) {
     const key = generateNewKey();
@@ -288,7 +241,7 @@ onMounted(async () => {
   await nextTick(); // Wait for the editors to be rendered
 
   useReadonlyStore().value =
-    settings.settingsAreOverriddenByFlowVariable ?? false;
+    settings.settingsAreOverriddenByFlowVariable || false;
 
   for (let i = 0; i < settings.scripts.length; i++) {
     const key = orderedEditorKeys[i];
@@ -323,10 +276,10 @@ onMounted(async () => {
   activeEditorFileName.value = orderedEditorKeys[0];
 
   // Run initial diagnostics now that we've set the initial text
-  runDiagnosticsFunction();
+  await runDiagnosticsFunction();
 });
 
-const runExpressions = (rows: number) => {
+const runRowMapperExpressions = (rows: number) => {
   if (severityLevels.value.every((severity) => severity !== "ERROR")) {
     getScriptingService().sendToService("runExpression", [
       orderedEditorKeys
@@ -347,8 +300,8 @@ const runExpressions = (rows: number) => {
   }
 };
 
-getExpressionSettingsService().registerSettingsGetterForApply(
-  (): ExpressionNodeSettings => ({
+getRowMapperSettingsService().registerSettingsGetterForApply(
+  (): ExpressionRowMapperNodeSettings => ({
     ...expressionVersion.value,
     createdColumns: orderedEditorKeys
       .map((key) => columnSelectorStates[key])
@@ -380,7 +333,7 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
   // Wait for the editor to render and populate the ref
   await nextTick();
 
-  runDiagnosticsFunction();
+  await runDiagnosticsFunction();
 
   editorStateWatchers[latestKey] = watch(
     multiEditorComponentRefs[latestKey].getEditorState().text,
@@ -472,30 +425,7 @@ const onEditorRequestedCopyBelow = async (filename: string) => {
     );
 };
 
-insertionEventHelper
-  .getInsertionEventHelper(FUNCTION_INSERTION_EVENT)
-  .registerInsertionListener((insertionEvent: InsertionEvent) => {
-    getActiveEditor()?.getEditorState().editor.value?.focus();
-
-    const functionArgs = insertionEvent.extraArgs?.functionArgs;
-    const functionName = insertionEvent.textToInsert;
-
-    getActiveEditor()
-      ?.getEditorState()
-      .insertFunctionReference(functionName, functionArgs);
-  });
-
-insertionEventHelper
-  .getInsertionEventHelper(COLUMN_INSERTION_EVENT)
-  .registerInsertionListener((insertionEvent: InsertionEvent) => {
-    getActiveEditor()?.getEditorState().editor.value?.focus();
-
-    const codeToInsert = insertionEvent.textToInsert;
-
-    // Note that we're ignoring requiredImport, because the expression editor
-    // doesn't need imports.
-    getActiveEditor()?.getEditorState().insertColumnReference(codeToInsert);
-  });
+registerInsertionListener(getActiveEditor);
 
 // Shift+Enter while editor has focus runs expressions
 onKeyStroke("Enter", (evt: KeyboardEvent) => {
@@ -506,7 +436,7 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
     )
   ) {
     evt.preventDefault();
-    runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN);
+    runRowMapperExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN);
   }
 });
 
@@ -544,35 +474,6 @@ const runButtonDisabledErrorReason = computed(() => {
   return result;
 });
 
-const calculateInitialPaneSizes = () => {
-  const availableWidthForPanes =
-    useWindowSize().width.value - COMBINED_SPLITTER_WIDTH;
-
-  const sizeOfInputOutputPaneInPixel =
-    availableWidthForPanes < MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE
-      ? 0
-      : WIDTH_OF_INPUT_OUTPUT_PANE;
-  const relativeSizeOfInputOutputPane =
-    (sizeOfInputOutputPaneInPixel / availableWidthForPanes) * 100;
-
-  const widthOfRightPane =
-    availableWidthForPanes < SWITCH_TO_SMALL_DESCRIPTION
-      ? MIN_WIDTH_FUNCTION_CATALOG
-      : MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION;
-  const relativeSizeOfRightPaneWithoutTakingIntoAccountTheLeftPane =
-    (widthOfRightPane / availableWidthForPanes) * 100;
-
-  const factorForRightPaneToTakeLeftPaneIntoAccount =
-    100 / (100 - relativeSizeOfInputOutputPane);
-
-  return {
-    right:
-      relativeSizeOfRightPaneWithoutTakingIntoAccountTheLeftPane *
-      factorForRightPaneToTakeLeftPaneIntoAccount,
-    left: relativeSizeOfInputOutputPane,
-  };
-};
-
 const initialPaneSizes = calculateInitialPaneSizes();
 </script>
 
@@ -587,7 +488,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
       <ScriptingEditor
         :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
         :show-control-bar="true"
-        :language="language"
+        :language="LANGUAGE"
         :show-output-table="true"
         :initial-pane-sizes="{
           right: initialPaneSizes.right,
@@ -613,11 +514,13 @@ const initialPaneSizes = calculateInitialPaneSizes();
             :ref="createElementReference(key)"
             :title="createEditorTitle(index)"
             :file-name="key"
-            :language="language"
-            :is-first="index === 0"
-            :is-last="index === numberOfEditors - 1"
-            :is-only="numberOfEditors === 1"
-            :is-active="activeEditorFileName === key"
+            :language="LANGUAGE"
+            :ordering-options="{
+              isFirst: index === 0,
+              isLast: index === numberOfEditors - 1,
+              isOnly: numberOfEditors === 1,
+              isActive: activeEditorFileName === key,
+            }"
             @focus="onEditorFocused(key)"
             @delete="onEditorRequestedDelete"
             @move-down="onEditorRequestedMoveDown"
@@ -658,50 +561,11 @@ const initialPaneSizes = calculateInitialPaneSizes();
 
         <!-- Controls displayed once only -->
         <template #code-editor-controls="{ showButtonText }">
-          <Tooltip
-            class="tooltip-word-wrap"
-            :text="runButtonDisabledErrorReason ?? ''"
-          >
-            <SplitButton>
-              <Button
-                primary
-                compact
-                :disabled="runButtonDisabledErrorReason !== null"
-                @click="runExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN)"
-              >
-                <div
-                  class="run-button"
-                  :class="{
-                    'hide-button-text': !showButtonText,
-                  }"
-                >
-                  <PlayIcon />
-                </div>
-
-                {{
-                  showButtonText
-                    ? `Evaluate first
-               ${DEFAULT_NUMBER_OF_ROWS_TO_RUN}  rows`
-                    : ""
-                }}</Button
-              >
-
-              <SubMenu
-                :items="[
-                  { text: 'Evaluate first 100 rows', metadata: 100 },
-                  { text: 'Evaluate first 1000 rows', metadata: 1000 },
-                ]"
-                button-title="Run more rows"
-                orientation="top"
-                :disabled="runButtonDisabledErrorReason !== null"
-                @item-click="
-                  (_evt: any, item: any) => runExpressions(item.metadata)
-                "
-              >
-                <DropdownIcon />
-              </SubMenu>
-            </SplitButton>
-          </Tooltip>
+          <RunButton
+            :run-button-disabled-error-reason="runButtonDisabledErrorReason"
+            :show-button-text="showButtonText"
+            @run-expressions="runRowMapperExpressions"
+          />
         </template>
       </ScriptingEditor>
     </template>
@@ -722,14 +586,6 @@ const initialPaneSizes = calculateInitialPaneSizes();
   gap: var(--space-4);
 }
 
-.hide-button-text {
-  margin-right: calc(-1 * var(--space-16));
-}
-
-.run-button {
-  display: inline;
-}
-
 .no-editors {
   position: absolute;
   inset: calc(50% - 25px);
@@ -741,26 +597,5 @@ const initialPaneSizes = calculateInitialPaneSizes();
   width: fit-content;
   margin: var(--space-16) auto;
   outline: 1px solid var(--knime-silver-sand);
-}
-
-.tooltip-word-wrap .text {
-  white-space: normal;
-  overflow: visible;
-  width: auto;
-  height: auto;
-  z-index: 9999;
-}
-
-.submenu {
-  background-color: var(--knime-yellow);
-
-  &:focus-within,
-  &:hover {
-    background-color: var(--knime-masala);
-
-    & .submenu-toggle svg {
-      stroke: var(--knime-white);
-    }
-  }
 }
 </style>

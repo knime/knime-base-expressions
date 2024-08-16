@@ -44,7 +44,7 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 11, 2024 (benjamin): created
+ *   Aug 14, 2024 (tobias): created
  */
 package org.knime.base.expressions.node.row.filter;
 
@@ -58,7 +58,7 @@ import org.knime.core.webui.node.dialog.NodeDialogManager;
 /**
  * The factory for the Expression node.
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author Tobias Kampmann, TNG, Germany
  */
 @SuppressWarnings("restriction") // webui node dialogs are not API yet
 public class ExpressionRowFilterNodeFactory extends NodeFactory<ExpressionRowFilterNodeModel>

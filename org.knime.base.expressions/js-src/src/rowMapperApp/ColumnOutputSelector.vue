@@ -5,7 +5,7 @@ import {
   useReadonlyStore,
   useShouldFocusBePainted,
 } from "@knime/scripting-editor";
-import { type OutputInsertionMode } from "@/types";
+import { type OutputInsertionMode } from "@/common/types";
 
 export type ColumnSelectorState = {
   outputMode: OutputInsertionMode;

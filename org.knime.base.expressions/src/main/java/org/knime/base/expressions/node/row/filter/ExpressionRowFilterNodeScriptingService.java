@@ -44,7 +44,7 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 12, 2024 (benjamin): created
+ *   Aug 14, 2024 (tobias): created
  */
 package org.knime.base.expressions.node.row.filter;
 
@@ -85,7 +85,7 @@ import org.knime.scripting.editor.ScriptingService;
 /**
  * {@link ScriptingService} implementation for the Expression node.
  *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @author Tobias Kampmann, TNG, Germany
  */
 @SuppressWarnings("restriction")
 final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
@@ -103,6 +103,13 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
      */
     private ReferenceTable m_inputTable;
 
+    /**
+     * Cached row count of the input table.
+     * In case of a row-based table a columnar-based table is created on the fly for the first
+     * {@link PREVIEW_MAX_ROWS} rows, thus loosing the information about the original input table row count
+     */
+    private long m_inputTableRowCount;
+
     private final AtomicReference<BufferedDataTable> m_outputBufferTableReference;
 
     private final boolean m_inputTableIsAvailable;
@@ -118,7 +125,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
 
         if (m_inputTableIsAvailable) {
             m_outputBufferTableReference = outputTableRef;
-            m_outputBufferTableReference.set(getInputTable().table.getBufferedTable());
+            m_outputBufferTableReference.set(getInputTable().getBufferedTable());
         } else {
             m_outputBufferTableReference = outputTableRef;
         }
@@ -145,14 +152,15 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
         return m_columnToType;
     }
 
-    synchronized InputTableWithRowCount getInputTable() {
-        long rowCount = 0;
+    synchronized ReferenceTable getInputTable() {
+
         if (m_inputTable == null) {
             var inTable = (BufferedDataTable)getWorkflowControl().getInputData()[0];
             if (inTable == null) {
                 throw new IllegalStateException("Input table not available");
             }
-            rowCount = inTable.size();
+            m_inputTableRowCount = inTable.size();
+
             var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
 
             var executionContext = nodeContainer.createExecutionContext();
@@ -165,15 +173,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                 throw new IllegalStateException("Input table preparation for expression cancelled by the user", ex);
             }
         }
-        return new InputTableWithRowCount(m_inputTable, rowCount);
-    }
-
-    /*
-     *  If the table is row-based it will be converted on-the-fly to a columnar-based table.
-     *  But in that case it will be sliced to have at most {@link PREVIEW_MAX_ROWS} rows.
-     *  For the output table we need the original row count.
-     */
-    private record InputTableWithRowCount(ReferenceTable table, long rowCount) {
+        return m_inputTable;
     }
 
     public final class ExpressionNodeRpcService extends RpcService {
@@ -205,13 +205,11 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
         /** @return the typed Ast for the configured expression */
         private Ast getPreparedExpression(final String script) throws ExpressionCompileException {
 
-            var inSpec = getInputTable().table.getBufferedTable().getDataTableSpec();
-
             var ast = Expressions.parse(script);
             var flowVarToTypeMapper = ExpressionRunnerUtils.flowVarToTypeForTypeInference(
                 getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
 
-            Expressions.inferTypes(ast, ExpressionRunnerUtils.columnToTypesForTypeInference(inSpec),
+            Expressions.inferTypes(ast, getColumnToTypeMapper(),
                 flowVarToTypeMapper);
 
             return ast;
@@ -220,19 +218,12 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
         /**
          * List of diagnostics for each editor, hence a 2D list.
          *
-         * @param expressions
-         * @param newColumnNames
+         * @param expression the expression to check
          * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
          */
-        public List<List<Diagnostic>> getDiagnostics(final String[] expressions, final String[] newColumnNames) {
+        public List<Diagnostic> getRowFilterDiagnostics(final String expression) {
 
-            if (expressions.length != 1) {
-                throw new IllegalArgumentException("Number of scripts must be exactly 1");
-            }
-
-            int i = 0;
-            var expression = expressions[i];
-            List<List<Diagnostic>> diagnostics = new ArrayList<>();
+            List<Diagnostic> diagnostics = new ArrayList<>();
 
             try {
                 var ast = getPreparedExpression(expression);
@@ -240,37 +231,25 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                 var inferredType = Expressions.getInferredType(ast);
 
                 if (!ValueType.BOOLEAN.equals(inferredType)) {
-                    diagnostics.add(List.of(new Diagnostic(
+                    diagnostics.add(new Diagnostic(
                         "The full expression must return the value type BOOLEAN "
                             + "in order to filter out rows for which the filter expression evaluates to false.",
-                        DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast))));
-                } else {
-                    diagnostics.add(List.of());
+                        DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast)));
                 }
             } catch (ExpressionCompileException ex) {
-                diagnostics.add(Diagnostic.fromException(ex));
+                diagnostics.addAll(Diagnostic.fromException(ex));
             }
 
             return diagnostics;
         }
 
-        public void runExpression(final String[] scripts, int numPreviewRows, final String[] columnInsertionModesString,
-            final String[] columnNames) {
+        public void runRowFilterExpression(final String script, int numPreviewRows) {
 
             if (numPreviewRows > PREVIEW_MAX_ROWS) {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            if (scripts.length != 1) {
-                throw new IllegalArgumentException("Number of scripts must be exactly 1");
-            }
-
-            var inputTableWithRowCount = getInputTable();
-            var inputTable = inputTableWithRowCount.table;
-            var inputTableSize = inputTableWithRowCount.rowCount;
-
-            int i = 0;
-            String script = scripts[i];
+            var inputTable =  getInputTable();
 
             final Ast expression;
             try {
@@ -298,7 +277,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
 
             List<String> warnings = new ArrayList<>();
             EvaluationContext evaluationContext = warnings::add;
-            numPreviewRows = (int)Math.min(numPreviewRows, inputTableSize);
+            numPreviewRows = (int)Math.min(numPreviewRows, m_inputTableRowCount);
 
             var slicedInputTable = inputTable.getVirtualTable().slice(0, numPreviewRows);
 
@@ -327,7 +306,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
             }
             m_outputBufferTableReference.set(outputTable);
             m_cleanUpTableViewDataService.run();
-            updateOutputTable(numPreviewRows, inputTableSize);
+            updateOutputTable(numPreviewRows, m_inputTableRowCount);
 
             for (var warning : warnings) {
                 addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));

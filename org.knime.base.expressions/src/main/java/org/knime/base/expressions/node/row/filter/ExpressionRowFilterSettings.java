@@ -119,15 +119,6 @@ public class ExpressionRowFilterSettings extends ScriptingNodeSettings implement
      * Create a new settings object with the default script.
      */
     public ExpressionRowFilterSettings() {
-        this(DEFAULT_SCRIPT);
-    }
-
-    /**
-     * Create a new settings object with the specified script
-     *
-     * @param script the script to use
-     */
-    public ExpressionRowFilterSettings(final String script) {
         super(SettingsType.MODEL);
 
         // Set to the latest version by default
@@ -136,7 +127,7 @@ public class ExpressionRowFilterSettings extends ScriptingNodeSettings implement
         this.m_builtinFunctionsVersion = BuiltInFunctions.FUNCTIONS_VERSION;
         this.m_builtinAggregationsVersion = BuiltInAggregations.AGGREGATIONS_VERSION;
 
-        this.m_script = script;
+        this.m_script = DEFAULT_SCRIPT;
     }
 
     @Override

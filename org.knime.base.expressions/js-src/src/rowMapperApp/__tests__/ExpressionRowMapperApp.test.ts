@@ -1,12 +1,10 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import App from "../App.vue";
 import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { nextTick } from "vue";
-import {
-  DEFAULT_INITIAL_DATA,
-  DEFAULT_INITIAL_SETTINGS,
-} from "@/__mocks__/mock-data";
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import ExpressionRowMapperApp from "../ExpressionRowMapperApp.vue";
+import { DEFAULT_ROW_MAPPER_INITIAL_SETTINGS } from "../__mocks__/browser-mock-row-mapper-services";
 
 vi.mock("@/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),
@@ -30,20 +28,22 @@ vi.mock("@/expressionInitialDataService", () => ({
 }));
 
 vi.mock("@/expressionSettingsService", () => ({
-  getExpressionSettingsService: vi.fn(() => ({
-    getSettings: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_SETTINGS)),
+  getRowMapperSettingsService: vi.fn(() => ({
+    getSettings: vi.fn(() =>
+      Promise.resolve(DEFAULT_ROW_MAPPER_INITIAL_SETTINGS),
+    ),
     registerSettingsGetterForApply: vi.fn(),
   })),
 }));
 
-vi.mock("@/expressionDiagnostics", () => ({
-  runDiagnostics: vi.fn(() => Promise.resolve([[]])),
+vi.mock("@/rowMapperApp/expressionRowMapperDiagnostics", () => ({
+  runRowMapperDiagnostics: vi.fn(() => Promise.resolve([[]])),
   runColumnOutputDiagnostics: vi.fn(() => Promise.resolve([])),
 }));
 
-describe("App.vue", () => {
+describe("ExpressionRowMapperApp.vue", () => {
   const doMount = () => {
-    const wrapper = mount(App, {
+    const wrapper = mount(ExpressionRowMapperApp, {
       global: {
         stubs: {
           TabBar: true,
@@ -108,9 +108,9 @@ describe("App.vue", () => {
     await nextTick();
 
     expect(columnSelector.props("modelValue")).toEqual({
-      createColumn: DEFAULT_INITIAL_SETTINGS.createdColumns[0],
+      createColumn: DEFAULT_ROW_MAPPER_INITIAL_SETTINGS.createdColumns[0],
       outputMode: "APPEND",
-      replaceColumn: DEFAULT_INITIAL_SETTINGS.replacedColumns[0],
+      replaceColumn: DEFAULT_ROW_MAPPER_INITIAL_SETTINGS.replacedColumns[0],
     });
   });
 });

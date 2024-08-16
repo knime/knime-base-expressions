@@ -252,6 +252,7 @@ public final class ExpressionRunnerUtils {
      */
     public static ReferenceTable createReferenceTable(final BufferedDataTable table, final ExecutionContext exec,
         final ExecutionMonitor progress, final long maxRowsToConvert) throws CanceledExecutionException {
+
         var uuid = UUID.randomUUID();
         try {
             return ReferenceTables.createReferenceTable(uuid, table);

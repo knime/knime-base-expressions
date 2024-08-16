@@ -44,7 +44,7 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jan 11, 2024 (benjamin): created
+ *   Aug 14, 2024 (tobias): created
  */
 package org.knime.base.expressions.node.row.filter;
 
@@ -83,12 +83,11 @@ import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 @SuppressWarnings("restriction") // webui node dialogs are not API yet
 final class ExpressionRowFilterNodeModel extends NodeModel {
 
-    // TODO(AP-23189) wait for refactor of NodeSettings
     private final ExpressionRowFilterSettings m_settings;
 
     ExpressionRowFilterNodeModel() {
         super(1, 1);
-        m_settings = new ExpressionRowFilterSettings(null);
+        m_settings = new ExpressionRowFilterSettings();
     }
 
     /** @return the typed Ast for the configured expression */

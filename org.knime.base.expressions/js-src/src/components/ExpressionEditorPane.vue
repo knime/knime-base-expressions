@@ -6,22 +6,23 @@ import {
 } from "@knime/scripting-editor";
 import { onKeyStroke } from "@vueuse/core";
 import {
-  ref,
-  watch,
   computed,
   type FunctionalComponent,
+  ref,
   type SVGAttributes,
+  watch,
 } from "vue";
 import {
-  useDraggedFunctionStore,
   resetDraggedFunctionStore,
+  useDraggedFunctionStore,
 } from "@/draggedFunctionStore";
 import TrashIcon from "@knime/styles/img/icons/trash.svg";
 import UpArrowIcon from "@knime/styles/img/icons/arrow-up.svg";
 import DownArrowIcon from "@knime/styles/img/icons/arrow-down.svg";
 import CopyIcon from "@knime/styles/img/icons/copy.svg";
 import { FunctionButton } from "@knime/components";
-import { type ErrorLevel } from "@/expressionDiagnostics";
+
+import type { ErrorLevel } from "@/common/types";
 
 export type ExpressionEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;
@@ -38,16 +39,31 @@ const emit = defineEmits<{
   "copy-below": [filename: string];
 }>();
 
-interface Props {
-  language: string;
-  fileName: string;
-  title: string;
+type EditorOrderingOptions = {
   isFirst?: boolean;
   isLast?: boolean;
   isOnly?: boolean;
   isActive?: boolean;
+  disableMultiEditorControls?: boolean;
+};
+
+interface Props {
+  language: string;
+  fileName: string;
+  title: string;
+  orderingOptions?: EditorOrderingOptions;
 }
-const props = defineProps<Props>();
+
+const props = withDefaults(defineProps<Props>(), {
+  orderingOptions: () => ({
+    isFirst: false,
+    isLast: false,
+    isOnly: false,
+    isActive: false,
+    disableMultiEditorControls: false,
+  }),
+});
+
 const readOnly = useReadonlyStore();
 
 type ButtonItem = {
@@ -62,13 +78,13 @@ const buttonActions = computed<ButtonItem[]>(() => [
     text: "Move upwards",
     icon: UpArrowIcon,
     eventName: "move-up",
-    disabled: props.isFirst || readOnly.value,
+    disabled: props.orderingOptions.isFirst || readOnly.value,
   },
   {
     text: "Move downwards",
     icon: DownArrowIcon,
     eventName: "move-down",
-    disabled: props.isLast || readOnly.value,
+    disabled: props.orderingOptions.isLast || readOnly.value,
   },
   {
     text: "Duplicate below",
@@ -80,7 +96,7 @@ const buttonActions = computed<ButtonItem[]>(() => [
     text: "Delete",
     icon: TrashIcon,
     eventName: "delete",
-    disabled: props.isOnly || readOnly.value,
+    disabled: props.orderingOptions.isOnly || readOnly.value,
   },
 ]);
 
@@ -161,13 +177,16 @@ const onMenuItemClicked = (item: ButtonItem) => {
     class="editor-container"
     :class="{
       error: errorLevel === 'ERROR',
-      active: isActive,
+      active: props.orderingOptions.isActive,
     }"
     @focusin="onFocus"
   >
     <span class="editor-title-bar">
       <span class="title-text">{{ props.title }}</span>
-      <span class="title-menu">
+      <span
+        v-if="!props.orderingOptions.disableMultiEditorControls"
+        class="title-menu"
+      >
         <FunctionButton
           v-for="item in buttonActions"
           :key="item.text"

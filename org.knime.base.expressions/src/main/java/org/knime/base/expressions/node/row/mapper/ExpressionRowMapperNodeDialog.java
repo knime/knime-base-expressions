@@ -99,8 +99,8 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
 
     @Override
     public Page getPage() {
-        return Page //
-            .builder(ExpressionRowMapperNodeFactory.class, "js-src/dist", "index.html") //
+        return Page
+            .builder(ExpressionRowMapperNodeFactory.class, "js-src/dist", "row-mapper.html") //
             .addResourceDirectory("assets") //
             .addResourceDirectory("monacoeditorwork") //
             .addResource(() -> {

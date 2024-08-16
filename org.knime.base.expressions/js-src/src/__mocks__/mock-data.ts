@@ -2,8 +2,11 @@ import type {
   FunctionCatalogData,
   FunctionCatalogEntryData,
 } from "@/components/functionCatalogTypes";
-import type { ExpressionInitialData, ExpressionNodeSettings } from "@/types";
-import type { InputOutputModel } from "@knime/scripting-editor";
+import type { ExpressionInitialData } from "@/common/types";
+import type {
+  GenericNodeSettings,
+  InputOutputModel,
+} from "@knime/scripting-editor";
 import { DEFAULT_FLOW_VARIABLE_INPUTS } from "@knime/scripting-editor/initial-data-service-browser-mock";
 
 export const INPUT_OBJECTS: InputOutputModel[] = [
@@ -237,12 +240,7 @@ export const DEFAULT_INITIAL_DATA: ExpressionInitialData = {
   },
 };
 
-export const DEFAULT_INITIAL_SETTINGS: ExpressionNodeSettings = {
-  languageVersion: 1,
-  builtinFunctionsVersion: 1,
-  builtinAggregationsVersion: 1,
-  scripts: ["mocked default script"],
-  outputModes: ["APPEND"],
-  createdColumns: ["mocked output col"],
-  replacedColumns: [INPUT_OBJECTS[0].subItems![0].name],
+export const DEFAULT_INITIAL_SETTINGS: GenericNodeSettings = {
+  settingsAreOverriddenByFlowVariable: false,
+  someKey: "someValue",
 };

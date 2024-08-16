@@ -107,6 +107,13 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
      */
     private ReferenceTable m_inputTable;
 
+    /**
+     * Cached row count of the input table.
+     * In case of a row-based table a columnar-based table is created on the fly for the first
+     * {@link PREVIEW_MAX_ROWS} rows, thus loosing the information about the original input table row count
+     */
+    private long m_inputTableRowCount;
+
     private final AtomicReference<BufferedDataTable> m_outputBufferTableReference;
 
     private final boolean m_inputTableIsAvailable;
@@ -122,7 +129,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
         if (m_inputTableIsAvailable) {
             m_outputBufferTableReference = outputTableRef;
-            m_outputBufferTableReference.set(getInputTable().table.getBufferedTable());
+            m_outputBufferTableReference.set(getInputTable().getBufferedTable());
         } else {
             m_outputBufferTableReference = outputTableRef;
         }
@@ -149,14 +156,14 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         return m_columnToType;
     }
 
-    synchronized InputTableWithRowCount getInputTable() {
-        long rowCount = 0;
+    synchronized ReferenceTable getInputTable() {
+
         if (m_inputTable == null) {
             var inTable = (BufferedDataTable)getWorkflowControl().getInputData()[0];
             if (inTable == null) {
                 throw new IllegalStateException("Input table not available");
             }
-            rowCount = inTable.size();
+            m_inputTableRowCount = inTable.size();
             var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
 
             var executionContext = nodeContainer.createExecutionContext();
@@ -169,15 +176,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 throw new IllegalStateException("Input table preparation for expression cancelled by the user", ex);
             }
         }
-        return new InputTableWithRowCount(m_inputTable, rowCount);
-    }
-
-    /*
-     *  If the table is row-based it will be converted on-the-fly to a columnar-based table.
-     *  But in that case it will be sliced to have at most {@link PREVIEW_MAX_ROWS} rows.
-     *  For the output table we need the original row count.
-     */
-    private record InputTableWithRowCount(ReferenceTable table, long rowCount) {
+        return m_inputTable;
     }
 
     public final class ExpressionNodeRpcService extends RpcService {
@@ -286,9 +285,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            var inputTableWithRowCount = getInputTable();
-            var inputTable = inputTableWithRowCount.table;
-            var inputTableSize = inputTableWithRowCount.rowCount;
+            var inputTable =  getInputTable();
 
             List<ValueType> additionalColumnTypes = new ArrayList<>();
 
@@ -367,7 +364,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 }
 
                 updateTablePreview(inputTable, slicedInputTable, expressionResult, columnName,
-                    columnInsertionModeString, numPreviewRows, inputTableSize);
+                    columnInsertionModeString, numPreviewRows, m_inputTableRowCount);
 
                 for (var warning : warnings) {
                     addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));

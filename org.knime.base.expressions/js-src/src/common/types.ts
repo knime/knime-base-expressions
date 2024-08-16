@@ -3,7 +3,7 @@ import type {
   KAIConfig,
   PortConfigs,
 } from "@knime/scripting-editor";
-import type { FunctionCatalogData } from "./components/functionCatalogTypes";
+import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 
 export type OutputInsertionMode = "APPEND" | "REPLACE_EXISTING";
 
@@ -13,16 +13,6 @@ export type ExpressionVersion = {
   builtinAggregationsVersion: number;
 };
 
-export type ColumnSettings = {
-  outputModes: OutputInsertionMode[];
-  createdColumns: string[];
-  replacedColumns: string[];
-};
-
-export type ExpressionNodeSettings = ExpressionVersion & {
-  settingsAreOverriddenByFlowVariable?: boolean;
-} & ColumnSettings & { scripts: string[] };
-
 export type ExpressionInitialData = {
   functionCatalog: FunctionCatalogData;
   inputObjects: InputOutputModel[];
@@ -30,4 +20,16 @@ export type ExpressionInitialData = {
   inputsAvailable: boolean;
   kAiConfig: KAIConfig;
   inputPortConfigs: PortConfigs;
+};
+
+/** Identifies the error state of an ExpressionEditorPane */
+export type ErrorLevel = "ERROR" | "WARNING" | "OK";
+
+export type Diagnostic = {
+  message: string;
+  severity: "ERROR" | "WARNING" | "INFO" | "HINT";
+  location: {
+    start: number;
+    stop: number;
+  };
 };

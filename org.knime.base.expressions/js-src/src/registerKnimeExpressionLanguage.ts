@@ -1,6 +1,9 @@
 import * as monaco from "monaco-editor";
 import { functionDataToMarkdown } from "@/components/function-catalog/functionDescriptionToMarkdown";
 import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
+import { convertFunctionsToInsertionItems } from "@/components/convertFunctionsToInsertionItems";
+import { LANGUAGE } from "@/common/constants";
+import type { ExpressionInitialData } from "@/common/types";
 
 export type CompletionItemWithType = {
   text: string;
@@ -32,7 +35,7 @@ export type ColumnWithDType = {
  *          language multiple times, e.g. to add/remove autocompletion
  *          suggestions, call this.
  */
-const registerKnimeExpressionLanguage = ({
+const register = ({
   columnNamesForCompletion = [],
   flowVariableNamesForCompletion = [],
   extraCompletionItems = [],
@@ -373,6 +376,51 @@ const registerKnimeExpressionLanguage = ({
     completionItemProvider.dispose();
     hoverProvider.dispose();
   };
+};
+
+/**
+ * Set up the knime-expression language and register it with Monaco directly from initial data.
+ *
+ * @param initialData the initial data from the initialData service to use for
+ * the autocompletion.
+ *
+ * @returns a dispose function for the autocompletion. If you register the
+ *          language multiple times, e.g. to add/remove autocompletion
+ *          suggestions, call this.
+ */
+const registerKnimeExpressionLanguage = (
+  initialData: ExpressionInitialData,
+) => {
+  return register({
+    columnNamesForCompletion: initialData.inputObjects?.[0]?.subItems
+      ? initialData.inputObjects[0].subItems
+          .filter((column) => column.supported)
+          .map((column) => ({
+            name: column.name,
+            type: column.type,
+          }))
+      : [],
+    flowVariableNamesForCompletion: initialData.flowVariables?.subItems
+      ? initialData.flowVariables.subItems.map((flowVariable) => ({
+          name: flowVariable.name,
+          type: flowVariable.type,
+        }))
+      : [],
+    extraCompletionItems: [
+      ...convertFunctionsToInsertionItems(
+        initialData.functionCatalog.functions,
+      ),
+      ...["$[ROW_ID]", "$[ROW_INDEX]", "$[ROW_NUMBER]"].map((item) => ({
+        text: item,
+        kind: monaco.languages.CompletionItemKind.Variable,
+        extraDetailForMonaco: {
+          detail: "Type: INTEGER",
+        },
+      })),
+    ],
+    functionData: initialData.functionCatalog.functions,
+    languageName: LANGUAGE,
+  });
 };
 
 export default registerKnimeExpressionLanguage;

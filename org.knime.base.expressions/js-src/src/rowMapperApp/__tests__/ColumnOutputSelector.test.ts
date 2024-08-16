@@ -22,15 +22,13 @@ describe("ColumnOutputSelector", () => {
       replaceColumn: "a",
     },
   ) => {
-    const wrapper = mount(ColumnOutputSelector, {
+    return mount(ColumnOutputSelector, {
       props: {
         allowedReplacementColumns: columnsToReplace,
         modelValue,
       },
       attachTo: "body", // needed for label clicking to work
     });
-
-    return wrapper;
   };
 
   afterEach(() => {
