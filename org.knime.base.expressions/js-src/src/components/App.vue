@@ -641,7 +641,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
             class="add-new-editor-button"
             @click="addEditorAtBottom"
           >
-            <PlusIcon /><span>Add new editor</span>
+            <PlusIcon /><span>Add expression</span>
           </FunctionButton>
         </template>
 
