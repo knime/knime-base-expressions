@@ -409,6 +409,7 @@ const onEditorRequestedDelete = (filename: string) => {
   orderedEditorKeys.splice(orderedEditorKeys.indexOf(filename), 1);
   delete columnSelectorStates[filename];
   delete multiEditorComponentRefs[filename];
+  delete columnSelectorStateErrorMessages[filename];
 
   // Clean up watchers
   editorStateWatchers[filename]();
