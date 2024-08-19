@@ -132,6 +132,7 @@ final class ControlFlowFunctionTests {
             .typing("integer/optional float mix", List.of(STRING, STRING, INTEGER, OPT_FLOAT), OPT_FLOAT) //
             .typing("float/optional integer mix", List.of(STRING, STRING, FLOAT, OPT_INTEGER), OPT_FLOAT) //
             .typing("string", List.of(INTEGER, INTEGER, STRING), OPT_STRING) //
+            .typing("first case missing", List.of(OPT_STRING, MISSING, INTEGER), OPT_INTEGER) //
             .typing("optinal string case", List.of(OPT_STRING, STRING, INTEGER, OPT_STRING, INTEGER, INTEGER), INTEGER) //
             .typing("missing string case", List.of(OPT_STRING, STRING, INTEGER, MISSING, INTEGER, INTEGER), INTEGER) //
             .typing("MISSING case expression", List.of(OPT_STRING, STRING, MISSING, INTEGER), OPT_INTEGER) //
