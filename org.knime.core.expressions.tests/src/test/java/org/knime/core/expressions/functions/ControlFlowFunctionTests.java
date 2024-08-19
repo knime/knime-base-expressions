@@ -94,6 +94,7 @@ final class ControlFlowFunctionTests {
             .illegalArgs("too few arguments", List.of(BOOLEAN, STRING))//
             .illegalArgs("even number of arguments/ missing else case", List.of(BOOLEAN, STRING, STRING, STRING))//
             .illegalArgs("conditions must not be optional", List.of(OPT_BOOLEAN, FLOAT, FLOAT))//
+            .illegalArgs("second condition not boolean", List.of(BOOLEAN, FLOAT, FLOAT, FLOAT, FLOAT))//
             .impl("integer", List.of(arg(true), arg(2), arg(-1)), 2) //
             .impl("float", List.of(arg(true), arg(1.4), arg(1.5)), 1.4) //
             .impl("missing integer true case", List.of(arg(false), arg(1), misInteger())) //
