@@ -130,11 +130,6 @@ public sealed interface Ast
     String toString();
 
     /**
-     * @return the expression which is represented by this node
-     */
-    String toExpression();
-
-    /**
      * Call the appropriate visit function of the given visitor.
      *
      * @param <O> the output type of a visit
@@ -743,11 +738,6 @@ public sealed interface Ast
     record MissingConstant(Map<String, Object> data) implements ConstantAst {
 
         @Override
-        public String toExpression() {
-            return "MISSING";
-        }
-
-        @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
             return visitor.visit(this);
         }
@@ -761,11 +751,6 @@ public sealed interface Ast
      * @param data attached data
      */
     record BooleanConstant(boolean value, Map<String, Object> data) implements ConstantAst {
-
-        @Override
-        public String toExpression() {
-            return value ? "true" : "false";
-        }
 
         @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
@@ -782,11 +767,6 @@ public sealed interface Ast
     record IntegerConstant(long value, Map<String, Object> data) implements ConstantAst {
 
         @Override
-        public String toExpression() {
-            return String.valueOf(value);
-        }
-
-        @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
             return visitor.visit(this);
         }
@@ -799,11 +779,6 @@ public sealed interface Ast
      * @param data attached data
      */
     record FloatConstant(double value, Map<String, Object> data) implements ConstantAst {
-
-        @Override
-        public String toExpression() {
-            return String.valueOf(value);
-        }
 
         @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
@@ -820,20 +795,6 @@ public sealed interface Ast
     record StringConstant(String value, Map<String, Object> data) implements ConstantAst {
 
         @Override
-        public String toExpression() {
-            return "\"" //
-                + value.replace("\\", "\\\\") //
-                    .replace("\'", "\\'") //
-                    .replace("\"", "\\\"") //
-                    .replace("\b", "\\b") //
-                    .replace("\f", "\\f") //
-                    .replace("\n", "\\n") //
-                    .replace("\r", "\\r") //
-                    .replace("\t", "\\t") //
-                + "\"";
-        }
-
-        @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
             return visitor.visit(this);
         }
@@ -842,9 +803,9 @@ public sealed interface Ast
     sealed interface ColumnId permits ColumnName, RowIndex, RowId {
 
         /**
-         * @return the part of the expression which is represented by this ColumnId
+         * @return the identifier as written as part of the {@link ColumnAccess} in the expression
          */
-        String toExpression();
+        String identifier();
 
         default String name() {
             throw new UnsupportedOperationException();
@@ -870,7 +831,7 @@ public sealed interface Ast
     record ColumnName(String name) implements ColumnId {
 
         @Override
-        public String toExpression() {
+        public String identifier() {
             return "\"" + name + "\"";
         }
     }
@@ -880,7 +841,7 @@ public sealed interface Ast
         public static final RowIndex INSTANCE = new RowIndex();
 
         @Override
-        public String toExpression() {
+        public String identifier() {
             return "ROW_INDEX";
         }
     }
@@ -890,7 +851,7 @@ public sealed interface Ast
         public static final RowId INSTANCE = new RowId();
 
         @Override
-        public String toExpression() {
+        public String identifier() {
             return "ROW_ID";
         }
     }
@@ -902,11 +863,6 @@ public sealed interface Ast
      * @param data attached data
      */
     record ColumnAccess(ColumnId columnId, long offset, Map<String, Object> data) implements Ast {
-
-        @Override
-        public String toExpression() {
-            return "$[" + columnId.toExpression() + (offset != 0 ? (", " + offset) : "") + "]";
-        }
 
         @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
@@ -923,11 +879,6 @@ public sealed interface Ast
     record FlowVarAccess(String name, Map<String, Object> data) implements Ast {
 
         @Override
-        public String toExpression() {
-            return "$$[\"" + name + "\"]";
-        }
-
-        @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
             return visitor.visit(this);
         }
@@ -942,11 +893,6 @@ public sealed interface Ast
      * @param data attached data
      */
     record BinaryOp(BinaryOperator op, Ast arg1, Ast arg2, Map<String, Object> data) implements Ast {
-
-        @Override
-        public String toExpression() {
-            return "(" + arg1.toExpression() + " " + op.m_symbol + " " + arg2.toExpression() + ")";
-        }
 
         @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
@@ -969,11 +915,6 @@ public sealed interface Ast
     record UnaryOp(UnaryOperator op, Ast arg, Map<String, Object> data) implements Ast {
 
         @Override
-        public String toExpression() {
-            return "(" + op.m_symbol + " " + arg().toExpression() + ")";
-        }
-
-        @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
             return visitor.visit(this);
         }
@@ -992,10 +933,6 @@ public sealed interface Ast
      * @param data attached data
      */
     record FunctionCall(ExpressionFunction function, Arguments<Ast> args, Map<String, Object> data) implements Ast {
-        @Override
-        public String toExpression() {
-            return function.name() + args.renderArgumentList(Ast::toExpression);
-        }
 
         @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
@@ -1017,10 +954,6 @@ public sealed interface Ast
      */
     record AggregationCall(ColumnAggregation aggregation, Arguments<ConstantAst> args, Map<String, Object> data)
         implements Ast {
-        @Override
-        public String toExpression() {
-            return aggregation.name() + args.renderArgumentList(ConstantAst::toExpression);
-        }
 
         @Override
         public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {

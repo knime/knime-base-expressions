@@ -376,27 +376,27 @@ final class EvaluationTest {
 
         private ExecutionTest(final Ast expression) {
             m_expression = expression;
-            m_resultChecker = computerResultChecker(expression.toExpression());
+            m_resultChecker = computerResultChecker(expression.toString());
         }
 
         private ExecutionTest(final Ast expression, final boolean expected) {
             m_expression = expression;
-            m_resultChecker = computerResultChecker(expression.toExpression(), expected);
+            m_resultChecker = computerResultChecker(expression.toString(), expected);
         }
 
         private ExecutionTest(final Ast expression, final long expected) {
             m_expression = expression;
-            m_resultChecker = computerResultChecker(expression.toExpression(), expected);
+            m_resultChecker = computerResultChecker(expression.toString(), expected);
         }
 
         private ExecutionTest(final Ast expression, final double expected) {
             m_expression = expression;
-            m_resultChecker = computerResultChecker(expression.toExpression(), expected);
+            m_resultChecker = computerResultChecker(expression.toString(), expected);
         }
 
         private ExecutionTest(final Ast expression, final String expected) {
             m_expression = expression;
-            m_resultChecker = computerResultChecker(expression.toExpression(), expected);
+            m_resultChecker = computerResultChecker(expression.toString(), expected);
         }
     }
 

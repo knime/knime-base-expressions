@@ -99,7 +99,7 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
     }
 
     static ExpressionCompileError missingColumnError(final ColumnAccess node) {
-        return missingColumnError("The column " + node.toExpression() + " is not available",
+        return missingColumnError("The column " + node.columnId().identifier() + " is not available",
             Parser.getTextLocation(node));
     }
 
