@@ -47,7 +47,9 @@ describe("ExpressionEditorPane", () => {
         container: expect.anything(),
         language: "someLanguage",
         fileName: "myFile.ts",
-        hideOverviewRulerLanes: true,
+        extraEditorOptions: expect.objectContaining({
+          overviewRulerLanes: 0,
+        }),
       });
       expect(useCodeEditorSpy.mock.calls[0][0].container.value).toBeDefined();
     });

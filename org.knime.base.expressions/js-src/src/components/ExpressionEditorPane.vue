@@ -110,7 +110,10 @@ const editorState = editor.useCodeEditor({
   language: props.language,
   fileName: props.fileName,
   container: monacoEditorContainerRef,
-  hideOverviewRulerLanes: true,
+  extraEditorOptions: {
+    overviewRulerLanes: 0,
+    overviewRulerBorder: false,
+  },
 });
 
 const getEditorState = () => editorState;
