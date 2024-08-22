@@ -639,6 +639,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
 
           <FunctionButton
             class="add-new-editor-button"
+            disabled="useReadonlyStore()"
             @click="addEditorAtBottom"
           >
             <PlusIcon /><span>Add expression</span>
