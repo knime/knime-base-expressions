@@ -337,6 +337,7 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
     @SuppressWarnings("unchecked") // these casts are fine if the settings are correct
     @Override
     public void writeMapToNodeSettings(final Map<String, Object> data,
+        final Map<SettingsType, NodeAndVariableSettingsRO> previousSettings,
         final Map<SettingsType, NodeAndVariableSettingsWO> settings) throws InvalidSettingsException {
 
         m_scripts = (List<String>)data.get(JSON_KEY_SCRIPTS);
@@ -349,6 +350,7 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
         m_builtinAggregationsVersion = (int)data.get(JSON_KEY_AGGREGATION_VERSION);
 
         saveSettingsTo(settings);
+        copyVariableSettings(previousSettings, settings);
     }
 
     private static boolean isEditorConfigurationOverwrittenByFlowVariable(final NodeAndVariableSettingsRO settings) {

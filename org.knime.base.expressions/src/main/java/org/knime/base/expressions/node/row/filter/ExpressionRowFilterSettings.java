@@ -104,7 +104,8 @@ public class ExpressionRowFilterSettings extends ScriptingNodeSettings implement
 
     private static final String JSON_KEY_AGGREGATION_VERSION = CFG_KEY_BUILTIN_AGGREGATIONS_VERSION;
 
-    private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES = "settingsAreOverriddenByFlowVariable";
+    private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES =
+        "settingsAreOverriddenByFlowVariable";
 
     private int m_languageVersion;
 
@@ -183,6 +184,7 @@ public class ExpressionRowFilterSettings extends ScriptingNodeSettings implement
 
     @Override
     public void writeMapToNodeSettings(final Map<String, Object> data,
+        final Map<SettingsType, NodeAndVariableSettingsRO> previousSettings,
         final Map<SettingsType, NodeAndVariableSettingsWO> settings) throws InvalidSettingsException {
 
         m_script = (String)data.get(JSON_KEY_SCRIPT);
@@ -191,6 +193,7 @@ public class ExpressionRowFilterSettings extends ScriptingNodeSettings implement
         m_builtinAggregationsVersion = (int)data.get(JSON_KEY_AGGREGATION_VERSION);
 
         saveSettingsTo(settings);
+        copyVariableSettings(previousSettings, settings);
     }
 
     private static boolean isEditorConfigurationOverwrittenByFlowVariable(final NodeAndVariableSettingsRO settings) {
