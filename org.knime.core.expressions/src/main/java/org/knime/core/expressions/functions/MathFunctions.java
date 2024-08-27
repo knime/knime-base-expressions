@@ -2023,11 +2023,15 @@ public final class MathFunctions {
         .name("normal") //
         .description("""
                 Compute the probability density function of the normal distribution
-                at a given value, mean, and standard deviation. If the standard
-                deviation is not provided, it is taken to be 1.
+                at a given value, mean, and standard deviation.
 
-                If any of the arguments are `MISSING`, the result will also be
-                `MISSING`. If the standard deviation is less than or equal to 0, a
+                If the random variable is `MISSING`, the result will also be
+                `MISSING`.
+
+                If the mean is `MISSING` or is not provided, it will be treated as 0.
+
+                If the standard deviation is `MISSING` or not provided, it will be treated as 1.
+                If the standard deviation is less than or equal to 0, a
                 warning will be issued and the result will be `NaN`.
 
                 If any argument is `NaN` the function returns `NaN`.
@@ -2040,31 +2044,36 @@ public final class MathFunctions {
         .category(CATEGORY_DISTRIBUTIONS.name()) //
         .args( //
             arg("x", "Random variable", isNumericOrOpt()), //
-            arg("mean", "Mean value of the normal distribution", isNumericOrOpt()), //
+            optarg("mean", "Mean value of the normal distribution", isNumericOrOpt()), //
             optarg("standard_deviation", "Standard deviation of the normal distribution", isNumericOrOpt()) //
         ) //
         .returnType("Probability of the random variable for the given normal distribution.", RETURN_FLOAT_MISSING,
-            args -> FLOAT(anyOptional(args))) //
+            args -> FLOAT(args.get("x").isOptional())) //
         .impl(MathFunctions::normalImpl) //
         .build();
 
     private static Computer normalImpl(final Arguments<Computer> args) {
         return FloatComputer.of(ctx -> {
 
-            var standardDeviation =
-                args.has("standard_deviation") ? toFloat(args.get("standard_deviation")).compute(ctx) : 1.0;
+            var value = toFloat(args.get("x")).compute(ctx);
 
-            if (isNearZero(standardDeviation) || standardDeviation < 0) {
-                ctx.addWarning("normal returned NaN because standard deviation <= 0");
-                return Float.NaN;
+            var mean = 0.0;
+            if (args.has("mean") && !args.get("mean").isMissing(ctx)) {
+                mean = toFloat(args.get("mean")).compute(ctx);
             }
 
-            var value = toFloat(args.get("x")).compute(ctx);
-            var mean = toFloat(args.get("mean")).compute(ctx);
+            var standardDeviation = 1.0;
+            if (args.has("standard_deviation") && !args.get("standard_deviation").isMissing(ctx)) {
+                standardDeviation = toFloat(args.get("standard_deviation")).compute(ctx);
+                if (isNearZero(standardDeviation) || standardDeviation < 0) {
+                    ctx.addWarning("normal returned NaN because standard deviation <= 0");
+                    return Float.NaN;
+                }
+            }
 
             return Math.exp(-Math.pow(value - mean, 2) / (2 * Math.pow(standardDeviation, 2)))
                 / (standardDeviation * Math.sqrt(2 * Math.PI));
-        }, anyMissing(args));
+        }, args.get("x")::isMissing);
     }
 
     /**
@@ -2074,8 +2083,7 @@ public final class MathFunctions {
         .name("error_function") //
         .description("""
                 Compute the value of the error function at a given point, with the
-                specified mean and optionally the standard deviation. If the
-                standard deviation is not provided, it is taken to be 1/√2.
+                specified mean and the standard deviation.
 
                 The error function has the following interpretation: for a random
                 variable Y that is normally distributed with mean 0 and standard
@@ -2088,8 +2096,13 @@ public final class MathFunctions {
                 be calculated from the error function:
                 `0.5 * (1 + error_function(x))`.
 
-                If any of the arguments are `MISSING`, the result will also be
-                `MISSING`. If the standard deviation is less than or equal to 0, a
+                If the random variable is `MISSING`, the result will also be
+                `MISSING`.
+
+                If the mean is `MISSING` or is not provided, it will be treated as 0.
+
+                If the standard deviation is `MISSING` or not provided, it will be treated as 1/√2.
+                If the standard deviation is less than or equal to 0, a
                 warning will be issued and the result will be `NaN`.
 
                 If any argument is `NaN` the function returns `NaN`.
@@ -2103,32 +2116,38 @@ public final class MathFunctions {
         .category(CATEGORY_DISTRIBUTIONS.name()) //
         .args( //
             arg("x", "Value at which to evaluate the error function", isNumericOrOpt()), //
-            arg("mean", "Mean of the underlying normal distribution", isNumericOrOpt()), //
+            optarg("mean", "Mean of the underlying normal distribution", isNumericOrOpt()), //
             optarg("standard_deviation",
                 "Standard deviation of the underlying normal distribution. If unspecified, defaults to 1/√2.",
                 isNumericOrOpt()) //
         ) //
-        .returnType("Probability of getting at least the value", RETURN_FLOAT_MISSING, args -> FLOAT(anyOptional(args))) //
+        .returnType("Probability of getting at least the value", RETURN_FLOAT_MISSING,
+            args -> FLOAT(args.get("x").isOptional())) //
         .impl(MathFunctions::errorFunctionImpl) //
         .build();
 
     private static Computer errorFunctionImpl(final Arguments<Computer> args) {
         return FloatComputer.of(ctx -> {
 
-            var standardDeviation =
-                args.has("standard_deviation") ? toFloat(args.get("standard_deviation")).compute(ctx) : 1.0;
+            var value = toFloat(args.get("x")).compute(ctx);
 
-            if (isNearZero(standardDeviation) || standardDeviation < 0) {
-                ctx.addWarning("error_function returned NaN because standard deviation <= 0");
-                return Float.NaN;
+            var mean = 0.0;
+            if (args.has("mean") && !args.get("mean").isMissing(ctx)) {
+                mean = toFloat(args.get("mean")).compute(ctx);
             }
 
-            var value = toFloat(args.get("x")).compute(ctx);
-            var mean = toFloat(args.get("mean")).compute(ctx);
+            var standardDeviation = 1.0/Math.sqrt(2);
+            if (args.has("standard_deviation") && !args.get("standard_deviation").isMissing(ctx)) {
+                standardDeviation = toFloat(args.get("standard_deviation")).compute(ctx);
+                if (isNearZero(standardDeviation) || standardDeviation < 0) {
+                    ctx.addWarning("error_function returned NaN because standard deviation <= 0");
+                    return Float.NaN;
+                }
+            }
 
             double scaledValue = (value - mean) / (standardDeviation * Math.sqrt(2));
             return erf(scaledValue);
-        }, anyMissing(args));
+        }, args.get("x")::isMissing);
     }
 
     /**
