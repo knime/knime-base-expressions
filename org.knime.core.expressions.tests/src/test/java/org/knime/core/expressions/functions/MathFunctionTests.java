@@ -85,7 +85,7 @@ final class MathFunctionTests {
             .illegalArgs("BOOLEAN", List.of(BOOLEAN)) //
             .illegalArgs("MISSING", List.of(MISSING)) //
             .illegalArgs("TOO FEW", List.of(INTEGER)) //
-            .illegalArgs("Test varargs",List.of(INTEGER, INTEGER, STRING)) //
+            .illegalArgs("Test varargs", List.of(INTEGER, INTEGER, STRING)) //
             .impl("INTEGER", List.of(arg(1), arg(2), arg(-1)), 2) //
             .impl("FLOAT", List.of(arg(1.2), arg(1.4), arg(1.5)), 1.5) //
             .impl("missing INTEGER", List.of(misInteger(), arg(1))) //
@@ -798,6 +798,7 @@ final class MathFunctionTests {
             .typing("FLOAT", List.of(FLOAT, INTEGER), FLOAT) //
             .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_FLOAT) //
             .typing("FLOAT?", List.of(OPT_FLOAT), OPT_INTEGER) //
+            .typing("Optional Precision", List.of(INTEGER, OPT_INTEGER), FLOAT) //
             .illegalArgs("INTEGER, FLOAT", List.of(INTEGER, FLOAT)) //
             .illegalArgs("INTEGER, INTEGER, INTEGER", List.of(INTEGER, INTEGER, INTEGER)) //
             .illegalArgs("STRING", List.of(STRING)) //
@@ -815,6 +816,7 @@ final class MathFunctionTests {
             .impl("INTEGER + PRECISION=1", List.of(arg(17), arg(1)), 17.0) //
             .impl("FLOAT + PRECISION=1", List.of(arg(1.93), arg(1)), 1.90) //
             .impl("NEG FLOAT + PRECISION=1", List.of(arg(-1.91), arg(1)), -1.9) //
+            .impl("missing precision", List.of(arg(1234.5), misInteger()), 1234.0) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
             .impl("NaN + precision", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
@@ -835,6 +837,7 @@ final class MathFunctionTests {
             .typing("FLOAT", List.of(FLOAT, INTEGER), FLOAT) //
             .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_FLOAT) //
             .typing("FLOAT?", List.of(OPT_FLOAT), OPT_INTEGER) //
+            .typing("Optional Precision", List.of(INTEGER, OPT_INTEGER), FLOAT) //
             .illegalArgs("INTEGER, FLOAT", List.of(INTEGER, FLOAT)) //
             .illegalArgs("INTEGER, INTEGER, INTEGER", List.of(INTEGER, INTEGER, INTEGER)) //
             .illegalArgs("STRING", List.of(STRING)) //
@@ -854,6 +857,7 @@ final class MathFunctionTests {
             .impl("NEG FLOAT + PRECISION=1", List.of(arg(-1.91), arg(1)), -1.9) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .impl("missing precision", List.of(arg(1234.4), misInteger()), 1234.0) //
             .impl("NaN + precision", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
             .impl("negative precision", List.of(arg(123.4), arg(-1)), 120.0) //
             .impl("NaN", List.of(arg(Float.NaN))) //
@@ -872,6 +876,7 @@ final class MathFunctionTests {
             .typing("FLOAT", List.of(FLOAT, INTEGER), FLOAT) //
             .typing("INTEGER?", List.of(OPT_INTEGER, INTEGER), OPT_FLOAT) //
             .typing("FLOAT?", List.of(OPT_FLOAT), OPT_INTEGER) //
+            .typing("Optional Precision", List.of(INTEGER, OPT_INTEGER), FLOAT) //
             .illegalArgs("INTEGER, FLOAT", List.of(INTEGER, FLOAT)) //
             .illegalArgs("INTEGER, INTEGER, INTEGER", List.of(INTEGER, INTEGER, INTEGER)) //
             .illegalArgs("STRING", List.of(STRING)) //
@@ -891,6 +896,7 @@ final class MathFunctionTests {
             .impl("NEG FLOAT + PRECISION=1", List.of(arg(-1.91), arg(1)), -1.9) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .impl("missing precision", List.of(arg(1234.5), misInteger()), 1234.0) //
             .impl("NaN + precision", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
             .impl("negative precision", List.of(arg(123.4), arg(-1)), 120.0) //
             .impl("NaN", List.of(arg(Float.NaN))) //
