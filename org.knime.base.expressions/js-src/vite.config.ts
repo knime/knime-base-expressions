@@ -30,7 +30,10 @@ export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
-  optimizeDeps: { exclude: ["@knime/scripting-editor"] },
+  optimizeDeps: {
+    exclude: ["@knime/scripting-editor", "@knime/components"],
+    include: ["@knime/ui-extension-service"],
+  },
   base: "./",
   test: {
     setupFiles: [
