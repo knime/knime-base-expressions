@@ -639,7 +639,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
 
           <FunctionButton
             class="add-new-editor-button"
-            disabled="useReadonlyStore()"
+            :disabled="useReadonlyStore().value"
             @click="addEditorAtBottom"
           >
             <PlusIcon /><span>Add expression</span>
