@@ -25,7 +25,7 @@ import CategoryDescription from "@/components/function-catalog/CategoryDescripti
 import { useDraggedFunctionStore } from "@/draggedFunctionStore";
 import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
 import {
-  MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION,
+  MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG,
   MIN_WIDTH_FUNCTION_CATALOG,
 } from "@/components/function-catalog/contraints";
 import {
@@ -128,8 +128,9 @@ const triggerFunctionInsertionEvent = (
 
 const catalogRoot = ref();
 const catalogRootRef = useElementBounding(catalogRoot);
-const isSlimMode = computed(
-  () => catalogRootRef.width.value <= MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION,
+const displayFunctionCatalogBelowList = computed(
+  () =>
+    catalogRootRef.width.value <= MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG,
 );
 
 const selectedEntry = ref<null | SelectableItem>(null);
@@ -315,11 +316,11 @@ const expandAll = () => {
   <div
     ref="catalogRoot"
     class="function-catalog-container"
-    :class="{ 'slim-mode': isSlimMode }"
+    :class="{ 'slim-mode': displayFunctionCatalogBelowList }"
   >
     <div
       class="function-catalog"
-      :class="{ 'slim-mode': isSlimMode }"
+      :class="{ 'slim-mode': displayFunctionCatalogBelowList }"
       :style="{ '--function-catalog-width': FUNCTION_CATALOG_WIDTH }"
       tabindex="-1"
     >
@@ -435,7 +436,10 @@ const expandAll = () => {
         </div>
       </div>
     </div>
-    <div class="info-panel" :class="isSlimMode ? 'slim-mode' : ''">
+    <div
+      class="info-panel"
+      :class="{ 'slim-mode': displayFunctionCatalogBelowList }"
+    >
       <div v-if="selectedEntry !== null">
         <div v-if="selectedEntry.type === 'function'">
           <FunctionDescription :function-data="selectedEntry.functionData" />

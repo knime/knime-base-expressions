@@ -2,7 +2,7 @@ import { BrowserReporter, Consola, LogLevel } from "consola";
 import { useWindowSize } from "@vueuse/core";
 import {
   COMBINED_SPLITTER_WIDTH,
-  MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION,
+  MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG,
   MIN_WIDTH_FUNCTION_CATALOG,
   SWITCH_TO_SMALL_DESCRIPTION,
   WIDTH_OF_INPUT_OUTPUT_PANE,
@@ -50,7 +50,7 @@ export const calculateInitialPaneSizes = () => {
   const widthOfRightPane =
     availableWidthForPanes < SWITCH_TO_SMALL_DESCRIPTION
       ? MIN_WIDTH_FUNCTION_CATALOG
-      : MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION;
+      : MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG;
   const relativeSizeOfRightPaneWithoutTakingIntoAccountTheLeftPane =
     (widthOfRightPane / availableWidthForPanes) * 100;
 

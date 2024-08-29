@@ -1,5 +1,6 @@
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG } from "../function-catalog/contraints";
 import FunctionCatalog, {
   FUNCTION_INSERTION_EVENT,
 } from "../function-catalog/FunctionCatalog.vue";
@@ -8,9 +9,6 @@ import { useElementBounding } from "@vueuse/core";
 import { ref } from "vue";
 import { SearchInput } from "@knime/components";
 import { insertionEventHelper } from "@knime/scripting-editor";
-
-// Beware: This constant is duplicated in the component and the test
-const MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION = 600;
 
 const mocks = vi.hoisted(() => {
   return {
@@ -32,7 +30,7 @@ describe("FunctionCatalog", () => {
 
   beforeEach(() => {
     vi.mocked(useElementBounding).mockReturnValue({
-      width: ref(MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION + 1),
+      width: ref(MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG + 1),
     } as ReturnType<typeof useElementBounding>);
 
     const scrollIntoViewMock = vi.fn();
@@ -143,7 +141,7 @@ describe("FunctionCatalog", () => {
 
   it("does not render the description when the width is too small", () => {
     vi.mocked(useElementBounding).mockReturnValue({
-      width: ref(MIN_WIDTH_FOR_DISPLAYING_DESCRIPTION - 1),
+      width: ref(MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG - 1),
     } as ReturnType<typeof useElementBounding>);
 
     const { wrapper } = doMount();
