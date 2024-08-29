@@ -487,8 +487,6 @@ const expandAll = () => {
 }
 
 .function-catalog {
-  --function-catalog-width: 300px;
-
   width: var(--function-catalog-width);
   padding-top: var(--space-4);
   background-color: white;
