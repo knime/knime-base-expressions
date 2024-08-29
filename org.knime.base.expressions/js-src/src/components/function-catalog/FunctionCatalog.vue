@@ -535,11 +535,10 @@ const expandAll = () => {
 }
 
 .category-icon {
-  width: 16px;
-  margin-right: var(--space-8);
+  width: 13px;
+  margin-right: var(--space-4);
   stroke: var(--knime-masala);
   transition: transform 0.3s ease;
-  translate: 0 1px;
 }
 
 .category-icon svg {
