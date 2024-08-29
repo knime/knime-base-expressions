@@ -99,8 +99,7 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
 
     @Override
     public Page getPage() {
-        return Page
-            .builder(ExpressionRowMapperNodeFactory.class, "js-src/dist", "row-mapper.html") //
+        return Page.builder(ExpressionRowMapperNodeFactory.class, "js-src/dist", "row-mapper.html") //
             .addResourceDirectory("assets") //
             .addResourceDirectory("monacoeditorwork") //
             .addResource(() -> {
@@ -146,18 +145,22 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
     @Override
     public NodeSettingsService getNodeSettingsService() {
         var workflowControl = new WorkflowControl(NodeContext.getContext().getNodeContainer());
-        var spec = (DataTableSpec)workflowControl.getInputInfo()[0].portSpec();
-        var firstColumnName = spec != null && spec.getNumColumns() > 0 ? spec.getColumnNames()[0] : "";
 
         var initialDataBuilder = GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
             .addDataSupplier("inputObjects",
                 () -> ExpressionNodeScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo())) //
-            .addDataSupplier("flowVariables",
-                () -> ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(
-                    workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().values())) //
+            .addDataSupplier("flowVariables", () -> {
+                var flowObjectStack = workflowControl.getFlowObjectStack();
+                return flowObjectStack == null //
+                    ? null //
+                    : ExpressionNodeScriptingInputOutputModelUtils
+                        .getFlowVariableInputs(flowObjectStack.getAllAvailableFlowVariables().values());
+            }) //
             .addDataSupplier("outputObjects", ExpressionNodeScriptingInputOutputModelUtils::getOutputObjects) //
             .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN);
 
+        var spec = (DataTableSpec)workflowControl.getInputInfo()[0].portSpec();
+        var firstColumnName = spec != null && spec.getNumColumns() > 0 ? spec.getColumnNames()[0] : "";
         return new ScriptingNodeSettingsService( //
             () -> new ExpressionRowMapperSettings(firstColumnName), //
             initialDataBuilder //

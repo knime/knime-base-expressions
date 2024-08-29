@@ -151,9 +151,13 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
         var initialDataBuilder = GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
             .addDataSupplier("inputObjects",
                 () -> ExpressionNodeScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo())) //
-            .addDataSupplier("flowVariables",
-                () -> ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(
-                    workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().values())) //
+            .addDataSupplier("flowVariables", () -> {
+                var flowObjectStack = workflowControl.getFlowObjectStack();
+                return flowObjectStack == null //
+                    ? null //
+                    : ExpressionNodeScriptingInputOutputModelUtils
+                        .getFlowVariableInputs(flowObjectStack.getAllAvailableFlowVariables().values());
+            }) //
             .addDataSupplier("outputObjects", ExpressionNodeScriptingInputOutputModelUtils::getOutputObjects) //
             .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN);
 
