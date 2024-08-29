@@ -72,6 +72,7 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
       ],
       description:
         "# Markdown\nConcatenates two strings.\n## Example:\n`concatenateStrings('hello', 'world')`",
+      examples: "`concatenateStrings('hello', 'world')` returns 'helloworld'",
       keywords: ["concat", "join", "merge"],
       returnType: "string",
       entryType: "function",
@@ -96,8 +97,8 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
           description: "ending index of the substring",
         },
       ],
-      description:
-        "# Markdown \nExtracts a substring from the input string.\n ## Example:\n`substring('abcdef', 1, 4)`",
+      description: "# Markdown \nExtracts a substring from the input string.",
+      examples: "`substring('abcdef', 1, 4)`",
       keywords: ["slice", "extract", "subset"],
       returnType: "string",
       entryType: "function",
@@ -107,7 +108,8 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
       category: "Demo",
       arguments: [],
       description:
-        "# Markdown \nExtracts a substring from the input string.\n ## Example:\n`substring('abcdef', 1, 4)` <script>alert('hello')</script>",
+        "# Markdown \nExtracts a substring from the input string.\n<script>alert('hello')</script>",
+      examples: "`blah`",
       keywords: ["demo", "no", "html"],
       returnType: "Awww",
       entryType: "function",
@@ -123,8 +125,8 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
           vararg: true,
         },
       ],
-      description:
-        "# Markdown\nCalculates the sum of a list of numbers.\n## Example:\n`sum(1, 2, 3, 4)`",
+      description: "# Markdown\nCalculates the sum of a list of numbers.",
+      examples: "`sum(1, 2, 3, 4)`",
       keywords: ["add", "total", "accumulate"],
       returnType: "int",
       entryType: "function",
@@ -136,8 +138,8 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
         { name: "factor1", type: "int", description: "the first factor" },
         { name: "factor2", type: "int", description: "the second factor" },
       ],
-      description:
-        "# Markdown\nMultiplies two numbers.\n## Example:\n`multiply(5, 3)`",
+      description: "# Markdown\nMultiplies two numbers.",
+      examples: "`multiply(2, 3)`",
       keywords: ["product", "times", "multiply"],
       returnType: "int",
       entryType: "function",
@@ -154,7 +156,8 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
         },
       ],
       description:
-        "# Markdown\nFilters elements of an array based on a condition.\n## Example:\n`filterArray([1, 2, 3, 4], x => x > 2)`",
+        "# Markdown\nFilters elements of an array based on a condition.",
+      examples: "`filterArray([1, 2, 3, 4, 5], x => x % 2 === 0)`",
       keywords: ["select", "subset", "extract"],
       returnType: "array",
       entryType: "function",
@@ -163,8 +166,8 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
       name: "getDayOfWeek",
       category: "Date and Time",
       arguments: [{ name: "date", type: "date", description: "input date" }],
-      description:
-        "# Markdown\nReturns the day of the week for a given date.\n## Example:\n`getDayOfWeek('2024-03-07')`",
+      description: "# Markdown\nReturns the day of the week for a given date.",
+      examples: "`getDayOfWeek('2024-03-07')`",
       keywords: [
         "day",
         "weekday",
@@ -188,6 +191,7 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
             { name: "arg", type: "int", description: "Doesn't do anything" },
           ],
           description: "Doesn't do anything",
+          examples: `\`functions${i}(i+1)\``,
           returnType: "int",
           entryType: "function",
           keywords: ["something"],

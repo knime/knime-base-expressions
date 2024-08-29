@@ -21,9 +21,8 @@ import type {
   SelectableItem,
   SelectableFunction,
 } from "@/components/function-catalog/catalogTypes";
-import CategoryDescription from "@/components/function-catalog/CategoryDescription.vue";
 import { useDraggedFunctionStore } from "@/draggedFunctionStore";
-import FunctionDescription from "@/components/function-catalog/FunctionDescription.vue";
+import FunctionCatalogDescription from "@/components/function-catalog/FunctionCatalogDescription.vue";
 import {
   MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG,
   MIN_WIDTH_FUNCTION_CATALOG,
@@ -442,10 +441,16 @@ const expandAll = () => {
     >
       <div v-if="selectedEntry !== null">
         <div v-if="selectedEntry.type === 'function'">
-          <FunctionDescription :function-data="selectedEntry.functionData" />
+          <FunctionCatalogDescription
+            :data="selectedEntry.functionData"
+            type="functionOrConstant"
+          />
         </div>
         <div v-else>
-          <CategoryDescription :category="categories[selectedEntry.name]" />
+          <FunctionCatalogDescription
+            :data="categories[selectedEntry.name]"
+            type="category"
+          />
         </div>
       </div>
     </div>

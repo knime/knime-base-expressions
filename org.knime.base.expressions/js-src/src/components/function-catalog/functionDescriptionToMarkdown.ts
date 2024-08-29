@@ -1,4 +1,7 @@
-import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
+import type {
+  CategoryData,
+  FunctionCatalogEntryData,
+} from "@/components/functionCatalogTypes";
 import MarkdownIt from "markdown-it";
 
 export const functionDataToMarkdown = (
@@ -6,15 +9,14 @@ export const functionDataToMarkdown = (
 ): string => {
   if (func.entryType === "constant") {
     return (
-      `### ${func.name}` +
-      `\n\nType: ${func.returnType}` +
-      "\n\n#### Description" +
+      `Type: ***${func.returnType}***` +
+      "\n\n###### Description" +
       `\n\n${func.description}`
     );
   } else {
     const args =
       func.arguments
-        ?.map((arg) => `- **${arg.name}**: ${arg.description}`)
+        ?.map((arg) => `- ${arg.name}: ${arg.description}`)
         ?.join("\n") ?? null;
     const returnDescription = func.returnDescription
       ? `  \n${func.returnDescription}`
@@ -22,14 +24,15 @@ export const functionDataToMarkdown = (
     const description = `\n\n${func.description}`;
 
     return (
-      `### ${func.displayNameWithFullArgs ?? func.name}` +
-      "\n\n#### Arguments " +
+      "\n\n###### Arguments " +
       `\n${args}` +
-      "\n\n#### Return value " +
+      "\n\n###### Return value " +
       `\n***${func.returnType}***` +
       `${returnDescription}` +
-      "\n\n#### Description " +
-      `${description}`
+      "\n\n###### Description " +
+      `${description}` +
+      "\n\n###### Examples" +
+      `\n\n${func.examples}`
     );
   }
 };
@@ -37,3 +40,10 @@ export const functionDataToMarkdown = (
 export const functionDataToHtml = (
   functionData: FunctionCatalogEntryData,
 ): string => new MarkdownIt().render(functionDataToMarkdown(functionData));
+
+export const categoryDataToMarkdown = (category: CategoryData): string => {
+  return category.description;
+};
+
+export const categoryDataToHtml = (categoryData: CategoryData): string =>
+  new MarkdownIt().render(categoryDataToMarkdown(categoryData));

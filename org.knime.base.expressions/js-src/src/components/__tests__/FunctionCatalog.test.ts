@@ -48,8 +48,8 @@ describe("FunctionCatalog", () => {
       { name: "arg1", type: "type1", description: "the first argument" },
       { name: "arg2", type: "type2", description: "the second argument" },
     ],
-    description:
-      "# Markdown\nDescription\n ## Example:\n`function1('arg1', 'arg2')`",
+    description: "# Markdown\nDescription",
+    examples: "function1('arg1', 'arg2')",
     keywords: ["keyWord1", "join", "merge"],
     returnType: "returnType1",
     entryType: "function",
@@ -61,8 +61,8 @@ describe("FunctionCatalog", () => {
       { name: "arg1", type: "type1", description: "the first argument" },
       { name: "arg2", type: "type2", description: "the second argument" },
     ],
-    description:
-      "# Markdown\nDescription\n ## Example:\n`function2('arg1', 'arg2')`",
+    description: "# Markdown\nDescription",
+    examples: "`function2('arg1', 'arg2')`",
     keywords: ["keyWord2"],
     returnType: "returnType2",
     entryType: "function",
@@ -78,7 +78,7 @@ describe("FunctionCatalog", () => {
   const functionCatalogData = {
     categories: [
       { name: "category1", description: "This is a description for category1" },
-      { name: "category2" },
+      { name: "category2", description: "need a description too" },
       { name: "math constants", description: "Mathematical constants" },
     ],
     functions: [function1, function2, constant1],

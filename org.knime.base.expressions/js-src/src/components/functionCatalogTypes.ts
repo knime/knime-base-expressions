@@ -5,6 +5,7 @@ export type FunctionData = {
   displayName?: string;
   displayNameWithFullArgs?: string;
   description: string;
+  examples: string;
   arguments: {
     name: string;
     type: string;
@@ -29,7 +30,7 @@ export type FunctionCatalogEntryData = FunctionData | ConstantData;
 
 export type CategoryData = {
   name: string;
-  description?: string;
+  description: string;
 };
 
 export type FunctionCatalogData = {
