@@ -536,6 +536,7 @@ const expandAll = () => {
 
 .category-icon {
   width: 13px;
+  height: 13px;
   margin-right: var(--space-4);
   stroke: var(--knime-masala);
   transition: transform 0.3s ease;
@@ -574,6 +575,10 @@ const expandAll = () => {
   cursor: pointer;
   color: var(--knime-dove-gray);
   word-wrap: normal;
+}
+
+.function-header,
+.category-header {
   padding: 2px 0 2px var(--space-4);
 }
 
@@ -591,7 +596,7 @@ const expandAll = () => {
 .selected::before {
   content: "";
   position: absolute;
-  inset: -1px 100vw 0 -100vw;
+  inset: 0 100vw 0 -100vw;
   width: 300vw;
   height: 105%;
   background-color: var(--theme-dropdown-background-color-selected);
