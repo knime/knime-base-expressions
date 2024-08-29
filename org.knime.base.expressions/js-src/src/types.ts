@@ -20,7 +20,7 @@ export type ColumnSettings = {
 };
 
 export type ExpressionNodeSettings = ExpressionVersion & {
-  settingsOverriddenByFlowVariable?: boolean;
+  settingsAreOverriddenByFlowVariable?: boolean;
 } & ColumnSettings & { scripts: string[] };
 
 export type ExpressionInitialData = {

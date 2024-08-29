@@ -287,7 +287,8 @@ onMounted(async () => {
 
   await nextTick(); // Wait for the editors to be rendered
 
-  useReadonlyStore().value = settings.settingsOverriddenByFlowVariable ?? false;
+  useReadonlyStore().value =
+    settings.settingsAreOverriddenByFlowVariable ?? false;
 
   for (let i = 0; i < settings.scripts.length; i++) {
     const key = orderedEditorKeys[i];
