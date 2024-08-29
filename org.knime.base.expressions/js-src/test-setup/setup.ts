@@ -19,35 +19,43 @@ window.consola = consola;
 vi.mock("@knime/ui-extension-service", async () => ({
   ...(await vi.importActual("@knime/ui-extension-service")),
   JsonDataService: {
-    getInstance: vi.fn().mockResolvedValue({
-      initialData: vi.fn().mockResolvedValue({
-        settings: DEFAULT_INITIAL_SETTINGS,
-        initialData: DEFAULT_INITIAL_DATA,
-      }),
-      baseService: {
-        getConfig: vi.fn().mockResolvedValue({
-          nodeId: "nodeId",
-          projectId: "projectId",
-          workflowId: "workflowId",
-          resourceInfo: {
-            baseUrl: "http://localhost/",
-            path: "something/something/someFile.html",
-          },
+    getInstance: vi.fn(() =>
+      Promise.resolve({
+        initialData: vi.fn(() =>
+          Promise.resolve({
+            settings: DEFAULT_INITIAL_SETTINGS,
+            initialData: DEFAULT_INITIAL_DATA,
+          }),
+        ),
+        baseService: {
+          getConfig: vi.fn(() =>
+            Promise.resolve({
+              nodeId: "nodeId",
+              projectId: "projectId",
+              workflowId: "workflowId",
+              resourceInfo: {
+                baseUrl: "http://localhost/",
+                path: "something/something/someFile.html",
+              },
+            }),
+          ),
+          callNodeDataService: vi.fn(() => Promise.resolve({})),
+        },
+        data: vi.fn(() => {
+          // This promise never resolves, so this method will never return.
+          // This stops the EventPoller from getting an unexpected event,
+          // which would cause it to throw an error and crash the test.
+          return new Promise(() => {});
         }),
-        callNodeDataService: vi.fn().mockResolvedValue({}),
-      },
-      data: vi.fn().mockImplementation(() => {
-        // This promise never resolves, so this method will never return.
-        // This stops the EventPoller from getting an unexpected event,
-        // which would cause it to throw an error and crash the test.
-        return new Promise(() => {});
       }),
-    }),
+    ),
   },
   ReportingService: {},
   AlertingService: {
-    getInstance: vi.fn().mockResolvedValue({
-      sendAlert: vi.fn(),
-    }),
+    getInstance: vi.fn(() =>
+      Promise.resolve({
+        sendAlert: vi.fn(),
+      }),
+    ),
   },
 }));
