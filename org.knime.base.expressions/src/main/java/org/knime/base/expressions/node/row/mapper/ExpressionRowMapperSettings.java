@@ -53,9 +53,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
 import org.knime.core.expressions.Expressions;
@@ -67,6 +67,7 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.VariableSettingsRO;
 import org.knime.scripting.editor.GenericSettingsIOManager;
 import org.knime.scripting.editor.ScriptingNodeSettings;
 
@@ -120,13 +121,7 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
 
     private static final String CFG_KEY_BUILTIN_AGGREGATIONS_VERSION = "builtinAggregationsVersion";
 
-    private static final String CFG_KEY_ADDITIONAL_SCRIPTS = "additionalScripts";
-
-    private static final String CFG_KEY_ADDITIONAL_OUTPUT_MODES = "additionalOutputModes";
-
-    private static final String CFG_KEY_ADDITIONAL_CREATED_COLUMNS = "additionalCreatedColumns";
-
-    private static final String CFG_KEY_ADDITIONAL_REPLACED_COLUMNS = "additionalReplacedColumns";
+    private static final String CFG_KEY_ADDITIONAL_EXPRESSIONS = "additionalExpressions";
 
     private static final String JSON_KEY_SCRIPTS = "scripts";
 
@@ -206,40 +201,28 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
         m_builtinFunctionsVersion = settings.getInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION);
         m_builtinAggregationsVersion = settings.getInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION);
 
-        if (settings.containsKey(CFG_KEY_ADDITIONAL_SCRIPTS)) {
-            m_scripts = new ArrayList<>(Arrays.asList(settings.getStringArray(CFG_KEY_ADDITIONAL_SCRIPTS)));
-            m_scripts.add(0, settings.getString(CFG_KEY_SCRIPT));
+        m_scripts = new ArrayList<>();
+        m_outputModes = new ArrayList<>();
+        m_createdColumns = new ArrayList<>();
+        m_replacedColumns = new ArrayList<>();
 
-            m_outputModes = Arrays.stream(settings.getStringArray(CFG_KEY_ADDITIONAL_OUTPUT_MODES))
-                .map(ColumnInsertionMode::valueOf).collect(Collectors.toList());
-            m_outputModes.add(0, ColumnInsertionMode.valueOf(settings.getString(CFG_KEY_OUTPUT_MODE)));
+        m_scripts.add(settings.getString(CFG_KEY_SCRIPT));
+        m_outputModes.add(ColumnInsertionMode.valueOf(settings.getString(CFG_KEY_OUTPUT_MODE)));
+        m_createdColumns.add(settings.getString(CFG_KEY_CREATED_COLUMN));
+        m_replacedColumns.add(settings.getString(CFG_KEY_REPLACED_COLUMN));
 
-            m_createdColumns =
-                new ArrayList<>(Arrays.asList(settings.getStringArray(CFG_KEY_ADDITIONAL_CREATED_COLUMNS)));
-            m_createdColumns.add(0, settings.getString(CFG_KEY_CREATED_COLUMN));
+        if (settings.containsKey(CFG_KEY_ADDITIONAL_EXPRESSIONS)) {
+            var additionalExpressionsConfig = settings.getConfig(CFG_KEY_ADDITIONAL_EXPRESSIONS);
 
-            m_replacedColumns =
-                new ArrayList<>(Arrays.asList(settings.getStringArray(CFG_KEY_ADDITIONAL_REPLACED_COLUMNS)));
-            m_replacedColumns.add(0, settings.getString(CFG_KEY_REPLACED_COLUMN));
-        } else {
-            m_scripts = new ArrayList<>();
-            m_scripts.add(settings.getString(CFG_KEY_SCRIPT));
+            for (var key = 0; additionalExpressionsConfig.containsKey(Integer.toString(key)); key++) {
+                var additionalExpressionConfig = additionalExpressionsConfig.getConfig(Integer.toString(key));
 
-            m_outputModes = new ArrayList<>();
-            m_outputModes.add(ColumnInsertionMode.valueOf(settings.getString(CFG_KEY_OUTPUT_MODE)));
-
-            m_createdColumns = new ArrayList<>();
-            m_createdColumns.add(settings.getString(CFG_KEY_CREATED_COLUMN));
-
-            m_replacedColumns = new ArrayList<>();
-            m_replacedColumns.add(settings.getString(CFG_KEY_REPLACED_COLUMN));
-        }
-
-        if (Stream.of(m_scripts, m_outputModes, m_createdColumns, m_replacedColumns).mapToInt(List::size).distinct()
-            .count() != 1) {
-
-            throw new InvalidSettingsException("Different number of scripts, output modes, created columns, "
-                + "or replaced columns found in model settings.");
+                m_scripts.add(additionalExpressionConfig.getString(CFG_KEY_SCRIPT));
+                m_outputModes
+                    .add(ColumnInsertionMode.valueOf(additionalExpressionConfig.getString(CFG_KEY_OUTPUT_MODE)));
+                m_createdColumns.add(additionalExpressionConfig.getString(CFG_KEY_CREATED_COLUMN));
+                m_replacedColumns.add(additionalExpressionConfig.getString(CFG_KEY_REPLACED_COLUMN));
+            }
         }
     }
 
@@ -303,14 +286,16 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
         settings.addInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, m_builtinFunctionsVersion);
         settings.addInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION, m_builtinAggregationsVersion);
 
-        settings.addStringArray(CFG_KEY_ADDITIONAL_SCRIPTS,
-            m_scripts.subList(1, m_scripts.size()).toArray(new String[0]));
-        settings.addStringArray(CFG_KEY_ADDITIONAL_OUTPUT_MODES,
-            m_outputModes.subList(1, m_outputModes.size()).stream().map(Enum::name).toArray(String[]::new));
-        settings.addStringArray(CFG_KEY_ADDITIONAL_CREATED_COLUMNS,
-            m_createdColumns.subList(1, m_createdColumns.size()).toArray(new String[0]));
-        settings.addStringArray(CFG_KEY_ADDITIONAL_REPLACED_COLUMNS,
-            m_replacedColumns.subList(1, m_replacedColumns.size()).toArray(new String[0]));
+        var additionalExprsConfigs = settings.addConfig(CFG_KEY_ADDITIONAL_EXPRESSIONS);
+
+        for (int i = 0; i < getNumScripts() - 1; ++i) {
+            var singleExprConfig = additionalExprsConfigs.addConfig(Integer.toString(i));
+
+            singleExprConfig.addString(CFG_KEY_SCRIPT, m_scripts.get(i + 1));
+            singleExprConfig.addString(CFG_KEY_OUTPUT_MODE, m_outputModes.get(i + 1).name());
+            singleExprConfig.addString(CFG_KEY_CREATED_COLUMN, m_createdColumns.get(i + 1));
+            singleExprConfig.addString(CFG_KEY_REPLACED_COLUMN, m_replacedColumns.get(i + 1));
+        }
     }
 
     @Override
@@ -354,13 +339,41 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
     }
 
     private static boolean isEditorConfigurationOverwrittenByFlowVariable(final NodeAndVariableSettingsRO settings) {
+        // Check if the first expression (at the root level of the settings) is overwritten by a flow variable
+        boolean settingsOverridden = isSingleExprOverwritten(settings);
+
+        // Check if one of the additional expressions is overwritten by a flow variable
+        var additionalExprsVariables = getVariableOverwriteSubtree(settings, CFG_KEY_ADDITIONAL_EXPRESSIONS);
+        if (additionalExprsVariables.isPresent()) {
+            for (var key : additionalExprsVariables.get().getVariableSettingsIterable()) {
+                settingsOverridden |= getVariableOverwriteSubtree(additionalExprsVariables.get(), key)
+                    .map(ExpressionRowMapperSettings::isSingleExprOverwritten) //
+                    .orElse(false);
+            }
+        }
+        return settingsOverridden;
+    }
+
+    /** @return the variable settings for the given key, or an empty optional if the key is not present */
+    private static Optional<VariableSettingsRO> getVariableOverwriteSubtree(final VariableSettingsRO settings,
+        final String key) {
+        try {
+            return Optional.ofNullable(settings.getVariableSettings(key));
+        } catch (InvalidSettingsException ex) { // NOSONAR
+            // Note: We don't care about the exception here, we are using exceptions for control flow because there is
+            // no other way to check if a key is present
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * @return <code>true</code> iff at least one of the expression defining settings is overwritten in the given
+     *         variable settings tree
+     */
+    private static boolean isSingleExprOverwritten(final VariableSettingsRO settings) {
         return isOverriddenByFlowVariable(settings, CFG_KEY_SCRIPT)
             || isOverriddenByFlowVariable(settings, CFG_KEY_OUTPUT_MODE)
             || isOverriddenByFlowVariable(settings, CFG_KEY_CREATED_COLUMN)
-            || isOverriddenByFlowVariable(settings, CFG_KEY_REPLACED_COLUMN)
-            || isOverriddenByFlowVariable(settings, CFG_KEY_ADDITIONAL_SCRIPTS)
-            || isOverriddenByFlowVariable(settings, CFG_KEY_ADDITIONAL_OUTPUT_MODES)
-            || isOverriddenByFlowVariable(settings, CFG_KEY_ADDITIONAL_CREATED_COLUMNS)
-            || isOverriddenByFlowVariable(settings, CFG_KEY_ADDITIONAL_REPLACED_COLUMNS);
+            || isOverriddenByFlowVariable(settings, CFG_KEY_REPLACED_COLUMN);
     }
 }
