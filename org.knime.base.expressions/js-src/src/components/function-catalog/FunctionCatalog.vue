@@ -486,7 +486,6 @@ const expandAll = () => {
   --function-catalog-width: 300px;
 
   width: var(--function-catalog-width);
-  padding-bottom: var(--space-4);
   padding-top: var(--space-4);
   background-color: white;
   display: flex;
@@ -567,10 +566,6 @@ const expandAll = () => {
 .category-header.empty {
   color: var(--knime-silver-sand-semi);
   cursor: default;
-}
-
-.category-functions {
-  margin-bottom: var(--space-8);
 }
 
 .function-header {
