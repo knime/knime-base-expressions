@@ -161,6 +161,7 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
 
         var spec = (DataTableSpec)workflowControl.getInputInfo()[0].portSpec();
         var firstColumnName = spec != null && spec.getNumColumns() > 0 ? spec.getColumnNames()[0] : "";
+
         return new ScriptingNodeSettingsService( //
             () -> new ExpressionRowMapperSettings(firstColumnName), //
             initialDataBuilder //

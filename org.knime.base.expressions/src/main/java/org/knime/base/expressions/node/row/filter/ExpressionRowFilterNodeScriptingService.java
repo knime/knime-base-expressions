@@ -57,7 +57,6 @@ import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
-import org.knime.base.expressions.node.FunctionCatalogData;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
@@ -104,9 +103,9 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
     private ReferenceTable m_inputTable;
 
     /**
-     * Cached row count of the input table.
-     * In case of a row-based table a columnar-based table is created on the fly for the first
-     * {@link PREVIEW_MAX_ROWS} rows, thus loosing the information about the original input table row count
+     * Cached row count of the input table. In case of a row-based table a columnar-based table is created on the fly
+     * for the first {@link PREVIEW_MAX_ROWS} rows, thus loosing the information about the original input table row
+     * count
      */
     private long m_inputTableRowCount;
 
@@ -189,10 +188,6 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
             );
         }
 
-        public FunctionCatalogData getFunctionCatalog() {
-            return FunctionCatalogData.BUILT_IN;
-        }
-
         private Map<String, FlowVariable> getAvailableFlowVariables(final VariableType<?>[] types) {
             var flowObjectStack = getWorkflowControl().getFlowObjectStack();
             if (flowObjectStack != null) {
@@ -209,17 +204,16 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
             var flowVarToTypeMapper = ExpressionRunnerUtils.flowVarToTypeForTypeInference(
                 getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
 
-            Expressions.inferTypes(ast, getColumnToTypeMapper(),
-                flowVarToTypeMapper);
+            Expressions.inferTypes(ast, getColumnToTypeMapper(), flowVarToTypeMapper);
 
             return ast;
         }
 
         /**
-         * List of diagnostics for each editor, hence a 2D list.
+         * List of diagnostics.
          *
-         * @param expression the expression to check
-         * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
+         * @param expression the expression to check.
+         * @return list of diagnostics.
          */
         public List<Diagnostic> getRowFilterDiagnostics(final String expression) {
 
@@ -249,7 +243,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            var inputTable =  getInputTable();
+            var inputTable = getInputTable();
 
             final Ast expression;
             try {

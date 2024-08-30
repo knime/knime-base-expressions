@@ -7,10 +7,10 @@ import {
 } from "@knime/scripting-editor";
 import { type OutputInsertionMode } from "@/common/types";
 
-export type ColumnSelectorState = {
+export type SelectorState = {
   outputMode: OutputInsertionMode;
-  createColumn: string;
-  replaceColumn: string;
+  create: string;
+  replace: string;
 };
 
 export type AllowedDropDownValue = {
@@ -18,19 +18,26 @@ export type AllowedDropDownValue = {
   text: string;
 };
 
+export type SelectorType = "column" | "flowVariable";
+
 type PropType = {
-  allowedReplacementColumns: AllowedDropDownValue[];
+  selectorType: SelectorType;
+  allowedReplacementEntities: AllowedDropDownValue[];
 };
 
 const props = defineProps<PropType>();
 const readOnly = useReadonlyStore();
 
-const modelValue = defineModel<ColumnSelectorState>({
+const entityName = computed(() =>
+  props.selectorType === "column" ? "column" : "flow variable",
+);
+
+const modelValue = defineModel<SelectorState>({
   default: {
     outputMode: "APPEND",
-    replaceColumn: "",
-    createColumn: "New column",
-  } satisfies ColumnSelectorState,
+    replace: "",
+    create: "New Entity",
+  } satisfies SelectorState,
 });
 
 const errorMessage = defineModel<string | null>("errorMessage", {
@@ -49,11 +56,11 @@ const paintFocus = useShouldFocusBePainted();
 
 <template>
   <span class="output-selector-container">
-    <span class="output-label">Output column</span>
+    <span class="output-label">{{ `Output ${entityName}` }} </span>
     <ValueSwitch
       v-model="modelValue.outputMode"
       :possible-values="allowedOperationModes"
-      :disabled="props.allowedReplacementColumns.length === 0 || readOnly"
+      :disabled="props.allowedReplacementEntities.length === 0 || readOnly"
       class="switch-button"
       :class="{ 'focus-painted': paintFocus }"
       compact
@@ -63,11 +70,11 @@ const paintFocus = useShouldFocusBePainted();
       class="output-selector-child right"
     >
       <InputField
-        id="input-field-to-add-new-column"
-        v-model="modelValue.createColumn"
+        id="input-field-to-add-new-entity"
+        v-model="modelValue.create"
         type="text"
-        class="column-input"
-        placeholder="New column..."
+        class="input"
+        :placeholder="`New ${entityName}...`"
         :is-valid="isValid"
         :disabled="readOnly"
         compact
@@ -76,11 +83,11 @@ const paintFocus = useShouldFocusBePainted();
     <div v-else class="output-selector-child right">
       <!-- eslint-disable vue/attribute-hyphenation typescript complains with ':aria-label' instead of ':ariaLabel'-->
       <Dropdown
-        id="dropdown-box-to-select-column"
-        v-model="modelValue.replaceColumn"
-        ariaLabel="column selection"
-        :possible-values="allowedReplacementColumns"
-        class="column-input"
+        id="dropdown-box-to-select-entity"
+        v-model="modelValue.replace"
+        :ariaLabel="`${entityName} selection`"
+        :possible-values="allowedReplacementEntities"
+        class="input"
         direction="up"
         :is-valid="isValid"
         :disabled="readOnly"
@@ -112,7 +119,7 @@ const paintFocus = useShouldFocusBePainted();
   width: 150px;
 }
 
-.column-input {
+.input {
   width: 100%;
 }
 
@@ -137,10 +144,10 @@ const paintFocus = useShouldFocusBePainted();
 }
 
 /* Stop the dropdown being taller than the bar. This takes some forcing, since it REALLY doesn't want to be smaller than about 40px */
-.column-input,
+.input,
 :deep(.dropdown),
-:deep(#dropdown-box-to-select-column),
-:deep(#button-dropdown-box-to-select-column) {
+:deep(#dropdown-box-to-select-entity),
+:deep(#button-dropdown-box-to-select-entity) {
   max-width: 400px;
 }
 

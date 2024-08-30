@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import {
-  consoleHandler,
   getScriptingService,
-  OutputTablePreview,
   ScriptingEditor,
   setActiveEditorStoreForAi,
   useReadonlyStore,
 } from "@knime/scripting-editor";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
 import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
-import { FunctionButton, LoadingIcon } from "@knime/components";
+import { Button, FunctionButton, LoadingIcon } from "@knime/components";
 
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
 import { onKeyStroke } from "@vueuse/core";
@@ -28,38 +26,40 @@ import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage"
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 import { v4 as uuidv4 } from "uuid";
 import ExpressionEditorPane, {
-  type ExpressionEditorPaneExposes,
   type EditorErrorState,
+  type ExpressionEditorPaneExposes,
 } from "@/components/ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
-import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
 import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
 import {
   calculateInitialPaneSizes,
   registerInsertionListener,
 } from "@/common/functions";
-import RunButton from "@/components/RunButton.vue";
 import {
-  type ExpressionRowMapperNodeSettings,
-  getRowMapperSettingsService,
+  type ExpressionFlowVariableNodeSettings,
+  getFlowVariableSettingsService,
 } from "@/expressionSettingsService";
+import { runFlowVariableDiagnostics } from "@/flowVariableApp/expressionFlowVariableDiagnostics";
 import OutputSelector, {
   type AllowedDropDownValue,
   type SelectorState,
 } from "@/components/OutputSelector.vue";
 import { runOutputDiagnostics } from "@/generalDiagnostics";
+import PlayIcon from "@knime/styles/img/icons/play.svg";
 
 const activeEditorFileName = ref<string | null>(null);
 
 // Populated by the initial settings
-const columnSelectorStates = reactive<{ [key: string]: SelectorState }>({});
+const flowVariableSelectorStates = reactive<{
+  [key: string]: SelectorState;
+}>({});
 
-const columnSelectorStateErrorMessages = reactive<{
+const flowVariableSelectorStateErrorMessages = reactive<{
   [key: string]: string | null;
 }>({});
 
 /**
- * Generate a new key for a new editor. This is used to index the columnSelectorStates
+ * Generate a new key for a new editor. This is used to index the flowVariableSelectorStates
  * and the multiEditorComponentRefs, plus it's used to keep track of the order of the editors.
  */
 const generateNewKey = () => {
@@ -77,10 +77,10 @@ const multiEditorComponentRefs = reactive<{
   [key: string]: ExpressionEditorPaneExposes;
 }>({});
 
-const columnStateWatchers = reactive<{ [key: string]: Function }>({});
+const flowVariableStateWatchers = reactive<{ [key: string]: Function }>({});
 const editorStateWatchers = reactive<{ [key: string]: Function }>({});
 
-// The canonical source of ordering truth, used to index the columnSelectorStates
+// The canonical source of ordering truth, used to index the flowVariableSelectorStates
 // and the multiEditorComponentRefs. Things are run in the order defined here,
 // saved in the order defined here, etc.
 const orderedEditorKeys = reactive<string[]>([]);
@@ -99,23 +99,23 @@ const createElementReference = (title: string) => {
   };
 };
 
-// Input columns helpers
-const columnsInInputTable = ref<AllowedDropDownValue[]>([]);
+// Input flowVariables helpers
+const inputFlowVariables = ref<AllowedDropDownValue[]>([]);
 
-const getAvailableColumnsForReplacement = (
+const getAvailableFlowVariableForReplacement = (
   key: string,
 ): AllowedDropDownValue[] => {
   const index = orderedEditorKeys.indexOf(key);
 
-  const columnsFromPreviousEditors = orderedEditorKeys
+  const flowVariableFromPreviousEditors = orderedEditorKeys
     .slice(0, index)
-    .filter((key) => columnSelectorStates[key].outputMode === "APPEND")
-    .map((key) => columnSelectorStates[key].create)
-    .map((column) => {
-      return { id: column, text: column };
+    .filter((key) => flowVariableSelectorStates[key].outputMode === "APPEND")
+    .map((key) => flowVariableSelectorStates[key].create)
+    .map((flowVariable) => {
+      return { id: flowVariable, text: flowVariable };
     });
 
-  return [...columnsInInputTable.value, ...columnsFromPreviousEditors];
+  return [...inputFlowVariables.value, ...flowVariableFromPreviousEditors];
 };
 
 const getActiveEditor = (): ExpressionEditorPaneExposes | null => {
@@ -146,7 +146,6 @@ const onEditorFocused = (filename: string) => {
 };
 
 const functionCatalogData = ref<FunctionCatalogData>();
-const inputsAvailable = ref(false);
 const editorErrorStates = reactive<{ [key: string]: EditorErrorState }>({});
 
 const getFirstEditor = (): ExpressionEditorPaneExposes => {
@@ -154,25 +153,25 @@ const getFirstEditor = (): ExpressionEditorPaneExposes => {
 };
 
 const runDiagnosticsFunction = async () => {
-  const codeErrors = await runRowMapperDiagnostics(
+  const codeErrors = await runFlowVariableDiagnostics(
     orderedEditorKeys
       .map((key) => multiEditorComponentRefs[key])
       .map((editor) => editor.getEditorState()),
     orderedEditorKeys
-      .map((key) => columnSelectorStates[key])
+      .map((key) => flowVariableSelectorStates[key])
       .map((state) => (state.outputMode === "APPEND" ? state.create : null)),
   );
 
-  const columnValidities = runOutputDiagnostics(
-    "Column",
-    orderedEditorKeys.map((key) => columnSelectorStates[key]),
-    columnsInInputTable.value.map((column) => column.id),
+  const outputValidities = runOutputDiagnostics(
+    "Flow variable",
+    orderedEditorKeys.map((key) => flowVariableSelectorStates[key]),
+    inputFlowVariables.value.map((flowVariable) => flowVariable.id),
   );
 
   orderedEditorKeys.forEach((key, index) => {
-    columnSelectorStateErrorMessages[key] = columnValidities[index];
+    flowVariableSelectorStateErrorMessages[key] = outputValidities[index];
 
-    if (codeErrors[index] === "ERROR" || columnValidities[index] !== null) {
+    if (codeErrors[index] === "ERROR" || outputValidities[index] !== null) {
       editorErrorStates[key] = {
         level: "ERROR",
         message: "An error occurred.",
@@ -188,15 +187,11 @@ const initialData = ref<ExpressionInitialData | null>(null);
 onMounted(async () => {
   const [initialDataLocal, settings] = await Promise.all([
     getExpressionInitialDataService().getInitialData(),
-    getRowMapperSettingsService().getSettings(),
+    getFlowVariableSettingsService().getSettings(),
   ]);
   initialData.value = initialDataLocal;
 
-  const {
-    inputsAvailable: inputsAvailableLocal,
-    functionCatalog,
-    inputObjects,
-  } = initialData.value;
+  const { functionCatalog, flowVariables } = initialData.value;
 
   expressionVersion.value = {
     languageVersion: settings.languageVersion,
@@ -204,34 +199,29 @@ onMounted(async () => {
     builtinAggregationsVersion: settings.builtinAggregationsVersion,
   };
 
-  inputsAvailable.value = inputsAvailableLocal;
-  if (!inputsAvailable.value) {
-    consoleHandler.writeln({
-      warning: "No input available. Connect an executed node.",
-    });
-  }
-
   functionCatalogData.value = functionCatalog;
 
-  if (inputObjects && inputObjects.length > 0 && inputObjects[0].subItems) {
-    columnsInInputTable.value = inputObjects[0]?.subItems?.map(
+  if (flowVariables && flowVariables.subItems) {
+    inputFlowVariables.value = flowVariables.subItems.map(
       (c: { name: string }) => {
         return { id: c.name, text: c.name };
       },
     );
   }
 
-  registerKnimeExpressionLanguage(initialDataLocal);
+  registerKnimeExpressionLanguage(initialDataLocal, {
+    specialColumnAccess: false,
+  });
 
   for (let i = 0; i < settings.scripts.length; ++i) {
     const key = generateNewKey();
 
     orderedEditorKeys.push(key);
 
-    columnSelectorStates[key] = {
-      outputMode: settings.outputModes[i],
-      create: settings.createdColumns[i],
-      replace: settings.replacedColumns[i],
+    flowVariableSelectorStates[key] = {
+      outputMode: settings.flowVariableOutputModes[i],
+      create: settings.createdFlowVariables[i],
+      replace: settings.replacedFlowVariables[i],
     };
   }
 
@@ -260,8 +250,8 @@ onMounted(async () => {
       multiEditorComponentRefs[key].getEditorState().text,
       runDiagnosticsFunction,
     );
-    columnStateWatchers[key] = watch(
-      () => columnSelectorStates[key],
+    flowVariableStateWatchers[key] = watch(
+      () => flowVariableSelectorStates[key],
       runDiagnosticsFunction,
       {
         deep: true,
@@ -281,7 +271,7 @@ const anyEditorHasError = () =>
     (errorState) => errorState.level === "ERROR",
   );
 
-const runRowMapperExpressions = (rows: number) => {
+const runFlowVariableExpressions = (rows: number) => {
   if (!anyEditorHasError()) {
     getScriptingService().sendToService("runExpression", [
       orderedEditorKeys
@@ -289,10 +279,10 @@ const runRowMapperExpressions = (rows: number) => {
         .map((ref) => ref.getEditorState().text.value),
       rows,
       orderedEditorKeys
-        .map((key) => columnSelectorStates[key])
+        .map((key) => flowVariableSelectorStates[key])
         .map((state) => state.outputMode),
       orderedEditorKeys
-        .map((key) => columnSelectorStates[key])
+        .map((key) => flowVariableSelectorStates[key])
         .map((state) =>
           state.outputMode === "APPEND" ? state.create : state.replace,
         ),
@@ -300,20 +290,20 @@ const runRowMapperExpressions = (rows: number) => {
   }
 };
 
-getRowMapperSettingsService().registerSettingsGetterForApply(
-  (): ExpressionRowMapperNodeSettings => ({
+getFlowVariableSettingsService().registerSettingsGetterForApply(
+  (): ExpressionFlowVariableNodeSettings => ({
     ...expressionVersion.value,
-    createdColumns: orderedEditorKeys
-      .map((key) => columnSelectorStates[key])
+    createdFlowVariables: orderedEditorKeys
+      .map((key) => flowVariableSelectorStates[key])
       .map((state) => state.create),
-    replacedColumns: orderedEditorKeys
-      .map((key) => columnSelectorStates[key])
+    replacedFlowVariables: orderedEditorKeys
+      .map((key) => flowVariableSelectorStates[key])
       .map((state) => state.replace),
     scripts: orderedEditorKeys
       .map((key) => multiEditorComponentRefs[key])
       .map((editor) => editor.getEditorState().text.value ?? ""),
-    outputModes: orderedEditorKeys
-      .map((key) => columnSelectorStates[key])
+    flowVariableOutputModes: orderedEditorKeys
+      .map((key) => flowVariableSelectorStates[key])
       .map((state) => state.outputMode),
   }),
 );
@@ -322,10 +312,10 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
   const latestKey = generateNewKey();
   const desiredInsertionIndex = orderedEditorKeys.indexOf(fileNameAbove) + 1;
 
-  columnSelectorStates[latestKey] = {
+  flowVariableSelectorStates[latestKey] = {
     outputMode: "APPEND",
-    create: "New Column",
-    replace: initialData.value?.inputObjects[0].subItems?.[0].name ?? "",
+    create: "New flow variable",
+    replace: initialData.value?.flowVariables.subItems?.[0].name ?? "",
   };
 
   orderedEditorKeys.splice(desiredInsertionIndex, 0, latestKey);
@@ -339,8 +329,8 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
     multiEditorComponentRefs[latestKey].getEditorState().text,
     runDiagnosticsFunction,
   );
-  columnStateWatchers[latestKey] = watch(
-    () => columnSelectorStates[latestKey],
+  flowVariableStateWatchers[latestKey] = watch(
+    () => flowVariableSelectorStates[latestKey],
     runDiagnosticsFunction,
     {
       deep: true,
@@ -362,15 +352,15 @@ const onEditorRequestedDelete = (filename: string) => {
   }
 
   orderedEditorKeys.splice(orderedEditorKeys.indexOf(filename), 1);
-  delete columnSelectorStates[filename];
+  delete flowVariableSelectorStates[filename];
   delete multiEditorComponentRefs[filename];
-  delete columnSelectorStateErrorMessages[filename];
+  delete flowVariableSelectorStateErrorMessages[filename];
 
   // Clean up watchers
   editorStateWatchers[filename]();
-  columnStateWatchers[filename]();
+  flowVariableStateWatchers[filename]();
   delete editorStateWatchers[filename];
-  delete columnStateWatchers[filename];
+  delete flowVariableStateWatchers[filename];
 
   runDiagnosticsFunction();
 };
@@ -417,7 +407,9 @@ const onEditorRequestedCopyBelow = async (filename: string) => {
   const newKey = await addNewEditorBelowExisting(filename);
 
   // Copy state from the editor above to the new editor
-  columnSelectorStates[newKey] = { ...columnSelectorStates[filename] };
+  flowVariableSelectorStates[newKey] = {
+    ...flowVariableSelectorStates[filename],
+  };
   multiEditorComponentRefs[newKey]
     .getEditorState()
     .setInitialText(
@@ -436,28 +428,26 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
     )
   ) {
     evt.preventDefault();
-    runRowMapperExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN);
+    runFlowVariableExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN);
   }
 });
 
 const runButtonDisabledErrorReason = computed(() => {
   const errors: string[] = [];
 
-  if (!inputsAvailable.value) {
-    errors.push("No input available. Connect an executed node.");
-  }
-
   if (anyEditorHasError()) {
     errors.push("An editor is invalid.");
   }
 
-  const columnErrors = Object.entries(columnSelectorStateErrorMessages)
+  const flowVariableErrors = Object.entries(
+    flowVariableSelectorStateErrorMessages,
+  )
     .map(([key, message]) =>
       message === null ? null : `${getEditorTitleFromKey(key)}: ${message}`,
     )
     .filter((message) => message !== null);
 
-  errors.push(...columnErrors);
+  errors.push(...flowVariableErrors);
 
   if (errors.length === 0) {
     return null;
@@ -493,18 +483,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
           left: initialPaneSizes.left,
           bottom: 30,
         }"
-        :additional-bottom-pane-tab-content="[
-          {
-            label: 'Output preview',
-            value: 'outputPreview',
-          },
-        ]"
       >
-        <!-- Extra content in the bottom tab pane -->
-        <template #outputPreview="{ grabFocus }">
-          <OutputTablePreview @output-table-updated="grabFocus()" />
-        </template>
-
         <template #editor>
           <ExpressionEditorPane
             v-for="(key, index) in orderedEditorKeys"
@@ -530,11 +509,13 @@ const initialPaneSizes = calculateInitialPaneSizes();
             <template #multi-editor-controls>
               <div class="editor-controls">
                 <OutputSelector
-                  v-model="columnSelectorStates[key]"
-                  v-model:error-message="columnSelectorStateErrorMessages[key]"
-                  selector-type="column"
+                  v-model="flowVariableSelectorStates[key]"
+                  v-model:error-message="
+                    flowVariableSelectorStateErrorMessages[key]
+                  "
+                  selector-type="flowVariable"
                   :allowed-replacement-entities="
-                    getAvailableColumnsForReplacement(key)
+                    getAvailableFlowVariableForReplacement(key)
                   "
                 />
               </div>
@@ -561,11 +542,22 @@ const initialPaneSizes = calculateInitialPaneSizes();
 
         <!-- Controls displayed once only -->
         <template #code-editor-controls="{ showButtonText }">
-          <RunButton
-            :run-button-disabled-error-reason="runButtonDisabledErrorReason"
-            :show-button-text="showButtonText"
-            @run-expressions="runRowMapperExpressions"
-          />
+          <Button
+            primary
+            compact
+            :disabled="runButtonDisabledErrorReason !== null"
+            @click="runFlowVariableExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN)"
+          >
+            <div
+              class="run-button"
+              :class="{
+                'hide-button-text': !showButtonText,
+              }"
+            >
+              <PlayIcon />
+            </div>
+            {{ showButtonText ? "Evaluate" : "" }}
+          </Button>
         </template>
       </ScriptingEditor>
     </template>
@@ -597,5 +589,13 @@ const initialPaneSizes = calculateInitialPaneSizes();
   width: fit-content;
   margin: var(--space-16) auto;
   outline: 1px solid var(--knime-silver-sand);
+}
+
+.hide-button-text {
+  margin-right: calc(-1 * var(--space-16));
+}
+
+.run-button {
+  display: inline;
 }
 </style>

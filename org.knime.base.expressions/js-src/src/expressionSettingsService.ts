@@ -15,6 +15,14 @@ export type ExpressionRowMapperNodeSettings = ExpressionVersion & {
   replacedColumns: string[];
 };
 
+export type ExpressionFlowVariableNodeSettings = ExpressionVersion & {
+  scripts: string[];
+  settingsAreOverriddenByFlowVariable?: boolean;
+  flowVariableOutputModes: OutputInsertionMode[];
+  createdFlowVariables: string[];
+  replacedFlowVariables: string[];
+};
+
 const getExpressionSettingsService = <T extends GenericNodeSettings>() => ({
   ...getSettingsService(),
   getSettings: async (): Promise<T> =>
@@ -28,3 +36,6 @@ export const getRowFilterSettingsService =
 
 export const getRowMapperSettingsService =
   getExpressionSettingsService<ExpressionRowMapperNodeSettings>;
+
+export const getFlowVariableSettingsService =
+  getExpressionSettingsService<ExpressionFlowVariableNodeSettings>;

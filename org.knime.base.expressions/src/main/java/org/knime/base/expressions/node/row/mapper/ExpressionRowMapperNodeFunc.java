@@ -48,7 +48,7 @@
  */
 package org.knime.base.expressions.node.row.mapper;
 
-import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
+import org.knime.base.expressions.ExpressionRunnerUtils.InsertionMode;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -69,16 +69,16 @@ public final class ExpressionRowMapperNodeFunc implements NodeFunc {
         var columnName = arguments.getString("column_name");
         var createNew = arguments.getBoolean("create_new", false);
 
-        ColumnInsertionMode outputMode;
+        InsertionMode outputMode;
         String createdColumn;
         String replacedColumn;
 
         if (createNew) {
-            outputMode = ColumnInsertionMode.APPEND;
+            outputMode = InsertionMode.APPEND;
             createdColumn = columnName;
             replacedColumn = null;
         } else {
-            outputMode = ColumnInsertionMode.REPLACE_EXISTING;
+            outputMode = InsertionMode.REPLACE_EXISTING;
             createdColumn = null;
             replacedColumn = columnName;
         }

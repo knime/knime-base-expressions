@@ -14,16 +14,8 @@ import {
   type InsertionEvent,
   insertionEventHelper,
   MIN_WIDTH_FOR_DISPLAYING_LEFT_PANE,
-  type UseCodeEditorReturn,
 } from "@knime/scripting-editor";
 import type { ExpressionEditorPaneExposes } from "@/components/ExpressionEditorPane.vue";
-import { editor as MonacoEditor, Range } from "monaco-editor";
-import {
-  DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY,
-  EXPRESSION_MARKERS_OWNER,
-} from "./constants";
-
-import type { Diagnostic } from "./types";
 
 export const setupConsola = () => {
   const consola = new Consola({
@@ -98,40 +90,6 @@ export const registerInsertionListener = (
       // doesn't need imports.
       editorState.insertColumnReference(codeToInsert);
     });
-};
-
-export const markDiagnosticsInEditor = (
-  diagnosticsForThisEditor: Diagnostic[],
-  editorState: UseCodeEditorReturn,
-) => {
-  // Mark the diagnostics in the editor
-
-  const markers = diagnosticsForThisEditor.map(
-    (diagnostic): MonacoEditor.IMarkerData => ({
-      ...Range.fromPositions(
-        editorState.editorModel.getPositionAt(diagnostic.location.start),
-        editorState.editorModel.getPositionAt(diagnostic.location.stop),
-      ),
-      message: diagnostic.message,
-      severity: DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY[diagnostic.severity],
-    }),
-  );
-
-  MonacoEditor.setModelMarkers(
-    editorState.editorModel,
-    EXPRESSION_MARKERS_OWNER,
-    markers,
-  );
-};
-
-export const evaluateDiagnostics = (diagnosticsForThisEditor: Diagnostic[]) => {
-  if (diagnosticsForThisEditor.some((d) => d.severity === "ERROR")) {
-    return "ERROR";
-  } else if (diagnosticsForThisEditor.some((d) => d.severity === "WARNING")) {
-    return "WARNING";
-  } else {
-    return "OK";
-  }
 };
 
 export const log = (message: any, ...args: any[]) => {

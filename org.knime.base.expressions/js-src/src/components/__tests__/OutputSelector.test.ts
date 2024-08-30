@@ -1,11 +1,9 @@
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import ColumnOutputSelector, {
-  type ColumnSelectorState,
-} from "../ColumnOutputSelector.vue";
+import OutputSelector, { type SelectorState } from "../OutputSelector.vue";
 import { Dropdown, InputField, ValueSwitch } from "@knime/components";
 
-describe("ColumnOutputSelector", () => {
+describe("OutputSelector", () => {
   enableAutoUnmount(afterEach);
 
   const columnsToReplace = [
@@ -16,15 +14,16 @@ describe("ColumnOutputSelector", () => {
   ];
 
   const doMount = (
-    modelValue: ColumnSelectorState = {
+    modelValue: SelectorState = {
       outputMode: "APPEND",
-      createColumn: "test column",
-      replaceColumn: "a",
+      create: "test column",
+      replace: "a",
     },
   ) => {
-    return mount(ColumnOutputSelector, {
+    return mount(OutputSelector, {
       props: {
-        allowedReplacementColumns: columnsToReplace,
+        selectorType: "column",
+        allowedReplacementEntities: columnsToReplace,
         modelValue,
       },
       attachTo: "body", // needed for label clicking to work
@@ -38,8 +37,8 @@ describe("ColumnOutputSelector", () => {
   it("shows input field on APPEND mode", () => {
     const wrapper = doMount({
       outputMode: "APPEND",
-      createColumn: "a1",
-      replaceColumn: "c",
+      create: "a1",
+      replace: "c",
     });
     expect(wrapper.findComponent(ValueSwitch).props().modelValue).equals(
       "APPEND",
@@ -55,8 +54,8 @@ describe("ColumnOutputSelector", () => {
   it("shows dropdown field on REPLACE mode", () => {
     const wrapper = doMount({
       outputMode: "REPLACE_EXISTING",
-      createColumn: "a1",
-      replaceColumn: "c",
+      create: "a1",
+      replace: "c",
     });
     expect(wrapper.findComponent(ValueSwitch).props().modelValue).equals(
       "REPLACE_EXISTING",

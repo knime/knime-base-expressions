@@ -15,6 +15,12 @@
       		deprecated="false"
       		hidden="false">
       	</node>
+      	<node
+      		category-path="/manipulation"
+      		factory-class="org.knime.base.expressions.node.variable.ExpressionFlowVariableNodeFactory"
+      		deprecated="false"
+      		hidden="false">
+      	</node>
    </extension>  
     
    <extension 

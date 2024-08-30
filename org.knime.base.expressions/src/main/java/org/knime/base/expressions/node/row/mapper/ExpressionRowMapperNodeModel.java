@@ -56,7 +56,7 @@ import java.io.IOException;
 
 import org.knime.base.expressions.ExpressionMapperFactory;
 import org.knime.base.expressions.ExpressionRunnerUtils;
-import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
+import org.knime.base.expressions.ExpressionRunnerUtils.InsertionMode;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
@@ -94,6 +94,10 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
     public ExpressionRowMapperNodeModel() {
         super(1, 1);
 
+        // TODO(AP-23250) The `null` parameter sets the initial replacement flow variable in case the node
+        // replaces a flow variable. In the dialog the scripting service is set up where the initial replacement
+        // column/flow variable is correctly set but the frontend gets this setting here.
+
         m_settings = new ExpressionRowMapperSettings(null);
     }
 
@@ -120,7 +124,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
      * @throws InvalidSettingsException if anything is wrong with the script or the settings
      */
     private DataTableSpec computeTableSpecAfterScriptApplied(final DataTableSpec inputSpec,
-        final ColumnInsertionMode outputMode, final String outputColumn, final String script, final int indexInScripts)
+        final InsertionMode outputMode, final String outputColumn, final String script, final int indexInScripts)
         throws InvalidSettingsException {
 
         try {
@@ -135,7 +139,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
             var outputColumnSpec =
                 ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), outputColumn);
 
-            if (outputMode == ColumnInsertionMode.REPLACE_EXISTING) {
+            if (outputMode == InsertionMode.REPLACE_EXISTING) {
                 return new DataTableSpecCreator(inputSpec) //
                     .replaceColumn(inputSpec.findColumnIndex(outputColumn), outputColumnSpec) //
                     .createSpec(); //

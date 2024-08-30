@@ -50,16 +50,14 @@ package org.knime.base.expressions.node.row.mapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
-import org.knime.base.expressions.ExpressionRunnerUtils.ColumnInsertionMode;
+import org.knime.base.expressions.ExpressionRunnerUtils.InsertionMode;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
-import org.knime.base.expressions.node.FunctionCatalogData;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
@@ -108,9 +106,9 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
     private ReferenceTable m_inputTable;
 
     /**
-     * Cached row count of the input table.
-     * In case of a row-based table a columnar-based table is created on the fly for the first
-     * {@link PREVIEW_MAX_ROWS} rows, thus loosing the information about the original input table row count
+     * Cached row count of the input table. In case of a row-based table a columnar-based table is created on the fly
+     * for the first {@link PREVIEW_MAX_ROWS} rows, thus loosing the information about the original input table row
+     * count
      */
     private long m_inputTableRowCount;
 
@@ -192,10 +190,6 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
             );
         }
 
-        public FunctionCatalogData getFunctionCatalog() {
-            return FunctionCatalogData.BUILT_IN;
-        }
-
         private Map<String, FlowVariable> getAvailableFlowVariables(final VariableType<?>[] types) {
             var flowObjectStack = getWorkflowControl().getFlowObjectStack();
             if (flowObjectStack != null) {
@@ -216,19 +210,18 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
          *
          * @return an expression that is ready to be executed
          */
-        private Ast getPreparedExpression(final String script, final String[] additionalColumnNames,
-            final ValueType[] additionalColumnTypes) throws ExpressionCompileException {
+        private Ast getPreparedExpression(final String script, final List<String> additionalColumnNames,
+            final List<ValueType> additionalColumnTypes) throws ExpressionCompileException {
 
             var ast = Expressions.parse(script);
             var flowVarToTypeMapper = ExpressionRunnerUtils.flowVarToTypeForTypeInference(
                 getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
 
-            Function<String, ReturnResult<ValueType>> columnToTypeMapper = columName -> {
-                if (Arrays.stream(additionalColumnNames).anyMatch(columName::equals)) {
-                    return ReturnResult
-                        .success(additionalColumnTypes[Arrays.asList(additionalColumnNames).indexOf(columName)]);
+            Function<String, ReturnResult<ValueType>> columnToTypeMapper = columnName -> {
+                if (additionalColumnNames.contains(columnName)) {
+                    return ReturnResult.success(additionalColumnTypes.get(additionalColumnNames.indexOf(columnName)));
                 } else {
-                    return getColumnToTypeMapper().apply(columName);
+                    return getColumnToTypeMapper().apply(columnName);
                 }
             };
 
@@ -243,17 +236,18 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
          * @param newColumnNames
          * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
          */
-        public List<List<Diagnostic>> getDiagnostics(final String[] expressions, final String[] newColumnNames) {
-            List<ValueType> inferredColumnTypes = new ArrayList<>();
+        public List<List<Diagnostic>> getRowMapperDiagnostics(final String[] expressions,
+            final String[] newColumnNames) {
 
+            List<ValueType> inferredColumnTypes = new ArrayList<>();
+            List<String> additionalColumnNames = new ArrayList<>();
             List<List<Diagnostic>> diagnostics = new ArrayList<>();
 
             for (int i = 0; i < expressions.length; ++i) {
                 var expression = expressions[i];
 
                 try {
-                    var ast = getPreparedExpression(expression, Arrays.copyOfRange(newColumnNames, 0, i),
-                        inferredColumnTypes.toArray(new ValueType[0]));
+                    var ast = getPreparedExpression(expression, additionalColumnNames, inferredColumnTypes);
 
                     var inferredType = Expressions.getInferredType(ast);
                     inferredColumnTypes.add(inferredType);
@@ -266,6 +260,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     } else {
                         diagnostics.add(List.of());
                     }
+                    additionalColumnNames.add(newColumnNames[i]);
+
                 } catch (ExpressionCompileException ex) {
                     // If there is an error in the expression, we still want to be able to continue with the other
                     // expression diagnostics, so add a missing type to the list of inferred types and continue
@@ -285,22 +281,23 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            var inputTable =  getInputTable();
+            var inputTable = getInputTable();
 
             List<ValueType> additionalColumnTypes = new ArrayList<>();
 
             for (int i = 0; i < scripts.length; ++i) {
                 String script = scripts[i];
                 String columnName = columnNames[i];
+                List<String> additionalColumnNames = new ArrayList<>();
                 String columnInsertionModeString = columnInsertionModesString[i];
 
                 final Ast expression;
                 try {
-                    expression = getPreparedExpression(script, Arrays.copyOfRange(columnNames, 0, i),
-                        additionalColumnTypes.toArray(new ValueType[0]));
+                    expression = getPreparedExpression(script, additionalColumnNames, additionalColumnTypes);
 
                     var inferredType = Expressions.getInferredType(expression);
                     additionalColumnTypes.add(inferredType);
+                    additionalColumnNames.add(columnName);
                 } catch (ExpressionCompileException ex) {
                     NodeLogger.getLogger(ExpressionRowMapperNodeScriptingService.class)
                         .debug("Error while running expression in dialog. This should not happen because the "
@@ -340,7 +337,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).createExecutionContext();
 
                 var outputTableVirtual = ExpressionRunnerUtils.constructOutputTable(slicedInputTable, expressionResult,
-                    new ExpressionRunnerUtils.NewColumnPosition(ColumnInsertionMode.valueOf(columnInsertionModeString),
+                    new ExpressionRunnerUtils.NewColumnPosition(InsertionMode.valueOf(columnInsertionModeString),
                         columnName));
 
                 // TODO(AP-23177): reduce materialization to at most one
@@ -403,7 +400,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     ((NativeNodeContainer)NodeContext.getContext().getNodeContainer()).createExecutionContext();
 
                 var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(
-                    ColumnInsertionMode.valueOf(columnInsertionModeString), columnName);
+                    InsertionMode.valueOf(columnInsertionModeString), columnName);
                 var outputTable =
                     ExpressionRunnerUtils.constructOutputTable(slicedInputTable, expressionResult, newColumnPosition);
 

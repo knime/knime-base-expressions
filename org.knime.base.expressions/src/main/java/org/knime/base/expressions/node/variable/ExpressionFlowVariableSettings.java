@@ -46,7 +46,7 @@
  * History
  *   Aug 26, 2024 (david): created
  */
-package org.knime.base.expressions.node.row.mapper;
+package org.knime.base.expressions.node.variable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,48 +72,50 @@ import org.knime.scripting.editor.GenericSettingsIOManager;
 import org.knime.scripting.editor.ScriptingNodeSettings;
 
 /**
- * Settings for an Expression Row Mapper node, with loading, saving, and validation.
+ * Settings for an Expression Flow Variable node, with loading, saving, and validation.
  *
- * @author David Hickey, TNG Technology Consulting GmbH
+ * @author Tobias Kampmann, TNG Technology Consulting GmbH
  */
 @SuppressWarnings("restriction") // SettingsType is not yet public API
-class ExpressionRowMapperSettings extends ScriptingNodeSettings implements GenericSettingsIOManager {
+public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements GenericSettingsIOManager {
 
     /**
      * The script shown in a new expression node.
      */
-    static final String DEFAULT_SCRIPT = """
+    public static final String DEFAULT_SCRIPT = """
             # Examples:
-            # 1. Calculate the sine of values in column "My Column":
-            #  sin($["My Column"])
-            # 2. Divide column values by a flow variable:
-            #  $["My Column"] / $$["My Flow Variable"]
+            # 1. Calculate the sine of flow variable "My Flow Variable":
+            #  sin($$["My Flow Variable"])
+            # 2. Divide two flow variables:
+            #  $$["My First Flow Variable"] / $$["My Second Flow Variable"]
             # 3. Concatenate strings using the + operator:
-            #  substring($["firstname"], 1, 1) + ". " + $["lastname"]
-            # 4. Difference between adjacent rows:
-            #  $["My Column"] - $["My Column", -1]
+            #  substring($$["firstname"], 1, 1) + ". " + $$["lastname"]
             #
             # If you need help, try the "Ask K-AI" button,
             # or have a look at the node description!
             """;
 
     /**
-     * The default name of the column that is created by the expression when in append mode.
+     * The default name of the flow variable that is created by the expression when in append mode.
      */
-    static final String DEFAULT_CREATED_COLUMN = "New Column";
+    public static final String DEFAULT_CREATED_FLOW_VARIABLE = "New Flow Variable";
 
     /**
      * The default output mode for the expression node.
      */
-    static final InsertionMode DEFAULT_OUTPUT_MODE = InsertionMode.APPEND;
+
+    // REMOVE unnecessary differentiation between first and additional
+    public static final InsertionMode DEFAULT_OUTPUT_MODE = InsertionMode.APPEND;
+
+    private static final String CFG_KEY_ADDITIONAL_EXPRESSIONS = "additionalExpressions";
 
     private static final String CFG_KEY_SCRIPT = "script";
 
-    private static final String CFG_KEY_CREATED_COLUMN = "createdColumn";
+    private static final String CFG_KEY_OUTPUT_MODE = "outputMode";
 
-    private static final String CFG_KEY_REPLACED_COLUMN = "replacedColumn";
+    private static final String CFG_KEY_CREATED_FLOW_VARIABLE = "createdFlowVariable";
 
-    private static final String CFG_KEY_OUTPUT_MODE = "columnOutputMode";
+    private static final String CFG_KEY_REPLACED_FLOW_VARIABLE = "replacedFlowVariable";
 
     private static final String CFG_KEY_LANGUAGE_VERSION = "languageVersion";
 
@@ -121,15 +123,13 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
     private static final String CFG_KEY_BUILTIN_AGGREGATIONS_VERSION = "builtinAggregationsVersion";
 
-    private static final String CFG_KEY_ADDITIONAL_EXPRESSIONS = "additionalExpressions";
-
     private static final String JSON_KEY_SCRIPTS = "scripts";
 
-    private static final String JSON_KEY_OUTPUT_MODES = "outputModes";
+    private static final String JSON_KEY_OUTPUT_MODES = "flowVariableOutputModes";
 
-    private static final String JSON_KEY_CREATED_COLUMNS = "createdColumns";
+    private static final String JSON_KEY_CREATED_FLOW_VARIABLES = "createdFlowVariables";
 
-    private static final String JSON_KEY_REPLACED_COLUMNS = "replacedColumns";
+    private static final String JSON_KEY_REPLACED_FLOW_VARIABLES = "replacedFlowVariables";
 
     private static final String JSON_KEY_LANGUAGE_VERSION = CFG_KEY_LANGUAGE_VERSION;
 
@@ -142,9 +142,9 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
     private List<InsertionMode> m_outputModes;
 
-    private List<String> m_createdColumns;
+    private List<String> m_createdFlowVariables;
 
-    private List<String> m_replacedColumns;
+    private List<String> m_replacedFlowVariables;
 
     private int m_languageVersion;
 
@@ -155,30 +155,28 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
     private List<String> m_scripts;
 
     /**
-     * Create a new ExpressionNodeSettings object with the default script. The replacement column has to be specified so
-     * that the frontend can display the correct column name in the drop-down box for replacement columns, but if you
-     * don't anticipate it being used (e.g. because you're creating this for a node model, not a dialogue) then it can
-     * be null.
+     * Create a new ExpressionNodeSettings object with the default script.
      *
-     * @param defaultReplacementColumn
+     * @param replacedFlowVariable the initial flow variable name to replace
+     *
      */
-    ExpressionRowMapperSettings(final String defaultReplacementColumn) {
-        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, defaultReplacementColumn);
+    public ExpressionFlowVariableSettings(final String replacedFlowVariable) {
+        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_FLOW_VARIABLE, replacedFlowVariable);
     }
 
     /**
-     * Create a new ExpressionNodeSettings object with the specified script, output mode, created column, and replaced
-     * column.
+     * Create a new ExpressionNodeSettings object with the specified script, output mode, created flow variable, and
+     * replaced flow variable.
      *
      * Assumes a single script.
      *
      * @param script
      * @param outputMode
-     * @param createdColumn
-     * @param replacedColumn
+     * @param createdFlowVariable
+     * @param replacedFlowVariable
      */
-    ExpressionRowMapperSettings(final String script, final InsertionMode outputMode, final String createdColumn,
-        final String replacedColumn) {
+    public ExpressionFlowVariableSettings(final String script, final InsertionMode outputMode,
+        final String createdFlowVariable, final String replacedFlowVariable) {
 
         super(SettingsType.MODEL);
 
@@ -190,8 +188,8 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
         this.m_scripts = new ArrayList<>(Arrays.asList(script));
         this.m_outputModes = new ArrayList<>(Arrays.asList(outputMode));
-        this.m_createdColumns = new ArrayList<>(Arrays.asList(createdColumn));
-        this.m_replacedColumns = new ArrayList<>(Arrays.asList(replacedColumn));
+        this.m_createdFlowVariables = new ArrayList<>(Arrays.asList(createdFlowVariable));
+        this.m_replacedFlowVariables = new ArrayList<>(Arrays.asList(replacedFlowVariable));
     }
 
     @Override
@@ -203,13 +201,8 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
         m_scripts = new ArrayList<>();
         m_outputModes = new ArrayList<>();
-        m_createdColumns = new ArrayList<>();
-        m_replacedColumns = new ArrayList<>();
-
-        m_scripts.add(settings.getString(CFG_KEY_SCRIPT));
-        m_outputModes.add(InsertionMode.valueOf(settings.getString(CFG_KEY_OUTPUT_MODE)));
-        m_createdColumns.add(settings.getString(CFG_KEY_CREATED_COLUMN));
-        m_replacedColumns.add(settings.getString(CFG_KEY_REPLACED_COLUMN));
+        m_createdFlowVariables = new ArrayList<>();
+        m_replacedFlowVariables = new ArrayList<>();
 
         if (settings.containsKey(CFG_KEY_ADDITIONAL_EXPRESSIONS)) {
             var additionalExpressionsConfig = settings.getConfig(CFG_KEY_ADDITIONAL_EXPRESSIONS);
@@ -219,67 +212,63 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
                 m_scripts.add(additionalExpressionConfig.getString(CFG_KEY_SCRIPT));
                 m_outputModes.add(InsertionMode.valueOf(additionalExpressionConfig.getString(CFG_KEY_OUTPUT_MODE)));
-                m_createdColumns.add(additionalExpressionConfig.getString(CFG_KEY_CREATED_COLUMN));
-                m_replacedColumns.add(additionalExpressionConfig.getString(CFG_KEY_REPLACED_COLUMN));
+                m_createdFlowVariables.add(additionalExpressionConfig.getString(CFG_KEY_CREATED_FLOW_VARIABLE));
+                m_replacedFlowVariables.add(additionalExpressionConfig.getString(CFG_KEY_REPLACED_FLOW_VARIABLE));
             }
         }
     }
 
     /**
-     * @return the unmodifiable list of all column output modes
+     * @return the unmodifiable list of all flow variable output modes
      */
-    List<InsertionMode> getColumnInsertionModes() {
+    public List<InsertionMode> getFlowVariableInsertionModes() {
         return Collections.unmodifiableList(m_outputModes);
     }
 
     /**
-     * @return the unmodifiable list of all created columns
+     * @return the unmodifiable list of all created flow variables
      */
-    List<String> getCreatedColumns() {
-        return Collections.unmodifiableList(m_createdColumns);
+    public List<String> getCreatedFlowVariables() {
+        return Collections.unmodifiableList(m_createdFlowVariables);
     }
 
     /**
-     * @return the unmodifiable list of all columns
+     * @return the unmodifiable list of all flow variables
      */
-    List<String> getReplacedColumns() {
-        return Collections.unmodifiableList(m_replacedColumns);
+    public List<String> getReplacedFlowVariables() {
+        return Collections.unmodifiableList(m_replacedFlowVariables);
     }
 
     /**
      * @return the unmodifiable list of all scripts
      */
-    List<String> getScripts() {
+    public List<String> getScripts() {
         return Collections.unmodifiableList(m_scripts);
     }
 
     /**
-     * Get the list of columns that are being actively used, i.e. for each editor, if the output mode is APPEND, return
-     * the column that will be appended, and if the output mode is REPLACE_EXISTING, return the column that would be
-     * replaced.
+     * Get the list of flow variables that are being actively used, i.e. for each editor, if the output mode is APPEND,
+     * return the flow variable that will be appended, and if the output mode is REPLACE_EXISTING, return the flow
+     * variable that would be replaced.
      *
-     * @return the unmodifiable list of columns that are being actively used
+     * @return the unmodifiable list of flow variables that are being actively used
      */
-    List<String> getActiveOutputColumns() {
+    public List<String> getActiveOutputFlowVariables() {
         return IntStream.range(0, getNumScripts()) //
-            .mapToObj(i -> m_outputModes.get(i) == InsertionMode.REPLACE_EXISTING ? m_replacedColumns.get(i)
-                : m_createdColumns.get(i)) //
+            .mapToObj(i -> m_outputModes.get(i) == InsertionMode.REPLACE_EXISTING ? m_replacedFlowVariables.get(i)
+                : m_createdFlowVariables.get(i)) //
             .toList();
     }
 
     /**
      * @return the number of scripts
      */
-    int getNumScripts() {
+    public int getNumScripts() {
         return m_scripts.size();
     }
 
     @Override
     public void saveSettingsTo(final NodeSettingsWO settings) {
-        settings.addString(CFG_KEY_SCRIPT, m_scripts.get(0));
-        settings.addString(CFG_KEY_OUTPUT_MODE, m_outputModes.get(0).name());
-        settings.addString(CFG_KEY_CREATED_COLUMN, m_createdColumns.get(0));
-        settings.addString(CFG_KEY_REPLACED_COLUMN, m_replacedColumns.get(0));
 
         settings.addInt(CFG_KEY_LANGUAGE_VERSION, m_languageVersion);
         settings.addInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, m_builtinFunctionsVersion);
@@ -287,14 +276,14 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
         var additionalExprsConfigs = settings.addConfig(CFG_KEY_ADDITIONAL_EXPRESSIONS);
 
-        for (int i = 0; i < getNumScripts() - 1; ++i) {
+        for (int i = 0; i < getNumScripts(); ++i) {
             var singleExprConfig = additionalExprsConfigs.addConfig(Integer.toString(i));
 
-            singleExprConfig.addString(CFG_KEY_SCRIPT, m_scripts.get(i + 1));
-            singleExprConfig.addString(CFG_KEY_OUTPUT_MODE, m_outputModes.get(i + 1).name());
-            singleExprConfig.addString(CFG_KEY_CREATED_COLUMN, m_createdColumns.get(i + 1));
+            singleExprConfig.addString(CFG_KEY_SCRIPT, m_scripts.get(i));
+            singleExprConfig.addString(CFG_KEY_OUTPUT_MODE, m_outputModes.get(i).name());
+            singleExprConfig.addString(CFG_KEY_CREATED_FLOW_VARIABLE, m_createdFlowVariables.get(i));
+            singleExprConfig.addString(CFG_KEY_REPLACED_FLOW_VARIABLE, m_replacedFlowVariables.get(i));
 
-            singleExprConfig.addString(CFG_KEY_REPLACED_COLUMN, m_replacedColumns.get(i + 1));
         }
     }
 
@@ -310,8 +299,8 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
         return Map.of( //
             JSON_KEY_SCRIPTS, m_scripts, //
             JSON_KEY_OUTPUT_MODES, m_outputModes, //
-            JSON_KEY_CREATED_COLUMNS, m_createdColumns, //
-            JSON_KEY_REPLACED_COLUMNS, m_replacedColumns, //
+            JSON_KEY_CREATED_FLOW_VARIABLES, m_createdFlowVariables, //
+            JSON_KEY_REPLACED_FLOW_VARIABLES, m_replacedFlowVariables, //
             JSON_KEY_LANGUAGE_VERSION, m_languageVersion, //
             JSON_KEY_FUNCTION_VERSION, m_builtinFunctionsVersion, //
             JSON_KEY_AGGREGATION_VERSION, m_builtinAggregationsVersion, //
@@ -328,8 +317,8 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
         m_scripts = (List<String>)data.get(JSON_KEY_SCRIPTS);
         m_outputModes = ((List<String>)data.get(JSON_KEY_OUTPUT_MODES)).stream().map(InsertionMode::valueOf)
             .collect(Collectors.toList());
-        m_createdColumns = (List<String>)data.get(JSON_KEY_CREATED_COLUMNS);
-        m_replacedColumns = (List<String>)data.get(JSON_KEY_REPLACED_COLUMNS);
+        m_createdFlowVariables = (List<String>)data.get(JSON_KEY_CREATED_FLOW_VARIABLES);
+        m_replacedFlowVariables = (List<String>)data.get(JSON_KEY_REPLACED_FLOW_VARIABLES);
         m_languageVersion = (int)data.get(JSON_KEY_LANGUAGE_VERSION);
         m_builtinFunctionsVersion = (int)data.get(JSON_KEY_FUNCTION_VERSION);
         m_builtinAggregationsVersion = (int)data.get(JSON_KEY_AGGREGATION_VERSION);
@@ -347,7 +336,7 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
         if (additionalExprsVariables.isPresent()) {
             for (var key : additionalExprsVariables.get().getVariableSettingsIterable()) {
                 settingsOverridden |= getVariableOverwriteSubtree(additionalExprsVariables.get(), key)
-                    .map(ExpressionRowMapperSettings::isSingleExprOverwritten) //
+                    .map(ExpressionFlowVariableSettings::isSingleExprOverwritten) //
                     .orElse(false);
             }
         }
@@ -373,7 +362,7 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
     private static boolean isSingleExprOverwritten(final VariableSettingsRO settings) {
         return isOverriddenByFlowVariable(settings, CFG_KEY_SCRIPT)
             || isOverriddenByFlowVariable(settings, CFG_KEY_OUTPUT_MODE)
-            || isOverriddenByFlowVariable(settings, CFG_KEY_CREATED_COLUMN)
-            || isOverriddenByFlowVariable(settings, CFG_KEY_REPLACED_COLUMN);
+            || isOverriddenByFlowVariable(settings, CFG_KEY_CREATED_FLOW_VARIABLE)
+            || isOverriddenByFlowVariable(settings, CFG_KEY_REPLACED_FLOW_VARIABLE);
     }
 }

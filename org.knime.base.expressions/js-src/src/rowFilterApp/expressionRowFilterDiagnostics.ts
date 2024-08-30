@@ -2,11 +2,11 @@ import {
   getScriptingService,
   type UseCodeEditorReturn,
 } from "@knime/scripting-editor";
+import type { Diagnostic, ErrorLevel } from "@/common/types";
 import {
   evaluateDiagnostics,
   markDiagnosticsInEditor,
-} from "@/common/functions";
-import type { Diagnostic, ErrorLevel } from "@/common/types";
+} from "@/generalDiagnostics";
 
 /**
  * Run the diagnostics for all editors and set the markers in the respective editors.

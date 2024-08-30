@@ -101,27 +101,37 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
         Preconditions.checkArgument(inputPorts.length == 1, "expected one input port");
 
         final var spec = inputPorts[0].portSpec();
-        if (spec != null) {
-            Preconditions.checkArgument(spec instanceof DataTableSpec, "expected data table spec");
-            return List.of(InputOutputModel.createFromTableSpec( //
-                "Input table", //
-                (DataTableSpec)spec, //
-                null, //
-                COLUMN_ALIAS_TEMPLATE, //
-                false, // no multiple selection
-                null, // no required import
-                type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) //
-                    .baseType() //
-                    .name(), //
-                type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null));
+        final var expectedPortSpecType = inputPorts[0].portType().getPortObjectSpecClass();
+
+        if (DataTableSpec.class.isAssignableFrom(expectedPortSpecType)) {
+
+            if (spec instanceof DataTableSpec) {
+                return List.of(InputOutputModel.createFromTableSpec( //
+                    "Input table", //
+                    (DataTableSpec)spec, //
+                    null, //
+                    COLUMN_ALIAS_TEMPLATE, //
+                    false, // no multiple selection
+                    null, // no required import
+                    type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) //
+                        .baseType() //
+                        .name(), //
+                    type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null));
+            } else {
+                // TODO: for flow variable node there is never an input table. But in case of an unconnected node
+                // this will add an input-table input object. As this is more aesthetic than a functional decision,
+                // I keep that as is for now. Needs discussing.
+                return List.of(InputOutputModel.createForNonAvailableTable( //
+                    "Input table", //
+                    null, //
+                    COLUMN_ALIAS_TEMPLATE, //
+                    null, // no required import
+                    false // no multiple selection
+                ));
+            }
+
         } else {
-            return List.of(InputOutputModel.createForNonAvailableTable( //
-                "Input table", //
-                null, //
-                COLUMN_ALIAS_TEMPLATE, //
-                null, // no required import
-                false // no multiple selection
-            ));
+            return List.of();
         }
     }
 

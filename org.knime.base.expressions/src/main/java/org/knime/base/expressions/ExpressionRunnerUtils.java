@@ -121,13 +121,13 @@ public final class ExpressionRunnerUtils {
     /**
      * What should happen with new columns, whether they're appended at the end or replace an existing column.
      */
-    public enum ColumnInsertionMode {
+    public enum InsertionMode {
             /**
-             * Append a new column
+             * Append a new column or flow variable
              */
             APPEND,
             /**
-             * Replace an existing column
+             * Replace an existing column or flow variable
              */
             REPLACE_EXISTING
     }
@@ -183,10 +183,10 @@ public final class ExpressionRunnerUtils {
     /**
      * Specifies where and with which name a new column should be added to a table
      *
-     * @param mode The {@link ColumnInsertionMode}
+     * @param mode The {@link InsertionMode}
      * @param columnName The name of the new column (also of the column to replace if that mode is selected)
      */
-    public record NewColumnPosition(ColumnInsertionMode mode, String columnName) {
+    public record NewColumnPosition(InsertionMode mode, String columnName) {
     }
 
     private ExpressionRunnerUtils() {
@@ -203,7 +203,7 @@ public final class ExpressionRunnerUtils {
     public static ColumnarVirtualTable constructOutputTable(final ColumnarVirtualTable inputTable,
         final ColumnarVirtualTable expressionResult, final NewColumnPosition columnInsertionMode) {
 
-        if (columnInsertionMode.mode() == ColumnInsertionMode.APPEND) {
+        if (columnInsertionMode.mode() == InsertionMode.APPEND) {
             return inputTable.append(expressionResult);
         } else {
             var inputSpec = inputTable.getSchema().getSourceSpec();

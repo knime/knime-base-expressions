@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<knimeNode icon="expression_flow_variable.png" type="Manipulator"
+	xmlns="http://knime.org/node/v4.1"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
+	<name>Flow Variable Expression</name>
+	<shortDescription>
+		Allows executing custom expressions on flow variables and creating new
+		or updating existing flow variables.
+	</shortDescription>
+	<fullDescription>
+		<intro>
+			<p>
+				The KNIME Expression node enables generic flow variable
+				manipulation within KNIME workflows.
+			</p>
+		</intro>
+		<link
+			href="https://docs.knime.com/latest/knime_expressions_guide/index.html">Expression language specification</link>
+	</fullDescription>
+	<ports>
+		<inPort index="0" name="Input flow variables">The flow variable input data which will be
+			used.
+		</inPort>
+		<outPort index="0" name="Output flow variables"> The flow variable output data
+			which will be
+			created or updated.
+		</outPort>
+	</ports>
+</knimeNode>

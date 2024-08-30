@@ -12,18 +12,18 @@ import {
  * Run the diagnostics for all editors and set the markers in the respective editors.
  *
  * @param editorStates
- * @param appendedColumns the new columns. This has to have the same length as editorStates, so if any
- * editorState is not associated with a new column, pass a null string.
+ * @param appendedFlowVariables the new flow variables. This has to have the same length as editorStates, so if any
+ * editorState is not associated with a new flow variable, pass a null string.
  */
-export const runRowMapperDiagnostics = async (
+export const runFlowVariableDiagnostics = async (
   editorStates: UseCodeEditorReturn[],
-  appendedColumns: (string | null)[],
+  appendedFlowVariables: (string | null)[],
 ): Promise<ErrorLevel[]> => {
   const newTexts = editorStates.map((editorState) => editorState.text.value);
 
   const diagnostics: Diagnostic[][] = await getScriptingService().sendToService(
-    "getRowMapperDiagnostics",
-    [newTexts, appendedColumns],
+    "getFlowVariableDiagnostics",
+    [newTexts, appendedFlowVariables],
   );
 
   diagnostics.forEach((diagnosticsForThisEditor, index) =>

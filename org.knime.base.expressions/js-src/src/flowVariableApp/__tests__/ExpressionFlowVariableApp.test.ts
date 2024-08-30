@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { nextTick } from "vue";
 import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
-import ExpressionRowMapperApp from "../ExpressionRowMapperApp.vue";
-import { DEFAULT_ROW_MAPPER_INITIAL_SETTINGS } from "../__mocks__/browser-mock-row-mapper-services";
+
+import { DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS } from "../__mocks__/browser-mock-flow-variable-services";
+import ExpressionFlowVariableApp from "../ExpressionFlowVariableApp.vue";
 
 vi.mock("@/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),
@@ -28,22 +29,21 @@ vi.mock("@/expressionInitialDataService", () => ({
 }));
 
 vi.mock("@/expressionSettingsService", () => ({
-  getRowMapperSettingsService: vi.fn(() => ({
+  getFlowVariableSettingsService: vi.fn(() => ({
     getSettings: vi.fn(() =>
-      Promise.resolve(DEFAULT_ROW_MAPPER_INITIAL_SETTINGS),
+      Promise.resolve(DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS),
     ),
     registerSettingsGetterForApply: vi.fn(),
   })),
 }));
 
-vi.mock("@/rowMapperApp/expressionRowMapperDiagnostics", () => ({
-  runRowMapperDiagnostics: vi.fn(() => Promise.resolve([[]])),
-  runColumnOutputDiagnostics: vi.fn(() => Promise.resolve([])),
+vi.mock("@/flowVariableApp/expressionFlowVariableDiagnostics", () => ({
+  runFlowVariableDiagnostics: vi.fn(() => Promise.resolve([[]])),
 }));
 
-describe("ExpressionRowMapperApp.vue", () => {
+describe("ExpressionFlowVariableApp.vue", () => {
   const doMount = () => {
-    const wrapper = mount(ExpressionRowMapperApp, {
+    const wrapper = mount(ExpressionFlowVariableApp, {
       global: {
         stubs: {
           TabBar: true,
@@ -71,7 +71,7 @@ describe("ExpressionRowMapperApp.vue", () => {
     expect(scriptingComponent.props("language")).toBe("knime-expression");
   });
 
-  it("registers the knime expression language", async () => {
+  it("registers the knime expression language and runs diagnostics", async () => {
     doMount();
 
     await flushPromises();
@@ -92,25 +92,25 @@ describe("ExpressionRowMapperApp.vue", () => {
     );
   });
 
-  it("renders column selector and check that it is updated when promises are resolved", async () => {
+  it("renders flow variable selector and check that it is updated when promises are resolved", async () => {
     const { wrapper } = doMount();
 
     await flushPromises();
     await nextTick();
 
-    const columnSelector = wrapper.findComponent({
+    const flowVariableSelector = wrapper.findComponent({
       name: "OutputSelector",
     });
 
-    expect(columnSelector.exists()).toBeTruthy();
+    expect(flowVariableSelector.exists()).toBeTruthy();
 
     await flushPromises();
     await nextTick();
 
-    expect(columnSelector.props("modelValue")).toEqual({
-      create: DEFAULT_ROW_MAPPER_INITIAL_SETTINGS.createdColumns[0],
+    expect(flowVariableSelector.props("modelValue")).toEqual({
+      create: DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS.createdFlowVariables[0],
       outputMode: "APPEND",
-      replace: DEFAULT_ROW_MAPPER_INITIAL_SETTINGS.replacedColumns[0],
+      replace: DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS.replacedFlowVariables[0],
     });
   });
 });
