@@ -236,7 +236,6 @@ export const DEFAULT_INITIAL_DATA: ExpressionInitialData = {
     codeAssistantEnabled: true,
     codeAssistantInstalled: true,
     hubId: "mocked hub id",
-    loggedIn: true,
   },
 };
 
