@@ -68,12 +68,12 @@ import org.knime.scripting.editor.ScriptingNodeSettings;
  * @author David Hickey, TNG Technology Consulting GmbH
  */
 @SuppressWarnings("restriction") // SettingsType is not yet public API
-public class ExpressionRowFilterSettings extends ScriptingNodeSettings implements GenericSettingsIOManager {
+class ExpressionRowFilterSettings extends ScriptingNodeSettings implements GenericSettingsIOManager {
 
     /**
      * The script shown in a new expression node.
      */
-    public static final String DEFAULT_SCRIPT = """
+    static final String DEFAULT_SCRIPT = """
             # Examples:
             # 1. Calculate the sine of values in column "My Column":
             #  sin($["My Column"])
@@ -118,7 +118,7 @@ public class ExpressionRowFilterSettings extends ScriptingNodeSettings implement
     /**
      * Create a new settings object with the default script.
      */
-    public ExpressionRowFilterSettings() {
+    ExpressionRowFilterSettings() {
         super(SettingsType.MODEL);
 
         // Set to the latest version by default
@@ -143,7 +143,7 @@ public class ExpressionRowFilterSettings extends ScriptingNodeSettings implement
     /**
      * @return the script
      */
-    public String getScript() {
+    String getScript() {
         return m_script;
     }
 

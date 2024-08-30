@@ -77,12 +77,12 @@ import org.knime.scripting.editor.ScriptingNodeSettings;
  * @author David Hickey, TNG Technology Consulting GmbH
  */
 @SuppressWarnings("restriction") // SettingsType is not yet public API
-public class ExpressionRowMapperSettings extends ScriptingNodeSettings implements GenericSettingsIOManager {
+class ExpressionRowMapperSettings extends ScriptingNodeSettings implements GenericSettingsIOManager {
 
     /**
      * The script shown in a new expression node.
      */
-    public static final String DEFAULT_SCRIPT = """
+    static final String DEFAULT_SCRIPT = """
             # Examples:
             # 1. Calculate the sine of values in column "My Column":
             #  sin($["My Column"])
@@ -100,12 +100,12 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
     /**
      * The default name of the column that is created by the expression when in append mode.
      */
-    public static final String DEFAULT_CREATED_COLUMN = "New Column";
+    static final String DEFAULT_CREATED_COLUMN = "New Column";
 
     /**
      * The default output mode for the expression node.
      */
-    public static final ColumnInsertionMode DEFAULT_OUTPUT_MODE = ColumnInsertionMode.APPEND;
+    static final ColumnInsertionMode DEFAULT_OUTPUT_MODE = ColumnInsertionMode.APPEND;
 
     private static final String CFG_KEY_SCRIPT = "script";
 
@@ -162,7 +162,7 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
      *
      * @param defaultReplacementColumn
      */
-    public ExpressionRowMapperSettings(final String defaultReplacementColumn) {
+    ExpressionRowMapperSettings(final String defaultReplacementColumn) {
         this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, defaultReplacementColumn);
     }
 
@@ -177,8 +177,8 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
      * @param createdColumn
      * @param replacedColumn
      */
-    public ExpressionRowMapperSettings(final String script, final ColumnInsertionMode outputMode,
-        final String createdColumn, final String replacedColumn) {
+    ExpressionRowMapperSettings(final String script, final ColumnInsertionMode outputMode, final String createdColumn,
+        final String replacedColumn) {
 
         super(SettingsType.MODEL);
 
@@ -229,28 +229,28 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
     /**
      * @return the unmodifiable list of all column output modes
      */
-    public List<ColumnInsertionMode> getColumnInsertionModes() {
+    List<ColumnInsertionMode> getColumnInsertionModes() {
         return Collections.unmodifiableList(m_outputModes);
     }
 
     /**
      * @return the unmodifiable list of all created columns
      */
-    public List<String> getCreatedColumns() {
+    List<String> getCreatedColumns() {
         return Collections.unmodifiableList(m_createdColumns);
     }
 
     /**
      * @return the unmodifiable list of all columns
      */
-    public List<String> getReplacedColumns() {
+    List<String> getReplacedColumns() {
         return Collections.unmodifiableList(m_replacedColumns);
     }
 
     /**
      * @return the unmodifiable list of all scripts
      */
-    public List<String> getScripts() {
+    List<String> getScripts() {
         return Collections.unmodifiableList(m_scripts);
     }
 
@@ -261,7 +261,7 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
      *
      * @return the unmodifiable list of columns that are being actively used
      */
-    public List<String> getActiveOutputColumns() {
+    List<String> getActiveOutputColumns() {
         return IntStream.range(0, getNumScripts()) //
             .mapToObj(i -> m_outputModes.get(i) == ColumnInsertionMode.REPLACE_EXISTING ? m_replacedColumns.get(i)
                 : m_createdColumns.get(i)) //
@@ -271,7 +271,7 @@ public class ExpressionRowMapperSettings extends ScriptingNodeSettings implement
     /**
      * @return the number of scripts
      */
-    public int getNumScripts() {
+    int getNumScripts() {
         return m_scripts.size();
     }
 
