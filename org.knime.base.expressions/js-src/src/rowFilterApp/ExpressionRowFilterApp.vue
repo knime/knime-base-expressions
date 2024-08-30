@@ -56,7 +56,14 @@ const runDiagnosticsFunction = async () => {
   );
   severityLevel.value = errorLevel;
 
-  editorReference.setErrorLevel(errorLevel);
+  if (errorLevel === "OK") {
+    editorReference.setErrorState({ level: "OK" });
+  } else {
+    editorReference.setErrorState({
+      level: errorLevel,
+      message: "An error ocurred.",
+    });
+  }
 };
 
 onMounted(async () => {

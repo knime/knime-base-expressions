@@ -8,6 +8,7 @@ import { onKeyStroke } from "@vueuse/core";
 import {
   computed,
   type FunctionalComponent,
+  reactive,
   ref,
   type SVGAttributes,
   watch,
@@ -20,16 +21,24 @@ import TrashIcon from "@knime/styles/img/icons/trash.svg";
 import UpArrowIcon from "@knime/styles/img/icons/arrow-up.svg";
 import DownArrowIcon from "@knime/styles/img/icons/arrow-down.svg";
 import CopyIcon from "@knime/styles/img/icons/copy.svg";
+import WarningIcon from "@knime/styles/img/icons/circle-warning.svg";
 import { FunctionButton } from "@knime/components";
 
 import type { ErrorLevel } from "@/common/types";
 
+type EditorErrorState =
+  | { level: "OK" }
+  | { level: ErrorLevel; message: string };
+
 export type ExpressionEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;
-  setErrorLevel: (errorLevel: ErrorLevel) => void;
+  setErrorState: (errorState: EditorErrorState) => void;
 };
 
-const errorLevel = ref<ErrorLevel>("OK");
+const editorErrorState = reactive({
+  level: "OK" as ErrorLevel,
+  message: "" as string | null,
+});
 
 const emit = defineEmits<{
   focus: [filname: string];
@@ -101,21 +110,26 @@ const buttonActions = computed<ButtonItem[]>(() => [
 ]);
 
 // Main editor
-const editorContainer = ref<HTMLDivElement>();
+const monacoEditorContainerRef = ref<HTMLDivElement>();
 const editorState = editor.useCodeEditor({
   language: props.language,
   fileName: props.fileName,
-  container: editorContainer,
+  container: monacoEditorContainerRef,
   hideOverviewRulerLanes: true,
 });
 
 const getEditorState = () => editorState;
-const setErrorLevel = (level: ErrorLevel) => {
-  errorLevel.value = level;
+const setErrorState = (errorState: EditorErrorState) => {
+  editorErrorState.level = errorState.level;
+  if (errorState.level === "OK") {
+    editorErrorState.message = null;
+  } else {
+    editorErrorState.message = errorState.message;
+  }
 };
 defineExpose<ExpressionEditorPaneExposes>({
   getEditorState,
-  setErrorLevel,
+  setErrorState,
 });
 
 onKeyStroke("Escape", () => {
@@ -174,60 +188,78 @@ const onMenuItemClicked = (item: ButtonItem) => {
 
 <template>
   <div
-    class="editor-container"
+    class="editor-and-controls-container"
     :class="{
-      error: errorLevel === 'ERROR',
+      'has-error': editorErrorState.level === 'ERROR',
+      'has-warning': editorErrorState.level === 'WARNING',
       active: props.orderingOptions.isActive,
     }"
     @focusin="onFocus"
   >
-    <span class="editor-title-bar">
-      <span class="title-text">{{ props.title }}</span>
-      <span
-        v-if="!props.orderingOptions.disableMultiEditorControls"
-        class="title-menu"
-      >
-        <FunctionButton
-          v-for="item in buttonActions"
-          :key="item.text"
-          :disabled="item.disabled"
-          class="menu-button"
-          compact
-          @click="onMenuItemClicked(item)"
+    <div class="everything-except-error">
+      <span class="editor-title-bar">
+        <span class="title-text">{{ props.title }}</span>
+        <span
+          v-if="!props.orderingOptions.disableMultiEditorControls"
+          class="title-menu"
         >
-          <component :is="item.icon" />
-        </FunctionButton>
+          <FunctionButton
+            v-for="item in buttonActions"
+            :key="item.text"
+            :disabled="item.disabled"
+            class="menu-button"
+            compact
+            @click="onMenuItemClicked(item)"
+          >
+            <component :is="item.icon" />
+          </FunctionButton>
+        </span>
       </span>
-    </span>
-    <div ref="editorContainer" class="code-editor" @drop="onDropEvent" />
-    <span class="editor-control-bar">
-      <slot name="multi-editor-controls" />
-    </span>
+      <div
+        ref="monacoEditorContainerRef"
+        class="code-editor"
+        @drop="onDropEvent"
+      />
+      <span class="editor-control-bar">
+        <slot name="multi-editor-controls" />
+      </span>
+    </div>
+    <div class="error-container">
+      <WarningIcon
+        v-show="editorErrorState.level !== 'OK'"
+        class="error-icon"
+      />
+      <span v-show="editorErrorState.level !== 'OK'" class="error-message">
+        {{ editorErrorState.message }}
+      </span>
+    </div>
   </div>
 </template>
 
 <style lang="postcss" scoped>
-.editor-container {
-  margin: var(--space-12) var(--space-8);
-  box-shadow: var(--shadow-elevation-1);
+.editor-and-controls-container {
+  margin: var(--space-4) var(--space-8);
   position: relative;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  height: 0;
 
   --border-colour: var(--knime-cornflower);
 
-  &.error {
+  &.has-error {
     --border-colour: var(--knime-coral-dark);
+    --error-text-colour: var(--knime-coral-dark);
   }
 
-  &.warning {
+  &.has-warning {
     --border-colour: var(--knime-carrot);
+    --error-text-colour: var(--knime-carrot);
   }
 
-  &.warning,
-  &.error {
-    &::after {
+  &.has-warning,
+  &.has-error {
+    & .everything-except-error::after {
       position: absolute;
       content: "";
       border: 1px solid var(--border-colour);
@@ -235,10 +267,6 @@ const onMenuItemClicked = (item: ButtonItem) => {
       z-index: 1;
       inset: -1px;
     }
-  }
-
-  &:hover {
-    box-shadow: var(--shadow-elevation-2);
   }
 
   /* Max height should be parent height */
@@ -250,72 +278,109 @@ const onMenuItemClicked = (item: ButtonItem) => {
     margin-top: var(--space-24);
   }
 
-  & .editor-title-bar {
-    height: 30px;
-    padding: 0 var(--space-16);
-    background-color: var(--knime-porcelain);
-    flex-shrink: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: 400;
-    font-family: Roboto, sans-serif;
-
-    & .title-menu {
-      background-color: transparent;
-      display: flex;
-      gap: var(--space-8);
-    }
-  }
-
-  & .code-editor {
+  & .everything-except-error {
+    box-shadow: var(--shadow-elevation-1);
     flex-grow: 1;
     flex-shrink: 1;
     display: flex;
+    flex-direction: column;
     min-height: 70px;
     position: relative;
-  }
 
-  & .editor-control-bar {
-    display: flex;
-    align-items: center;
-    flex-direction: row;
-    justify-content: flex-end;
-    margin: 0;
-    background-color: var(--knime-gray-light-semi);
-    border-top: 1px solid var(--knime-silver-sand);
-    height: fit-content;
-    flex-grow: 1;
-  }
-
-  &:focus-within,
-  &.active {
-    &::after {
-      position: absolute;
-      content: "";
-      border: 1px solid var(--border-colour);
-      pointer-events: none;
-      z-index: 1;
-      inset: -1px;
-    }
-
-    & .code-editor::after {
-      position: absolute;
-      content: "";
-      background-color: var(--knime-cornflower);
-      opacity: 0.075;
-      pointer-events: none;
-      z-index: 1;
-      inset: 0;
+    &:hover {
+      box-shadow: var(--shadow-elevation-2);
     }
 
     & .editor-title-bar {
-      background-color: var(--knime-cornflower);
-      color: var(--knime-porcelain);
+      height: 30px;
+      padding: 0 var(--space-16);
+      background-color: var(--knime-porcelain);
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 400;
+      font-family: Roboto, sans-serif;
 
-      & .title-menu .menu-button :deep(svg) {
-        stroke: var(--knime-porcelain);
+      & .title-menu {
+        background-color: transparent;
+        display: flex;
+        gap: var(--space-8);
       }
+    }
+
+    & .code-editor {
+      flex-grow: 1;
+      flex-shrink: 1;
+      display: flex;
+      min-height: 70px;
+      position: relative;
+    }
+
+    & .editor-control-bar {
+      display: flex;
+      align-items: center;
+      flex-direction: row;
+      justify-content: flex-end;
+      margin: 0;
+      background-color: var(--knime-gray-light-semi);
+      border-top: 1px solid var(--knime-silver-sand);
+      height: fit-content;
+    }
+
+    &:focus-within,
+    &.active {
+      &::after {
+        position: absolute;
+        content: "";
+        border: 1px solid var(--border-colour);
+        pointer-events: none;
+        z-index: 1;
+        inset: -1px;
+      }
+
+      & .code-editor::after {
+        position: absolute;
+        content: "";
+        background-color: var(--knime-cornflower);
+        opacity: 0.075;
+        pointer-events: none;
+        z-index: 1;
+        inset: 0;
+      }
+
+      & .editor-title-bar {
+        background-color: var(--knime-cornflower);
+        color: var(--knime-porcelain);
+
+        & .title-menu .menu-button :deep(svg) {
+          stroke: var(--knime-porcelain);
+        }
+      }
+    }
+  }
+
+  & .error-container {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    margin-top: var(--space-4);
+    margin-left: var(--space-4);
+    min-height: 15px;
+
+    & .error-message {
+      color: var(--error-text-colour);
+      font-size: 12px;
+      line-height: 14px;
+      word-wrap: normal;
+    }
+
+    & .error-icon {
+      stroke: var(--error-text-colour);
+      width: 13px;
+      min-width: 13px;
+      height: 13px;
+      margin-right: var(--space-8);
     }
   }
 }

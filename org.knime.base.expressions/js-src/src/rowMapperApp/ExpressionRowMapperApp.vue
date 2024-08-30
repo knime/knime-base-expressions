@@ -179,9 +179,12 @@ const runDiagnosticsFunction = async () => {
       severityLevels.value[index] === "ERROR" ||
       columnValidities[index] !== null
     ) {
-      multiEditorComponentRefs[key].setErrorLevel("ERROR");
+      multiEditorComponentRefs[key].setErrorState({
+        level: "ERROR",
+        message: "An error occurred.",
+      });
     } else {
-      multiEditorComponentRefs[key].setErrorLevel("OK");
+      multiEditorComponentRefs[key].setErrorState({ level: "OK" });
     }
   });
 };
