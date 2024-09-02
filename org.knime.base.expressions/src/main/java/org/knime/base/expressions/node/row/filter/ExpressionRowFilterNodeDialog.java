@@ -56,6 +56,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -152,11 +153,10 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
             .addDataSupplier("inputObjects",
                 () -> ExpressionNodeScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo())) //
             .addDataSupplier("flowVariables", () -> {
-                var flowObjectStack = workflowControl.getFlowObjectStack();
-                return flowObjectStack == null //
-                    ? null //
-                    : ExpressionNodeScriptingInputOutputModelUtils
-                        .getFlowVariableInputs(flowObjectStack.getAllAvailableFlowVariables().values());
+                var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
+                    .map(stack -> stack.getAllAvailableFlowVariables().values()) //
+                    .orElseGet(List::of);
+                return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(flowVariables);
             }) //
             .addDataSupplier("outputObjects", ExpressionNodeScriptingInputOutputModelUtils::getOutputObjects) //
             .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN);
