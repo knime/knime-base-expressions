@@ -55,6 +55,7 @@ import java.util.List;
  *
  * @param name
  * @param description a description which can contain Markdown
+ * @param examples examples of how to use the operator
  * @param arguments the arguments
  * @param returnType the type of the return value
  * @param returnDescription a description of the return value
@@ -62,8 +63,9 @@ import java.util.List;
  * @param category
  * @param entryType either 'function' or 'constant'
  */
-public record OperatorDescription(String name, String description, List<OperatorDescription.Argument> arguments,
-    String returnType, String returnDescription, List<String> keywords, String category, String entryType) {
+public record OperatorDescription(String name, String description, String examples,
+    List<OperatorDescription.Argument> arguments, String returnType, String returnDescription, List<String> keywords,
+    String category, String entryType) {
 
     /**
      * The description of a function argument.

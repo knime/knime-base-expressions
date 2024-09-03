@@ -62,6 +62,8 @@ import static org.knime.core.expressions.SignatureUtils.isString;
 import static org.knime.core.expressions.SignatureUtils.isStringOrOpt;
 import static org.knime.core.expressions.SignatureUtils.optarg;
 import static org.knime.core.expressions.SignatureUtils.vararg;
+import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
@@ -148,14 +150,14 @@ public final class StringFunctions {
                 than string_2 respectively.
 
                 If either string is `MISSING`, the result is also `MISSING`.
-
-                 **Examples**
-                 * `compare("abc", "abc")` returns 0
-                 * `compare("abc", "ABC")` returns 32
-                 * `compare("ABC", "abc")` returns -32
-                 * `compare("ab", "abc")` returns -1
-                 * `compare("", "ABC")` returns -3
-                 * `compare("ABC", "")` returns 3
+                """) //
+        .examples("""
+                * `compare("abc", "abc")` returns 0
+                * `compare("abc", "ABC")` returns 32
+                * `compare("ABC", "abc")` returns -32
+                * `compare("ab", "abc")` returns -1
+                * `compare("", "ABC")` returns -3
+                * `compare("ABC", "")` returns 3
                 """) //
         .keywords("match", "equals") //
         .category(CATEGORY_MATCH_COMPARE.name()) //
@@ -164,7 +166,7 @@ public final class StringFunctions {
             arg("string_2", "Second string", isStringOrOpt()) //
         ) //
         .returnType("Lexicographical distance `x - y`; if the strings are equal this is 0", RETURN_INTEGER_MISSING,
-            args -> ValueType.INTEGER(anyOptional(args)))//
+            args -> INTEGER(anyOptional(args)))//
         .impl(StringFunctions::compareImpl) //
         .build();
 
@@ -185,8 +187,8 @@ public final class StringFunctions {
                 search term. It can optionally perform a case-insensitive match
                 using the "i" modifier. If the string or search term is `MISSING`,
                 the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `contains("Hello World", "world")` returns `FALSE`\\
                   By default, the match is case-sensitive.
                 * `contains("Hello World", "world", "i")` returns `TRUE`\\
@@ -231,10 +233,11 @@ public final class StringFunctions {
 
                 The optional modifiers argument can be used to specify case-insensitive
                 matching.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `starts_with("Hello world", "Hello")` returns `TRUE`
                 * `starts_with("Hello world", "abc")` returns `FALSE`
+                * `starts_with("Hello world", "hello", "i")` returns `TRUE`
                 """) //
         .keywords("match", "pattern") //
         .category(CATEGORY_MATCH_COMPARE.name()) //
@@ -276,10 +279,11 @@ public final class StringFunctions {
 
                 The optional modifiers argument can be used to specify case-insensitive
                 matching.
-
-                **Examples**
-                * `ends_with("Hello world", "world")` returns `TRUE`
-                * `ends_with("Hello world", "abs")` returns `FALSE`
+                """) //
+        .examples("""
+                    * `ends_with("Hello world", "world")` returns `TRUE`
+                    * `ends_with("Hello world", "abs")` returns `FALSE`
+                    * `ends_with("Hello world", "WORLD", "i")` returns `TRUE`
                 """) //
         .keywords("match", "pattern") //
         .category(CATEGORY_MATCH_COMPARE.name()) //
@@ -329,15 +333,15 @@ public final class StringFunctions {
 
                 If any of the arguments are `MISSING`, the result is also
                 `MISSING`.
-
-                **Examples**
-                * `like("apple", "a%le")` returns `TRUE`\\
-                  matches any string starting with "a" and ending with "le")
-                * `like("banana", "_a_a_a")` returns `TRUE`\\
-                  matches strings like "banana", "bacada"
-                * `like("abc", "A_C", "i")` returns `TRUE`\\
-                  case-insensitive match, matches "A_C" with "a_c"
-                 """) //
+                """) //
+        .examples("""
+                * `like("apple", "a%le")` returns `TRUE` \\
+                    matches any string starting with "a" and ending with "le"
+                * `like("banana", "_a_a_a")` returns `TRUE` \\
+                    matches strings like "banana", "bacada"
+                * `like("abc", "A_C", "i")` returns `TRUE` \\
+                    case-insensitive match, matches "A_C" with "a_c"
+                """) //
         .keywords("match", "pattern", "wildcard", "SQL") //
         .category(CATEGORY_MATCH_COMPARE.name()) //
         .args( //
@@ -404,11 +408,12 @@ public final class StringFunctions {
 
                   The optional `modifiers` argument can be used to specify case-insensitive
                   matching.
-
-                  **Examples**
-                  * `regex_match("hello123", "[a-z]+\\\\d+")` returns `TRUE`
-                  * `regex_match("abc", "a.c")` returns `TRUE`
-                  * `regex_match("123-456-7890", "\\\\d{3}-\\\\d{3}-\\\\d{4}")` returns `TRUE`
+                """) //
+        .examples("""
+                * `regex_match("hello123", "[a-z]+\\\\d+")` returns `TRUE`
+                * `regex_match("abc", "a.c")` returns `TRUE`
+                * `regex_match("123-456-7890", "\\\\d{3}-\\\\d{3}-\\\\d{4}")` returns `TRUE`
+                * `regex_match("xyz", "XYZ", "i")` returns `TRUE`
                 """) //
         .keywords("pattern") //
         .category(CATEGORY_MATCH_COMPARE.name()) //
@@ -418,7 +423,7 @@ public final class StringFunctions {
             optarg("modifiers", "(optional), \"i\" for case-insensitive matching (using root locale)", isString()) //
         ) //
         .returnType("`TRUE` if the string matches the pattern, `FALSE` otherwise", RETURN_BOOLEAN_MISSING, //
-            args -> ValueType.BOOLEAN(anyOptional(args)))//
+            args -> BOOLEAN(anyOptional(args)))//
         .impl(StringFunctions::regexMatchImpl) //
         .build();
 
@@ -454,12 +459,13 @@ public final class StringFunctions {
 
                 The optional `modifiers` argument can be used to specify case-insensitive
                 matching.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `regex_extract("5hello123", "[0-9]([a-z]+).*", 1)` returns "hello"
                 * `regex_extract("abc123def", "(\\\\d+).+", 1)` returns "123"
                 * `regex_extract("foo_bar_baz", "foo_(\\\\w+)_baz", 1)` returns "bar"
                 * `regex_extract("abc", "(a)(b)(c)", 2)` returns "b"
+                * `regex_extract("abc", "(A)(B)(C)", 2, "i")` returns "b"
                 """) //
         .keywords("pattern", "match", "capture group") //
         .category(CATEGORY_EXTRACT_REPLACE.name()) //
@@ -517,8 +523,8 @@ public final class StringFunctions {
 
                 The optional `modifiers` argument can be used to tune the search:
                 * "i" for case-insensitive matching
-
-                **Examples**
+                """) //
+        .examples("""
                 * `regex_replace("abc", "[a-zA-Z]{3}", "cba")` returns "cba"\\
                   Replaces the entire string "abc" with "cba".
                 * `regex_replace("fooBARFOO", "foo', "baz", "i")` returns "bazBARbaz"\\
@@ -567,8 +573,8 @@ public final class StringFunctions {
                 word matching.
 
                 If any of the arguments are `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `replace("abcABC", "ab", "z")` returns "zcABC"
                 * `replace("abcABC", "ab", "")` returns "cABC"
                 * `replace("abcABC", "ab", "z", "i")` returns "zczC"
@@ -622,8 +628,8 @@ public final class StringFunctions {
                 case-insensitive matching.
 
                 If any of the arguments are `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `replace_chars("abcABC", "ac", "xy")` returns "xbyABC"\\
                   Replaces "a" with "x" and "c" with "y".
                 * `replace_chars("abcABC", "ac", "")` returns "bABC"\\
@@ -689,8 +695,8 @@ public final class StringFunctions {
                 `replace_eszett` to `FALSE`).
 
                 If any of the arguments are `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `replace_umlauts("fröhlich", false)` returns "froehlich"\\
                   Replaces ö with oe.
                 * `replace_umlauts("fröhlich", true)` returns "frohlich"\\
@@ -757,12 +763,10 @@ public final class StringFunctions {
                 the string provided is `MISSING`, the result is also `MISSING`.
 
                 (NB: This is implemented by Java's
-
                 `Normalizer.normalize(string, Normalizer.Form.NFKD)`
-
                 under the hood.)
-
-                **Examples**
+                """) //
+        .examples("""
                 * `replace_diacritics("café")` returns "cafe"
                 * `replace_diacritics("français")` returns "francais"
                 """) //
@@ -794,8 +798,8 @@ public final class StringFunctions {
                 locale for the conversion to ensure consistency across different
                 locales. If the string provided is `MISSING`, the result is also
                 `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `lower_case("Hello World")` returns "hello world"
                 * `lower_case("JAVA")` returns "java"
                 * `lower_case("123ABC")` returns "123abc"\\
@@ -823,8 +827,8 @@ public final class StringFunctions {
                 locale for the conversion to ensure consistency across different
                 locales. If the string provided is `MISSING`, the result is also
                 `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `upper_case("Hello World")` returns "HELLO WORLD"
                 * `upper_case("java")` returns "JAVA"
                 * `upper_case("123abc")` returns "123ABC"\\
@@ -852,8 +856,8 @@ public final class StringFunctions {
                 each word is capitalized. Words are defined as sequences of
                 characters separated by whitespace. If the string provided is
                 `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `capitalize("hello world")` returns "Hello World"
                 * `capitalize("hello-world")` returns "Hello-world"\\
                   Hypens are not considered word separators.
@@ -909,8 +913,8 @@ public final class StringFunctions {
                 _single_  character. Anything longer will be truncated.
 
                 If any of the arguments are `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `pad_end("hello", 10)` returns "hello     "\\
                   Pads the string "hello" with spaces to make it 10 characters long.
                 * `pad_end("abc", 3)` returns "abc"\\
@@ -971,8 +975,8 @@ public final class StringFunctions {
                 _single_  character. Anything longer will be truncated.
 
                 If any of the arguments are `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `pad_start("hello", 10)` returns "     hello"\\
                   Pads the string "hello" with spaces to make it 10 characters long.
                 * `pad_start("abc", 3)` returns "abc"\\
@@ -1023,8 +1027,8 @@ public final class StringFunctions {
         .description("""
                 Join several strings with the specified separator. If any of the
                 arguments are `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `join(",", "apple", "banana", "orange")` returns "apple,banana,orange"
                 * `join(" ", "Hello", "world!")` returns "Hello world!"
                 * `join("", "a", "b", "c")` returns "abc"
@@ -1077,8 +1081,8 @@ public final class StringFunctions {
 
                 If `length` is `MISSING`, it returns the substring from the given
                 `start` to the end of the string.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `substring("OpenAI", 2, 4)` returns "penA"
                 * `substring("abcdef", 2, 10)` returns "bcdef"\\
                   Length is greater than the remaining characters, so returns the rest of the string.
@@ -1136,7 +1140,7 @@ public final class StringFunctions {
 
         return StringComputer.of( //
             value, //
-            ctx -> args.get("string").isMissing(ctx)
+            ctx -> args.get("string").isMissing(ctx) //
         );
     }
 
@@ -1147,8 +1151,8 @@ public final class StringFunctions {
                 or equal to the length of the string, it returns the entire string.
                 If either of the arguments is `MISSING`, the result is also
                 `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `first_chars("Hello world", 5)` returns "Hello"
                 * `first_chars("12345", 10)` returns "12345"\\
                   Retrieves the entire string since the specified length exceeds the string's length.
@@ -1191,8 +1195,8 @@ public final class StringFunctions {
                 or equal to the length of the string, it returns the entire string.
                 If either of the arguments is `MISSING`, the result is also
                 `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `last_chars("Hello world", 5)` returns "world"
                 * `last_chars("12345", 10)` returns "12345"\\
                   Retrieves the entire string since the specified length exceeds the string's length.
@@ -1236,8 +1240,8 @@ public final class StringFunctions {
                 `MISSING`, the result is also `MISSING`. The optional modifiers
                 argument can be used to tune the matching:
                 * "i" for case-insensitive matching.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `remove_chars("Hello world", "lo")` returns "He wrd"
                 * `remove_chars("abcdef", "ace")` returns "bdf"
                 * `remove_chars("Mississippi", "s")` returns "Miippi"
@@ -1286,8 +1290,8 @@ public final class StringFunctions {
         .description("""
                 Remove leading and trailing whitespace from the input string. If the
                 input string is `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `strip("  Hello world  ")` returns "Hello world"\\
                   Removes spaces from both ends.
                 * `strip("No extra spaces")` returns "No extra spaces"\\
@@ -1317,8 +1321,8 @@ public final class StringFunctions {
         .description("""
                 Remove leading whitespace from the input string. If the input string
                 is `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `strip_start("  Hello world  ")` returns "Hello world  "
                 * `strip_start("  No leading space")` returns "No leading space"
                 * `strip_start("No trailing space  ")` returns "No trailing space  "\\
@@ -1348,8 +1352,8 @@ public final class StringFunctions {
         .description("""
                 Remove trailing whitespace from the input string. If the input
                 string is `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `strip_end("  Hello world  ")` returns "  Hello world"
                 * `strip_end("No leading space  ")` returns "No leading space"
                 * `strip_end("  No trailing space")` returns "  No trailing space"\\
@@ -1382,8 +1386,8 @@ public final class StringFunctions {
                 Replace all duplicated spaces with a single space in the given
                 string. If the input string is `MISSING`, the result is also
                 `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `remove_duplicate_spaces("This  is  a  test")` returns "This is a test"\\
                   Reduces multiple spaces between words to one.
                 * `remove_duplicate_spaces("Single space")` returns "Single space"\\
@@ -1417,8 +1421,8 @@ public final class StringFunctions {
                 This function is useful for handling cases where a `MISSING` value
                 should be converted to an empty string to avoid issues with further
                 processing.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `missing_to_empty($["Missing Column"])` returns ""
                 * `missing_to_empty("Hello")` returns "Hello"\\
                   Any non-missing string is unchanged.
@@ -1446,8 +1450,8 @@ public final class StringFunctions {
         .description("""
                 If the input string is empty or `MISSING`, returns `MISSING`.
                 Otherwise, returns the input string unchanged.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `empty_to_missing("")` returns `MISSING`
                 * `empty_to_missing("Hello")` returns "Hello"
                 * `empty_to_missing($["Missing Column"])` returns `MISSING`\\
@@ -1476,8 +1480,8 @@ public final class StringFunctions {
         .description("""
                 Reverses the input string and returns the result. If the input
                 string is `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `reverse("hello")` returns "olleh"
                 * `reverse("12345") returns "54321"
                 * `reverse("")` returns ""
@@ -1505,8 +1509,8 @@ public final class StringFunctions {
         .description("""
                 Returns the number of characters in the input string. If the input
                 string is `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `length("hello")` returns 5
                 * `length("")` returns 0
                 """) //
@@ -1540,8 +1544,8 @@ public final class StringFunctions {
                 only whole words.
 
                 If any of the arguments are `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `count("hello", "l")` returns 2\\
                   Returns 2 as "l" occurs twice in "hello".
                 * `count("hello", "L", "i")` returns 2\\
@@ -1554,7 +1558,6 @@ public final class StringFunctions {
                   Returns 0 when both input string and search term are empty.
                 """) //
         .keywords("occurrences", "matching") //
-
         .category(CATEGORY_EXTRACT_REPLACE.name()) //
         .args( //
             arg("string", "String to search within", isStringOrOpt()), //
@@ -1613,8 +1616,8 @@ public final class StringFunctions {
                 characters _except_ those provided.
 
                 If any of the arguments are `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `count_chars("hello", "l")` returns 2\\
                   Returns 2 as "l" occurs twice in "hello".
                 * `count_chars("hello", "L", "i")` returns 2\\
@@ -1684,8 +1687,8 @@ public final class StringFunctions {
 
                 If any of the arguments are `MISSING`, or the search string is not
                 found, the result is `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `find("hello world", "world")` returns 7
                 * `find("hello world", "World", "i")` returns 7
                 * `find("hello hello", "l", "b")` returns 10
@@ -1763,8 +1766,8 @@ public final class StringFunctions {
 
                 If any of the arguments are `MISSING`, or none of the search
                 characters are present in the string, the result is `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `find_chars("hello world", "o")` returns 5
                 * `find_chars("hello world", "owxl")` returns 3
                 * `find_chars("hello world", "O", "i")` returns 5
@@ -1839,8 +1842,8 @@ public final class StringFunctions {
                 The following characters are replaced: `&`, `<`, `>`, `\\`, `'` and `"`.
 
                 If the input string is `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `xml_encode("<a>Hello</a>")` returns "&amp;lt;a&amp;gt;Hello&amp;lt;/a&amp;gt;"
                 * `xml_encode("&")` returns "&amp;amp;"
                 """) //
@@ -1881,8 +1884,8 @@ public final class StringFunctions {
                 unsafe characters.
 
                 If the input string is `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `urlEncode("the space between")` returns "the+space+between"
                 * `urlEncode("1 + 1 = 2")` returns "1+%2B+1+%3D+2"
                 """) //
@@ -1910,8 +1913,8 @@ public final class StringFunctions {
                 the original string by decoding the percent-encoded characters.
 
                 If the input string is `MISSING`, the result is also `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `url_decode("the+space+between")` returns "the space between"
                 * `url_decode("1+%2B+1+%3D+2")` returns "1 + 1 = 2"
                 """) //
@@ -1944,8 +1947,8 @@ public final class StringFunctions {
                 * String: Returns unchanged input string.
 
                 Any values that are `MISSING` are converted to the string "MISSING".
-
-                **Examples**
+                """) //
+        .examples("""
                 * `string(42)` returns "42"\\
                   Converts the integer 42 to the string "42".
                 * `string(true)` returns "true"\\
@@ -1993,8 +1996,8 @@ public final class StringFunctions {
                 If successful, returns the float representation of the string. If
                 the input string cannot be parsed as a float (or the input is
                 `MISSING`), returns `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `parse_float("3.14")` returns 3.14
                 * `parse_float("3")` returns 3.0
                 * `parse_float("hello")` returns `MISSING`
@@ -2036,8 +2039,8 @@ public final class StringFunctions {
                 successful, returns the integer representation of the string. If the
                 input string cannot be parsed as an integer (or the input is
                 `MISSING`), returns `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `parse_int("123")` returns 123
                 * `parse_int("123.0")` returns `MISSING`
                 * `parse_int("hello")` returns `MISSING`
@@ -2082,8 +2085,8 @@ public final class StringFunctions {
                 * If the string is "true" (case-insensitive), returns `TRUE`.
                 * If the string is "false" (case-insensitive), returns `FALSE`.
                 * If the string is neither "true" nor "false", returns `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `parse_bool("true")` returns `TRUE`
                 * `parse_bool("false")` returns `FALSE`
                 * `parse_bool("abc")` returns `MISSING`

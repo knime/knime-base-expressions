@@ -71,9 +71,9 @@ public class AggregationBuilder {
      * @return a builder for {@link ColumnAggregation}.
      */
     public static RequiresName aggregationBuilder() {
-        return name -> description -> keywords -> category -> args -> (returnDesc, returnType,
-            returnTypeMapping) -> new FinalStage(name, description, keywords, category, args, returnDesc, returnType,
-                returnTypeMapping);
+        return name -> description -> examples -> keywords -> category -> args -> (returnDesc, returnType,
+            returnTypeMapping) -> new FinalStage(name, description, examples, keywords, category, args, returnDesc,
+                returnType, returnTypeMapping);
     }
 
     // NOTE: Sonar suggest use unicode-aware char classes but we only support ASCII names for functions
@@ -94,7 +94,15 @@ public class AggregationBuilder {
          * @param description the {@link OperatorDescription#description()}
          * @return the next stage of the builder
          */
-        RequiresKeywords description(String description);
+        RequiresExamples description(String description);
+    }
+
+    interface RequiresExamples {
+        /**
+         * @param examples the {@link OperatorDescription#examples()}
+         * @return the next stage of the builder
+         */
+        RequiresKeywords examples(String examples);
     }
 
     interface RequiresKeywords {
@@ -147,8 +155,8 @@ public class AggregationBuilder {
     }
 
     record FinalStage( // NOSONAR - equals and hashCode are not important for this record
-        String name, String description, String[] keywords, String category, Arg[] args, String returnDesc,
-        String returnType, ReturnTypeMapper returnTypeMapping) {
+        String name, String description, String examples, String[] keywords, String category, Arg[] args,
+        String returnDesc, String returnType, ReturnTypeMapper returnTypeMapping) {
 
         public ColumnAggregation build() {
             // Check that the name is screaming snake case
@@ -159,8 +167,11 @@ public class AggregationBuilder {
             var argsList = List.of(args);
             SignatureUtils.checkSignature(argsList);
 
-            var desc = new OperatorDescription(name, description, Arg.toOperatorDescription(argsList), returnType,
-                returnDesc, List.of(keywords), category, OperatorDescription.FUNCTION_ENTRY_TYPE);
+            var desc = new OperatorDescription( //
+                name, description, examples, //
+                Arg.toOperatorDescription(argsList), returnType, returnDesc, //
+                List.of(keywords), category, OperatorDescription.FUNCTION_ENTRY_TYPE //
+            );
 
             return new AggregationImpl(name, desc, argsList, returnTypeMapping);
         }

@@ -139,7 +139,7 @@ enum TestAggregations implements ColumnAggregation {
 
     @Override
     public OperatorDescription description() {
-        return new OperatorDescription(this.name(), "Test aggregation", Arg.toOperatorDescription(m_arguments),
+        return new OperatorDescription(this.name(), "Test aggregation", null, Arg.toOperatorDescription(m_arguments),
             "Some return type", "Some return description", List.of(), "Test category",
             OperatorDescription.FUNCTION_ENTRY_TYPE);
     }

@@ -94,18 +94,19 @@ public final class ControlFlowFunctions {
 
     private final static class IfFunction implements ExpressionFunction {
 
-        private static final String DESCRIPTION =
+        private static final String DESCRIPTION = """
+                **Conditional expression:**  \s
+                `if(condition_1, value_1, ...<condition_N, value_N>, value_if_all_false)`  \s
+
+                The first expression after a fulfilled condition will be returned. \
+                If no condition evaluates to `TRUE` the `else` case, i.e. `value_if_all_false` will be returned.   \
+                Conditions need to be boolean expressions and all `value_N` expressions have to return the same type. \
+                Integers will be automatically cast to floats if necessary.  \s
+                """;
+
+        private static final String EXAMPLES =
             """
-                    **Conditional expression:**  \s
-                    `if(condition_1, value_1, ...<condition_N, value_N>, value_if_all_false)`  \s
-
-                    The first expression after a fulfilled condition will be returned. \
-                    If no condition evaluates to `TRUE` the `else` case, i.e. `value_if_all_false` will be returned.   \
-                    Conditions need to be boolean expressions and all `value_N` expressions have to return the same type. \
-                    Integers will be automatically cast to floats if necessary.  \s
-
-                    **Examples**  \s
-                    ```  \s
+                    ```
                     if(  \s
                     \t $customer_id < 100,  #condition_1  \s
                     \t $customer_name + " is an early customer", #value_1  \s
@@ -114,7 +115,7 @@ public final class ControlFlowFunctions {
                     \t $customre_name + " is a late customer", #value_if_all_false  \s
                     )
                     ```
-                      \s
+
                     The simplest case has no additional conditions (`if(condition_1, value_1, value_if_all_false)`) and this function becomes a classical *if-then-else*:  \s
                     ```
                     if(  \s
@@ -123,7 +124,7 @@ public final class ControlFlowFunctions {
                     \t $customer_name + " is a late customer", #else / value_if_all_false  \s
                     )
                     ```
-                    """;
+                        """;
 
         @Override
         public String name() {
@@ -135,6 +136,7 @@ public final class ControlFlowFunctions {
             return new OperatorDescription( //
                 name(), //
                 DESCRIPTION, //
+                EXAMPLES, //
                 List.of(
                     new Argument("condition_1", BOOLEAN.name(),
                         "Boolean condition. See how to chain multiple conditions in description below."),
@@ -227,8 +229,9 @@ public final class ControlFlowFunctions {
                 Otherwise, the function returns `MISSING`. \
                 All `value_N` expressions have to return the same type. \
                 If integer expressions are used, they will be cast to float expressions if necessary.  \s
+                """;
 
-                **Example**  \s
+        private static final String EXAMPLE = """
                 ```  \s
                 switch($customer_name,  \s
                 \t "Elon", 0, #case_1, value_1  \s
@@ -236,7 +239,6 @@ public final class ControlFlowFunctions {
                 \t "Jeff", 2, #case_3, value_3  \s
                 \t 100, #value_if_none_matched / default  \s
                 )
-                ```
                 """;
 
         private static final String SWITCH_EXPRESSION = "expression";
@@ -251,6 +253,7 @@ public final class ControlFlowFunctions {
             return new OperatorDescription( //
                 name(), //
                 DESCRIPTION, //
+                EXAMPLE, //
                 List.of( //
                     new Argument("expression", "STRING | INTEGER | MISSING", "Value to switch on."), //
                     new Argument("case_1", "STRING | INTEGER | MISSING",

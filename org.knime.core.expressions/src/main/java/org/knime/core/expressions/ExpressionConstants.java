@@ -178,7 +178,7 @@ public enum ExpressionConstants {
      * @return the {@link OperatorDescription} representing this constant
      */
     public OperatorDescription toOperatorDescription() {
-        return new OperatorDescription(name(), documentation(), null, type().name(), null, List.of("constant"),
+        return new OperatorDescription(name(), documentation(), null, null, type().name(), null, List.of("constant"),
             CONSTANTS_CATEGORY.name(), OperatorDescription.CONSTANT_ENTRY_TYPE);
     }
 

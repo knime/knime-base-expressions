@@ -132,8 +132,9 @@ public final class BuiltInAggregations {
                 set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
                 the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
-
-                Examples:
+                """) //
+        .examples(
+            """
                 * `COLUMN_MAX("col")` returns the maximum value in column `col`,
                   including `NaN` values
                 * `COLUMN_MAX("col", ignore_nan=true)` returns the maximum value in
@@ -174,8 +175,9 @@ public final class BuiltInAggregations {
                 set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
                 the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
-
-                Examples:
+                """) //
+        .examples(
+            """
                 * `COLUMN_MIN("col")` returns the minimum value in column `col`,
                   including `NaN` values
                 * `COLUMN_MIN("col", ignore_nan=true)` returns the minimum value in
@@ -215,8 +217,9 @@ public final class BuiltInAggregations {
                 set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
                 the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
-
-                Examples:
+                """) //
+        .examples(
+            """
                 * `COLUMN_AVERAGE("col")` returns the mean value in column `col`,
                   including `NaN` values
                 * `COLUMN_AVERAGE("col", ignore_nan=true)` returns the mean value in
@@ -258,8 +261,9 @@ public final class BuiltInAggregations {
                 set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
                 the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
-
-                Examples:
+                """) //
+        .examples(
+            """
                 * `COLUMN_MEDIAN("col")` returns the median value in column `col`,
                   including `NaN` values
                 * `COLUMN_MEDIAN("col", ignore_nan=true)` returns the median value in
@@ -301,8 +305,9 @@ public final class BuiltInAggregations {
                 set to `TRUE`, `NaN` values are ignored, and if all values are `NaN`,
                 the result is 0. If it is `FALSE`, then `NaN` values are not ignored
                 and the result is `NaN` if any value in the column is `NaN`.
-
-                Examples:
+                """) //
+        .examples(
+            """
                 * `COLUMN_SUM("col")` returns the sum of the values in column `col`,
                   including `NaN` values
                 * `COLUMN_SUM("col", ignore_nan=true)` returns the sum of the values in
@@ -342,8 +347,9 @@ public final class BuiltInAggregations {
                 set to `TRUE`, `NaN` values are ignored, but if all values are `NaN`,
                 the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
-
-                Examples:
+                """) //
+        .examples(
+            """
                 * `COLUMN_VARIANCE("col")` returns the variance of the values in column `col`,
                   including `NaN` values
                 * `COLUMN_VARIANCE("col", ignore_nan=true)` returns the variance of the values in
@@ -390,8 +396,9 @@ public final class BuiltInAggregations {
                 can be changed to 1 to calculate the corrected sample standard deviation.
                 See [wikipedia:standard_deviation](https://en.wikipedia.org/wiki/Standard_deviation).
                 Other integer values are also accepted.
-
-                Examples:
+                """) //
+        .examples(
+            """
                 * `COLUMN_STDDEV("col")` returns the standard deviation of the values in column `col`,
                   including `NaN` values
                 * `COLUMN_STDDEV("col", ignore_nan=true)` returns the standard deviation of the values in
@@ -437,8 +444,9 @@ public final class BuiltInAggregations {
                 The `ignore_missing` option can be used to skip `MISSING` values. If it is
                 set to `TRUE`, `MISSING` values are ignored. If it is `FALSE`, then `MISSING`
                 values are not ignored and are counted as well.
-
-                Examples:
+                """) //
+        .examples(
+            """
                 * `COLUMN_COUNT("col")` returns the number of values in column `col`,
                   including `MISSING` values
                 * `COLUMN_COUNT("col", ignore_missing=true)` returns the number of

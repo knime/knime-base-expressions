@@ -148,12 +148,11 @@ public final class MathFunctions {
 
                 If any `input` is `MISSING`, the result is also `MISSING`.
                 If any `input` is `NaN` the result is `NaN`.
-
-
-                **Examples**
-                * `max(1, 2, 3)` returns `3`
-                * `max(1.0, 2.0, 3.0)` returns `3.0`
-                * `max(1, 2.0, 3)` returns `3.0`
+                """) //
+        .examples("""
+                * `max(1, 2, 3)` returns 3
+                * `max(1.0, 2.0, 3.0)` returns 3.0
+                * `max(1, 2.0, 3)` returns 3.0
                 * `max(1, $["Missing Column"], 3)` returns `MISSING`
                 * `max(1, 2, NaN)` returns `NaN`
                 """) //
@@ -198,11 +197,11 @@ public final class MathFunctions {
 
                 If any `input` is `MISSING`, the result is also `MISSING`.
                 If any `input` is `NaN` the result is `NaN`.
-
-                **Examples**
-                * `min(1, 2, 3)` returns `1`
-                * `min(1.0, 2.0, 3.0)` returns `1.0`
-                * `min(1, 2.0, 3)` returns `1.0`
+                """) //
+        .examples("""
+                * `min(1, 2, 3)` returns 1
+                * `min(1.0, 2.0, 3.0)` returns 1.0
+                * `min(1, 2.0, 3)` returns 1.0
                 * `min(1, $["Missing Column"], 3)` returns `MISSING`
                 * `min(1, 2, NaN)` returns `NaN`
                 """) //
@@ -246,15 +245,15 @@ public final class MathFunctions {
 
                     If any `input` is `MISSING`, the result is also `MISSING`.
                     If any `input` is `NaN` the result is the position of the first `NaN`.
-
-                    **Examples**
-                    * `argmax(2, 4, 6)` returns `3`
-                    * `argmax(2.0, 4.0, 6.0)` returns `3`
-                    * `argmax(2, 4.0, 6)` returns `3`
-                    * `argmax(1, 2, 2)` returns `2`
-                    * `argmax(1, $["Missing Column"], 3)` returns `MISSING`
-                    * `argmax(1, 2, NaN)` returns `3`
                     """) //
+        .examples("""
+                * `argmax(2, 4, 6)` returns 3
+                * `argmax(2.0, 4.0, 6.0)` returns 3
+                * `argmax(2, 4.0, 6)` returns 3
+                * `argmax(1, 2, 2)` returns 2
+                * `argmax(1, $["Missing Column"], 3)` returns `MISSING`
+                * `argmax(1, 2, NaN)` returns 3
+                """) //
         .keywords() //
         .category(CATEGORY_AGGREGATE.name()) //
         .args( //
@@ -311,15 +310,15 @@ public final class MathFunctions {
 
                     If any `input` is `MISSING`, the result is also `MISSING`.
                     If any `input` is `NaN` the result is the position of the first `NaN`.
-
-                    **Examples**
-                    * `argmin(2, 4, 6)` returns `1`
-                    * `argmin(2.0, 4.0, 6.0)` returns `1`
-                    * `argmin(2, 4.0, 6)` returns `1`
-                    * `argmin(1, 2, 1)` returns `1`
-                    * `argmin(1, $["Missing Column"], 3)` returns `MISSING`
-                    * `argmin(1, 2, NaN)` returns `3`
                     """) //
+        .examples("""
+                * `argmin(2, 4, 6)` returns 1
+                * `argmin(2.0, 4.0, 6.0)` returns 1
+                * `argmin(2, 4.0, 6)` returns 1
+                * `argmin(1, 2, 1)` returns 1
+                * `argmin(1, $["Missing Column"], 3)` returns `MISSING`
+                * `argmin(1, 2, NaN)` returns 3
+                """) //
         .keywords() //
         .category(CATEGORY_AGGREGATE.name()) //
         .args( //
@@ -373,11 +372,11 @@ public final class MathFunctions {
 
                 If the input `x` is `MISSING`, the output is `MISSING`.
                 If the input `x` is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `abs(1)` returns `1`
-                * `abs(-2)` returns `2`
-                * `abs(-3.0)` returns `3.0`
+                """) //
+        .examples("""
+                * `abs(1)` returns 1
+                * `abs(-2)` returns 2
+                * `abs(-3.0)` returns 3.0
                 * `abs($["Missing Column"])` returns `MISSING`
                 * `abs(NaN)` returns `NaN`
                 """) //
@@ -409,9 +408,8 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-
-                **Examples**
+                """) //
+        .examples("""
                 * `sin(0)` returns 0.0
                 * `sin(PI)` returns 0.0
                 * `sin(PI/2)` returns 1.0
@@ -438,11 +436,11 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `cos(0)` returns `1.0`
-                * `cos(PI)` returns `-1.0`
-                * `cos(PI/2)` returns `0.0`
+                """) //
+        .examples("""
+                * `cos(0)` returns 1.0
+                * `cos(PI)` returns -1.0
+                * `cos(PI/2)` returns 0.0
                 * `cos($["Missing Column"])` returns `MISSING`
                 * `cos(NaN)` returns `NaN`
                 """) //
@@ -466,10 +464,10 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `tan(0)` returns `0.0`
-                * `tan(PI)` returns `0.0`
+                """) //
+        .examples("""
+                * `tan(0)` returns 0.0
+                * `tan(PI)` returns 0.0
                 * `tan(PI/2)` returns `+INFINITY`
                 * `tan($["Missing Column"])` returns `MISSING`
                 * `tan(NaN)` returns `NaN`
@@ -495,10 +493,10 @@ public final class MathFunctions {
                 If the input is outside the range [-1, 1], a warning is issued and the result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `asin(0)` returns `0.0`
-                * `asin(1)` returns `1.570796…` (approx. `PI/2`)
+                """) //
+        .examples("""
+                * `asin(0)` returns 0.0
+                * `asin(1)` returns 1.570796… (approx. `PI/2`)
                 * `asin($["Missing Column"])` returns `MISSING`
                 * `asin(NaN)` returns `NaN`
                 """) //
@@ -527,18 +525,18 @@ public final class MathFunctions {
     public static final ExpressionFunction ACOS = functionBuilder() //
         .name("acos") //
         .description("""
-                The arccosine of a number, with the output in radians between -PI
-                and +PI.
+                The arccosine of a number, with the output in radians between `-PI`
+                and `+PI`.
 
                 If the input is outside the range [-1, 1], a warning is issued and the result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `acos(0)` returns `1.570796…` (approx. `PI/2`)
-                * `acos(1)` returns `0.0`
-                * `asin($["Missing Column"])` returns `MISSING`
-                * `asin(NaN)` returns `NaN`
+                """) //
+        .examples("""
+                * `acos(0)` returns 1.570796… (approx. `PI/2`)
+                * `acos(1)` returns 0.0
+                * `acos($["Missing Column"])` returns `MISSING`
+                * `acos(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY_TRIGONOMETRY.name()) //
@@ -565,15 +563,15 @@ public final class MathFunctions {
     public static final ExpressionFunction ATAN = functionBuilder() //
         .name("atan") //
         .description("""
-                The arctangent of a number, with the output in radians between -PI/2
-                and +PI/2.
+                The arctangent of a number, with the output in radians between `-PI/2`
+                and `+PI/2`.
 
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `atan(0)` returns 0.0
-                * `atan(1)` returns 0.785398... (approx. PI/4)
+                * `atan(1)` returns 0.785398… (approx. `PI/4`)
                 * `atan($["Missing Column"])` returns `MISSING`
                 * `atan(NaN)` returns `NaN`
                 """) //
@@ -594,7 +592,7 @@ public final class MathFunctions {
         .name("atan2") //
         .description("""
                 The arctangent defined be a point (x, y) on a cartesian plane, with the output in radians between
-                -PI and +PI. This differs from the atan function in that it knows the sign of both coordinates,
+                `-PI` and `+PI`. This differs from the atan function in that it knows the sign of both coordinates,
                 so it returns the correct quadrant for the angle. For example,
                 `atan2(-1, -1)` returns `-3*PI/4`, while `atan(-1/-1)` returns `PI/4`.
 
@@ -602,10 +600,10 @@ public final class MathFunctions {
                 issued.
                 If any input is `MISSING`, the output is `MISSING`.
                 If any input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `atan2(1, 1)` returns `0.785398…` (approx. `PI/4`)
-                * `atan2(-1, -1)` returns `-2.356194…` (approx. `-3*PI/4`)
+                """) //
+        .examples("""
+                * `atan2(1, 1)` returns 0.785398… (approx. `PI/4`)
+                * `atan2(-1, -1)` returns -2.356194… (approx. `-3*PI/4`)
                 * `atan2(0, 0)` returns `NaN`
                 * `atan2($["Missing Column"], …)` returns `MISSING`
                 * `atan2(NaN, …)` returns `NaN`
@@ -647,10 +645,10 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `sinh(0)` returns `0.0`
-                * `sinh(1)` returns `1.175201…`
+                """) //
+        .examples("""
+                * `sinh(0)` returns 0.0
+                * `sinh(1)` returns 1.175201…
                 * `sinh($["Missing Column"])` returns `MISSING`
                 * `sinh(NaN)` returns `NaN`
                 """) //
@@ -674,10 +672,10 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `cosh(0)` returns `1.0`
-                * `cosh(1)` returns `1.543080…`
+                """) //
+        .examples("""
+                * `cosh(0)` returns 1.0
+                * `cosh(1)` returns 1.543080…
                 * `cosh($["Missing Column"])` returns `MISSING`
                 * `cosh(NaN)` returns `NaN`
                 """) //
@@ -701,10 +699,10 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `tanh(0)` returns `0.0`
-                * `tanh(1)` returns `0.761594…`
+                """) //
+        .examples("""
+                * `tanh(0)` returns 0.0
+                * `tanh(1)` returns 0.761594…
                 * `tanh($["Missing Column"])` returns `MISSING`
                 * `tanh(NaN)` returns `NaN`
                 """) //
@@ -728,10 +726,10 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `asinh(0)` returns `0.0`
-                * `asinh(1)` returns `1.570796…`
+                """) //
+        .examples("""
+                * `asinh(0)` returns 0.0
+                * `asinh(1)` returns 1.570796…
                 * `asinh($["Missing Column"])` returns `MISSING`
                 * `asinh(NaN)` returns `NaN`
                 """) //
@@ -764,10 +762,10 @@ public final class MathFunctions {
                 result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `acosh(1)` returns `0.0`
-                * `acosh(2)` returns `1.316957…`
+                """) //
+        .examples("""
+                * `acosh(1)` returns 0.0
+                * `acosh(2)` returns 1.316957…
                 * `acosh(.5)` returns `NaN`
                 * `acosh($["Missing Column"])` returns `MISSING`
                 * `acosh(NaN)` returns `NaN`
@@ -806,10 +804,10 @@ public final class MathFunctions {
                 result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `atanh(0)` returns 0.0
-                * `atanh(0.5)` returns 0.549306...
+                * `atanh(0.5)` returns 0.549306…
                 * `atanh(.5)` returns `NaN`
                 * `atanh($["Missing Column"])` returns `MISSING`
                 * `atanh(NaN)` returns `NaN`
@@ -854,10 +852,10 @@ public final class MathFunctions {
                 result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `ln(1)` returns `0.0`
-                * `ln(E)` returns `1.0`
+                """) //
+        .examples("""
+                * `ln(1)` returns 0.0
+                * `ln(E)` returns 1.0
                 * `ln(0)` returns `-INFINITY`
                 * `ln($["Missing Column"])` returns `MISSING`
                 * `ln(NaN)` returns `NaN`
@@ -898,10 +896,10 @@ public final class MathFunctions {
                 result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `log10(1)` returns `0.0`
-                * `log10(10)` returns `1.0`
+                """) //
+        .examples("""
+                * `log10(1)` returns 0.0
+                * `log10(10)` returns 1.0
                 * `log10(0)` returns `-INFINITY`
                 * `log10($["Missing Column"])` returns `MISSING`
                 * `log10(NaN)` returns `NaN`
@@ -942,10 +940,10 @@ public final class MathFunctions {
                 result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `log2(1)` returns ´0.0´
-                * `log2(2)` returns ´1.0´
+                """) //
+        .examples("""
+                * `log2(1)` returns 0.0
+                * `log2(2)` returns 1.0
                 * `log2(0)` returns `-INFINITY`
                 * `log2($["Missing Column"])` returns `MISSING`
                 * `log2(NaN)` returns `NaN`
@@ -987,17 +985,17 @@ public final class MathFunctions {
                     If the `base` is 1, a warning is issued and the result is `NaN`.
                     If any input is `MISSING`, the output is `MISSING`.
                     If any input is `NaN`, the output is `NaN`.
-
-                    **Examples**
-                    * `log(1, 10)` returns `0.0`
-                    * `log(1000, 10)` returns `3.0`
-                    * `log(64, 2)` returns `6.0`
-                    * `log(…, 0)` returns `NaN`
-                    * `log(0, …)` returns `-INFINITY`
-                    * `log(…, 1)` returns `NaN`
-                    * `log($["Missing Column"], …)` returns `MISSING`
-                    * `log(NaN, …)` returns `NaN`
-                    """)
+                    """) //
+        .examples("""
+                * `log(1, 10)` returns 0.0
+                * `log(1000, 10)` returns 3.0
+                * `log(64, 2)` returns 6.0
+                * `log(…, 0)` returns `NaN`
+                * `log(0, …)` returns `-INFINITY`
+                * `log(…, 1)` returns `NaN`
+                * `log($["Missing Column"], …)` returns `MISSING`
+                * `log(NaN, …)` returns `NaN`
+                """) //
         .keywords() //
         .category(CATEGORY_GENERAL.name()) //
         .args( //
@@ -1058,10 +1056,10 @@ public final class MathFunctions {
                 and the result is `NaN`.
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `log1p(0)` returns `0.0`
-                * `log1p(1)` returns `0.693147…`
+                """) //
+        .examples("""
+                * `log1p(0)` returns 0.0
+                * `log1p(1)` returns 0.693147…
                 * `log1p(0)` returns `-INFINITY`
                 * `log1p($["Missing Column"])` returns `MISSING`
                 * `log1p(NaN)` returns `NaN`
@@ -1102,11 +1100,11 @@ public final class MathFunctions {
 
                 If the input is `MISSING`, the output is `MISSING`.
                 If the input is `NaN`, the output is `NaN`.
-
-                **Examples**
-                * `exp(0)` returns `1.0`
-                * `exp(1)` returns `2.718281…` (approx. `E`)
-                * `exp(-1)` returns `0.367879…` (approx. `1/E`)
+                """) //
+        .examples("""
+                * `exp(0)` returns 1.0
+                * `exp(1)` returns 2.718281828459045… (approx. `E`)
+                * `exp(-1)` returns 0.367879… (approx. `1/E`)
                 """) //
         .keywords("exponent") //
         .category(CATEGORY_GENERAL.name()) //
@@ -1139,9 +1137,9 @@ public final class MathFunctions {
                 * 0 if both arguments are integers
                 In either case, a warning will be issued.
 
-                If one argument is `NaN` the function returns `NaN`.
-
-                **Examples**
+                If any argument is `NaN` the function returns `NaN`.
+                """) //
+        .examples("""
                 * `pow(2, 3)` returns 8
                 * `pow(2.0, 3)` returns 8.0
                 * `pow(16, 0.5)` returns 4.0
@@ -1202,11 +1200,11 @@ public final class MathFunctions {
                 If the input is `MISSING`, the output will also be `MISSING`. If the
                 input is negative, a warning will be issued and the result will be
                 `NaN`.
-
-                `sqrt(NaN)` returns `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `sqrt(4)` returns 2.0
+                * `sqrt(-1)` returns `NaN`
+                * `sqrt(NaN)` returns `NaN`
                 * `sqrt(9)` returns 3.0
                 """) //
         .keywords("squareroot") //
@@ -1249,8 +1247,8 @@ public final class MathFunctions {
                 A warning will be issued in either case.
 
                 If any argument is `NaN` the function returns `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `mod(5, 3)` returns 2
                 * `mod(5.0, 3)` returns 2.0
                 * `mod(-5, 3)` returns -2
@@ -1305,12 +1303,11 @@ public final class MathFunctions {
                 Convert a number from radians to degrees.
 
                 If the input is `MISSING`, the output will also be `MISSING`.
-
-                `degrees(NaN)` returns `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `degrees(0)` returns 0.0
                 * `degrees(PI)` returns 180.0
+                * `degrees(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY_TRIGONOMETRY.name()) //
@@ -1334,12 +1331,11 @@ public final class MathFunctions {
                 Convert a number from degrees to radians.
 
                 If the input is `MISSING`, the output will also be `MISSING`.
-
-                `radians(NaN)` returns `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `radians(0)` returns 0.0
-                * `radians(180)` returns 3.141592... (approx. PI)
+                * `radians(180)` returns 3.141592… (approx. `PI`)
+                * `radians(NaN)` returns `NaN`
                 """) //
         .keywords() //
         .category(CATEGORY_TRIGONOMETRY.name()) //
@@ -1362,14 +1358,13 @@ public final class MathFunctions {
         .description("""
                 Round x to nearest smaller integer.
 
-                If the input is `MISSING`, the output will also be `MISSING`.
-
-                `floor(NaN)` returns `MISSING`.
-
-                **Examples**
+                If the input is `MISSING` or `NaN`, the output will be `MISSING`.
+                """) //
+        .examples("""
                 * `floor(2.5)` returns 2
                 * `floor(-2.5)` returns -3
                 * `floor(1.0)` returns 1
+                * `floor(NaN)` returns `MISSING`
                 """) //
         .keywords() //
         .category(CATEGORY_ROUND.name()) //
@@ -1401,11 +1396,12 @@ public final class MathFunctions {
         .description("""
                 Round x to nearest larger integer.
 
-                If the input is `MISSING`, the output will also be `MISSING`.
+                If the input is `MISSING` or `NaN`, the output will be `MISSING`.
 
                 `ceil(NaN)` returns `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
+                * `ceil(NaN)` returns `MISSING`
                 * `ceil(2.5)` returns 3
                 * `ceil(-2.5)` returns -2
                 * `ceil(1.0)` returns 1
@@ -1440,11 +1436,10 @@ public final class MathFunctions {
         .description("""
                 Round x to the nearest integer closer to zero.
 
-                If the input is `MISSING`, the output will also be `MISSING`.
-
-                `truncate(NaN)` returns `MISSING`.
-
-                **Examples**
+                If the input is `MISSING` or `NaN`, the output will be `MISSING`.
+                """) //
+        .examples("""
+                * `truncate(NaN)` returns `MISSING`
                 * `truncate(2.5)` returns 2
                 * `truncate(-2.5)` returns -2
                 * `truncate(1.0)` returns 1
@@ -1503,8 +1498,8 @@ public final class MathFunctions {
 
                 `roundhalfdown(NaN)` returns `MISSING`, but if a precision is specified it will return NaN.
                 The precision argument must be an integer and cannot be `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * Without ambiguity:
                     * `roundhalfdown(1.4)` returns 1
                     * `roundhalfdown(1.6)` returns 2
@@ -1547,17 +1542,17 @@ public final class MathFunctions {
 
                 `roundhalfup(NaN)` returns `MISSING`, but if a precision is specified it will return NaN.
                 The precision argument must be an integer and cannot be `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * Without ambiguity:
-                    * `roundhalfup(1.4)` returns 1
-                    * `roundhalfup(1.6)` returns 2
-                    * `roundhalfup(-1.44, 1)` returns -1.4
-                    * `roundhalfup(-1.4, 0)` returns -1.0
+                      * `roundhalfup(1.4)` returns 1
+                      * `roundhalfup(1.6)` returns 2
+                      * `roundhalfup(-1.44, 1)` returns -1.4
+                      * `roundhalfup(-1.4, 0)` returns -1.0
                 * Halfway between two possible rounded values:
-                    * `roundhalfup(2.5)` returns 3
-                    * `roundhalfup(-2.5)` returns -3
-                    * `roundhalfup(1.65, 1)` returns 1.7
+                      * `roundhalfup(2.5)` returns 3
+                      * `roundhalfup(-2.5)` returns -3
+                      * `roundhalfup(1.65, 1)` returns 1.7
                 """) //
         .keywords() //
         .category(CATEGORY_ROUND.name()) //
@@ -1592,19 +1587,20 @@ public final class MathFunctions {
 
                 `round(NaN)` returns `MISSING`, but if a precision is specified it will return NaN.
                 The precision argument must be an integer and cannot be `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * Without ambiguity:
-                    * `round(1.4)` returns 1
-                    * `round(1.6)` returns 2
-                    * `round(-1.44, 1)` returns -1.4
-                    * `round(-1.4, 0)` returns -1.0
+                  * `round(1.4)` returns 1
+                  * `round(1.6)` returns 2
+                  * `round(-1.44, 1)` returns -1.4
+                  * `round(-1.4, 0)` returns -1.0
+
                 * Halfway between two possible rounded values:
-                    * `round(2.5)` returns 2
-                    * `round(-2.5)` returns -2
-                    * `round(3.5)` returns 4
-                    * `round(-3.5)` returns -4
-                    * `round(1.65, 1)` returns 1.6
+                  * `round(2.5)` returns 2
+                  * `round(-2.5)` returns -2
+                  * `round(3.5)` returns 4
+                  * `round(-3.5)` returns -4
+                  * `round(1.65, 1)` returns 1.6
                 """) //
         .keywords("roundhalfeven") //
         .category(CATEGORY_ROUND.name()) //
@@ -1670,8 +1666,8 @@ public final class MathFunctions {
                 Get the sign of a number. A positive argument causes the function to return +1,
                 a negative argument causes -1, and a zero argument returns 0. If the input is
                 `MISSING`, the output will also be `MISSING`. `sign(NaN)` also returns `MISSING`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `sign(0)` returns 0
                 * `sign(42)` returns 1
                 * `sign(-0.3)` returns -1
@@ -1712,8 +1708,8 @@ public final class MathFunctions {
                 If any of the numbers are `NaN`, the result will be `NaN`. `NEGATIVE_INFINITY` or
                 `POSITIVE_INFINITY` will coerce the result to `NEGATIVE_INFINITY` or `POSITIVE_INFINITY` respectively.
                 Mixing `NEGATIVE_INFINITY` and `POSITIVE_INFINITY` will result in `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `average(2, 4, 6)` returns 4.0
                 * `average(1, 2, 3, 4, 5)` returns 3.0
                 * `average(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
@@ -1754,8 +1750,8 @@ public final class MathFunctions {
                 * If the median is influenced by `NEGATIVE_INFINITY` and `POSITIVE_INFINITY`, the result will be `NaN`
 
                 If any of the numbers are `NaN`, the result will be `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `median(2, 4, 6)` returns 4.0
                 * `median(2, 4, 6, 1000)` returns 5.0
                 * `median(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
@@ -1810,8 +1806,8 @@ public final class MathFunctions {
 
                 If any of the numbers are `NaN`, the result will be `NaN`. `NEGATIVE_INFINITY` or
                 `POSITIVE_INFINITY` will coerce the result to `NEGATIVE_INFINITY` or `POSITIVE_INFINITY` respectively.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `sum(2, 4, 6)` returns 12
                 * `sum(1, 2, 3, 4, 5)` returns 15
                 * `sum(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
@@ -1864,9 +1860,9 @@ public final class MathFunctions {
                 you can supply as many as you like.
 
                 If any of the numbers are `NaN`, the result will be `NaN`.
-
-                **Examples**
-                * `variance(2, 4, 6)` returns 2.666666...
+                """) //
+        .examples("""
+                * `variance(2, 4, 6)` returns 2.666666…
                 * `variance(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
                 """) //
         .keywords() //
@@ -1901,9 +1897,9 @@ public final class MathFunctions {
                 you can supply as many as you like.
 
                 If any of the numbers are `NaN`, the result will be `NaN`.
-
-                **Examples**
-                * `stddev(2, 4, 6)` returns 1.632993...
+                """) //
+        .examples("""
+                * `stddev(2, 4, 6)` returns 1.632993…
                 * `stddev(1, 2, $["Missing Column"], 4, 5)` returns `MISSING`
                 """) //
         .keywords() //
@@ -1950,8 +1946,8 @@ public final class MathFunctions {
                 * n < 0
                 * r > n
                 a warning will be issued and the result will be 0.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `binomial(5, 3)` returns 10
                 * `binomial(0, 0)` returns 1
                 * `binomial(10, 0)` returns 1
@@ -2035,10 +2031,10 @@ public final class MathFunctions {
                 warning will be issued and the result will be `NaN`.
 
                 If any argument is `NaN` the function returns `NaN`.
-
-                **Examples**
-                * `normal(1, 0)` returns 0.241970...
-                * `normal(0, 0, 1)` returns 0.398942...
+                """) //
+        .examples("""
+                * `normal(1, 0)` returns 0.2419707…
+                * `normal(0, 0, 1)` returns 0.398942…
                 """) //
         .keywords("gaussian", "distribution", "probability") //
         .category(CATEGORY_DISTRIBUTIONS.name()) //
@@ -2106,11 +2102,11 @@ public final class MathFunctions {
                 warning will be issued and the result will be `NaN`.
 
                 If any argument is `NaN` the function returns `NaN`.
-
-                **Examples**
+                """) //
+        .examples("""
                 * `error_function(0, 0)` returns approx. 0.0
-                * `error_function(1, 0)` returns 0.8427007...
-                * `error_function(1, 0, 1)` returns 0.682689...
+                * `error_function(1, 0)` returns 0.8427007…
+                * `error_function(1, 0, 1)` returns 0.682689…
                 """) //
         .keywords("gaussian", "distribution", "probability") //
         .category(CATEGORY_DISTRIBUTIONS.name()) //
@@ -2136,7 +2132,7 @@ public final class MathFunctions {
                 mean = toFloat(args.get("mean")).compute(ctx);
             }
 
-            var standardDeviation = 1.0/Math.sqrt(2);
+            var standardDeviation = 1.0 / Math.sqrt(2);
             if (args.has("standard_deviation") && !args.get("standard_deviation").isMissing(ctx)) {
                 standardDeviation = toFloat(args.get("standard_deviation")).compute(ctx);
                 if (isNearZero(standardDeviation) || standardDeviation < 0) {
@@ -2181,8 +2177,8 @@ public final class MathFunctions {
         .name("is_nan") //
         .description("""
                 Check if a number is `NaN` (i.e. not a number).
-
-                **Examples**
+                """) //
+        .examples("""
                 * `is_nan(0)` returns `FALSE`
                 * `is_nan(sqrt(-1))` returns `TRUE`
                 * `is_nan($["Missing Column"])` returns `FALSE`
@@ -2205,9 +2201,9 @@ public final class MathFunctions {
         .description("""
                 Convert `NaN` to `MISSING`. If the input is not `NaN`, the output will be
                 the same as the input.
-
-                **Examples**
-                * `nan_to_missing(0)` returns 0
+                """) //
+        .examples("""
+                * `nan_to_missing(0)` returns 0"
                 * `nan_to_missing(sqrt(-1))` returns `MISSING`
                 * `nan_to_missing($["Missing Column"])` returns `MISSING`
                 """) //

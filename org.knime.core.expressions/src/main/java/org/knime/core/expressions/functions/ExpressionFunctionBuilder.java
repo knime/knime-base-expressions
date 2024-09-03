@@ -81,9 +81,9 @@ public final class ExpressionFunctionBuilder {
      * @return a builder for {@link ExpressionFunction}.
      */
     public static RequiresName functionBuilder() {
-        return name -> description -> keywords -> category -> args -> (returnDesc, returnType,
-            returnTypeMapping) -> impl -> new FinalStage(name, description, keywords, category, args, returnDesc,
-                returnType, returnTypeMapping, impl);
+        return name -> description -> examples -> keywords -> category -> args -> (returnDesc, returnType,
+            returnTypeMapping) -> impl -> new FinalStage(name, description, examples, keywords, category, args,
+                returnDesc, returnType, returnTypeMapping, impl);
     }
 
     // ====================== PUBLIC UTILITIES ===========================
@@ -135,7 +135,15 @@ public final class ExpressionFunctionBuilder {
          * @param description the {@link OperatorDescription#description()}
          * @return the next stage of the builder
          */
-        RequiresKeywords description(String description);
+        RequiresExamples description(String description);
+    }
+
+    interface RequiresExamples {
+        /**
+         * @param examples the {@link OperatorDescription#examples()}
+         * @return the next stage of the builder
+         */
+        RequiresKeywords examples(String examples);
     }
 
     interface RequiresKeywords {
@@ -182,8 +190,8 @@ public final class ExpressionFunctionBuilder {
     }
 
     record FinalStage( // NOSONAR - equals and hashCode are not important for this record
-        String name, String description, String[] keywords, String category, Arg[] args, String returnDesc,
-        String returnType, Function<Arguments<ValueType>, ValueType> returnTypeMapping,
+        String name, String description, String examples, String[] keywords, String category, Arg[] args,
+        String returnDesc, String returnType, Function<Arguments<ValueType>, ValueType> returnTypeMapping,
         Function<Arguments<Computer>, Computer> impl) {
 
         public ExpressionFunction build() {
@@ -196,8 +204,11 @@ public final class ExpressionFunctionBuilder {
             SignatureUtils.checkSignature(argsList);
 
             var argsDesc = Arg.toOperatorDescription(argsList);
-            var desc = new OperatorDescription(name, description, argsDesc, returnType, returnDesc, List.of(keywords),
-                category, OperatorDescription.FUNCTION_ENTRY_TYPE);
+            var desc = new OperatorDescription( //
+                name, description, examples, //
+                argsDesc, returnType, returnDesc, //
+                List.of(keywords), category, OperatorDescription.FUNCTION_ENTRY_TYPE //
+            );
 
             Function<Arguments<ValueType>, ReturnResult<ValueType>> typeMappingAndCheck = argTypes -> SignatureUtils
                 .checkTypes(argsList, argTypes).map(valid -> returnTypeMapping.apply(argTypes));
