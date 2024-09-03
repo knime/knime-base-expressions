@@ -15,7 +15,6 @@ import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contra
 
 import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
-  type EditorErrorState,
 } from "@/components/ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 import { runRowFilterDiagnostics } from "@/rowFilterApp/expressionRowFilterDiagnostics";
@@ -25,7 +24,7 @@ import {
   registerInsertionListener,
 } from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
-import type { ExpressionVersion } from "@/common/types";
+import type { ExpressionVersion, EditorErrorState } from "@/common/types";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowFilterNodeSettings,
@@ -63,7 +62,7 @@ const runDiagnosticsFunction = async () => {
   } else {
     errorState.value = {
       level: errorLevel,
-      message: "An error ocurred.",
+      message: "A syntax error ocurred.",
     };
   }
 };
@@ -152,25 +151,13 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
 });
 
 const runButtonDisabledErrorReason = computed(() => {
-  const errors: string[] = [];
-
   if (!inputsAvailable.value) {
-    errors.push("No input available. Connect an executed node.");
-  }
-
-  if (errorState.value.level === "ERROR") {
-    errors.push("Expression is invalid.");
-  }
-
-  if (errors.length === 0) {
+    return "To evaluate your expression, first connect an executed node.";
+  } else if (errorState.value.level === "ERROR") {
+    return "To evaluate your expression, first resolve syntax errors.";
+  } else {
     return null;
   }
-  let result = errors[0];
-  if (errors.length > 1) {
-    result += ` And ${errors.length - 1} more error${errors.length - 1 > 1 ? "s" : ""} not shown.`;
-  }
-
-  return result;
 });
 
 const initialPaneSizes = calculateInitialPaneSizes();

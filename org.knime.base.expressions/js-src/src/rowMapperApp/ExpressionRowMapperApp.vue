@@ -8,9 +8,12 @@ import {
   useReadonlyStore,
 } from "@knime/scripting-editor";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
-import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
+import type {
+  ExpressionInitialData,
+  ExpressionVersion,
+  EditorErrorState,
+} from "@/common/types";
 import { FunctionButton, LoadingIcon } from "@knime/components";
-
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
 import { onKeyStroke } from "@vueuse/core";
 import {
@@ -23,13 +26,11 @@ import {
   watch,
 } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
-
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 import { v4 as uuidv4 } from "uuid";
 import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
-  type EditorErrorState,
 } from "@/components/ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
@@ -54,9 +55,10 @@ const activeEditorFileName = ref<string | null>(null);
 // Populated by the initial settings
 const columnSelectorStates = reactive<{ [key: string]: SelectorState }>({});
 
-const columnSelectorStateErrorMessages = reactive<{
-  [key: string]: string | null;
-}>({});
+const editorErrorStates = reactive<{ [key: string]: EditorErrorState }>({});
+const columnSelectorErrorStates = reactive<{ [key: string]: EditorErrorState }>(
+  {},
+);
 
 /**
  * Generate a new key for a new editor. This is used to index the columnSelectorStates
@@ -86,8 +88,6 @@ const editorStateWatchers = reactive<{ [key: string]: Function }>({});
 const orderedEditorKeys = reactive<string[]>([]);
 
 const createEditorTitle = (index: number) => `Expression (${index + 1})`;
-const getEditorTitleFromKey = (key: string) =>
-  createEditorTitle(orderedEditorKeys.indexOf(key));
 
 const numberOfEditors = computed(() => orderedEditorKeys.length);
 
@@ -147,7 +147,6 @@ const onEditorFocused = (filename: string) => {
 
 const functionCatalogData = ref<FunctionCatalogData>();
 const inputsAvailable = ref(false);
-const editorErrorStates = reactive<{ [key: string]: EditorErrorState }>({});
 
 const getFirstEditor = (): ExpressionEditorPaneExposes => {
   return multiEditorComponentRefs[orderedEditorKeys[0]];
@@ -163,19 +162,28 @@ const runDiagnosticsFunction = async () => {
       .map((state) => (state.outputMode === "APPEND" ? state.create : null)),
   );
 
-  const columnValidities = runOutputDiagnostics(
+  const columnErrorMessages = runOutputDiagnostics(
     "Column",
     orderedEditorKeys.map((key) => columnSelectorStates[key]),
     columnsInInputTable.value.map((column) => column.id),
   );
 
   orderedEditorKeys.forEach((key, index) => {
-    columnSelectorStateErrorMessages[key] = columnValidities[index];
+    if (columnErrorMessages[index] === null) {
+      columnSelectorErrorStates[key] = {
+        level: "OK",
+      };
+    } else {
+      columnSelectorErrorStates[key] = {
+        level: "ERROR",
+        message: columnErrorMessages[index],
+      };
+    }
 
-    if (codeErrors[index] === "ERROR" || columnValidities[index] !== null) {
+    if (codeErrors[index] === "ERROR") {
       editorErrorStates[key] = {
         level: "ERROR",
-        message: "An error occurred.",
+        message: "A syntax error occurred.",
       };
     } else {
       editorErrorStates[key] = { level: "OK" };
@@ -233,6 +241,9 @@ onMounted(async () => {
       create: settings.createdColumns[i],
       replace: settings.replacedColumns[i],
     };
+
+    editorErrorStates[key] = { level: "OK" };
+    columnSelectorErrorStates[key] = { level: "OK" };
   }
 
   await nextTick(); // Wait for the editors to be rendered
@@ -328,6 +339,9 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
     replace: initialData.value?.inputObjects[0].subItems?.[0].name ?? "",
   };
 
+  editorErrorStates[latestKey] = { level: "OK" };
+  columnSelectorErrorStates[latestKey] = { level: "OK" };
+
   orderedEditorKeys.splice(desiredInsertionIndex, 0, latestKey);
 
   // Wait for the editor to render and populate the ref
@@ -362,9 +376,11 @@ const onEditorRequestedDelete = (filename: string) => {
   }
 
   orderedEditorKeys.splice(orderedEditorKeys.indexOf(filename), 1);
+
   delete columnSelectorStates[filename];
   delete multiEditorComponentRefs[filename];
-  delete columnSelectorStateErrorMessages[filename];
+  delete columnSelectorErrorStates[filename];
+  delete editorErrorStates[filename];
 
   // Clean up watchers
   editorStateWatchers[filename]();
@@ -441,36 +457,40 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
 });
 
 const runButtonDisabledErrorReason = computed(() => {
-  const errors: string[] = [];
+  const haveSyntaxErrors = Object.values(editorErrorStates).some(
+    (errorState) => errorState.level === "ERROR",
+  );
+  const haveColumnErrors = Object.values(columnSelectorErrorStates).some(
+    (e) => e.level === "ERROR",
+  );
 
   if (!inputsAvailable.value) {
-    errors.push("No input available. Connect an executed node.");
-  }
-
-  if (anyEditorHasError()) {
-    errors.push("An editor is invalid.");
-  }
-
-  const columnErrors = Object.entries(columnSelectorStateErrorMessages)
-    .map(([key, message]) =>
-      message === null ? null : `${getEditorTitleFromKey(key)}: ${message}`,
-    )
-    .filter((message) => message !== null);
-
-  errors.push(...columnErrors);
-
-  if (errors.length === 0) {
+    return "To evaluate your expression, first connect an executed node.";
+  } else if (haveSyntaxErrors) {
+    return "To evaluate your expression, first resolve syntax errors.";
+  } else if (haveColumnErrors) {
+    return "To evaluate your expression, first resolve column output errors.";
+  } else {
     return null;
   }
+});
 
-  let result = errors[0];
+const getMostConcerningErrorStateForEditor = (
+  key: string,
+): EditorErrorState => {
+  const severitiesInDescendingOrder = ["ERROR", "WARNING", "OK"];
 
-  if (errors.length > 1) {
-    result += ` And ${errors.length - 1} more error${errors.length - 1 > 1 ? "s" : ""} not shown.`;
+  for (const severity of severitiesInDescendingOrder) {
+    if (editorErrorStates[key].level === severity) {
+      return editorErrorStates[key];
+    } else if (columnSelectorErrorStates[key].level === severity) {
+      return columnSelectorErrorStates[key];
+    }
   }
 
-  return result;
-});
+  // This shouldn't happen
+  return { level: "OK" };
+};
 
 const initialPaneSizes = calculateInitialPaneSizes();
 </script>
@@ -519,7 +539,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
               isOnly: numberOfEditors === 1,
               isActive: activeEditorFileName === key,
             }"
-            :error-state="editorErrorStates[key]"
+            :error-state="getMostConcerningErrorStateForEditor(key)"
             @focus="onEditorFocused(key)"
             @delete="onEditorRequestedDelete"
             @move-down="onEditorRequestedMoveDown"
@@ -531,8 +551,8 @@ const initialPaneSizes = calculateInitialPaneSizes();
               <div class="editor-controls">
                 <OutputSelector
                   v-model="columnSelectorStates[key]"
-                  v-model:error-message="columnSelectorStateErrorMessages[key]"
                   entity-name="column"
+                  :is-valid="columnSelectorErrorStates[key].level === 'OK'"
                   :allowed-replacement-entities="
                     getAvailableColumnsForReplacement(key)
                   "

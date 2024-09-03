@@ -6,9 +6,12 @@ import {
   useReadonlyStore,
 } from "@knime/scripting-editor";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
-import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
+import type {
+  ExpressionInitialData,
+  ExpressionVersion,
+  EditorErrorState,
+} from "@/common/types";
 import { Button, FunctionButton, LoadingIcon } from "@knime/components";
-
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
 import { onKeyStroke } from "@vueuse/core";
 import {
@@ -21,12 +24,10 @@ import {
   watch,
 } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
-
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 import { v4 as uuidv4 } from "uuid";
 import ExpressionEditorPane, {
-  type EditorErrorState,
   type ExpressionEditorPaneExposes,
 } from "@/components/ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
@@ -54,8 +55,9 @@ const flowVariableSelectorStates = reactive<{
   [key: string]: SelectorState;
 }>({});
 
-const flowVariableSelectorStateErrorMessages = reactive<{
-  [key: string]: string | null;
+const editorErrorStates = reactive<{ [key: string]: EditorErrorState }>({});
+const flowVariableSelectorErrorStates = reactive<{
+  [key: string]: EditorErrorState;
 }>({});
 
 /**
@@ -86,8 +88,6 @@ const editorStateWatchers = reactive<{ [key: string]: Function }>({});
 const orderedEditorKeys = reactive<string[]>([]);
 
 const createEditorTitle = (index: number) => `Expression (${index + 1})`;
-const getEditorTitleFromKey = (key: string) =>
-  createEditorTitle(orderedEditorKeys.indexOf(key));
 
 const numberOfEditors = computed(() => orderedEditorKeys.length);
 
@@ -146,7 +146,6 @@ const onEditorFocused = (filename: string) => {
 };
 
 const functionCatalogData = ref<FunctionCatalogData>();
-const editorErrorStates = reactive<{ [key: string]: EditorErrorState }>({});
 
 const getFirstEditor = (): ExpressionEditorPaneExposes => {
   return multiEditorComponentRefs[orderedEditorKeys[0]];
@@ -162,19 +161,28 @@ const runDiagnosticsFunction = async () => {
       .map((state) => (state.outputMode === "APPEND" ? state.create : null)),
   );
 
-  const outputValidities = runOutputDiagnostics(
+  const flowVariableErrorMessages = runOutputDiagnostics(
     "Flow variable",
     orderedEditorKeys.map((key) => flowVariableSelectorStates[key]),
     inputFlowVariables.value.map((flowVariable) => flowVariable.id),
   );
 
   orderedEditorKeys.forEach((key, index) => {
-    flowVariableSelectorStateErrorMessages[key] = outputValidities[index];
+    if (flowVariableErrorMessages[index] === null) {
+      flowVariableSelectorErrorStates[key] = {
+        level: "OK",
+      };
+    } else {
+      flowVariableSelectorErrorStates[key] = {
+        level: "ERROR",
+        message: flowVariableErrorMessages[index],
+      };
+    }
 
-    if (codeErrors[index] === "ERROR" || outputValidities[index] !== null) {
+    if (codeErrors[index] === "ERROR") {
       editorErrorStates[key] = {
         level: "ERROR",
-        message: "An error occurred.",
+        message: "A syntax error occurred.",
       };
     } else {
       editorErrorStates[key] = { level: "OK" };
@@ -223,6 +231,9 @@ onMounted(async () => {
       create: settings.createdFlowVariables[i],
       replace: settings.replacedFlowVariables[i],
     };
+
+    editorErrorStates[key] = { level: "OK" };
+    flowVariableSelectorErrorStates[key] = { level: "OK" };
   }
 
   await nextTick(); // Wait for the editors to be rendered
@@ -318,6 +329,9 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
     replace: initialData.value?.flowVariables.subItems?.[0].name ?? "",
   };
 
+  editorErrorStates[latestKey] = { level: "OK" };
+  flowVariableSelectorErrorStates[latestKey] = { level: "OK" };
+
   orderedEditorKeys.splice(desiredInsertionIndex, 0, latestKey);
 
   // Wait for the editor to render and populate the ref
@@ -352,9 +366,11 @@ const onEditorRequestedDelete = (filename: string) => {
   }
 
   orderedEditorKeys.splice(orderedEditorKeys.indexOf(filename), 1);
+
   delete flowVariableSelectorStates[filename];
   delete multiEditorComponentRefs[filename];
-  delete flowVariableSelectorStateErrorMessages[filename];
+  delete flowVariableSelectorErrorStates[filename];
+  delete editorErrorStates[filename];
 
   // Clean up watchers
   editorStateWatchers[filename]();
@@ -433,34 +449,38 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
 });
 
 const runButtonDisabledErrorReason = computed(() => {
-  const errors: string[] = [];
+  const haveSyntaxErrors = Object.values(editorErrorStates).some(
+    (errorState) => errorState.level === "ERROR",
+  );
+  const haveColumnErrors = Object.values(flowVariableSelectorErrorStates).some(
+    (e) => e.level === "ERROR",
+  );
 
-  if (anyEditorHasError()) {
-    errors.push("An editor is invalid.");
-  }
-
-  const flowVariableErrors = Object.entries(
-    flowVariableSelectorStateErrorMessages,
-  )
-    .map(([key, message]) =>
-      message === null ? null : `${getEditorTitleFromKey(key)}: ${message}`,
-    )
-    .filter((message) => message !== null);
-
-  errors.push(...flowVariableErrors);
-
-  if (errors.length === 0) {
+  if (haveSyntaxErrors) {
+    return "To evaluate your expression, first resolve syntax errors.";
+  } else if (haveColumnErrors) {
+    return "To evaluate your expression, first resolve column output errors.";
+  } else {
     return null;
   }
+});
 
-  let result = errors[0];
+const getMostConcerningErrorStateForEditor = (
+  key: string,
+): EditorErrorState => {
+  const severitiesInDescendingOrder = ["ERROR", "WARNING", "OK"];
 
-  if (errors.length > 1) {
-    result += ` And ${errors.length - 1} more error${errors.length - 1 > 1 ? "s" : ""} not shown.`;
+  for (const severity of severitiesInDescendingOrder) {
+    if (editorErrorStates[key].level === severity) {
+      return editorErrorStates[key];
+    } else if (flowVariableSelectorErrorStates[key].level === severity) {
+      return flowVariableSelectorErrorStates[key];
+    }
   }
 
-  return result;
-});
+  // This shouldn't happen
+  return { level: "OK" };
+};
 
 const initialPaneSizes = calculateInitialPaneSizes();
 </script>
@@ -498,7 +518,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
               isOnly: numberOfEditors === 1,
               isActive: activeEditorFileName === key,
             }"
-            :error-state="editorErrorStates[key]"
+            :error-state="getMostConcerningErrorStateForEditor(key)"
             @focus="onEditorFocused(key)"
             @delete="onEditorRequestedDelete"
             @move-down="onEditorRequestedMoveDown"
@@ -510,10 +530,10 @@ const initialPaneSizes = calculateInitialPaneSizes();
               <div class="editor-controls">
                 <OutputSelector
                   v-model="flowVariableSelectorStates[key]"
-                  v-model:error-message="
-                    flowVariableSelectorStateErrorMessages[key]
-                  "
                   entity-name="flow variable"
+                  :is-valid="
+                    flowVariableSelectorErrorStates[key].level === 'OK'
+                  "
                   :allowed-replacement-entities="
                     getAvailableFlowVariableForReplacement(key)
                   "

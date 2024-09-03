@@ -22,12 +22,7 @@ import DownArrowIcon from "@knime/styles/img/icons/arrow-down.svg";
 import CopyIcon from "@knime/styles/img/icons/copy.svg";
 import WarningIcon from "@knime/styles/img/icons/circle-warning.svg";
 import { FunctionButton } from "@knime/components";
-
-import type { ErrorLevel } from "@/common/types";
-
-export type EditorErrorState =
-  | { level: "OK" }
-  | { level: ErrorLevel; message: string };
+import type { EditorErrorState } from "@/common/types";
 
 export type ExpressionEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;

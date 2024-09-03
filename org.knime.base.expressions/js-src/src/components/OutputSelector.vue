@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { ValueSwitch, Dropdown, InputField } from "@knime/components";
 import {
   useReadonlyStore,
   useShouldFocusBePainted,
 } from "@knime/scripting-editor";
-import { type OutputInsertionMode } from "@/common/types";
+import type { OutputInsertionMode } from "@/common/types";
 
 export type SelectorState = {
   outputMode: OutputInsertionMode;
@@ -21,9 +20,12 @@ export type AllowedDropDownValue = {
 type PropType = {
   entityName: string;
   allowedReplacementEntities: AllowedDropDownValue[];
+  isValid?: boolean;
 };
 
-const props = defineProps<PropType>();
+const props = withDefaults(defineProps<PropType>(), {
+  isValid: true,
+});
 const readOnly = useReadonlyStore();
 
 const modelValue = defineModel<SelectorState>({
@@ -33,12 +35,6 @@ const modelValue = defineModel<SelectorState>({
     create: "New Entity",
   } satisfies SelectorState,
 });
-
-const errorMessage = defineModel<string | null>("errorMessage", {
-  default: null,
-});
-
-const isValid = computed(() => errorMessage.value === null);
 
 const allowedOperationModes = [
   { id: "APPEND", text: "Append" },

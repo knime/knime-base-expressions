@@ -22,8 +22,13 @@ export type ExpressionInitialData = {
   inputPortConfigs: PortConfigs;
 };
 
-/** Identifies the error state of an ExpressionEditorPane */
+/** Identifies the error level of an ExpressionEditorPane */
 export type ErrorLevel = "ERROR" | "WARNING" | "OK";
+
+/** Error level with attached message */
+export type EditorErrorState =
+  | { level: "OK" }
+  | { level: ErrorLevel; message: string };
 
 export type Diagnostic = {
   message: string;
