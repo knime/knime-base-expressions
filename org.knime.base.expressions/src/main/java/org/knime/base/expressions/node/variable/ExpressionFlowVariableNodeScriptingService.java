@@ -64,7 +64,6 @@ import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.VariableType;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -108,15 +107,6 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
             );
         }
 
-        private Map<String, FlowVariable> getAvailableFlowVariables(final VariableType<?>[] types) {
-            var flowObjectStack = getWorkflowControl().getFlowObjectStack();
-            if (flowObjectStack != null) {
-                return flowObjectStack.getAvailableFlowVariables(types);
-            } else {
-                return Map.of();
-            }
-        }
-
         /**
          * Parses and type-checks the expression.
          *
@@ -133,8 +123,7 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
 
             var ast = Expressions.parse(script);
 
-            Map<String, FlowVariable> flowVars =
-                getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES);
+            Map<String, FlowVariable> flowVars = getSupportedFlowVariablesMap();
 
             Function<String, ReturnResult<ValueType>> flowVarToTypeMapper = name -> {
 

@@ -51,7 +51,6 @@ package org.knime.base.expressions.node.row.mapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -78,10 +77,8 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.node.workflow.VariableType;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -190,15 +187,6 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
             );
         }
 
-        private Map<String, FlowVariable> getAvailableFlowVariables(final VariableType<?>[] types) {
-            var flowObjectStack = getWorkflowControl().getFlowObjectStack();
-            if (flowObjectStack != null) {
-                return flowObjectStack.getAvailableFlowVariables(types);
-            } else {
-                return Map.of();
-            }
-        }
-
         /**
          * Parses and type-checks the expression.
          *
@@ -214,8 +202,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
             final List<ValueType> additionalColumnTypes) throws ExpressionCompileException {
 
             var ast = Expressions.parse(script);
-            var flowVarToTypeMapper = ExpressionRunnerUtils.flowVarToTypeForTypeInference(
-                getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
+            var flowVarToTypeMapper =
+                ExpressionRunnerUtils.flowVarToTypeForTypeInference(getSupportedFlowVariablesMap());
 
             Function<String, ReturnResult<ValueType>> columnToTypeMapper = columnName -> {
                 if (additionalColumnNames.contains(columnName)) {
@@ -321,7 +309,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 List<String> warnings = new ArrayList<>();
                 EvaluationContext evaluationContext = warnings::add;
                 numPreviewRows = (int)Math.min(numPreviewRows, inputTable.getBufferedTable().size());
-                var exprContext = new NodeExpressionMapperContext(this::getAvailableFlowVariables);
+                var exprContext = new NodeExpressionMapperContext(types -> getSupportedFlowVariablesMap());
                 var slicedInputTable = inputTable.getVirtualTable().slice(0, numPreviewRows);
 
                 var expressionResult = ExpressionRunnerUtils.applyExpression( //

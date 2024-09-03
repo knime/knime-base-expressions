@@ -650,7 +650,7 @@ public final class ExpressionRunnerUtils {
      * @param valueType the {@link ValueType} to map to a {@link VariableType}
      * @return the variable type or {@code null} if the type is not supported
      */
-    public static VariableType<?> mapValueTypeToVariableType(final ValueType valueType) {
+    public static VariableType<?> mapValueTypeToVariableType(final ValueType valueType) { // NOSONAR
         if (valueType == ValueType.FLOAT) {
             return VariableType.DoubleType.INSTANCE;
         } else if (valueType == ValueType.BOOLEAN) {

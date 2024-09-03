@@ -51,7 +51,6 @@ package org.knime.base.expressions.node.row.filter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -75,10 +74,8 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.node.workflow.VariableType;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -188,21 +185,12 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
             );
         }
 
-        private Map<String, FlowVariable> getAvailableFlowVariables(final VariableType<?>[] types) {
-            var flowObjectStack = getWorkflowControl().getFlowObjectStack();
-            if (flowObjectStack != null) {
-                return flowObjectStack.getAvailableFlowVariables(types);
-            } else {
-                return Map.of();
-            }
-        }
-
         /** @return the typed Ast for the configured expression */
         private Ast getPreparedExpression(final String script) throws ExpressionCompileException {
 
             var ast = Expressions.parse(script);
-            var flowVarToTypeMapper = ExpressionRunnerUtils.flowVarToTypeForTypeInference(
-                getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
+            var flowVarToTypeMapper =
+                ExpressionRunnerUtils.flowVarToTypeForTypeInference(getSupportedFlowVariablesMap());
 
             Expressions.inferTypes(ast, getColumnToTypeMapper(), flowVarToTypeMapper);
 
@@ -275,7 +263,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
 
             var slicedInputTable = inputTable.getVirtualTable().slice(0, numPreviewRows);
 
-            var exprContext = new NodeExpressionMapperContext(this::getAvailableFlowVariables);
+            var exprContext = new NodeExpressionMapperContext(types -> getSupportedFlowVariablesMap());
             var filteredTable = ExpressionRunnerUtils.filterTableByExpression(slicedInputTable, expression,
                 numPreviewRows, evaluationContext, exprContext);
 
