@@ -424,11 +424,7 @@ const expandAll = () => {
                     triggerFunctionInsertionEvent(event, functionData)
                 "
               >
-                {{
-                  functionData.entryType === "function"
-                    ? functionData.displayName || functionData.name
-                    : functionData.name
-                }}
+                {{ functionData.name }}
               </div>
             </div>
           </div>
