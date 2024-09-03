@@ -397,6 +397,8 @@ const registerKnimeExpressionLanguage = (
   initialData: ExpressionInitialData,
   options?: RegisterKnimeExpressionLanguageOptions,
 ) => {
+  const registerSpecialColumnAccess = options?.specialColumnAccess ?? true;
+
   return register({
     columnNamesForCompletion: initialData.inputObjects?.[0]?.subItems
       ? initialData.inputObjects[0].subItems
@@ -416,7 +418,7 @@ const registerKnimeExpressionLanguage = (
       ...convertFunctionsToInsertionItems(
         initialData.functionCatalog.functions,
       ),
-      ...(options?.specialColumnAccess !== false
+      ...(registerSpecialColumnAccess
         ? ["$[ROW_ID]", "$[ROW_INDEX]", "$[ROW_NUMBER]"].map((item) => ({
             text: item,
             kind: monaco.languages.CompletionItemKind.Variable,

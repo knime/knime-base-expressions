@@ -94,9 +94,12 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
 
         var initialDataBuilder = GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
             .addDataSupplier("inputObjects", List::of) //
-            .addDataSupplier("flowVariables",
-                () -> ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(
-                    workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().values())) //
+            .addDataSupplier("flowVariables", () -> {
+                var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
+                    .map(stack -> stack.getAllAvailableFlowVariables().values()) //
+                    .orElseGet(List::of);
+                return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(flowVariables);
+            }) //
             .addDataSupplier("outputObjects", List::of) //
             .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN_NO_AGGREGATIONS);
 

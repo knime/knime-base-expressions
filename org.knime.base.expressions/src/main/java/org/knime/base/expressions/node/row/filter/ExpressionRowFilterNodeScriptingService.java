@@ -57,6 +57,8 @@ import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
+import org.knime.base.expressions.node.ExpressionNodeDiagnosticsUtils.Diagnostic;
+import org.knime.base.expressions.node.ExpressionNodeDiagnosticsUtils.DiagnosticSeverity;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
@@ -64,11 +66,9 @@ import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializ
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.EvaluationContext;
-import org.knime.core.expressions.ExpressionCompileError;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ReturnResult;
-import org.knime.core.expressions.TextRange;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -306,20 +306,6 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                 addConsoleOutputEvent(new ConsoleText(formatWarning(warning), true));
             }
 
-        }
-
-        public record Diagnostic(String message, DiagnosticSeverity severity, TextRange location) {
-            static Diagnostic fromError(final ExpressionCompileError error) {
-                return new Diagnostic(error.createMessage(), DiagnosticSeverity.ERROR, error.location());
-            }
-
-            static List<Diagnostic> fromException(final ExpressionCompileException exception) {
-                return exception.getErrors().stream().map(Diagnostic::fromError).toList();
-            }
-        }
-
-        public enum DiagnosticSeverity {
-                ERROR, WARNING, INFORMATION, HINT;
         }
 
         private static String formatWarning(final String warningText) {

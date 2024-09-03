@@ -48,11 +48,10 @@
  */
 package org.knime.base.expressions.node.row.filter;
 
+import java.util.HashMap;
 import java.util.Map;
 
-import org.knime.core.expressions.Expressions;
-import org.knime.core.expressions.aggregations.BuiltInAggregations;
-import org.knime.core.expressions.functions.BuiltInFunctions;
+import org.knime.base.expressions.node.ExpressionVersionSettingsUtils;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -75,14 +74,12 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
      */
     static final String DEFAULT_SCRIPT = """
             # Examples:
-            # 1. Calculate the sine of values in column "My Column":
-            #  sin($["My Column"])
-            # 2. Divide column values by a flow variable:
-            #  $["My Column"] / $$["My Flow Variable"]
-            # 3. Concatenate strings using the + operator:
-            #  substring($["firstname"], 1, 1) + ". " + $["lastname"]
-            # 4. Difference between adjacent rows:
-            #  $["My Column"] - $["My Column", -1]
+            # 1. Remove every other row:
+            #  $ROW_INDEX %2 = 0
+            # 2. Remove rows negative values
+            #  $["My Column"] > 0
+            # 3. Remove rows where the difference between adjacent rows is negative:
+            #  $["My Column"] - $["My Column", -1] > 0
             #
             # If you need help, try the "Ask K-AI" button,
             # or have a look at the node description!
@@ -90,28 +87,12 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
 
     private static final String CFG_KEY_SCRIPT = "script";
 
-    private static final String CFG_KEY_LANGUAGE_VERSION = "languageVersion";
-
-    private static final String CFG_KEY_BUILTIN_FUNCTIONS_VERSION = "builtinFunctionsVersion";
-
-    private static final String CFG_KEY_BUILTIN_AGGREGATIONS_VERSION = "builtinAggregationsVersion";
-
-    private static final String JSON_KEY_SCRIPT = "script";
-
-    private static final String JSON_KEY_LANGUAGE_VERSION = CFG_KEY_LANGUAGE_VERSION;
-
-    private static final String JSON_KEY_FUNCTION_VERSION = CFG_KEY_BUILTIN_FUNCTIONS_VERSION;
-
-    private static final String JSON_KEY_AGGREGATION_VERSION = CFG_KEY_BUILTIN_AGGREGATIONS_VERSION;
+    private static final String JSON_KEY_SCRIPT = CFG_KEY_SCRIPT;
 
     private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES =
         "settingsAreOverriddenByFlowVariable";
 
-    private int m_languageVersion;
-
-    private int m_builtinFunctionsVersion;
-
-    private int m_builtinAggregationsVersion;
+    private ExpressionVersionSettingsUtils m_versionSettings;
 
     private String m_script;
 
@@ -121,11 +102,7 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
     ExpressionRowFilterSettings() {
         super(SettingsType.MODEL);
 
-        // Set to the latest version by default
-        // The version will be overwritten if we load an older version from the model settings
-        this.m_languageVersion = Expressions.LANGUAGE_VERSION;
-        this.m_builtinFunctionsVersion = BuiltInFunctions.FUNCTIONS_VERSION;
-        this.m_builtinAggregationsVersion = BuiltInAggregations.AGGREGATIONS_VERSION;
+        this.m_versionSettings = new ExpressionVersionSettingsUtils();
 
         this.m_script = DEFAULT_SCRIPT;
     }
@@ -133,9 +110,7 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
     @Override
     public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
 
-        m_languageVersion = settings.getInt(CFG_KEY_LANGUAGE_VERSION);
-        m_builtinFunctionsVersion = settings.getInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION);
-        m_builtinAggregationsVersion = settings.getInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION);
+        m_versionSettings.loadSettingsFrom(settings);
 
         m_script = settings.getString(CFG_KEY_SCRIPT);
     }
@@ -150,9 +125,8 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
     @Override
     public void saveSettingsTo(final NodeSettingsWO settings) {
         settings.addString(CFG_KEY_SCRIPT, m_script);
-        settings.addInt(CFG_KEY_LANGUAGE_VERSION, m_languageVersion);
-        settings.addInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, m_builtinFunctionsVersion);
-        settings.addInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION, m_builtinAggregationsVersion);
+
+        m_versionSettings.saveSettingsTo(settings);
     }
 
     @Override
@@ -164,13 +138,14 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
         var configOverWrittenByFlowVars =
             isEditorConfigurationOverwrittenByFlowVariable(settings.get(m_scriptSettingsType));
 
-        return Map.of( //
+        Map<String, Object> settingsMap = new HashMap<>();
+        settingsMap.putAll(m_versionSettings.getVersionSettingsMap());
+        settingsMap.putAll(Map.of( //
             JSON_KEY_SCRIPT, m_script, //
-            JSON_KEY_LANGUAGE_VERSION, m_languageVersion, //
-            JSON_KEY_FUNCTION_VERSION, m_builtinFunctionsVersion, //
-            JSON_KEY_AGGREGATION_VERSION, m_builtinAggregationsVersion, //
             JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES, configOverWrittenByFlowVars //
-        );
+        ));
+
+        return settingsMap;
     }
 
     @Override
@@ -179,9 +154,8 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
         final Map<SettingsType, NodeAndVariableSettingsWO> settings) throws InvalidSettingsException {
 
         m_script = (String)data.get(JSON_KEY_SCRIPT);
-        m_languageVersion = (int)data.get(JSON_KEY_LANGUAGE_VERSION);
-        m_builtinFunctionsVersion = (int)data.get(JSON_KEY_FUNCTION_VERSION);
-        m_builtinAggregationsVersion = (int)data.get(JSON_KEY_AGGREGATION_VERSION);
+
+        m_versionSettings.writeMapToNodeSettings(data);
 
         saveSettingsTo(settings);
         copyVariableSettings(previousSettings, settings);

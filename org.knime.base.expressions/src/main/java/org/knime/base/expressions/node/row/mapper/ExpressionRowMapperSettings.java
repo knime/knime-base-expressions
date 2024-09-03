@@ -51,6 +51,7 @@ package org.knime.base.expressions.node.row.mapper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,9 +59,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.knime.base.expressions.ExpressionRunnerUtils.InsertionMode;
-import org.knime.core.expressions.Expressions;
-import org.knime.core.expressions.aggregations.BuiltInAggregations;
-import org.knime.core.expressions.functions.BuiltInFunctions;
+import org.knime.base.expressions.node.ExpressionVersionSettingsUtils;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -115,12 +114,6 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
     private static final String CFG_KEY_OUTPUT_MODE = "columnOutputMode";
 
-    private static final String CFG_KEY_LANGUAGE_VERSION = "languageVersion";
-
-    private static final String CFG_KEY_BUILTIN_FUNCTIONS_VERSION = "builtinFunctionsVersion";
-
-    private static final String CFG_KEY_BUILTIN_AGGREGATIONS_VERSION = "builtinAggregationsVersion";
-
     private static final String CFG_KEY_ADDITIONAL_EXPRESSIONS = "additionalExpressions";
 
     private static final String JSON_KEY_SCRIPTS = "scripts";
@@ -131,12 +124,6 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
     private static final String JSON_KEY_REPLACED_COLUMNS = "replacedColumns";
 
-    private static final String JSON_KEY_LANGUAGE_VERSION = CFG_KEY_LANGUAGE_VERSION;
-
-    private static final String JSON_KEY_FUNCTION_VERSION = CFG_KEY_BUILTIN_FUNCTIONS_VERSION;
-
-    private static final String JSON_KEY_AGGREGATION_VERSION = CFG_KEY_BUILTIN_AGGREGATIONS_VERSION;
-
     private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES =
         "settingsAreOverriddenByFlowVariable";
 
@@ -146,11 +133,7 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
     private List<String> m_replacedColumns;
 
-    private int m_languageVersion;
-
-    private int m_builtinFunctionsVersion;
-
-    private int m_builtinAggregationsVersion;
+    private ExpressionVersionSettingsUtils m_versionSettings;
 
     private List<String> m_scripts;
 
@@ -182,11 +165,7 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
         super(SettingsType.MODEL);
 
-        // Set to the latest version by default
-        // The version will be overwritten if we load an older version from the model settings
-        this.m_languageVersion = Expressions.LANGUAGE_VERSION;
-        this.m_builtinFunctionsVersion = BuiltInFunctions.FUNCTIONS_VERSION;
-        this.m_builtinAggregationsVersion = BuiltInAggregations.AGGREGATIONS_VERSION;
+        this.m_versionSettings = new ExpressionVersionSettingsUtils();
 
         this.m_scripts = new ArrayList<>(Arrays.asList(script));
         this.m_outputModes = new ArrayList<>(Arrays.asList(outputMode));
@@ -197,9 +176,7 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
     @Override
     public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
 
-        m_languageVersion = settings.getInt(CFG_KEY_LANGUAGE_VERSION);
-        m_builtinFunctionsVersion = settings.getInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION);
-        m_builtinAggregationsVersion = settings.getInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION);
+        m_versionSettings.loadSettingsFrom(settings);
 
         m_scripts = new ArrayList<>();
         m_outputModes = new ArrayList<>();
@@ -281,9 +258,7 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
         settings.addString(CFG_KEY_CREATED_COLUMN, m_createdColumns.get(0));
         settings.addString(CFG_KEY_REPLACED_COLUMN, m_replacedColumns.get(0));
 
-        settings.addInt(CFG_KEY_LANGUAGE_VERSION, m_languageVersion);
-        settings.addInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, m_builtinFunctionsVersion);
-        settings.addInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION, m_builtinAggregationsVersion);
+        m_versionSettings.saveSettingsTo(settings);
 
         var additionalExprsConfigs = settings.addConfig(CFG_KEY_ADDITIONAL_EXPRESSIONS);
 
@@ -293,7 +268,6 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
             singleExprConfig.addString(CFG_KEY_SCRIPT, m_scripts.get(i + 1));
             singleExprConfig.addString(CFG_KEY_OUTPUT_MODE, m_outputModes.get(i + 1).name());
             singleExprConfig.addString(CFG_KEY_CREATED_COLUMN, m_createdColumns.get(i + 1));
-
             singleExprConfig.addString(CFG_KEY_REPLACED_COLUMN, m_replacedColumns.get(i + 1));
         }
     }
@@ -307,16 +281,17 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
         var configOverWrittenByFlowVars =
             isEditorConfigurationOverwrittenByFlowVariable(settings.get(m_scriptSettingsType));
 
-        return Map.of( //
+        Map<String, Object> settingsMap = new HashMap<>();
+        settingsMap.putAll(m_versionSettings.getVersionSettingsMap());
+        settingsMap.putAll(Map.of( //
             JSON_KEY_SCRIPTS, m_scripts, //
             JSON_KEY_OUTPUT_MODES, m_outputModes, //
             JSON_KEY_CREATED_COLUMNS, m_createdColumns, //
             JSON_KEY_REPLACED_COLUMNS, m_replacedColumns, //
-            JSON_KEY_LANGUAGE_VERSION, m_languageVersion, //
-            JSON_KEY_FUNCTION_VERSION, m_builtinFunctionsVersion, //
-            JSON_KEY_AGGREGATION_VERSION, m_builtinAggregationsVersion, //
             JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES, configOverWrittenByFlowVars //
-        );
+        ));
+
+        return settingsMap;
     }
 
     @SuppressWarnings("unchecked") // these casts are fine if the settings are correct
@@ -330,9 +305,8 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
             .collect(Collectors.toList());
         m_createdColumns = (List<String>)data.get(JSON_KEY_CREATED_COLUMNS);
         m_replacedColumns = (List<String>)data.get(JSON_KEY_REPLACED_COLUMNS);
-        m_languageVersion = (int)data.get(JSON_KEY_LANGUAGE_VERSION);
-        m_builtinFunctionsVersion = (int)data.get(JSON_KEY_FUNCTION_VERSION);
-        m_builtinAggregationsVersion = (int)data.get(JSON_KEY_AGGREGATION_VERSION);
+
+        m_versionSettings.writeMapToNodeSettings(data);
 
         saveSettingsTo(settings);
         copyVariableSettings(previousSettings, settings);

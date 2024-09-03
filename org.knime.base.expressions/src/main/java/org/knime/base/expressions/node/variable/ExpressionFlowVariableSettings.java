@@ -51,6 +51,7 @@ package org.knime.base.expressions.node.variable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,9 +59,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.knime.base.expressions.ExpressionRunnerUtils.InsertionMode;
-import org.knime.core.expressions.Expressions;
-import org.knime.core.expressions.aggregations.BuiltInAggregations;
-import org.knime.core.expressions.functions.BuiltInFunctions;
+import org.knime.base.expressions.node.ExpressionVersionSettingsUtils;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -77,12 +76,12 @@ import org.knime.scripting.editor.ScriptingNodeSettings;
  * @author Tobias Kampmann, TNG Technology Consulting GmbH
  */
 @SuppressWarnings("restriction") // SettingsType is not yet public API
-public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements GenericSettingsIOManager {
+class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements GenericSettingsIOManager {
 
     /**
      * The script shown in a new expression node.
      */
-    public static final String DEFAULT_SCRIPT = """
+    static final String DEFAULT_SCRIPT = """
             # Examples:
             # 1. Calculate the sine of flow variable "My Flow Variable":
             #  sin($$["My Flow Variable"])
@@ -98,14 +97,14 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
     /**
      * The default name of the flow variable that is created by the expression when in append mode.
      */
-    public static final String DEFAULT_CREATED_FLOW_VARIABLE = "New Flow Variable";
+    static final String DEFAULT_CREATED_FLOW_VARIABLE = "New Flow Variable";
 
     /**
      * The default output mode for the expression node.
      */
 
     // REMOVE unnecessary differentiation between first and additional
-    public static final InsertionMode DEFAULT_OUTPUT_MODE = InsertionMode.APPEND;
+    static final InsertionMode DEFAULT_OUTPUT_MODE = InsertionMode.APPEND;
 
     private static final String CFG_KEY_ADDITIONAL_EXPRESSIONS = "additionalExpressions";
 
@@ -117,12 +116,6 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
 
     private static final String CFG_KEY_REPLACED_FLOW_VARIABLE = "replacedFlowVariable";
 
-    private static final String CFG_KEY_LANGUAGE_VERSION = "languageVersion";
-
-    private static final String CFG_KEY_BUILTIN_FUNCTIONS_VERSION = "builtinFunctionsVersion";
-
-    private static final String CFG_KEY_BUILTIN_AGGREGATIONS_VERSION = "builtinAggregationsVersion";
-
     private static final String JSON_KEY_SCRIPTS = "scripts";
 
     private static final String JSON_KEY_OUTPUT_MODES = "flowVariableOutputModes";
@@ -130,12 +123,6 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
     private static final String JSON_KEY_CREATED_FLOW_VARIABLES = "createdFlowVariables";
 
     private static final String JSON_KEY_REPLACED_FLOW_VARIABLES = "replacedFlowVariables";
-
-    private static final String JSON_KEY_LANGUAGE_VERSION = CFG_KEY_LANGUAGE_VERSION;
-
-    private static final String JSON_KEY_FUNCTION_VERSION = CFG_KEY_BUILTIN_FUNCTIONS_VERSION;
-
-    private static final String JSON_KEY_AGGREGATION_VERSION = CFG_KEY_BUILTIN_AGGREGATIONS_VERSION;
 
     private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES =
         "settingsAreOverriddenByFlowVariable";
@@ -146,13 +133,9 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
 
     private List<String> m_replacedFlowVariables;
 
-    private int m_languageVersion;
-
-    private int m_builtinFunctionsVersion;
-
-    private int m_builtinAggregationsVersion;
-
     private List<String> m_scripts;
+
+    private ExpressionVersionSettingsUtils m_versionSettings;
 
     /**
      * Create a new ExpressionNodeSettings object with the default script.
@@ -160,7 +143,7 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
      * @param replacedFlowVariable the initial flow variable name to replace
      *
      */
-    public ExpressionFlowVariableSettings(final String replacedFlowVariable) {
+    ExpressionFlowVariableSettings(final String replacedFlowVariable) {
         this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_FLOW_VARIABLE, replacedFlowVariable);
     }
 
@@ -175,16 +158,12 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
      * @param createdFlowVariable
      * @param replacedFlowVariable
      */
-    public ExpressionFlowVariableSettings(final String script, final InsertionMode outputMode,
+    ExpressionFlowVariableSettings(final String script, final InsertionMode outputMode,
         final String createdFlowVariable, final String replacedFlowVariable) {
 
         super(SettingsType.MODEL);
 
-        // Set to the latest version by default
-        // The version will be overwritten if we load an older version from the model settings
-        this.m_languageVersion = Expressions.LANGUAGE_VERSION;
-        this.m_builtinFunctionsVersion = BuiltInFunctions.FUNCTIONS_VERSION;
-        this.m_builtinAggregationsVersion = BuiltInAggregations.AGGREGATIONS_VERSION;
+        this.m_versionSettings = new ExpressionVersionSettingsUtils();
 
         this.m_scripts = new ArrayList<>(Arrays.asList(script));
         this.m_outputModes = new ArrayList<>(Arrays.asList(outputMode));
@@ -195,9 +174,7 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
     @Override
     public void loadSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
 
-        m_languageVersion = settings.getInt(CFG_KEY_LANGUAGE_VERSION);
-        m_builtinFunctionsVersion = settings.getInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION);
-        m_builtinAggregationsVersion = settings.getInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION);
+        m_versionSettings.loadSettingsFrom(settings);
 
         m_scripts = new ArrayList<>();
         m_outputModes = new ArrayList<>();
@@ -221,28 +198,28 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
     /**
      * @return the unmodifiable list of all flow variable output modes
      */
-    public List<InsertionMode> getFlowVariableInsertionModes() {
+    List<InsertionMode> getFlowVariableInsertionModes() {
         return Collections.unmodifiableList(m_outputModes);
     }
 
     /**
      * @return the unmodifiable list of all created flow variables
      */
-    public List<String> getCreatedFlowVariables() {
+    List<String> getCreatedFlowVariables() {
         return Collections.unmodifiableList(m_createdFlowVariables);
     }
 
     /**
      * @return the unmodifiable list of all flow variables
      */
-    public List<String> getReplacedFlowVariables() {
+    List<String> getReplacedFlowVariables() {
         return Collections.unmodifiableList(m_replacedFlowVariables);
     }
 
     /**
      * @return the unmodifiable list of all scripts
      */
-    public List<String> getScripts() {
+    List<String> getScripts() {
         return Collections.unmodifiableList(m_scripts);
     }
 
@@ -253,7 +230,7 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
      *
      * @return the unmodifiable list of flow variables that are being actively used
      */
-    public List<String> getActiveOutputFlowVariables() {
+    List<String> getActiveOutputFlowVariables() {
         return IntStream.range(0, getNumScripts()) //
             .mapToObj(i -> m_outputModes.get(i) == InsertionMode.REPLACE_EXISTING ? m_replacedFlowVariables.get(i)
                 : m_createdFlowVariables.get(i)) //
@@ -263,16 +240,14 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
     /**
      * @return the number of scripts
      */
-    public int getNumScripts() {
+    int getNumScripts() {
         return m_scripts.size();
     }
 
     @Override
     public void saveSettingsTo(final NodeSettingsWO settings) {
 
-        settings.addInt(CFG_KEY_LANGUAGE_VERSION, m_languageVersion);
-        settings.addInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, m_builtinFunctionsVersion);
-        settings.addInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION, m_builtinAggregationsVersion);
+        m_versionSettings.saveSettingsTo(settings);
 
         var additionalExprsConfigs = settings.addConfig(CFG_KEY_ADDITIONAL_EXPRESSIONS);
 
@@ -296,16 +271,17 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
         var configOverWrittenByFlowVars =
             isEditorConfigurationOverwrittenByFlowVariable(settings.get(m_scriptSettingsType));
 
-        return Map.of( //
+        Map<String, Object> settingsMap = new HashMap<>();
+        settingsMap.putAll(m_versionSettings.getVersionSettingsMap());
+        settingsMap.putAll(Map.of( //
             JSON_KEY_SCRIPTS, m_scripts, //
             JSON_KEY_OUTPUT_MODES, m_outputModes, //
             JSON_KEY_CREATED_FLOW_VARIABLES, m_createdFlowVariables, //
             JSON_KEY_REPLACED_FLOW_VARIABLES, m_replacedFlowVariables, //
-            JSON_KEY_LANGUAGE_VERSION, m_languageVersion, //
-            JSON_KEY_FUNCTION_VERSION, m_builtinFunctionsVersion, //
-            JSON_KEY_AGGREGATION_VERSION, m_builtinAggregationsVersion, //
             JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES, configOverWrittenByFlowVars //
-        );
+        ));
+
+        return settingsMap;
     }
 
     @SuppressWarnings("unchecked") // these casts are fine if the settings are correct
@@ -319,9 +295,8 @@ public class ExpressionFlowVariableSettings extends ScriptingNodeSettings implem
             .collect(Collectors.toList());
         m_createdFlowVariables = (List<String>)data.get(JSON_KEY_CREATED_FLOW_VARIABLES);
         m_replacedFlowVariables = (List<String>)data.get(JSON_KEY_REPLACED_FLOW_VARIABLES);
-        m_languageVersion = (int)data.get(JSON_KEY_LANGUAGE_VERSION);
-        m_builtinFunctionsVersion = (int)data.get(JSON_KEY_FUNCTION_VERSION);
-        m_builtinAggregationsVersion = (int)data.get(JSON_KEY_AGGREGATION_VERSION);
+
+        m_versionSettings.writeMapToNodeSettings(data);
 
         saveSettingsTo(settings);
         copyVariableSettings(previousSettings, settings);

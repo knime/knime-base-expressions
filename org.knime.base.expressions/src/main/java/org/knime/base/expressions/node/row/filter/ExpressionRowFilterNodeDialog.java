@@ -51,19 +51,14 @@ package org.knime.base.expressions.node.row.filter;
 import static org.knime.core.webui.node.view.table.RowHeightPersistorUtil.LEGACY_CUSTOM_ROW_HEIGHT_COMPACT;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.core.runtime.FileLocator;
-import org.eclipse.core.runtime.Platform;
+import org.knime.base.expressions.node.ExpressionNodeDialogUtils;
 import org.knime.base.expressions.node.ExpressionNodeScriptingInputOutputModelUtils;
 import org.knime.base.expressions.node.FunctionCatalogData;
 import org.knime.core.node.BufferedDataTable;
@@ -86,8 +81,6 @@ import org.knime.core.webui.page.Page;
 import org.knime.scripting.editor.GenericInitialDataBuilder;
 import org.knime.scripting.editor.ScriptingNodeSettingsService;
 import org.knime.scripting.editor.WorkflowControl;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.FrameworkUtil;
 
 // TODO(AP-23188): find an abstraction for all node dialogs of different expression nodes
 
@@ -107,8 +100,8 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
             .addResourceDirectory("monacoeditorwork") //
             .addResource(() -> {
                 try {
-                    return Files
-                        .newInputStream(getAbsoluteBasePath(CoreUIPlugin.class, null, "js-src/dist/TableView.js"));
+                    return Files.newInputStream(ExpressionNodeDialogUtils.getAbsoluteBasePath(CoreUIPlugin.class, null,
+                        "js-src/dist/TableView.js"));
                 } catch (IOException e) {
                     NodeLogger.getLogger(this.getClass()).error("Failed to load TableView.js", e);
                     return null;
@@ -120,29 +113,6 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
     @Override
     public Set<SettingsType> getSettingsTypes() {
         return Set.of(SettingsType.MODEL);
-    }
-
-    private static Path getAbsoluteBasePath(final Class<?> clazz, final String bundleID, final String baseDir) {
-        if (clazz != null) {
-            return getAbsoluteBasePath(FrameworkUtil.getBundle(clazz), baseDir);
-        } else {
-            return getAbsoluteBasePath(Platform.getBundle(bundleID), baseDir);
-        }
-    }
-
-    /*
-     * The bundle path + base path.
-     */
-    private static Path getAbsoluteBasePath(final Bundle bundle, final String baseDir) {
-        var bundleUrl = bundle.getEntry(".");
-        try {
-            // must not use url.toURI() -- FileLocator leaves spaces in the URL (see eclipse bug 145096)
-            // -- taken from TableauHyperActivator.java line 158
-            var url = FileLocator.toFileURL(bundleUrl);
-            return Paths.get(new URI(url.getProtocol(), url.getFile(), null)).resolve(baseDir).normalize();
-        } catch (IOException | URISyntaxException ex) {
-            throw new IllegalStateException("Failed to resolve the directory " + baseDir, ex);
-        }
     }
 
     @Override

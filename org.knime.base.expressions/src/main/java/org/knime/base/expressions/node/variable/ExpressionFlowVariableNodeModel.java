@@ -82,12 +82,10 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.flowvariable.FlowVariablePortObject;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.node.workflow.VariableType.BooleanType;
 import org.knime.core.node.workflow.VariableType.DoubleType;
 import org.knime.core.node.workflow.VariableType.LongType;
 import org.knime.core.node.workflow.VariableType.StringType;
-import org.knime.scripting.editor.WorkflowControl;
 
 /**
  * The node model for the Flow variable Expression node.
@@ -110,14 +108,16 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
     }
 
     /** @return the typed Ast for the configured expression */
-    private Ast getPreparedExpression(final String script) throws ExpressionCompileException {
+    private Ast getPreparedExpression(final String script, final Map<String, FlowVariable> addedFlowVariables)
+        throws ExpressionCompileException {
+
+        var currentTemporaryFlowVariables = getTemporaryFlowVariables(addedFlowVariables);
 
         var ast = Expressions.parse(script);
         Expressions.inferTypes(ast,
             name -> ReturnResult.failure(
                 "Accessing a column is not allowed for the flow variable node. This is an implementation error."),
-            flowVarToTypeForTypeInference(
-                getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES)));
+            flowVarToTypeForTypeInference(currentTemporaryFlowVariables));
 
         return ast;
     }
@@ -136,49 +136,89 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             throw new InvalidSettingsException(
                 "The flow variable expression node has not yet been configured. Enter an expression.");
         }
-        // FIXME: Evaluating the expressions can be in case of a lot of flow variables or very complex expressions
-        // (f.i. regex) slow.
-        // Do we want to do that while configure like the variable node does?
+
+        validateFlowVariablesExpressions();
 
         return new PortObjectSpec[]{FlowVariablePortObject.INSTANCE.getSpec()};
     }
 
+    private void validateFlowVariablesExpressions() throws InvalidSettingsException {
+
+        Map<String, FlowVariable> addedFlowVariables = new HashMap<>();
+        Predicate<String> flowVariableExists =
+            name -> getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES)
+                .containsKey(name) || addedFlowVariables.containsKey(name);
+
+        for (int i = 0; i < m_settings.getNumScripts(); ++i) {
+
+            String newName = m_settings.getActiveOutputFlowVariables().get(i);
+
+            boolean isReplace = m_settings.getFlowVariableInsertionModes().get(i) == InsertionMode.REPLACE_EXISTING;
+            boolean exists = flowVariableExists.test(newName);
+
+            if (exists && !isReplace) {
+                throw new InvalidSettingsException(
+                    "The flow variable " + newName + " already exists. Choose 'replace' to replace the flow variable.");
+            }
+
+            if (!exists && isReplace) {
+                throw new InvalidSettingsException(
+                    "The flow variable " + newName + " does not exist. Choose 'append' to create a new flow variable.");
+            }
+
+            Ast expression;
+            try {
+                expression = getPreparedExpression(m_settings.getScripts().get(i), addedFlowVariables);
+            } catch (ExpressionCompileException e) {
+                throw new InvalidSettingsException(e);
+            }
+
+            if (!Expressions.collectColumnAccesses(expression).isEmpty()) {
+                throw new InvalidSettingsException(
+                    "The flow variable expression node cannot access columns. Use the Expression node instead.");
+            }
+
+            if (!isReplace) {
+                addedFlowVariables.put(newName, new FlowVariable(newName, //
+                    ExpressionRunnerUtils.mapValueTypeToVariableType(Expressions.getInferredType(expression)))); // values are not needed, no evaluation happens
+            }
+        }
+    }
+
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
+
         exec.setProgress(0, "Evaluating flow variables.");
         pushFlowVariables(exec);
+        exec.setProgress(1, "Flow variables evaluated.");
+
         return new PortObject[]{FlowVariablePortObject.INSTANCE};
     }
 
-    private void pushFlowVariables(final ExecutionContext exec)
-        throws CanceledExecutionException, InvalidSettingsException {
-
-        var workflowControl = new WorkflowControl(NodeContext.getContext().getNodeContainer());
-
-        int numberOfScripts = m_settings.getNumScripts();
+    /**
+     * @param exec the execution context, can be null -> no progress reported
+     * @param evaluate if the flow variables should be evaluated and pushed
+     * @throws CanceledExecutionException thrown when the user cancels the execution
+     * @throws InvalidSettingsException thrown when the settings are invalid
+     * @throws ExpressionCompileException thrown when the expression cannot be compiled
+     */
+    public void pushFlowVariables(final ExecutionContext exec)
+        throws CanceledExecutionException, InvalidSettingsException, ExpressionCompileException {
 
         var messageBuilder = createMessageBuilder();
         EvaluationContext ctx = messageBuilder::addTextIssue;
 
         Map<String, FlowVariable> addedFlowVariables = new HashMap<>();
 
-        Predicate<String> flowVariableExists =
-            name -> workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().containsKey(name)
-                || addedFlowVariables.containsKey(name);
-
-        for (int i = 0; i < numberOfScripts; ++i) {
+        for (int i = 0; i < m_settings.getNumScripts(); ++i) {
 
             String newName = m_settings.getActiveOutputFlowVariables().get(i);
 
             boolean isReplace = m_settings.getFlowVariableInsertionModes().get(i) == InsertionMode.REPLACE_EXISTING;
 
-            if (flowVariableExists.test(newName) && !isReplace) {
-                throw new InvalidSettingsException(
-                    "The flow variable " + newName + " already exists. Choose 'replace' to replace the flow variable.");
-            }
+            var expression = getPreparedExpression(m_settings.getScripts().get(i), addedFlowVariables);
 
-            var evaluatedExpression =
-                evaluateFlowVariableExpression(m_settings.getScripts().get(i), addedFlowVariables);
+            var evaluatedExpression = evaluateFlowVariableExpression(expression, addedFlowVariables);
 
             if (evaluatedExpression instanceof IntegerComputer c) {
                 pushFlowVariable(newName, LongType.INSTANCE, c.compute(ctx));
@@ -205,8 +245,11 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                 }
             }
 
-            exec.setProgress(i * 1.0 / numberOfScripts, i + ". flow variable (" + newName + ") evaluated.");
-            exec.checkCanceled();
+            if (exec != null) {
+                exec.setProgress(i * 1.0 / m_settings.getNumScripts(),
+                    i + ". flow variable (" + newName + ") evaluated.");
+                exec.checkCanceled();
+            }
         }
 
         var issueCount = messageBuilder.getIssueCount();
@@ -218,35 +261,30 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                 .orElse(null);
             setWarning(message);
         }
-        exec.setProgress(1, "Flow variables evaluated.");
     }
 
-    private Computer evaluateFlowVariableExpression(final String script,
-        final Map<String, FlowVariable> addedFlowVariables) throws InvalidSettingsException {
+    private Computer evaluateFlowVariableExpression(final Ast expression,
+        final Map<String, FlowVariable> addedFlowVariables) throws ExpressionCompileException {
 
-        try {
-            var expression = getPreparedExpression(script);
+        var currentTemporaryFlowVariables = getTemporaryFlowVariables(addedFlowVariables);
+        var exprContext = new NodeExpressionMapperContext(types -> currentTemporaryFlowVariables);
 
-            if (!Expressions.collectColumnAccesses(expression).isEmpty()) {
-                throw new InvalidSettingsException(
-                    "The flow variable expression node cannot access columns. Use the Expression node instead.");
-            }
+        return Expressions.evaluate( //
+            expression, //
+            ExpressionFlowVariableNodeModel::dummyResolver, //
+            exprContext::flowVariableToComputer, //
+            ExpressionFlowVariableNodeModel::dummyResolver);
 
-            var exprContext = new NodeExpressionMapperContext(types -> {
-                Map<String, FlowVariable> availableFlowVariables = getAvailableInputFlowVariables(types);
-                availableFlowVariables.putAll(addedFlowVariables);
+    }
 
-                return availableFlowVariables;
-            });
+    private Map<String, FlowVariable> getTemporaryFlowVariables(final Map<String, FlowVariable> addedFlowVariables) {
 
-            return Expressions.evaluate( //
-                expression, //
-                ExpressionFlowVariableNodeModel::dummyResolver, //
-                exprContext::flowVariableToComputer, //
-                ExpressionFlowVariableNodeModel::dummyResolver);
-        } catch (final ExpressionCompileException e) {
-            throw new InvalidSettingsException("Failed to evaluate flow variable expression: " + e.getMessage(), e);
-        }
+        Map<String, FlowVariable> availableFlowVariables = new HashMap<>();
+        availableFlowVariables
+            .putAll(getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
+        availableFlowVariables.putAll(addedFlowVariables);
+
+        return availableFlowVariables;
     }
 
     /**
