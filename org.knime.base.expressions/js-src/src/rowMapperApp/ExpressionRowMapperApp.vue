@@ -280,12 +280,13 @@ onMounted(async () => {
   await runDiagnosticsFunction();
 });
 
-const runRowMapperExpressions = (rows: number) => {
-  const anyExpressionHasError = Object.values(editorErrorStates).some(
+const anyEditorHasError = () =>
+  Object.values(editorErrorStates).some(
     (errorState) => errorState.level === "ERROR",
   );
 
-  if (!anyExpressionHasError) {
+const runRowMapperExpressions = (rows: number) => {
+  if (!anyEditorHasError()) {
     getScriptingService().sendToService("runExpression", [
       orderedEditorKeys
         .map((key) => multiEditorComponentRefs[key])
@@ -452,11 +453,9 @@ const runButtonDisabledErrorReason = computed(() => {
     errors.push("No input available. Connect an executed node.");
   }
 
-  Object.values(editorErrorStates).forEach((severity) => {
-    if (severity.level === "ERROR") {
-      errors.push("An editor is invalid.");
-    }
-  });
+  if (anyEditorHasError()) {
+    errors.push("An editor is invalid.");
+  }
 
   const columnErrors = Object.entries(columnSelectorStateErrorMessages)
     .map(([key, message]) =>
