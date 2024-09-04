@@ -194,6 +194,8 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
             tab.m_verticalPaddingMode = VerticalPaddingMode.COMPACT;
             tab.m_customRowHeight = LEGACY_CUSTOM_ROW_HEIGHT_COMPACT;
             tab.m_selectionMode = SelectionMode.OFF;
+            tab.m_showOnlySelectedRowsConfigurable = false;
+            tab.m_enableColumnSearch = false;
             try {
                 return new DefaultNodeSettingsSerializer<>().serialize(
                     Map.of("result", new TableViewInitialDataImpl(tab, m_table::get, m_tableViewDataService)));
