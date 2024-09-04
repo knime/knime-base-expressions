@@ -3,6 +3,7 @@ import { DEFAULT_NUMBER_OF_ROWS_TO_RUN } from "@/common/constants";
 import { Button, SplitButton, SubMenu, Tooltip } from "@knime/components";
 import PlayIcon from "@knime/styles/img/icons/play.svg";
 import DropdownIcon from "@knime/styles/img/icons/arrow-dropdown.svg";
+import { computed } from "vue";
 
 interface PropType {
   runButtonDisabledErrorReason: string | null;
@@ -17,9 +18,11 @@ const handleRunExpressions = (rows: number) => {
 
 const props = defineProps<PropType>();
 
-const buttonText = props.showButtonText
-  ? `Evaluate first ${DEFAULT_NUMBER_OF_ROWS_TO_RUN} rows`
-  : "";
+const buttonText = computed(() =>
+  props.showButtonText
+    ? `Evaluate first ${DEFAULT_NUMBER_OF_ROWS_TO_RUN} rows`
+    : "",
+);
 </script>
 
 <template>
