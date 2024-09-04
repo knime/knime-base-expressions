@@ -15,6 +15,7 @@ import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contra
 
 import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
+  type EditorErrorState,
 } from "@/components/ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 import { runRowFilterDiagnostics } from "@/rowFilterApp/expressionRowFilterDiagnostics";
@@ -24,7 +25,7 @@ import {
   registerInsertionListener,
 } from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
-import type { ErrorLevel, ExpressionVersion } from "@/common/types";
+import type { ExpressionVersion } from "@/common/types";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowFilterNodeSettings,
@@ -42,7 +43,7 @@ const editorRef = ref<Required<ExpressionEditorPaneExposes> | null>(null);
 
 const functionCatalogData = ref<FunctionCatalogData>();
 const inputsAvailable = ref(false);
-const severityLevel = ref<ErrorLevel>();
+const errorState = ref<EditorErrorState>({ level: "OK" });
 
 const runDiagnosticsFunction = async () => {
   const editorReference = editorRef.value;
@@ -54,15 +55,16 @@ const runDiagnosticsFunction = async () => {
   const errorLevel = await runRowFilterDiagnostics(
     editorReference.getEditorState(),
   );
-  severityLevel.value = errorLevel;
 
   if (errorLevel === "OK") {
-    editorReference.setErrorState({ level: "OK" });
+    errorState.value = {
+      level: errorLevel,
+    };
   } else {
-    editorReference.setErrorState({
+    errorState.value = {
       level: errorLevel,
       message: "An error ocurred.",
-    });
+    };
   }
 };
 
@@ -119,7 +121,7 @@ onMounted(async () => {
 const runRowFilterExpressions = (rows: number) => {
   const editorState = editorRef.value?.getEditorState();
 
-  if (editorState && severityLevel.value !== "ERROR") {
+  if (editorState && errorState.value.level !== "ERROR") {
     getScriptingService().sendToService("runRowFilterExpression", [
       editorState.text.value,
       rows,
@@ -156,7 +158,7 @@ const runButtonDisabledErrorReason = computed(() => {
     errors.push("No input available. Connect an executed node.");
   }
 
-  if (severityLevel.value === "ERROR") {
+  if (errorState.value.level === "ERROR") {
     errors.push("Expression is invalid.");
   }
 
@@ -208,6 +210,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
             isOnly: true,
             disableMultiEditorControls: true,
           }"
+          :error-state="errorState"
         >
           <!-- Controls displayed once per editor -->
           <template #multi-editor-controls>

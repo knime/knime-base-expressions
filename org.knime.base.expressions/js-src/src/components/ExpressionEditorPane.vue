@@ -8,7 +8,6 @@ import { onKeyStroke } from "@vueuse/core";
 import {
   computed,
   type FunctionalComponent,
-  reactive,
   ref,
   type SVGAttributes,
   watch,
@@ -26,19 +25,13 @@ import { FunctionButton } from "@knime/components";
 
 import type { ErrorLevel } from "@/common/types";
 
-type EditorErrorState =
+export type EditorErrorState =
   | { level: "OK" }
   | { level: ErrorLevel; message: string };
 
 export type ExpressionEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;
-  setErrorState: (errorState: EditorErrorState) => void;
 };
-
-const editorErrorState = reactive({
-  level: "OK" as ErrorLevel,
-  message: "" as string | null,
-});
 
 const emit = defineEmits<{
   focus: [filname: string];
@@ -61,6 +54,7 @@ interface Props {
   fileName: string;
   title: string;
   orderingOptions?: EditorOrderingOptions;
+  errorState?: EditorErrorState;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -71,6 +65,7 @@ const props = withDefaults(defineProps<Props>(), {
     isActive: false,
     disableMultiEditorControls: false,
   }),
+  errorState: () => ({ level: "OK" }),
 });
 
 const readOnly = useReadonlyStore();
@@ -119,17 +114,8 @@ const editorState = editor.useCodeEditor({
 });
 
 const getEditorState = () => editorState;
-const setErrorState = (errorState: EditorErrorState) => {
-  editorErrorState.level = errorState.level;
-  if (errorState.level === "OK") {
-    editorErrorState.message = null;
-  } else {
-    editorErrorState.message = errorState.message;
-  }
-};
 defineExpose<ExpressionEditorPaneExposes>({
   getEditorState,
-  setErrorState,
 });
 
 onKeyStroke("Escape", () => {
@@ -190,8 +176,8 @@ const onMenuItemClicked = (item: ButtonItem) => {
   <div
     class="editor-and-controls-container"
     :class="{
-      'has-error': editorErrorState.level === 'ERROR',
-      'has-warning': editorErrorState.level === 'WARNING',
+      'has-error': errorState.level === 'ERROR',
+      'has-warning': errorState.level === 'WARNING',
       active: props.orderingOptions.isActive,
     }"
     @focusin="onFocus"
@@ -225,12 +211,9 @@ const onMenuItemClicked = (item: ButtonItem) => {
       </span>
     </div>
     <div class="error-container">
-      <WarningIcon
-        v-show="editorErrorState.level !== 'OK'"
-        class="error-icon"
-      />
-      <span v-show="editorErrorState.level !== 'OK'" class="error-message">
-        {{ editorErrorState.message }}
+      <WarningIcon v-if="errorState.level !== 'OK'" class="error-icon" />
+      <span v-if="errorState.level !== 'OK'" class="error-message">
+        {{ errorState.message }}
       </span>
     </div>
   </div>

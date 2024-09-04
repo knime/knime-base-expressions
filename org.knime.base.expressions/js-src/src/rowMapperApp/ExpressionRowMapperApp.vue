@@ -29,6 +29,7 @@ import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contra
 import { v4 as uuidv4 } from "uuid";
 import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
+  type EditorErrorState,
 } from "@/components/ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 import ColumnOutputSelector, {
@@ -149,14 +150,14 @@ const onEditorFocused = (filename: string) => {
 
 const functionCatalogData = ref<FunctionCatalogData>();
 const inputsAvailable = ref(false);
-const severityLevels = ref<string[]>([]);
+const editorErrorStates = reactive<{ [key: string]: EditorErrorState }>({});
 
 const getFirstEditor = (): ExpressionEditorPaneExposes => {
   return multiEditorComponentRefs[orderedEditorKeys[0]];
 };
 
 const runDiagnosticsFunction = async () => {
-  severityLevels.value = await runRowMapperDiagnostics(
+  const codeErrors = await runRowMapperDiagnostics(
     orderedEditorKeys
       .map((key) => multiEditorComponentRefs[key])
       .map((editor) => editor.getEditorState()),
@@ -175,16 +176,13 @@ const runDiagnosticsFunction = async () => {
   orderedEditorKeys.forEach((key, index) => {
     columnSelectorStateErrorMessages[key] = columnValidities[index];
 
-    if (
-      severityLevels.value[index] === "ERROR" ||
-      columnValidities[index] !== null
-    ) {
-      multiEditorComponentRefs[key].setErrorState({
+    if (codeErrors[index] === "ERROR" || columnValidities[index] !== null) {
+      editorErrorStates[key] = {
         level: "ERROR",
         message: "An error occurred.",
-      });
+      };
     } else {
-      multiEditorComponentRefs[key].setErrorState({ level: "OK" });
+      editorErrorStates[key] = { level: "OK" };
     }
   });
 };
@@ -283,7 +281,11 @@ onMounted(async () => {
 });
 
 const runRowMapperExpressions = (rows: number) => {
-  if (severityLevels.value.every((severity) => severity !== "ERROR")) {
+  const anyExpressionHasError = Object.values(editorErrorStates).some(
+    (errorState) => errorState.level === "ERROR",
+  );
+
+  if (!anyExpressionHasError) {
     getScriptingService().sendToService("runExpression", [
       orderedEditorKeys
         .map((key) => multiEditorComponentRefs[key])
@@ -450,9 +452,9 @@ const runButtonDisabledErrorReason = computed(() => {
     errors.push("No input available. Connect an executed node.");
   }
 
-  severityLevels.value.forEach((severity, index) => {
-    if (severity === "ERROR") {
-      errors.push(`${createEditorTitle(index)} is invalid.`);
+  Object.values(editorErrorStates).forEach((severity) => {
+    if (severity.level === "ERROR") {
+      errors.push("An editor is invalid.");
     }
   });
 
@@ -524,6 +526,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
               isOnly: numberOfEditors === 1,
               isActive: activeEditorFileName === key,
             }"
+            :error-state="editorErrorStates[key]"
             @focus="onEditorFocused(key)"
             @delete="onEditorRequestedDelete"
             @move-down="onEditorRequestedMoveDown"
