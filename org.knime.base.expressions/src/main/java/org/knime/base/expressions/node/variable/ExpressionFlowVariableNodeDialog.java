@@ -51,20 +51,22 @@ package org.knime.base.expressions.node.variable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.knime.base.expressions.node.ExpressionNodeDialogUtils;
 import org.knime.base.expressions.node.ExpressionNodeScriptingInputOutputModelUtils;
 import org.knime.base.expressions.node.FunctionCatalogData;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.view.flowvariable.FlowVariableViewUtil;
 import org.knime.core.webui.page.Page;
 import org.knime.scripting.editor.GenericInitialDataBuilder;
 import org.knime.scripting.editor.ScriptingNodeSettingsService;
 import org.knime.scripting.editor.WorkflowControl;
-
-// TODO(AP-23188): find an abstraction for all node dialogs of different expression nodes
 
 /**
  * The node dialog implementation of the Expression filter node.
@@ -76,10 +78,10 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
 
     @Override
     public Page getPage() {
-        return Page //
-            .builder(ExpressionFlowVariableNodeFactory.class, "js-src/dist", "flow-variable.html") //
-            .addResourceDirectory("assets") //
-            .addResourceDirectory("monacoeditorwork") //
+        return ExpressionNodeDialogUtils.expressionPageBuilder("flow-variable.html") //
+            .addResource( //
+                ExpressionNodeDialogUtils::getFlowVariableViewResource, //
+                ExpressionNodeDialogUtils.FLOW_VARIABLE_VIEW_RESOURCE) //
             .build();
     }
 
@@ -112,13 +114,30 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
         );
     }
 
+    public static class FlowVariablePreviewInitialDataSupplier {
+
+        AtomicReference<List<FlowVariable>> m_flowVariables = new AtomicReference<>(List.of());
+
+        FlowVariablePreviewInitialDataSupplier(final AtomicReference<List<FlowVariable>> flowVariables) {
+            m_flowVariables = flowVariables;
+        }
+
+        public String getInitialData() {
+            return FlowVariableViewUtil.createInitialDataService(m_flowVariables.get()).getInitialData();
+        }
+    }
+
     @Override
     public Optional<RpcDataService> createRpcDataService() {
 
-        var scriptingService = new ExpressionFlowVariableNodeScriptingService();
+        AtomicReference<List<FlowVariable>> flowVariablesReference = new AtomicReference<>(List.of());
+
+        var scriptingService = new ExpressionFlowVariableNodeScriptingService(flowVariablesReference);
 
         return Optional.of(RpcDataService.builder() //
             .addService("ScriptingService", scriptingService.getJsonRpcService()) //
+            .addService(FlowVariablePreviewInitialDataSupplier.class.getSimpleName(), //
+                new FlowVariablePreviewInitialDataSupplier(flowVariablesReference)) //
             .onDeactivate(scriptingService::onDeactivate) //
             .build()); //
     }

@@ -31,7 +31,7 @@ import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
 } from "@/components/ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
-import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
+import { LANGUAGE } from "@/common/constants";
 import {
   calculateInitialPaneSizes,
   registerInsertionListener,
@@ -47,6 +47,7 @@ import OutputSelector, {
 } from "@/components/OutputSelector.vue";
 import { runOutputDiagnostics } from "@/generalDiagnostics";
 import PlayIcon from "@knime/styles/img/icons/play.svg";
+import OutputPreviewFlowVariable from "@/flowVariableApp/OutputPreviewFlowVariable.vue";
 
 const activeEditorFileName = ref<string | null>(null);
 
@@ -282,21 +283,20 @@ const anyEditorHasError = () =>
     (errorState) => errorState.level === "ERROR",
   );
 
-const runFlowVariableExpressions = (rows: number) => {
+const runFlowVariableExpressions = () => {
   if (!anyEditorHasError()) {
-    getScriptingService().sendToService("runExpression", [
-      orderedEditorKeys
-        .map((key) => multiEditorComponentRefs[key])
-        .map((ref) => ref.getEditorState().text.value),
-      rows,
-      orderedEditorKeys
-        .map((key) => flowVariableSelectorStates[key])
-        .map((state) => state.outputMode),
-      orderedEditorKeys
-        .map((key) => flowVariableSelectorStates[key])
-        .map((state) =>
-          state.outputMode === "APPEND" ? state.create : state.replace,
-        ),
+    const expressions: string[] = orderedEditorKeys.map(
+      (key) => multiEditorComponentRefs[key].getEditorState().text.value,
+    );
+
+    const names: string[] = orderedEditorKeys.map((key) => {
+      const state = flowVariableSelectorStates[key];
+      return state.outputMode === "APPEND" ? state.create : state.replace;
+    });
+
+    getScriptingService().sendToService("runFlowVariableExpression", [
+      expressions,
+      names,
     ]);
   }
 };
@@ -304,18 +304,18 @@ const runFlowVariableExpressions = (rows: number) => {
 getFlowVariableSettingsService().registerSettingsGetterForApply(
   (): ExpressionFlowVariableNodeSettings => ({
     ...expressionVersion.value,
-    createdFlowVariables: orderedEditorKeys
-      .map((key) => flowVariableSelectorStates[key])
-      .map((state) => state.create),
-    replacedFlowVariables: orderedEditorKeys
-      .map((key) => flowVariableSelectorStates[key])
-      .map((state) => state.replace),
-    scripts: orderedEditorKeys
-      .map((key) => multiEditorComponentRefs[key])
-      .map((editor) => editor.getEditorState().text.value ?? ""),
-    flowVariableOutputModes: orderedEditorKeys
-      .map((key) => flowVariableSelectorStates[key])
-      .map((state) => state.outputMode),
+    createdFlowVariables: orderedEditorKeys.map(
+      (key) => flowVariableSelectorStates[key].create,
+    ),
+    replacedFlowVariables: orderedEditorKeys.map(
+      (key) => flowVariableSelectorStates[key].replace,
+    ),
+    scripts: orderedEditorKeys.map(
+      (key) => multiEditorComponentRefs[key].getEditorState().text.value ?? "",
+    ),
+    flowVariableOutputModes: orderedEditorKeys.map(
+      (key) => flowVariableSelectorStates[key].outputMode,
+    ),
   }),
 );
 
@@ -444,7 +444,7 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
     )
   ) {
     evt.preventDefault();
-    runFlowVariableExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN);
+    runFlowVariableExpressions();
   }
 });
 
@@ -497,13 +497,23 @@ const initialPaneSizes = calculateInitialPaneSizes();
         :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
         :show-control-bar="true"
         :language="LANGUAGE"
-        :show-output-table="true"
         :initial-pane-sizes="{
           right: initialPaneSizes.right,
           left: initialPaneSizes.left,
           bottom: 30,
         }"
+        :additional-bottom-pane-tab-content="[
+          {
+            label: 'Preview',
+            value: 'outputPreview',
+          },
+        ]"
       >
+        <!-- Extra content in the bottom tab pane -->
+        <template #outputPreview="{ grabFocus }">
+          <OutputPreviewFlowVariable @output-preview-updated="grabFocus()" />
+        </template>
+
         <template #editor>
           <ExpressionEditorPane
             v-for="(key, index) in orderedEditorKeys"
@@ -566,7 +576,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
             primary
             compact
             :disabled="runButtonDisabledErrorReason !== null"
-            @click="runFlowVariableExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN)"
+            @click="runFlowVariableExpressions()"
           >
             <div
               class="run-button"

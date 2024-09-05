@@ -169,7 +169,6 @@ const initialPaneSizes = calculateInitialPaneSizes();
       :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
       :show-control-bar="true"
       :language="LANGUAGE"
-      :show-output-table="true"
       :initial-pane-sizes="{
         right: initialPaneSizes.right,
         left: initialPaneSizes.left,
