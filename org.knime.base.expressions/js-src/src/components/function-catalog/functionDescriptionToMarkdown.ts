@@ -8,11 +8,7 @@ export const functionDataToMarkdown = (
   func: FunctionCatalogEntryData,
 ): string => {
   if (func.entryType === "constant") {
-    return (
-      `Type: ***${func.returnType}***` +
-      "\n\n###### Description" +
-      `\n\n${func.description}`
-    );
+    return `${func.description}\n\nType: ***${func.returnType}***`;
   } else {
     const args =
       func.arguments
@@ -24,13 +20,12 @@ export const functionDataToMarkdown = (
     const description = `\n\n${func.description}`;
 
     return (
+      `${description}` +
       "\n\n###### Arguments " +
       `\n${args}` +
       "\n\n###### Return value " +
       `\n***${func.returnType}***` +
       `${returnDescription}` +
-      "\n\n###### Description " +
-      `${description}` +
       "\n\n###### Examples" +
       `\n\n${func.examples}`
     );
