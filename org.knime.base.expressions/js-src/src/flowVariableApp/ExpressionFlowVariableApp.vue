@@ -566,7 +566,9 @@ const initialPaneSizes = calculateInitialPaneSizes();
 
 <style lang="postcss">
 @import url("@knime/styles/css");
+</style>
 
+<style lang="postcss" scoped>
 .editor-controls {
   width: 100%;
   display: flex;
