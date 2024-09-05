@@ -313,35 +313,35 @@ const onMenuItemClicked = (item: ButtonItem) => {
       border-top: 1px solid var(--knime-silver-sand);
       height: fit-content;
     }
+  }
 
-    &:focus-within,
-    &.active {
-      &::after {
-        position: absolute;
-        content: "";
-        border: 1px solid var(--border-colour);
-        pointer-events: none;
-        z-index: 1;
-        inset: -1px;
-      }
+  &:focus-within,
+  &.active {
+    & .everything-except-error::after {
+      position: absolute;
+      content: "";
+      border: 1px solid var(--border-colour);
+      pointer-events: none;
+      z-index: 1;
+      inset: -1px;
+    }
 
-      & .code-editor::after {
-        position: absolute;
-        content: "";
-        background-color: var(--knime-cornflower);
-        opacity: 0.075;
-        pointer-events: none;
-        z-index: 1;
-        inset: 0;
-      }
+    & .code-editor::after {
+      position: absolute;
+      content: "";
+      background-color: var(--knime-cornflower);
+      opacity: 0.075;
+      pointer-events: none;
+      z-index: 1;
+      inset: 0;
+    }
 
-      & .editor-title-bar {
-        background-color: var(--knime-cornflower);
-        color: var(--knime-porcelain);
+    & .editor-title-bar {
+      background-color: var(--knime-cornflower);
+      color: var(--knime-porcelain);
 
-        & .title-menu .menu-button :deep(svg) {
-          stroke: var(--knime-porcelain);
-        }
+      & .title-menu .menu-button :deep(svg) {
+        stroke: var(--knime-porcelain);
       }
     }
   }
