@@ -44,51 +44,21 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Sep 3, 2024 (kampmann): created
+ *   Sep 5, 2024 (kampmann): created
  */
-package org.knime.base.expressions.node;
-
-import java.util.List;
-
-import org.knime.core.expressions.ExpressionCompileError;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
-import org.knime.core.expressions.TextRange;
+package org.knime.base.expressions;
 
 /**
- *
- * @author kampmann
+ * What should happen with new columns or flow variables, whether they're appended at the end or replace an existing
+ * column or flow variable.
  */
-public final class ExpressionNodeDiagnosticsUtils {
-
-    private ExpressionNodeDiagnosticsUtils() {
-    }
-
-    /**
-     * @param message
-     * @param severity
-     * @param location
-     *
-     */
-    public record Diagnostic(String message, DiagnosticSeverity severity, TextRange location) {
-
-        static Diagnostic fromError(final ExpressionCompileError error) {
-            return new Diagnostic(error.createMessage(), DiagnosticSeverity.ERROR, error.location());
-        }
-
+public enum InsertionMode {
         /**
-         * @param exception
-         * @return diagnostics
+         * Append a new column or flow variable
          */
-        public static List<Diagnostic> fromException(final ExpressionCompileException exception) {
-            return exception.getErrors().stream().map(Diagnostic::fromError).toList();
-        }
-    }
-
-    /**
-     *
-     */
-    public enum DiagnosticSeverity {
-            ERROR, WARNING, INFORMATION, HINT;
-    }
-
+        APPEND,
+        /**
+         * Replace an existing column or flow variable
+         */
+        REPLACE_EXISTING
 }

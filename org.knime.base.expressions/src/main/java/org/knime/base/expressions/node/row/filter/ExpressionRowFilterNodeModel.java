@@ -76,11 +76,11 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 /**
- * The node model for the Expression node.
+ * The node model for the row filter expression node.
  *
  * @author Tobias Kampmann, TNG, Germany
  */
-@SuppressWarnings("restriction") // webui node dialogs are not API yet
+@SuppressWarnings("restriction") // the columnar table API is not public yet
 final class ExpressionRowFilterNodeModel extends NodeModel {
 
     private final ExpressionRowFilterSettings m_settings;

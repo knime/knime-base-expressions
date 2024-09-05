@@ -513,7 +513,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
                   v-model:error-message="
                     flowVariableSelectorStateErrorMessages[key]
                   "
-                  selector-type="flowVariable"
+                  entity-name="flow variable"
                   :allowed-replacement-entities="
                     getAvailableFlowVariableForReplacement(key)
                   "

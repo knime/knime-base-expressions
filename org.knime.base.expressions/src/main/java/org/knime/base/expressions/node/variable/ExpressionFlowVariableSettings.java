@@ -58,8 +58,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.knime.base.expressions.ExpressionRunnerUtils.InsertionMode;
-import org.knime.base.expressions.node.ExpressionVersionSettingsUtils;
+import org.knime.base.expressions.InsertionMode;
+import org.knime.base.expressions.node.ExpressionVersionSettings;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -135,7 +135,7 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
 
     private List<String> m_scripts;
 
-    private ExpressionVersionSettingsUtils m_versionSettings;
+    private ExpressionVersionSettings m_versionSettings;
 
     /**
      * Create a new ExpressionNodeSettings object with the default script.
@@ -163,7 +163,7 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
 
         super(SettingsType.MODEL);
 
-        this.m_versionSettings = new ExpressionVersionSettingsUtils();
+        this.m_versionSettings = new ExpressionVersionSettings();
 
         this.m_scripts = new ArrayList<>(Arrays.asList(script));
         this.m_outputModes = new ArrayList<>(Arrays.asList(outputMode));

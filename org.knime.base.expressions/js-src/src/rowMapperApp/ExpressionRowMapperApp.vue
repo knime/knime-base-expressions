@@ -532,7 +532,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
                 <OutputSelector
                   v-model="columnSelectorStates[key]"
                   v-model:error-message="columnSelectorStateErrorMessages[key]"
-                  selector-type="column"
+                  entity-name="column"
                   :allowed-replacement-entities="
                     getAvailableColumnsForReplacement(key)
                   "

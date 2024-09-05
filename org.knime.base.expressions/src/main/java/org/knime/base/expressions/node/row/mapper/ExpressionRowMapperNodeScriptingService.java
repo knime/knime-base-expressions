@@ -55,10 +55,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
-import org.knime.base.expressions.ExpressionRunnerUtils.InsertionMode;
+import org.knime.base.expressions.InsertionMode;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
-import org.knime.base.expressions.node.ExpressionNodeDiagnosticsUtils.Diagnostic;
-import org.knime.base.expressions.node.ExpressionNodeDiagnosticsUtils.DiagnosticSeverity;
+import org.knime.base.expressions.node.ExpressionDiagnostic;
+import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
@@ -224,12 +224,12 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
          * @param newColumnNames
          * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
          */
-        public List<List<Diagnostic>> getRowMapperDiagnostics(final String[] expressions,
+        public List<List<ExpressionDiagnostic>> getRowMapperDiagnostics(final String[] expressions,
             final String[] newColumnNames) {
 
             List<ValueType> inferredColumnTypes = new ArrayList<>();
             List<String> additionalColumnNames = new ArrayList<>();
-            List<List<Diagnostic>> diagnostics = new ArrayList<>();
+            List<List<ExpressionDiagnostic>> diagnostics = new ArrayList<>();
 
             for (int i = 0; i < expressions.length; ++i) {
                 var expression = expressions[i];
@@ -242,8 +242,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
                     if (ValueType.MISSING.equals(inferredType)) {
                         // Show an error if the full expression has the output type "MISSING"; this is not supported
-                        diagnostics
-                            .add(List.of(new Diagnostic("The full expression must not have the value type MISSING.",
+                        diagnostics.add(List
+                            .of(new ExpressionDiagnostic("The full expression must not have the value type MISSING.",
                                 DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast))));
                     } else {
                         diagnostics.add(List.of());
@@ -255,7 +255,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     // expression diagnostics, so add a missing type to the list of inferred types and continue
                     inferredColumnTypes.add(ValueType.MISSING);
 
-                    diagnostics.add(Diagnostic.fromException(ex));
+                    diagnostics.add(ExpressionDiagnostic.fromException(ex));
                 }
             }
 

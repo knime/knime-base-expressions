@@ -49,20 +49,28 @@
 package org.knime.base.expressions.node;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Platform;
+import org.knime.core.node.NodeLogger;
+import org.knime.core.ui.CoreUIPlugin;
+import org.knime.core.webui.page.FromFilePageBuilder;
+import org.knime.core.webui.page.Page;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
 /**
+ * Utilities for the expression node dialogs.
  *
- * @author kampmann
+ * @author Tobias Kampmann, TNG, Germany
  */
+@SuppressWarnings("restriction") // webui is not public API yet
 public final class ExpressionNodeDialogUtils {
 
     private ExpressionNodeDialogUtils() {
@@ -70,12 +78,42 @@ public final class ExpressionNodeDialogUtils {
     }
 
     /**
-     * @param clazz
-     * @param bundleID
-     * @param baseDir
-     * @return the absolute path to the base directory of the bundle
+     * The resource name for the table view.
      */
-    public static Path getAbsoluteBasePath(final Class<?> clazz, final String bundleID, final String baseDir) {
+    public static final String TABLE_VIEW_RESOURCE = "TableView.js";
+
+    /**
+     * @param entryPoint the entry point of the expression node dialog
+     * @return a page builder for the expression node dialog
+     */
+    public static FromFilePageBuilder expressionPageBuilder(final String entryPoint) {
+        return Page //
+            .builder(ExpressionNodeDialogUtils.class, "js-src/dist", entryPoint) //
+            .addResourceDirectory("assets") //
+            .addResourceDirectory("monacoeditorwork");
+    }
+
+    /**
+     * Convenience function to directly get the table view resource.
+     *
+     * @return an input stream to the table view resource
+     */
+    public static InputStream getTableViewResource() {
+        return getCoreUIResource(TABLE_VIEW_RESOURCE);
+    }
+
+    /** Get a resource from the js-src/dist folder of the core UI plugin. */
+    private static InputStream getCoreUIResource(final String nameOfResource) {
+        try {
+            return Files.newInputStream(ExpressionNodeDialogUtils.getAbsoluteBasePath(CoreUIPlugin.class, null,
+                "js-src/dist/" + nameOfResource));
+        } catch (IOException e) {
+            NodeLogger.getLogger(ExpressionNodeDialogUtils.class).error("Failed to load " + nameOfResource, e);
+            return null;
+        }
+    }
+
+    private static Path getAbsoluteBasePath(final Class<?> clazz, final String bundleID, final String baseDir) {
         if (clazz != null) {
             return getAbsoluteBasePath(FrameworkUtil.getBundle(clazz), baseDir);
         } else {

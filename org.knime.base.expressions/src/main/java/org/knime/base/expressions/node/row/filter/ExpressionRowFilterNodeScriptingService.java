@@ -56,8 +56,8 @@ import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
-import org.knime.base.expressions.node.ExpressionNodeDiagnosticsUtils.Diagnostic;
-import org.knime.base.expressions.node.ExpressionNodeDiagnosticsUtils.DiagnosticSeverity;
+import org.knime.base.expressions.node.ExpressionDiagnostic;
+import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
@@ -203,9 +203,9 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
          * @param expression the expression to check.
          * @return list of diagnostics.
          */
-        public List<Diagnostic> getRowFilterDiagnostics(final String expression) {
+        public List<ExpressionDiagnostic> getRowFilterDiagnostics(final String expression) {
 
-            List<Diagnostic> diagnostics = new ArrayList<>();
+            List<ExpressionDiagnostic> diagnostics = new ArrayList<>();
 
             try {
                 var ast = getPreparedExpression(expression);
@@ -213,13 +213,13 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                 var inferredType = Expressions.getInferredType(ast);
 
                 if (!ValueType.BOOLEAN.equals(inferredType)) {
-                    diagnostics.add(new Diagnostic(
+                    diagnostics.add(new ExpressionDiagnostic(
                         "The full expression must return the value type BOOLEAN "
                             + "in order to filter out rows for which the filter expression evaluates to false.",
                         DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast)));
                 }
             } catch (ExpressionCompileException ex) {
-                diagnostics.addAll(Diagnostic.fromException(ex));
+                diagnostics.addAll(ExpressionDiagnostic.fromException(ex));
             }
 
             return diagnostics;

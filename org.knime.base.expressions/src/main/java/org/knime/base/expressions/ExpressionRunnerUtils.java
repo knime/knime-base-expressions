@@ -119,20 +119,6 @@ public final class ExpressionRunnerUtils {
     private static final String AGGREGATION_RESULT_DATA_KEY = "aggregationResultComputer";
 
     /**
-     * What should happen with new columns, whether they're appended at the end or replace an existing column.
-     */
-    public enum InsertionMode {
-            /**
-             * Append a new column or flow variable
-             */
-            APPEND,
-            /**
-             * Replace an existing column or flow variable
-             */
-            REPLACE_EXISTING
-    }
-
-    /**
      * A list of supported flow variable types.
      */
     public static final VariableType<?>[] SUPPORTED_FLOW_VARIABLE_TYPES =

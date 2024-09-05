@@ -58,7 +58,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
-import org.knime.base.expressions.ExpressionRunnerUtils.InsertionMode;
+import org.knime.base.expressions.InsertionMode;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Computer;
@@ -92,7 +92,6 @@ import org.knime.core.node.workflow.VariableType.StringType;
  *
  * @author Tobias Kampmann, TNG, Germany
  */
-@SuppressWarnings("restriction") // webui node dialogs are not API yet
 final class ExpressionFlowVariableNodeModel extends NodeModel {
 
     private final ExpressionFlowVariableSettings m_settings;
@@ -179,8 +178,12 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             }
 
             if (!isReplace) {
-                addedFlowVariables.put(newName, new FlowVariable(newName, //
-                    ExpressionRunnerUtils.mapValueTypeToVariableType(Expressions.getInferredType(expression)))); // values are not needed, no evaluation happens
+                var variableType =
+                    ExpressionRunnerUtils.mapValueTypeToVariableType(Expressions.getInferredType(expression));
+                addedFlowVariables.put( //
+                    newName, //
+                    new FlowVariable(newName, variableType) // values are not needed, no evaluation
+                );
             }
         }
     }
@@ -188,23 +191,21 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
 
-        exec.setProgress(0, "Evaluating flow variables.");
         pushFlowVariables(exec);
-        exec.setProgress(1, "Flow variables evaluated.");
+        exec.setProgress(1);
 
         return new PortObject[]{FlowVariablePortObject.INSTANCE};
     }
 
     /**
      * @param exec the execution context, can be null -> no progress reported
-     * @param evaluate if the flow variables should be evaluated and pushed
      * @throws CanceledExecutionException thrown when the user cancels the execution
-     * @throws InvalidSettingsException thrown when the settings are invalid
      * @throws ExpressionCompileException thrown when the expression cannot be compiled
      */
-    public void pushFlowVariables(final ExecutionContext exec)
-        throws CanceledExecutionException, InvalidSettingsException, ExpressionCompileException {
+    private void pushFlowVariables(final ExecutionContext exec)
+        throws CanceledExecutionException, ExpressionCompileException {
 
+        // TODO(AP-23274): add expression dependency
         var messageBuilder = createMessageBuilder();
         EvaluationContext ctx = messageBuilder::addTextIssue;
 
@@ -213,6 +214,15 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         for (int i = 0; i < m_settings.getNumScripts(); ++i) {
 
             String newName = m_settings.getActiveOutputFlowVariables().get(i);
+
+            final int finalI = i + 1;
+            if (exec != null) {
+                exec.setProgress( //
+                    1.0 * i / m_settings.getNumScripts(), //
+                    () -> "Evaluating flow variable \"" + newName + //
+                        "\" (" + (finalI) + "/" + m_settings.getNumScripts() + ").");
+                exec.checkCanceled();
+            }
 
             boolean isReplace = m_settings.getFlowVariableInsertionModes().get(i) == InsertionMode.REPLACE_EXISTING;
 
@@ -245,11 +255,6 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                 }
             }
 
-            if (exec != null) {
-                exec.setProgress(i * 1.0 / m_settings.getNumScripts(),
-                    i + ". flow variable (" + newName + ") evaluated.");
-                exec.checkCanceled();
-            }
         }
 
         var issueCount = messageBuilder.getIssueCount();
@@ -271,9 +276,9 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
 
         return Expressions.evaluate( //
             expression, //
-            ExpressionFlowVariableNodeModel::dummyResolver, //
+            column -> Optional.empty(), //
             exprContext::flowVariableToComputer, //
-            ExpressionFlowVariableNodeModel::dummyResolver);
+            aggregation -> Optional.empty());
 
     }
 
@@ -285,13 +290,6 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         availableFlowVariables.putAll(addedFlowVariables);
 
         return availableFlowVariables;
-    }
-
-    /**
-     * @param c the flow variable name; unused
-     */
-    private static <T> Optional<Computer> dummyResolver(final T c) {
-        return Optional.empty();
     }
 
     @Override

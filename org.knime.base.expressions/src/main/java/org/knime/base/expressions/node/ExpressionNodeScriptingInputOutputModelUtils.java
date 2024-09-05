@@ -64,7 +64,6 @@ import com.google.common.base.Preconditions;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction")
 public final class ExpressionNodeScriptingInputOutputModelUtils {
 
     // escapeQuotes is a HandleBars helper registered in the frontend
@@ -103,12 +102,17 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
         final var spec = inputPorts[0].portSpec();
         final var expectedPortSpecType = inputPorts[0].portType().getPortObjectSpecClass();
 
+        // We use the port type to differentiate between the flow variable node and the expression node
+        // In case of no input connected the spec is always null and we can't differentiate.
+        // For the expression node we show an empty table input object
+        // For the flow variable node we do not have additional input objects
+        // as input flow variables are shown separately
         if (DataTableSpec.class.isAssignableFrom(expectedPortSpecType)) {
-
-            if (spec instanceof DataTableSpec) {
+            // expecting an input table
+            if (spec instanceof DataTableSpec dataTablespec) {
                 return List.of(InputOutputModel.createFromTableSpec( //
                     "Input table", //
-                    (DataTableSpec)spec, //
+                    dataTablespec, //
                     null, //
                     COLUMN_ALIAS_TEMPLATE, //
                     false, // no multiple selection
@@ -118,9 +122,6 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
                         .name(), //
                     type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null));
             } else {
-                // TODO: for flow variable node there is never an input table. But in case of an unconnected node
-                // this will add an input-table input object. As this is more aesthetic than a functional decision,
-                // I keep that as is for now. Needs discussing.
                 return List.of(InputOutputModel.createForNonAvailableTable( //
                     "Input table", //
                     null, //

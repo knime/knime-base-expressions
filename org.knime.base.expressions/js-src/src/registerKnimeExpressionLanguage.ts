@@ -378,6 +378,11 @@ const register = ({
   };
 };
 
+/**
+ * Options for the autocompletion.
+ * @param specialColumnAccess whether to include special column accesses
+ * "$[ROW_ID]", "$[ROW_INDEX]", "$[ROW_NUMBER]"
+ */
 export type RegisterKnimeExpressionLanguageOptions = {
   specialColumnAccess?: boolean;
 };

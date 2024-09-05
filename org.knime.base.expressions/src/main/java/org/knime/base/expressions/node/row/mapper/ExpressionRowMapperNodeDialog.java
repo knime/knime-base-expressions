@@ -51,7 +51,6 @@ package org.knime.base.expressions.node.row.mapper;
 import static org.knime.core.webui.node.view.table.RowHeightPersistorUtil.LEGACY_CUSTOM_ROW_HEIGHT_COMPACT;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,7 +64,6 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.ui.CoreUIPlugin;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
@@ -93,18 +91,10 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
 
     @Override
     public Page getPage() {
-        return Page.builder(ExpressionRowMapperNodeFactory.class, "js-src/dist", "row-mapper.html") //
-            .addResourceDirectory("assets") //
-            .addResourceDirectory("monacoeditorwork") //
-            .addResource(() -> {
-                try {
-                    return Files.newInputStream(ExpressionNodeDialogUtils.getAbsoluteBasePath(CoreUIPlugin.class, null,
-                        "js-src/dist/TableView.js"));
-                } catch (IOException e) {
-                    NodeLogger.getLogger(this.getClass()).error("Failed to load TableView.js", e);
-                    return null;
-                }
-            }, "TableView.js")//
+        return ExpressionNodeDialogUtils.expressionPageBuilder("row-mapper.html") //
+            .addResource( //
+                ExpressionNodeDialogUtils::getTableViewResource, //
+                ExpressionNodeDialogUtils.TABLE_VIEW_RESOURCE) //
             .build();
     }
 

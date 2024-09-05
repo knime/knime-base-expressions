@@ -56,7 +56,7 @@ import java.io.IOException;
 
 import org.knime.base.expressions.ExpressionMapperFactory;
 import org.knime.base.expressions.ExpressionRunnerUtils;
-import org.knime.base.expressions.ExpressionRunnerUtils.InsertionMode;
+import org.knime.base.expressions.InsertionMode;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
@@ -86,7 +86,7 @@ import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-@SuppressWarnings("restriction") // webui node dialogs are not API yet
+@SuppressWarnings("restriction") // the columnar table API is not public yet
 final class ExpressionRowMapperNodeModel extends NodeModel {
 
     private final ExpressionRowMapperSettings m_settings;
@@ -185,6 +185,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
 
         var inTable = inData[0];
 
+        // TODO(AP-23274): add expression dependency
         var messageBuilder = createMessageBuilder();
         EvaluationContext ctx = messageBuilder::addTextIssue;
 

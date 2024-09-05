@@ -44,60 +44,52 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Aug 5, 2024 (Fabian Kuebler, KNIME GmbH, Konstanz, Germany): created
+ *   Sep 3, 2024 (kampmann): created
  */
-package org.knime.base.expressions.node.row.mapper;
+package org.knime.base.expressions.node;
 
-import org.knime.base.expressions.InsertionMode;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.func.NodeFunc;
-import org.knime.core.node.func.NodeFuncApi;
-import org.knime.core.node.port.PortObjectSpec;
+import java.util.List;
+
+import org.knime.core.expressions.ExpressionCompileError;
+import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.TextRange;
 
 /**
+ * Represents a diagnostic message for an expression.
  *
- * @author Fabian Kuebler, KNIME GmbH, Konstanz, Germany
+ * @param message the message that describes the diagnostic.
+ * @param severity the severity of the diagnostic as defined here
+ * @param location the location in the expression where the diagnostic applies
  */
-public final class ExpressionRowMapperNodeFunc implements NodeFunc {
+public record ExpressionDiagnostic(String message, DiagnosticSeverity severity, TextRange location) {
 
-    @Override
-    public void saveSettings(final NodeSettingsRO arguments, final PortObjectSpec[] inputSpecs,
-        final NodeSettingsWO settings) throws InvalidSettingsException {
-        var expression = arguments.getString("query");
-        var columnName = arguments.getString("column_name");
-        var createNew = arguments.getBoolean("create_new", false);
-
-        InsertionMode outputMode;
-        String createdColumn;
-        String replacedColumn;
-
-        if (createNew) {
-            outputMode = InsertionMode.APPEND;
-            createdColumn = columnName;
-            replacedColumn = null;
-        } else {
-            outputMode = InsertionMode.REPLACE_EXISTING;
-            createdColumn = null;
-            replacedColumn = columnName;
-        }
-
-        new ExpressionRowMapperSettings(expression, outputMode, createdColumn, replacedColumn).saveSettingsTo(settings);
+    /**
+     * @param error the error to convert to a diagnostic
+     * @return a diagnostic for the given error
+     */
+    public static ExpressionDiagnostic fromError(final ExpressionCompileError error) {
+        return new ExpressionDiagnostic(error.createMessage(), DiagnosticSeverity.ERROR, error.location());
     }
 
-    @Override
-    public NodeFuncApi getApi() {
-        return NodeFuncApi.builder("run_dataframe_operation_via_llm") //
-            .withInputTable("df", "") //
-            .withStringArgument("query", "") //
-            .withStringArgument("column_name", "") //
-            .withOptionalBooleanArgument("create_new", "") //
-            .build();
+    /**
+     * @param exception the exception to extract the diagnostics from
+     * @return diagnostics extracted from the given exception
+     */
+    public static List<ExpressionDiagnostic> fromException(final ExpressionCompileException exception) {
+        return exception.getErrors().stream().map(ExpressionDiagnostic::fromError).toList();
     }
 
-    @Override
-    public String getNodeFactoryClassName() {
-        return ExpressionRowMapperNodeFactory.class.getName();
+    /**
+     * Represents the severity of a diagnostic message.
+     */
+    public enum DiagnosticSeverity {
+            /** The diagnostic represents an error. */
+            ERROR,
+            /** The diagnostic represents a warning. */
+            WARNING,
+            /** The diagnostic represents an information message. */
+            INFORMATION,
+            /** The diagnostic represents a hint. */
+            HINT;
     }
 }

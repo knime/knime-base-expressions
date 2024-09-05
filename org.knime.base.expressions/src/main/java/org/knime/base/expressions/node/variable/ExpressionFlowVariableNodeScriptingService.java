@@ -56,8 +56,8 @@ import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
-import org.knime.base.expressions.node.ExpressionNodeDiagnosticsUtils.Diagnostic;
-import org.knime.base.expressions.node.ExpressionNodeDiagnosticsUtils.DiagnosticSeverity;
+import org.knime.base.expressions.node.ExpressionDiagnostic;
+import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
@@ -71,7 +71,6 @@ import org.knime.scripting.editor.ScriptingService;
  *
  * @author Tobias Kampmann, TNG, Germany
  */
-@SuppressWarnings("restriction")
 final class ExpressionFlowVariableNodeScriptingService extends ScriptingService {
 
     /**
@@ -150,11 +149,11 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
          * @param newFlowVariableNames
          * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
          */
-        public List<List<Diagnostic>> getFlowVariableDiagnostics(final String[] expressions,
+        public List<List<ExpressionDiagnostic>> getFlowVariableDiagnostics(final String[] expressions,
             final String[] newFlowVariableNames) {
             List<ValueType> inferredFlowVariableTypes = new ArrayList<>();
             List<String> additionalFlowVariableNames = new ArrayList<>();
-            List<List<Diagnostic>> diagnostics = new ArrayList<>();
+            List<List<ExpressionDiagnostic>> diagnostics = new ArrayList<>();
 
             for (int i = 0; i < expressions.length; ++i) {
                 var expression = expressions[i];
@@ -167,8 +166,8 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
 
                     if (ValueType.MISSING.equals(inferredType)) {
                         // Show an error if the full expression has the output type "MISSING"; this is not supported
-                        diagnostics
-                            .add(List.of(new Diagnostic("The full expression must not have the value type MISSING.",
+                        diagnostics.add(List
+                            .of(new ExpressionDiagnostic("The full expression must not have the value type MISSING.",
                                 DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast))));
                     } else {
                         diagnostics.add(List.of());
@@ -180,7 +179,7 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                     // expression diagnostics, so add a missing type to the list of inferred types and continue
                     inferredFlowVariableTypes.add(ValueType.MISSING);
 
-                    diagnostics.add(Diagnostic.fromException(ex));
+                    diagnostics.add(ExpressionDiagnostic.fromException(ex));
                 }
             }
 

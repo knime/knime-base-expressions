@@ -51,7 +51,7 @@ package org.knime.base.expressions.node.row.filter;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.knime.base.expressions.node.ExpressionVersionSettingsUtils;
+import org.knime.base.expressions.node.ExpressionVersionSettings;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -92,7 +92,7 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
     private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES =
         "settingsAreOverriddenByFlowVariable";
 
-    private ExpressionVersionSettingsUtils m_versionSettings;
+    private ExpressionVersionSettings m_versionSettings;
 
     private String m_script;
 
@@ -102,7 +102,7 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
     ExpressionRowFilterSettings() {
         super(SettingsType.MODEL);
 
-        this.m_versionSettings = new ExpressionVersionSettingsUtils();
+        this.m_versionSettings = new ExpressionVersionSettings();
 
         this.m_script = DEFAULT_SCRIPT;
     }

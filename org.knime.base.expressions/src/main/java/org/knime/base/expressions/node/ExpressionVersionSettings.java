@@ -54,16 +54,14 @@ import java.util.Map;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 import org.knime.core.expressions.functions.BuiltInFunctions;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.config.ConfigRO;
+import org.knime.core.node.config.ConfigWO;
 
 /**
  * Settings for the expression language version. This is used to manage the language version and the built-in functions
  * and aggregations version.
- *
  */
-public class ExpressionVersionSettingsUtils {
+public class ExpressionVersionSettings {
 
     private static final String CFG_KEY_LANGUAGE_VERSION = "languageVersion";
 
@@ -83,10 +81,8 @@ public class ExpressionVersionSettingsUtils {
 
     private int m_builtinAggregationsVersion;
 
-    /**
-     *
-     */
-    public ExpressionVersionSettingsUtils() {
+    /** Create version settings with the current version. */
+    public ExpressionVersionSettings() {
 
         // Set to the latest version by default
         // The version will be overwritten if we load an older version from the model settings
@@ -95,11 +91,8 @@ public class ExpressionVersionSettingsUtils {
         this.m_builtinAggregationsVersion = BuiltInAggregations.AGGREGATIONS_VERSION;
     }
 
-    /**
-     * @param settings
-     * @throws InvalidSettingsException
-     */
-    public void loadSettingsFrom(final NodeSettingsRO settings) {
+    /** @param settings */
+    public void loadSettingsFrom(final ConfigRO settings) {
         this.m_languageVersion = settings.getInt(CFG_KEY_LANGUAGE_VERSION, this.m_languageVersion);
         this.m_builtinFunctionsVersion =
             settings.getInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, this.m_builtinFunctionsVersion);
@@ -107,19 +100,14 @@ public class ExpressionVersionSettingsUtils {
             settings.getInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION, this.m_builtinAggregationsVersion);
     }
 
-    /**
-     * @param settings
-     */
-    public void saveSettingsTo(final NodeSettingsWO settings) {
+    /** @param settings */
+    public void saveSettingsTo(final ConfigWO settings) {
         settings.addInt(CFG_KEY_LANGUAGE_VERSION, m_languageVersion);
         settings.addInt(CFG_KEY_BUILTIN_FUNCTIONS_VERSION, m_builtinFunctionsVersion);
         settings.addInt(CFG_KEY_BUILTIN_AGGREGATIONS_VERSION, m_builtinAggregationsVersion);
     }
 
-    /**
-     * @param otherSettings the settings map to add the version
-     * @return the settings map with the version added
-     */
+    /** @return the settings map with the version added */
     public Map<String, Object> getVersionSettingsMap() {
 
         var versionSettingsMap = new HashMap<String, Object>();
@@ -130,9 +118,7 @@ public class ExpressionVersionSettingsUtils {
         return versionSettingsMap;
     }
 
-    /**
-     * @param data the data to write to the settings
-     */
+    /** @param data the data to write to the settings */
     public void writeMapToNodeSettings(final Map<String, Object> data) {
 
         m_languageVersion = (int)data.get(JSON_KEY_LANGUAGE_VERSION);
@@ -141,25 +127,18 @@ public class ExpressionVersionSettingsUtils {
 
     }
 
-    /**
-     * @return the builtinAggregationsVersion
-     */
+    /** @return the builtinAggregationsVersion */
     public int getBuiltinAggregationsVersion() {
         return m_builtinAggregationsVersion;
     }
 
-    /**
-     * @return the builtinFunctionsVersion
-     */
+    /** @return the builtinFunctionsVersion */
     public int getBuiltinFunctionsVersion() {
         return m_builtinFunctionsVersion;
     }
 
-    /**
-     * @return the languageVersion
-     */
+    /** @return the languageVersion */
     public int getLanguageVersion() {
         return m_languageVersion;
     }
-
 }

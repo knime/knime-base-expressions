@@ -18,19 +18,13 @@ export type AllowedDropDownValue = {
   text: string;
 };
 
-export type SelectorType = "column" | "flowVariable";
-
 type PropType = {
-  selectorType: SelectorType;
+  entityName: string;
   allowedReplacementEntities: AllowedDropDownValue[];
 };
 
 const props = defineProps<PropType>();
 const readOnly = useReadonlyStore();
-
-const entityName = computed(() =>
-  props.selectorType === "column" ? "column" : "flow variable",
-);
 
 const modelValue = defineModel<SelectorState>({
   default: {
