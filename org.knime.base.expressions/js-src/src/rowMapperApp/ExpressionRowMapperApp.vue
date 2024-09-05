@@ -447,7 +447,7 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
 });
 
 const runButtonDisabledErrorReason = computed(() => {
-  const errors = [];
+  const errors: string[] = [];
 
   if (!inputsAvailable.value) {
     errors.push("No input available. Connect an executed node.");

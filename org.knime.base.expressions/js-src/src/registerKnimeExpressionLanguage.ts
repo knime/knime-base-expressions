@@ -337,7 +337,7 @@ const register = ({
           return false;
         }
 
-        let token = null;
+        let token: monaco.Token | null = null;
         for (const currentToken of tokens[0]) {
           if (currentToken.offset >= position.column) {
             break;
