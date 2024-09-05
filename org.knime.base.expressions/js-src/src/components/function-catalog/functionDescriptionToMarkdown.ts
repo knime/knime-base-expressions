@@ -16,7 +16,7 @@ export const functionDataToMarkdown = (
   } else {
     const args =
       func.arguments
-        ?.map((arg) => `- ${arg.name}: ${arg.description}`)
+        ?.map((arg) => `- **${arg.name}**: ${arg.description}`)
         ?.join("\n") ?? null;
     const returnDescription = func.returnDescription
       ? `  \n${func.returnDescription}`
