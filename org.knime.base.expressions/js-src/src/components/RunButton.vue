@@ -26,7 +26,7 @@ const buttonText = computed(() =>
 </script>
 
 <template>
-  <Tooltip class="tooltip-word-wrap" :text="runButtonDisabledErrorReason ?? ''">
+  <Tooltip class="error-tooltip" :text="runButtonDisabledErrorReason ?? ''">
     <SplitButton>
       <Button
         primary
@@ -51,6 +51,7 @@ const buttonText = computed(() =>
           { text: 'Evaluate first 1000 rows', metadata: 1000 },
         ]"
         button-title="Run more rows"
+        class="more-rows-submenu"
         orientation="top"
         :disabled="runButtonDisabledErrorReason !== null"
         @item-click="
@@ -72,22 +73,19 @@ const buttonText = computed(() =>
   display: inline;
 }
 
-.tooltip-word-wrap .text {
-  white-space: normal;
-  overflow: visible;
-  width: auto;
-  height: auto;
-  z-index: 9999;
+/* Needed to be on top of the splitpane splitters */
+.error-tooltip :deep(.text) {
+  z-index: 1;
 }
 
-.submenu {
+.more-rows-submenu {
   background-color: var(--knime-yellow);
 
   &:focus-within,
   &:hover {
     background-color: var(--knime-masala);
 
-    & .submenu-toggle svg {
+    & :deep(.submenu-toggle svg) {
       stroke: var(--knime-white);
     }
   }
