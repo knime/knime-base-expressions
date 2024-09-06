@@ -163,7 +163,7 @@ const runDiagnosticsFunction = async () => {
   );
 
   const flowVariableErrorMessages = runOutputDiagnostics(
-    "Flow variable",
+    "flow variable",
     orderedEditorKeys.map((key) => flowVariableSelectorStates[key]),
     inputFlowVariables.value.map((flowVariable) => flowVariable.id),
   );

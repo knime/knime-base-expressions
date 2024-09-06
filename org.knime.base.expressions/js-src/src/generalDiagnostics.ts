@@ -42,31 +42,38 @@ export const evaluateDiagnostics = (diagnosticsForThisEditor: Diagnostic[]) => {
 };
 
 export const runOutputDiagnostics = (
-  label: string,
+  label: "column" | "flow variable",
   orderedStates: SelectorState[],
   inputItems: string[],
 ): (string | null)[] => {
+  const labelCapitalised = label.charAt(0).toUpperCase() + label.slice(1);
+
   const appendedItemsSoFar: string[] = [];
+  const allAppendedItems = orderedStates
+    .filter((s) => s.outputMode === "APPEND")
+    .map((s) => s.create);
 
   return orderedStates.map((state) => {
     if (state.outputMode === "APPEND") {
-      if (appendedItemsSoFar.includes(state.create)) {
-        return `${label} "${state.create}" was appended twice!`;
-      }
-      if (inputItems.includes(state.create)) {
-        return `${label} "${state.create}" already exists in input ${label.toLowerCase()}s`;
+      if (state.create.trim() === "") {
+        return `Appended ${label} name is empty.`;
+      } else if (
+        appendedItemsSoFar.includes(state.create) ||
+        inputItems.includes(state.create)
+      ) {
+        return `${labelCapitalised} "${state.create}" already exists. Try another name.`;
       }
       appendedItemsSoFar.push(state.create);
     }
 
-    if (
-      state.outputMode === "REPLACE_EXISTING" &&
-      !(
-        inputItems.includes(state.replace) ||
-        appendedItemsSoFar.includes(state.replace)
-      )
-    ) {
-      return `${label} "${state.replace}" does not exist in input or appended ${label.toLowerCase()}s`;
+    if (state.outputMode === "REPLACE_EXISTING") {
+      const alreadyAppended = appendedItemsSoFar.includes(state.replace);
+
+      if (!alreadyAppended && allAppendedItems.includes(state.replace)) {
+        return `${labelCapitalised} "${state.replace}" was replaced before it was appended. Try reordering your expressions.`;
+      } else if (!alreadyAppended && !inputItems.includes(state.replace)) {
+        return `${labelCapitalised} "${state.replace}" does not exist. Try selecting another.`;
+      }
     }
     return null;
   });

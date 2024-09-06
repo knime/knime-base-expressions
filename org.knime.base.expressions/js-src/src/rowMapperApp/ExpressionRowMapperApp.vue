@@ -163,7 +163,7 @@ const runDiagnosticsFunction = async () => {
   );
 
   const columnErrorMessages = runOutputDiagnostics(
-    "Column",
+    "column",
     orderedEditorKeys.map((key) => columnSelectorStates[key]),
     columnsInInputTable.value.map((column) => column.id),
   );
