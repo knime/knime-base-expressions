@@ -62,6 +62,8 @@ import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * @param categories a list of operator categories
+ * @param functions a list of operator descriptions
  */
 public record FunctionCatalogData(List<OperatorCategory> categories, List<OperatorDescription> functions) {
 

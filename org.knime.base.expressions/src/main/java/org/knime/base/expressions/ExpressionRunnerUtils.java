@@ -615,6 +615,12 @@ public final class ExpressionRunnerUtils {
                 "Flow variables of the type '" + type + "' are not supported"));
     }
 
+    /**
+     * Maps a {@link VariableType} to the appropriate {@link ValueType}.
+     *
+     * @param variableType the type of the flow variable
+     * @return the value type or {@code null} if the type is not supported
+     */
     // Note sonar complains about the number of returns which is not a problem here
     public static ValueType mapVariableToValueType(final VariableType<?> variableType) { // NOSONAR
         if (variableType == VariableType.DoubleType.INSTANCE) {
