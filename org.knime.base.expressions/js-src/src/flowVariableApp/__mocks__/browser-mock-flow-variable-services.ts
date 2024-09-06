@@ -28,7 +28,7 @@ if (import.meta.env.MODE === "development.browser") {
         log("runFlowVariableExpression", options);
         return Promise.resolve();
       },
-      getFlowVariableDiagnostics: () => Promise.resolve([]),
+      getFlowVariableDiagnostics: () => Promise.resolve([[]]),
     },
   });
 
