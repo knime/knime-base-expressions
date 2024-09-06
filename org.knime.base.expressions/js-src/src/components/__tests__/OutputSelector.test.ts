@@ -24,6 +24,7 @@ describe("OutputSelector", () => {
       props: {
         selectorType: "column",
         allowedReplacementEntities: columnsToReplace,
+        entityName: "column",
         modelValue,
       },
       attachTo: "body", // needed for label clicking to work
