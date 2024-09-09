@@ -50,20 +50,16 @@ package org.knime.base.expressions.node.variable;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
-import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
-import org.knime.core.expressions.ReturnResult;
-import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.scripting.editor.ScriptingService;
 
@@ -73,12 +69,6 @@ import org.knime.scripting.editor.ScriptingService;
  * @author Tobias Kampmann, TNG, Germany
  */
 final class ExpressionFlowVariableNodeScriptingService extends ScriptingService {
-
-    /**
-     * This should never be called. Fails with an error message to identify implementation errors
-     */
-    private Function<String, ReturnResult<ValueType>> m_columnToType = name -> ReturnResult
-        .failure("Flow variable expressions do not allow column accesses. Please use the expression node.");
 
     private final AtomicReference<List<FlowVariable>> m_outputFlowVariablesReference;
 
@@ -113,42 +103,6 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
         }
 
         /**
-         * Parses and type-checks the expression.
-         *
-         * @param script the expression to parse
-         * @param additionalFlowVariableNames the names of the additional columns that are available (from previous
-         *            expression editors in the same node)
-         * @param additionalFlowVariableTypes the types of the additional columns that are available (from previous
-         *            expression editors in the same node)
-         *
-         * @return an expression that is ready to be executed
-         */
-        private Ast getPreparedExpression(final String script, final List<String> additionalFlowVariableNames,
-            final List<ValueType> additionalFlowVariableTypes) throws ExpressionCompileException {
-
-            var ast = Expressions.parse(script);
-
-            Map<String, FlowVariable> flowVars = getSupportedFlowVariablesMap();
-
-            Function<String, ReturnResult<ValueType>> flowVarToTypeMapper = name -> {
-
-                if (additionalFlowVariableNames.contains(name)) {
-                    return ReturnResult
-                        .success(additionalFlowVariableTypes.get(additionalFlowVariableNames.indexOf(name)));
-                } else {
-                    return ReturnResult.fromNullable(flowVars.get(name), //
-                        "No flow variable with the name '" + name + "' is available.") //
-                        .map(FlowVariable::getVariableType) //
-                        .flatMap(type -> ReturnResult.fromNullable(ExpressionRunnerUtils.mapVariableToValueType(type),
-                            "Flow variables of the type '" + type + "' are not supported"));
-                }
-            };
-
-            Expressions.inferTypes(ast, m_columnToType, flowVarToTypeMapper);
-            return ast;
-        }
-
-        /**
          * List of diagnostics for each editor, hence a 2D list.
          *
          * @param expressions
@@ -157,34 +111,35 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
          */
         public List<List<ExpressionDiagnostic>> getFlowVariableDiagnostics(final String[] expressions,
             final String[] newFlowVariableNames) {
-            List<ValueType> inferredFlowVariableTypes = new ArrayList<>();
-            List<String> additionalFlowVariableNames = new ArrayList<>();
+            // Note that this method is similar to ExpressionFlowVariableNodeModel#validateFlowVariablesExpressions but
+            // it collects Diagnostic objects instead of throwing an exception.
+
             List<List<ExpressionDiagnostic>> diagnostics = new ArrayList<>();
 
-            for (int i = 0; i < expressions.length; ++i) {
+            // Add existing flow variables
+            var availableFlowVariables = new HashMap<>(getSupportedFlowVariablesMap());
+
+            for (int i = 0; i < expressions.length; i++) {
                 var expression = expressions[i];
+                var name = newFlowVariableNames[i];
 
                 try {
-                    var ast = getPreparedExpression(expression, additionalFlowVariableNames, inferredFlowVariableTypes);
-
-                    var inferredType = Expressions.getInferredType(ast);
-                    inferredFlowVariableTypes.add(inferredType);
-
-                    if (ValueType.MISSING.equals(inferredType)) {
-                        // Show an error if the full expression has the output type "MISSING"; this is not supported
-                        diagnostics.add(List
-                            .of(new ExpressionDiagnostic("The full expression must not have the value type MISSING.",
+                    var ast = Expressions.parse(expression);
+                    var inferredType = Expressions.inferTypes(ast, //
+                        ExpressionFlowVariableNodeModel::columnTypeResolver, //
+                        fvName -> ExpressionFlowVariableNodeModel.toValueType(availableFlowVariables, fvName) //
+                    );
+                    if (inferredType.isOptional()) {
+                        // Show an error if the full expression might evaluate to MISSING; this is not supported
+                        diagnostics.add(List.of(
+                            new ExpressionDiagnostic("The expression must evaluate to a value different from MISSING.",
                                 DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast))));
                     } else {
                         diagnostics.add(List.of());
+                        ExpressionFlowVariableNodeModel.putFlowVariableForTypeCheck(availableFlowVariables, name,
+                            inferredType);
                     }
-                    additionalFlowVariableNames.add(newFlowVariableNames[i]);
-
                 } catch (ExpressionCompileException ex) {
-                    // If there is an error in the expression, we still want to be able to continue with the other
-                    // expression diagnostics, so add a missing type to the list of inferred types and continue
-                    inferredFlowVariableTypes.add(ValueType.MISSING);
-
                     diagnostics.add(ExpressionDiagnostic.fromException(ex));
                 }
             }

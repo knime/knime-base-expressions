@@ -48,8 +48,6 @@
  */
 package org.knime.base.expressions.node.variable;
 
-import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForTypeInference;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,11 +57,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
-import java.util.function.Predicate;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.InsertionMode;
-import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
@@ -112,21 +108,6 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         m_settings = new ExpressionFlowVariableSettings(null);
     }
 
-    /** @return the typed Ast for the configured expression */
-    private Ast getPreparedExpression(final String script, final Map<String, FlowVariable> addedFlowVariables)
-        throws ExpressionCompileException {
-
-        var currentTemporaryFlowVariables = getTemporaryFlowVariables(addedFlowVariables);
-
-        var ast = Expressions.parse(script);
-        Expressions.inferTypes(ast,
-            name -> ReturnResult.failure(
-                "Accessing a column is not allowed for the flow variable node. This is an implementation error."),
-            flowVarToTypeForTypeInference(currentTemporaryFlowVariables));
-
-        return ast;
-    }
-
     /**
      * {@inheritDoc}
      *
@@ -148,49 +129,63 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
     }
 
     private void validateFlowVariablesExpressions() throws InvalidSettingsException {
+        // Note that this method is similar to ExpressionFlowVariableNodeScriptingService#getFlowVariableDiagnostic but
+        // it throws an InvalidSettingsException instead of returning a Diagnostic.
+        // Additionally, it checks for correct flow variable replacement
 
-        Map<String, FlowVariable> addedFlowVariables = new HashMap<>();
-        Predicate<String> flowVariableExists =
-            name -> getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES)
-                .containsKey(name) || addedFlowVariables.containsKey(name);
+        // Add existing flow variables
+        var availableFlowVariables =
+            new HashMap<>(getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
 
-        for (int i = 0; i < m_settings.getNumScripts(); ++i) {
+        for (int i = 0; i < m_settings.getNumScripts(); i++) {
+            var expression = m_settings.getScripts().get(i);
+            var name = m_settings.getActiveOutputFlowVariables().get(i);
 
-            String newName = m_settings.getActiveOutputFlowVariables().get(i);
+            validateName(name, m_settings.getFlowVariableInsertionModes().get(i),
+                availableFlowVariables.containsKey(name));
 
-            boolean isReplace = m_settings.getFlowVariableInsertionModes().get(i) == InsertionMode.REPLACE_EXISTING;
-            boolean exists = flowVariableExists.test(newName);
-
-            if (exists && !isReplace) {
-                throw new InvalidSettingsException(
-                    "The flow variable " + newName + " already exists. Choose 'replace' to replace the flow variable.");
-            }
-
-            if (!exists && isReplace) {
-                throw new InvalidSettingsException(
-                    "The flow variable " + newName + " does not exist. Choose 'append' to create a new flow variable.");
-            }
-
-            Ast expression;
             try {
-                expression = getPreparedExpression(m_settings.getScripts().get(i), addedFlowVariables);
+                var ast = Expressions.parse(expression);
+                var inferredType = Expressions.inferTypes(ast, //
+                    ExpressionFlowVariableNodeModel::columnTypeResolver, //
+                    flowVarName -> ExpressionFlowVariableNodeModel.toValueType(availableFlowVariables, flowVarName) //
+                );
+                if (inferredType.isOptional()) {
+                    throw new InvalidSettingsException("Expression " + i + " evaluates to a type that can be MISSING. "
+                        + "Use the missing coalescing operator '??' to define a default value.");
+                }
+                putFlowVariableForTypeCheck(availableFlowVariables, name, inferredType);
             } catch (ExpressionCompileException e) {
                 throw new InvalidSettingsException(e);
             }
+        }
+    }
 
-            if (!Expressions.collectColumnAccesses(expression).isEmpty()) {
-                throw new InvalidSettingsException(
-                    "The flow variable expression node cannot access columns. Use the Expression node instead.");
-            }
+    private static void validateName(final String name, final InsertionMode insertionMode, final boolean exists)
+        throws InvalidSettingsException {
+        if (name == null || name.isEmpty()) {
+            throw new InvalidSettingsException("The flow variable name must not be empty.");
+        }
 
-            if (!isReplace) {
-                var variableType =
-                    ExpressionRunnerUtils.mapValueTypeToVariableType(Expressions.getInferredType(expression));
-                addedFlowVariables.put( //
-                    newName, //
-                    new FlowVariable(newName, variableType) // values are not needed, no evaluation
-                );
-            }
+        boolean isReplace = insertionMode == InsertionMode.REPLACE_EXISTING;
+
+        if (exists && !isReplace) {
+            throw new InvalidSettingsException(
+                "The flow variable " + name + " already exists. Choose 'replace' to replace the flow variable.");
+        }
+        if (!exists && isReplace) {
+            throw new InvalidSettingsException(
+                "The flow variable " + name + " does not exist. Choose 'append' to create a new flow variable.");
+        }
+    }
+
+    /** Add a flow variable without a value to the given map */
+    static void putFlowVariableForTypeCheck(final Map<String, FlowVariable> availableFlowVariables, final String name,
+        final ValueType valueType) {
+        if (name != null && !name.isEmpty()) {
+            var variableType = ExpressionRunnerUtils.mapValueTypeToVariableType(valueType);
+            // NB: The value is not important for type checking
+            availableFlowVariables.put(name, new FlowVariable(name, variableType));
         }
     }
 
@@ -263,8 +258,8 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
 
             // Prepare - parse and infer types
             var ast = Expressions.parse(expression);
-            Expressions.inferTypes(ast,
-                colName -> ReturnResult.failure("No row values are available. Use '$$' to access flow variables."),
+            Expressions.inferTypes(ast, //
+                ExpressionFlowVariableNodeModel::columnTypeResolver,
                 flowVarName -> toValueType(availableFlowVariables, flowVarName) //
             );
 
@@ -298,8 +293,13 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         return outputVariables;
     }
 
-    private static ReturnResult<ValueType> toValueType(final Map<String, FlowVariable> flowVariables,
-        final String name) {
+    /** Helper to return a failure message on column access */
+    static ReturnResult<ValueType> columnTypeResolver(@SuppressWarnings("unused") final String colName) {
+        return ReturnResult.failure("No row values are available. Use '$$' to access flow variables.");
+    }
+
+    /** Helper to get the ValueType of a flow variable from the given map (use for type inference) */
+    static ReturnResult<ValueType> toValueType(final Map<String, FlowVariable> flowVariables, final String name) {
         return ReturnResult
             .fromNullable(flowVariables.get(name), "No flow variable with the name '" + name + "' is available.") //
             .map(FlowVariable::getVariableType) //
@@ -322,16 +322,6 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         // NB: This is a hack because NodeModel#pushFlowVariable(FlowVariable) is package private
         pushFlowVariable(flowVariable.getName(), (VariableType)flowVariable.getVariableType(),
             flowVariable.getValue(flowVariable.getVariableType()));
-    }
-
-    private Map<String, FlowVariable> getTemporaryFlowVariables(final Map<String, FlowVariable> addedFlowVariables) {
-
-        Map<String, FlowVariable> availableFlowVariables = new HashMap<>();
-        availableFlowVariables
-            .putAll(getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
-        availableFlowVariables.putAll(addedFlowVariables);
-
-        return availableFlowVariables;
     }
 
     @Override
