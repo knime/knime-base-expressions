@@ -50,10 +50,8 @@ package org.knime.base.expressions.node.variable;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -61,23 +59,12 @@ import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
-import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.expressions.Ast;
-import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.Computer.BooleanComputer;
-import org.knime.core.expressions.Computer.FloatComputer;
-import org.knime.core.expressions.Computer.IntegerComputer;
-import org.knime.core.expressions.Computer.StringComputer;
-import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.VariableType.BooleanType;
-import org.knime.core.node.workflow.VariableType.DoubleType;
-import org.knime.core.node.workflow.VariableType.LongType;
-import org.knime.core.node.workflow.VariableType.StringType;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -205,75 +192,26 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
             return diagnostics;
         }
 
-        public void runFlowVariableExpression(final String[] expressions, final String[] newFlowVariableNames) {
+        public void runFlowVariableExpression(final List<String> expressions, final List<String> newFlowVariableNames)
+            throws ExpressionCompileException {
 
-            var flowVariablePreview = createFlowVariableOutputPreview(expressions, newFlowVariableNames);
+            var resultVariables = ExpressionFlowVariableNodeModel.applyFlowVariableExpressions( //
+                expressions, //
+                newFlowVariableNames, //
+                getSupportedFlowVariablesMap(), //
+                i -> {
+                }, // we do not show the progress
+                this::handleWarningMessage //
+            );
+            m_outputFlowVariablesReference.set(resultVariables);
 
-            m_outputFlowVariablesReference.set(flowVariablePreview);
             sendEvent("updatePreview", null);
 
         }
 
-        /**
-         * @param expressions the expressions to evaluate to create the output flow variables
-         * @param newFlowVariableNames the names of the new flow variables (can be replacing existing ones)
-         * @return the output flow variables after applying the expressions
-         */
-        public List<FlowVariable> createFlowVariableOutputPreview(final String[] expressions,
-            final String[] newFlowVariableNames) {
-
-            Map<String, FlowVariable> resultingFlowVariables = new HashMap<>();
-            resultingFlowVariables.putAll(getSupportedFlowVariablesMap());
-
-            List<ValueType> inferredFlowVariableTypes = new ArrayList<>();
-            List<String> additionalFlowVariableNames = new ArrayList<>();
-
-            EvaluationContext ctx = s -> {
-            };
-
-            for (int i = 0; i < expressions.length; ++i) {
-
-                Computer evaluatedExpression = null;
-                try {
-                    var expression =
-                        getPreparedExpression(expressions[i], additionalFlowVariableNames, inferredFlowVariableTypes);
-
-                    final Map<String, FlowVariable> currentTemporaryFlowVariables = resultingFlowVariables;
-                    var exprContext = new NodeExpressionMapperContext(types -> currentTemporaryFlowVariables);
-
-                    evaluatedExpression = Expressions.evaluate( //
-                        expression, //
-                        columns -> Optional.empty(), //
-                        exprContext::flowVariableToComputer, //
-                        aggregations -> Optional.empty());
-
-                } catch (ExpressionCompileException ex) {
-                    throw new IllegalStateException("Unexpected exception while evaluating the expression." //
-                        + "The expressions should be checked and be compilable. " //
-                        + "This is an implementation error.", //
-                        ex);
-                }
-
-                String newName = newFlowVariableNames[i];
-
-                if (evaluatedExpression instanceof IntegerComputer c) {
-                    resultingFlowVariables.put(newName, new FlowVariable(newName, LongType.INSTANCE, c.compute(ctx)));
-                }
-                if (evaluatedExpression instanceof StringComputer c) {
-                    resultingFlowVariables.put(newName, new FlowVariable(newName, StringType.INSTANCE, c.compute(ctx)));
-                }
-                if (evaluatedExpression instanceof FloatComputer c) {
-                    resultingFlowVariables.put(newName, new FlowVariable(newName, DoubleType.INSTANCE, c.compute(ctx)));
-                }
-                if (evaluatedExpression instanceof BooleanComputer c) {
-                    resultingFlowVariables.put(newName,
-                        new FlowVariable(newName, BooleanType.INSTANCE, c.compute(ctx)));
-                }
-
-            }
-            return new ArrayList<>(resultingFlowVariables.values());
-
+        private void handleWarningMessage(final int i, final String warningMessage) {
+            // TODO(AP-23152) do not use the console output
+            addConsoleOutputEvent(new ConsoleText("Expression " + (i + 1) + ": " + warningMessage + "\n", false));
         }
-
     }
 }

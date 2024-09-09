@@ -52,15 +52,19 @@ import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForT
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.InsertionMode;
-import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
@@ -70,6 +74,7 @@ import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ReturnResult;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
@@ -82,6 +87,7 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
 import org.knime.core.node.port.flowvariable.FlowVariablePortObject;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableType.BooleanType;
 import org.knime.core.node.workflow.VariableType.DoubleType;
 import org.knime.core.node.workflow.VariableType.LongType;
@@ -190,73 +196,28 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
 
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
-
-        pushFlowVariables(exec);
-        exec.setProgress(1);
-
-        return new PortObject[]{FlowVariablePortObject.INSTANCE};
-    }
-
-    /**
-     * @param exec the execution context, can be null -> no progress reported
-     * @throws CanceledExecutionException thrown when the user cancels the execution
-     * @throws ExpressionCompileException thrown when the expression cannot be compiled
-     */
-    private void pushFlowVariables(final ExecutionContext exec)
-        throws CanceledExecutionException, ExpressionCompileException {
-
-        // TODO(AP-23274): add expression dependency
         var messageBuilder = createMessageBuilder();
-        EvaluationContext ctx = messageBuilder::addTextIssue;
+        var numScripts = m_settings.getNumScripts();
+        var names = m_settings.getActiveOutputFlowVariables();
 
-        Map<String, FlowVariable> addedFlowVariables = new HashMap<>();
+        // Apply expressions to flow variables
+        var resultVariables = applyFlowVariableExpressions( //
+            m_settings.getScripts(), //
+            names, //
+            getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES), //
+            i -> exec.setProgress( //
+                1.0 * i / m_settings.getNumScripts(), //
+                () -> "Evaluating flow variable \"" + names.get(i) + "\" (" + (i + 1) + "/" + numScripts + ")." //
+            ), //
+            (i, warningMessage) -> messageBuilder.addTextIssue("Expression " + (i + 1) + ": " + warningMessage) //
+        );
 
-        for (int i = 0; i < m_settings.getNumScripts(); ++i) {
-
-            String newName = m_settings.getActiveOutputFlowVariables().get(i);
-
-            final int finalI = i + 1;
-            if (exec != null) {
-                exec.setProgress( //
-                    1.0 * i / m_settings.getNumScripts(), //
-                    () -> "Evaluating flow variable \"" + newName + //
-                        "\" (" + (finalI) + "/" + m_settings.getNumScripts() + ").");
-                exec.checkCanceled();
-            }
-
-            boolean isReplace = m_settings.getFlowVariableInsertionModes().get(i) == InsertionMode.REPLACE_EXISTING;
-
-            var expression = getPreparedExpression(m_settings.getScripts().get(i), addedFlowVariables);
-
-            var evaluatedExpression = evaluateFlowVariableExpression(expression, addedFlowVariables);
-
-            if (evaluatedExpression instanceof IntegerComputer c) {
-                pushFlowVariable(newName, LongType.INSTANCE, c.compute(ctx));
-                if (!isReplace) {
-                    addedFlowVariables.put(newName, new FlowVariable(newName, LongType.INSTANCE, c.compute(ctx)));
-                }
-            }
-            if (evaluatedExpression instanceof StringComputer c) {
-                pushFlowVariable(newName, StringType.INSTANCE, c.compute(ctx));
-                if (!isReplace) {
-                    addedFlowVariables.put(newName, new FlowVariable(newName, StringType.INSTANCE, c.compute(ctx)));
-                }
-            }
-            if (evaluatedExpression instanceof FloatComputer c) {
-                pushFlowVariable(newName, DoubleType.INSTANCE, c.compute(ctx));
-                if (!isReplace) {
-                    addedFlowVariables.put(newName, new FlowVariable(newName, DoubleType.INSTANCE, c.compute(ctx)));
-                }
-            }
-            if (evaluatedExpression instanceof BooleanComputer c) {
-                pushFlowVariable(newName, BooleanType.INSTANCE, c.compute(ctx));
-                if (!isReplace) {
-                    addedFlowVariables.put(newName, new FlowVariable(newName, BooleanType.INSTANCE, c.compute(ctx)));
-                }
-            }
-
+        // Push flow variables
+        for (var flowVariable : resultVariables) {
+            pushFlowVariableObj(flowVariable);
         }
 
+        // Set warning message if there are any issues
         var issueCount = messageBuilder.getIssueCount();
         if (issueCount > 0) {
             var message = messageBuilder //
@@ -266,20 +227,101 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                 .orElse(null);
             setWarning(message);
         }
+
+        exec.setProgress(1);
+        return new PortObject[]{FlowVariablePortObject.INSTANCE};
     }
 
-    private Computer evaluateFlowVariableExpression(final Ast expression,
-        final Map<String, FlowVariable> addedFlowVariables) throws ExpressionCompileException {
+    /**
+     * Applies the given expressions to the flow variables and returns a list of output variables.
+     *
+     * @param expressions the expressions to apply
+     * @param names the names of the output variables
+     * @param existingVariables a map of the existing flow variables
+     * @param updateProgress a consumer that is called each time before an expression is evaluated with the index of the
+     *            expression that is being evaluated
+     * @param setWarning a consumer that is called if the evaluation of an expression produces a warning with the index
+     *            of the expression and the warning message
+     * @return a list of output variables
+     * @throws ExpressionCompileException if an expression cannot be compiled
+     */
+    static List<FlowVariable> applyFlowVariableExpressions( //
+        final List<String> expressions, //
+        final List<String> names, //
+        final Map<String, FlowVariable> existingVariables, //
+        final IntConsumer updateProgress, //
+        final BiConsumer<Integer, String> setWarning //
+    ) throws ExpressionCompileException {
+        var availableFlowVariables = new HashMap<String, FlowVariable>(existingVariables);
+        var outputVariables = new ArrayList<FlowVariable>();
 
-        var currentTemporaryFlowVariables = getTemporaryFlowVariables(addedFlowVariables);
-        var exprContext = new NodeExpressionMapperContext(types -> currentTemporaryFlowVariables);
+        for (int i = 0; i < expressions.size(); i++) {
+            updateProgress.accept(i);
 
-        return Expressions.evaluate( //
-            expression, //
-            column -> Optional.empty(), //
-            exprContext::flowVariableToComputer, //
-            aggregation -> Optional.empty());
+            var expression = expressions.get(i);
+            var name = names.get(i);
 
+            // Prepare - parse and infer types
+            var ast = Expressions.parse(expression);
+            Expressions.inferTypes(ast,
+                colName -> ReturnResult.failure("No row values are available. Use '$$' to access flow variables."),
+                flowVarName -> toValueType(availableFlowVariables, flowVarName) //
+            );
+
+            // Evaluate
+            var resultComputer = Expressions.evaluate( //
+                ast, //
+                column -> Optional.empty(), //
+                flowVar -> toComputer(availableFlowVariables, flowVar), //
+                aggregation -> Optional.empty() //
+            );
+
+            final var finalI = i;
+            EvaluationContext ctx = warning -> setWarning.accept(finalI, warning);
+
+            final FlowVariable outputVariable;
+            if (resultComputer instanceof IntegerComputer c) {
+                outputVariable = new FlowVariable(name, LongType.INSTANCE, c.compute(ctx));
+            } else if (resultComputer instanceof StringComputer c) {
+                outputVariable = new FlowVariable(name, StringType.INSTANCE, c.compute(ctx));
+            } else if (resultComputer instanceof FloatComputer c) {
+                outputVariable = new FlowVariable(name, DoubleType.INSTANCE, c.compute(ctx));
+            } else if (resultComputer instanceof BooleanComputer c) {
+                outputVariable = new FlowVariable(name, BooleanType.INSTANCE, c.compute(ctx));
+            } else {
+                throw new IllegalStateException("Unexpected computer type: " + resultComputer);
+            }
+            availableFlowVariables.put(name, outputVariable);
+            outputVariables.add(outputVariable);
+        }
+
+        return outputVariables;
+    }
+
+    private static ReturnResult<ValueType> toValueType(final Map<String, FlowVariable> flowVariables,
+        final String name) {
+        return ReturnResult
+            .fromNullable(flowVariables.get(name), "No flow variable with the name '" + name + "' is available.") //
+            .map(FlowVariable::getVariableType) //
+            .flatMap(type -> ReturnResult.fromNullable(ExpressionRunnerUtils.mapVariableToValueType(type),
+                "Flow variables of the type '" + type + "' are not supported"));
+    }
+
+    private static Optional<Computer> toComputer(final Map<String, FlowVariable> flowVariables,
+        final FlowVarAccess flowVarAccess) {
+        return Optional.ofNullable(flowVariables.get(flowVarAccess.name())) //
+            .map(ExpressionRunnerUtils::computerForFlowVariable);
+    }
+
+    /**
+     * Helper to push a {@link FlowVariable} object to the flow variable stack because
+     * NodeModel#pushFlowVariable(FlowVariable) is package private.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void pushFlowVariableObj(final FlowVariable flowVariable) {
+        // NB: This is a hack because NodeModel#pushFlowVariable(FlowVariable) is package private
+        pushFlowVariable(flowVariable.getName(), (VariableType)flowVariable.getVariableType(),
+            flowVariable.getValue(flowVariable.getVariableType()));
     }
 
     private Map<String, FlowVariable> getTemporaryFlowVariables(final Map<String, FlowVariable> addedFlowVariables) {
@@ -323,5 +365,4 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
     protected void reset() {
         // nothing to do
     }
-
 }
