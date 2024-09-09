@@ -344,7 +344,7 @@ const onMenuItemClicked = (item: ButtonItem) => {
   & .error-container {
     display: flex;
     flex-flow: row nowrap;
-    align-items: center;
+    align-items: flex-start;
     margin-top: var(--space-4);
     margin-left: var(--space-4);
     min-height: 15px;
