@@ -13,7 +13,7 @@ import type {
 } from "@/common/types";
 import { Button, FunctionButton, LoadingIcon } from "@knime/components";
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
-import { onKeyStroke } from "@vueuse/core";
+import { onKeyStroke, watchDebounced } from "@vueuse/core";
 import {
   type ComponentPublicInstance,
   computed,
@@ -21,7 +21,6 @@ import {
   onMounted,
   reactive,
   ref,
-  watch,
 } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
@@ -31,7 +30,7 @@ import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
 } from "@/components/ExpressionEditorPane.vue";
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
-import { LANGUAGE } from "@/common/constants";
+import { LANGUAGE, WATCH_DEBOUNCE_TIMEOUT } from "@/common/constants";
 import {
   calculateInitialPaneSizes,
   registerInsertionListener,
@@ -258,14 +257,16 @@ onMounted(async () => {
     });
 
     // Watch all editor text and when changes occur, rerun diagnostics
-    editorStateWatchers[key] = watch(
+    editorStateWatchers[key] = watchDebounced(
       multiEditorComponentRefs[key].getEditorState().text,
       runDiagnosticsFunction,
+      { debounce: WATCH_DEBOUNCE_TIMEOUT },
     );
-    flowVariableStateWatchers[key] = watch(
+    flowVariableStateWatchers[key] = watchDebounced(
       () => flowVariableSelectorStates[key],
       runDiagnosticsFunction,
       {
+        debounce: WATCH_DEBOUNCE_TIMEOUT,
         deep: true,
       },
     );
@@ -339,14 +340,16 @@ const addNewEditorBelowExisting = async (fileNameAbove: string) => {
 
   await runDiagnosticsFunction();
 
-  editorStateWatchers[latestKey] = watch(
+  editorStateWatchers[latestKey] = watchDebounced(
     multiEditorComponentRefs[latestKey].getEditorState().text,
     runDiagnosticsFunction,
+    { debounce: WATCH_DEBOUNCE_TIMEOUT },
   );
-  flowVariableStateWatchers[latestKey] = watch(
+  flowVariableStateWatchers[latestKey] = watchDebounced(
     () => flowVariableSelectorStates[latestKey],
     runDiagnosticsFunction,
     {
+      debounce: WATCH_DEBOUNCE_TIMEOUT,
       deep: true,
     },
   );

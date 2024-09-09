@@ -10,3 +10,5 @@ export const DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY = {
 
 export const LANGUAGE = "knime-expression";
 export const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
+
+export const WATCH_DEBOUNCE_TIMEOUT = 500;
