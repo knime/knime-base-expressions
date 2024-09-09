@@ -61,7 +61,8 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 
 /**
- *
+ * Simple implementation of {@link ExpressionMapperContext} that maps flow variables to computers and resolves
+ * aggregations that have been evaluated using {@link ExpressionRunnerUtils#evaluateAggregations}.
  */
 public class NodeExpressionMapperContext implements ExpressionMapperContext {
 
@@ -70,44 +71,19 @@ public class NodeExpressionMapperContext implements ExpressionMapperContext {
     /**
      * @param getFlowVariable
      */
-    public NodeExpressionMapperContext(
-        final Function<VariableType<?>[], Map<String, FlowVariable>> getFlowVariable) {
+    public NodeExpressionMapperContext(final Function<VariableType<?>[], Map<String, FlowVariable>> getFlowVariable) {
         m_getFlowVariable = getFlowVariable;
     }
 
     @Override
     public Optional<Computer> flowVariableToComputer(final FlowVarAccess flowVariableAccess) {
         return Optional.ofNullable(
-            m_getFlowVariable.apply(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES)
-                .get(flowVariableAccess.name()))
-            .map(NodeExpressionMapperContext::computerForFlowVariable);
+            m_getFlowVariable.apply(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES).get(flowVariableAccess.name()))
+            .map(ExpressionRunnerUtils::computerForFlowVariable);
     }
 
     @Override
     public Optional<Computer> aggregationToComputer(final AggregationCall aggregationCall) {
         return Optional.ofNullable(ExpressionRunnerUtils.getAggregationResultComputer(aggregationCall));
-    }
-
-    private static Computer computerForFlowVariable(final FlowVariable variable) {
-        var variableType = variable.getVariableType();
-
-        if (variableType == VariableType.BooleanType.INSTANCE) {
-            return Computer.BooleanComputer.of(ctx -> variable.getValue(VariableType.BooleanType.INSTANCE),
-                ctx -> false);
-        } else if (variableType == VariableType.DoubleType.INSTANCE) {
-            return Computer.FloatComputer.of(ctx -> variable.getValue(VariableType.DoubleType.INSTANCE),
-                ctx -> false);
-        } else if (variableType == VariableType.LongType.INSTANCE) {
-            return Computer.IntegerComputer.of(ctx -> variable.getValue(VariableType.LongType.INSTANCE),
-                ctx -> false);
-        } else if (variableType == VariableType.IntType.INSTANCE) {
-            return Computer.IntegerComputer.of(ctx -> variable.getValue(VariableType.IntType.INSTANCE),
-                ctx -> false);
-        } else if (variableType == VariableType.StringType.INSTANCE) {
-            return Computer.StringComputer.of(ctx -> variable.getValue(VariableType.StringType.INSTANCE),
-                ctx -> false);
-        } else {
-            throw new IllegalArgumentException("Unsupported variable type: " + variableType);
-        }
     }
 }

@@ -655,4 +655,29 @@ public final class ExpressionRunnerUtils {
             return null;
         }
     }
+
+    /**
+     * Get a computer with the value of the given flow variable.
+     *
+     * @param variable the flow variable
+     * @return a computer that returns the value of the flow variable
+     */
+    public static Computer computerForFlowVariable(final FlowVariable variable) {
+        var variableType = variable.getVariableType();
+
+        if (variableType == VariableType.BooleanType.INSTANCE) {
+            return Computer.BooleanComputer.of(ctx -> variable.getValue(VariableType.BooleanType.INSTANCE),
+                ctx -> false);
+        } else if (variableType == VariableType.DoubleType.INSTANCE) {
+            return Computer.FloatComputer.of(ctx -> variable.getValue(VariableType.DoubleType.INSTANCE), ctx -> false);
+        } else if (variableType == VariableType.LongType.INSTANCE) {
+            return Computer.IntegerComputer.of(ctx -> variable.getValue(VariableType.LongType.INSTANCE), ctx -> false);
+        } else if (variableType == VariableType.IntType.INSTANCE) {
+            return Computer.IntegerComputer.of(ctx -> variable.getValue(VariableType.IntType.INSTANCE), ctx -> false);
+        } else if (variableType == VariableType.StringType.INSTANCE) {
+            return Computer.StringComputer.of(ctx -> variable.getValue(VariableType.StringType.INSTANCE), ctx -> false);
+        } else {
+            throw new IllegalArgumentException("Unsupported variable type: " + variableType);
+        }
+    }
 }
