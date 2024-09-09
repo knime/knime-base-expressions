@@ -213,7 +213,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                 var inferredType = Expressions.getInferredType(ast);
 
                 if (!ValueType.BOOLEAN.equals(inferredType)) {
-                    diagnostics.add(new ExpressionDiagnostic(
+                    diagnostics.add(ExpressionDiagnostic.withSameMessage(
                         "The full expression must return the value type BOOLEAN "
                             + "in order to filter out rows for which the filter expression evaluates to false.",
                         DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast)));

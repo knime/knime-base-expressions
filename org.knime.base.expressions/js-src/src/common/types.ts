@@ -32,6 +32,7 @@ export type EditorErrorState =
 
 export type Diagnostic = {
   message: string;
+  shortMessage: string;
   severity: "ERROR" | "WARNING" | "INFO" | "HINT";
   location: {
     start: number;

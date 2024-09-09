@@ -4,7 +4,7 @@ import {
 } from "@knime/scripting-editor";
 import type { Diagnostic, ErrorLevel } from "@/common/types";
 import {
-  evaluateDiagnostics,
+  getMostSevereDiagnostic,
   markDiagnosticsInEditor,
 } from "@/generalDiagnostics";
 
@@ -27,5 +27,14 @@ export const runRowFilterDiagnostics = async (
 
   markDiagnosticsInEditor(diagnostics, editorState);
 
-  return evaluateDiagnostics(diagnostics);
+  const mostSevere = getMostSevereDiagnostic(diagnostics);
+
+  if (
+    mostSevere === null ||
+    (mostSevere.severity !== "ERROR" && mostSevere.severity !== "WARNING")
+  ) {
+    return "OK";
+  } else {
+    return mostSevere.severity;
+  }
 };

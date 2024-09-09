@@ -180,13 +180,13 @@ const runDiagnosticsFunction = async () => {
       };
     }
 
-    if (codeErrors[index] === "ERROR") {
+    if (codeErrors[index].level === "OK") {
+      editorErrorStates[key] = { level: "OK" };
+    } else {
       editorErrorStates[key] = {
         level: "ERROR",
-        message: "A syntax error occurred.",
+        message: codeErrors[index].message,
       };
-    } else {
-      editorErrorStates[key] = { level: "OK" };
     }
   });
 };

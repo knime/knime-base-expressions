@@ -57,18 +57,32 @@ import org.knime.core.expressions.TextRange;
 /**
  * Represents a diagnostic message for an expression.
  *
- * @param message the message that describes the diagnostic.
+ * @param message the message that describes the diagnostic, which will be displayed in the expression on hover
+ * @param shortMessage a short version of the message, which will be displayed under the expression
  * @param severity the severity of the diagnostic as defined here
  * @param location the location in the expression where the diagnostic applies
  */
-public record ExpressionDiagnostic(String message, DiagnosticSeverity severity, TextRange location) {
+public record ExpressionDiagnostic(String message, String shortMessage, DiagnosticSeverity severity,
+    TextRange location) {
 
     /**
      * @param error the error to convert to a diagnostic
      * @return a diagnostic for the given error
      */
     public static ExpressionDiagnostic fromError(final ExpressionCompileError error) {
-        return new ExpressionDiagnostic(error.createMessage(), DiagnosticSeverity.ERROR, error.location());
+        return switch (error.type()) {
+            case SYNTAX -> new ExpressionDiagnostic( //
+                error.message(), //
+                "The expression has a syntax error.", //
+                DiagnosticSeverity.ERROR, //
+                error.location() //
+                ); //
+            default -> ExpressionDiagnostic.withSameMessage( //
+                error.message(), //
+                DiagnosticSeverity.ERROR, //
+                error.location() //
+                ); //
+        };
     }
 
     /**
@@ -77,6 +91,19 @@ public record ExpressionDiagnostic(String message, DiagnosticSeverity severity, 
      */
     public static List<ExpressionDiagnostic> fromException(final ExpressionCompileException exception) {
         return exception.getErrors().stream().map(ExpressionDiagnostic::fromError).toList();
+    }
+
+    /**
+     * Create a diagnostic with the message and shortMessage being the same.
+     *
+     * @param message
+     * @param severity
+     * @param location
+     * @return a diagnostic with the same message and shortMessage
+     */
+    public static ExpressionDiagnostic withSameMessage(final String message, final DiagnosticSeverity severity,
+        final TextRange location) {
+        return new ExpressionDiagnostic(message, message, severity, location);
     }
 
     /**

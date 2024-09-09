@@ -31,14 +31,31 @@ export const markDiagnosticsInEditor = (
   );
 };
 
-export const evaluateDiagnostics = (diagnosticsForThisEditor: Diagnostic[]) => {
-  if (diagnosticsForThisEditor.some((d) => d.severity === "ERROR")) {
-    return "ERROR";
-  } else if (diagnosticsForThisEditor.some((d) => d.severity === "WARNING")) {
-    return "WARNING";
-  } else {
-    return "OK";
+/**
+ * Get the first diagnostic with the highest severity, and its message. If there are no
+ * diagnostics that are ERRORs or WARNINGs, return null.
+ *
+ * @param diagnosticsForThisEditor
+ * @returns
+ */
+export const getMostSevereDiagnostic = (
+  diagnosticsForThisEditor: Diagnostic[],
+): Diagnostic | null => {
+  const errorDiagnostic = diagnosticsForThisEditor.find(
+    (d) => d.severity === "ERROR",
+  );
+  if (errorDiagnostic) {
+    return errorDiagnostic;
   }
+
+  const warningDiagnostic = diagnosticsForThisEditor.find(
+    (d) => d.severity === "WARNING",
+  );
+  if (warningDiagnostic) {
+    return warningDiagnostic;
+  }
+
+  return null;
 };
 
 export const runOutputDiagnostics = (

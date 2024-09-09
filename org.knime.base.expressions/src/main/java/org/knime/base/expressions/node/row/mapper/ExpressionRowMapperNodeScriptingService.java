@@ -50,6 +50,7 @@ package org.knime.base.expressions.node.row.mapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -218,44 +219,102 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         }
 
         /**
+         * Checks if the expression accesses columns that are not yet available, but that will be added by a later
+         * expression.
+         *
+         * @param ast
+         * @param expressionIndex
+         * @param allAppendedColumnNames the colum names that are appended. NOT the ones that were passed into the node.
+         * @return
+         */
+        private static List<ExpressionDiagnostic> getPrematureAccessDiagnostics(final Ast ast,
+            final int expressionIndex, final List<String> allAppendedColumnNames) {
+
+            List<ExpressionDiagnostic> diagnostics = new ArrayList<>();
+
+            var accessedColumns = ExpressionRunnerUtils.collectColumnAccesses(ast);
+
+            // Find any columns that are accessed now but appended later
+            var columnsAccessedEarly = accessedColumns.stream() //
+                .filter(access -> allAppendedColumnNames.contains(access.columnId().name())) //
+                .filter(
+                    access -> !allAppendedColumnNames.subList(0, expressionIndex).contains(access.columnId().name())) //
+                .toList();
+
+            for (var column : columnsAccessedEarly) {
+                String columnName = column.columnId().name();
+                String errorMessage =
+                    "The column '%s' was used before it was appended by Expression %d. Try reordering your expressions."
+                        .formatted(columnName, 1 + allAppendedColumnNames.indexOf(columnName));
+                diagnostics.add(ExpressionDiagnostic.withSameMessage( //
+                    errorMessage, //
+                    DiagnosticSeverity.ERROR, //
+                    Expressions.getTextLocation(column) //
+                ));
+            }
+
+            return diagnostics;
+        }
+
+        /**
          * List of diagnostics for each editor, hence a 2D list.
          *
          * @param expressions
-         * @param newColumnNames
+         * @param newColumnNames the names of the appended columns. Guaranteed to have the same length and order as the
+         *            expressions. Some elements are null, for expressions that replaced instead of appending.
          * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
          */
         public List<List<ExpressionDiagnostic>> getRowMapperDiagnostics(final String[] expressions,
             final String[] newColumnNames) {
 
             List<ValueType> inferredColumnTypes = new ArrayList<>();
-            List<String> additionalColumnNames = new ArrayList<>();
             List<List<ExpressionDiagnostic>> diagnostics = new ArrayList<>();
 
             for (int i = 0; i < expressions.length; ++i) {
                 var expression = expressions[i];
 
-                try {
-                    var ast = getPreparedExpression(expression, additionalColumnNames, inferredColumnTypes);
+                List<ExpressionDiagnostic> diagnosticsForThisExpression = new ArrayList<>();
 
+                try {
+                    var untypedAst = Expressions.parse(expression);
+
+                    // Check if the expression refers to any columns that are appended in the future
+                    var prematureAccessDiagnostics =
+                        getPrematureAccessDiagnostics(untypedAst, i, Arrays.asList(newColumnNames));
+                    diagnosticsForThisExpression.addAll(prematureAccessDiagnostics);
+
+                    // if prematureAccessDiagnostics are present, type inference will fail,
+                    // so infer MISSING and continue to next expression
+                    if (!prematureAccessDiagnostics.isEmpty()) {
+                        inferredColumnTypes.add(ValueType.MISSING);
+                        continue;
+                    }
+
+                    var ast = getPreparedExpression( //
+                        expression, //
+                        Arrays.asList(newColumnNames).subList(0, i), //
+                        inferredColumnTypes //
+                    );
                     var inferredType = Expressions.getInferredType(ast);
-                    inferredColumnTypes.add(inferredType);
 
                     if (ValueType.MISSING.equals(inferredType)) {
-                        // Show an error if the full expression has the output type "MISSING"; this is not supported
-                        diagnostics.add(List
-                            .of(new ExpressionDiagnostic("The full expression must not have the value type MISSING.",
-                                DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast))));
-                    } else {
-                        diagnostics.add(List.of());
+                        // Output type "MISSING" is not supported, hence error
+                        diagnosticsForThisExpression.add(ExpressionDiagnostic.withSameMessage( //
+                            "The full expression must not evaluate to MISSING.", //
+                            DiagnosticSeverity.ERROR, //
+                            Expressions.getTextLocation(ast) //
+                        ));
                     }
-                    additionalColumnNames.add(newColumnNames[i]);
 
+                    inferredColumnTypes.add(inferredType);
                 } catch (ExpressionCompileException ex) {
                     // If there is an error in the expression, we still want to be able to continue with the other
                     // expression diagnostics, so add a missing type to the list of inferred types and continue
                     inferredColumnTypes.add(ValueType.MISSING);
 
-                    diagnostics.add(ExpressionDiagnostic.fromException(ex));
+                    diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromException(ex));
+                } finally {
+                    diagnostics.add(diagnosticsForThisExpression);
                 }
             }
 
@@ -284,6 +343,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     expression = getPreparedExpression(script, additionalColumnNames, additionalColumnTypes);
 
                     var inferredType = Expressions.getInferredType(expression);
+
                     additionalColumnTypes.add(inferredType);
                     additionalColumnNames.add(columnName);
                 } catch (ExpressionCompileException ex) {

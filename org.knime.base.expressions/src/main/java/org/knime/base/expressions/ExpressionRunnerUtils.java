@@ -89,6 +89,7 @@ import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.ColumnId;
+import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.Expressions;
@@ -297,19 +298,29 @@ public final class ExpressionRunnerUtils {
     }
 
     private static List<AggregationCall> collectAggregations(final Ast expression) {
-        var acc = new ArrayList<AggregationCall>();
-        collectAggregations(expression, acc);
-        return acc;
+        return collectNodesAssignableFrom(expression, AggregationCall.class);
     }
 
-    /** Recursively collect all aggregation calls in the expression */
-    private static void collectAggregations(final Ast expression, final List<AggregationCall> acc) {
+    private static <T extends Ast> List<T> collectNodesAssignableFrom(final Ast expression, final Class<T> clazz) {
+        List<T> result = new ArrayList<>();
+
         for (var child : expression.children()) {
-            collectAggregations(child, acc);
+            result.addAll(collectNodesAssignableFrom(child, clazz));
         }
-        if (expression instanceof AggregationCall agg) {
-            acc.add(agg);
+
+        if (clazz.isInstance(expression)) {
+            result.add((T)expression);
         }
+
+        return result;
+    }
+
+    public static List<ColumnAccess> collectColumnAccesses(final Ast expression) {
+        return collectNodesAssignableFrom(expression, ColumnAccess.class);
+    }
+
+    public static List<FlowVarAccess> collectFlowVariableAccesses(final Ast expression) {
+        return collectNodesAssignableFrom(expression, FlowVarAccess.class);
     }
 
     /**
