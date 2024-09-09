@@ -114,11 +114,11 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
         );
     }
 
-    public static class FlowVariablePreviewInitialDataSupplier {
+    public static final class FlowVariablePreviewInitialDataSupplier {
 
-        AtomicReference<List<FlowVariable>> m_flowVariables = new AtomicReference<>(List.of());
+        final AtomicReference<List<FlowVariable>> m_flowVariables;
 
-        FlowVariablePreviewInitialDataSupplier(final AtomicReference<List<FlowVariable>> flowVariables) {
+        private FlowVariablePreviewInitialDataSupplier(final AtomicReference<List<FlowVariable>> flowVariables) {
             m_flowVariables = flowVariables;
         }
 
