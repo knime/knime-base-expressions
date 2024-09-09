@@ -353,7 +353,7 @@ const onMenuItemClicked = (item: ButtonItem) => {
       color: var(--error-text-colour);
       font-size: 12px;
       line-height: 14px;
-      word-wrap: normal;
+      word-break: break-word;
     }
 
     & .error-icon {
