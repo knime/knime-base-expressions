@@ -53,14 +53,20 @@ import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForT
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.stream.IntStream;
 
 import org.knime.base.expressions.ExpressionMapperFactory;
 import org.knime.base.expressions.ExpressionRunnerUtils;
+import org.knime.base.expressions.ExpressionRunnerUtils.NewColumnPosition;
 import org.knime.base.expressions.InsertionMode;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
+import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.expressions.Ast;
@@ -77,6 +83,7 @@ import org.knime.core.node.Node;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.table.virtual.expression.Exec;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
@@ -102,12 +109,14 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
     }
 
     /** @return the typed Ast for the configured expression */
-    private Ast getPreparedExpression(final DataTableSpec inSpec, final String script)
-        throws ExpressionCompileException {
+    private static Ast getPreparedExpression(final String expression, final DataTableSpec inSpec,
+        final Map<String, FlowVariable> availableFlowVariables) throws ExpressionCompileException {
 
-        var ast = Expressions.parse(script);
-        Expressions.inferTypes(ast, columnToTypesForTypeInference(inSpec), flowVarToTypeForTypeInference(
-            getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES)));
+        var ast = Expressions.parse(expression);
+        Expressions.inferTypes(ast, //
+            columnToTypesForTypeInference(inSpec), //
+            flowVarToTypeForTypeInference(availableFlowVariables) //
+        );
         return ast;
     }
 
@@ -118,17 +127,19 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
      * @param inputSpec the input table specification
      * @param outputMode whether to replace an existing column or add a new one
      * @param outputColumn the name of the column to be created/replaced
-     * @param script the script to be applied
+     * @param expression the expression to be applied
      * @param indexInScripts the index of the script in the list of scripts. Useful for error messages
      * @return the table specification after the script has been applied
      * @throws InvalidSettingsException if anything is wrong with the script or the settings
      */
     private DataTableSpec computeTableSpecAfterScriptApplied(final DataTableSpec inputSpec,
-        final InsertionMode outputMode, final String outputColumn, final String script, final int indexInScripts)
+        final InsertionMode outputMode, final String outputColumn, final String expression, final int indexInScripts)
         throws InvalidSettingsException {
+        var availableFlowVariables =
+            getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES);
 
         try {
-            var ast = getPreparedExpression(inputSpec, script);
+            var ast = getPreparedExpression(expression, inputSpec, availableFlowVariables);
             var outputType = Expressions.getInferredType(ast);
             if (ValueType.MISSING.equals(outputType)) {
                 throw new InvalidSettingsException(
@@ -177,30 +188,81 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         return new DataTableSpec[]{lastOutputSpec};
     }
 
+    static List<NewColumnPosition> getColumnPositions(final List<InsertionMode> insertionModes,
+        final List<String> activeOutputColumns) {
+        return IntStream.range(0, insertionModes.size()) //
+            .mapToObj(
+                i -> new ExpressionRunnerUtils.NewColumnPosition(insertionModes.get(i), activeOutputColumns.get(i))) //
+            .toList();
+    }
+
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws Exception {
-
-        int numberOfScripts = m_settings.getNumScripts();
-
-        var inTable = inData[0];
-
-        // TODO(AP-23274): add expression dependency
         var messageBuilder = createMessageBuilder();
-        EvaluationContext ctx = messageBuilder::addTextIssue;
 
-        for (int i = 0; i < numberOfScripts; ++i) {
-            var subProgress = exec.createSubProgress(1.0 / numberOfScripts);
+        var outputTable = applyMapperExpressions(m_settings.getScripts(), //
+            getColumnPositions(m_settings.getColumnInsertionModes(), m_settings.getActiveOutputColumns()), //
+            inData[0], //
+            getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES), //
+            exec, //
+            (i, warningMessage) -> messageBuilder.addTextIssue("Expression " + (i + 1) + ": " + warningMessage) //
+        );
 
-            var newColumnPosition = new ExpressionRunnerUtils.NewColumnPosition(
-                m_settings.getColumnInsertionModes().get(i), m_settings.getActiveOutputColumns().get(i));
+        // Set warning message if there are any issues
+        var issueCount = messageBuilder.getIssueCount();
+        if (issueCount > 0) {
+            var message = messageBuilder //
+                .withSummary(
+                    issueCount + " warning" + (issueCount == 1 ? "" : "s") + " occured while evaluating expression.") //
+                .build() //
+                .orElse(null);
+            setWarning(message);
+        }
 
-            // Prepare the expression
-            var expression = getPreparedExpression(inTable.getDataTableSpec(), m_settings.getScripts().get(i));
+        return new BufferedDataTable[]{outputTable};
+    }
+
+    /**
+     * Applies the given expressions to the table.
+     *
+     * @param expressions the expressions to apply
+     * @param newColumnPositions the positions of the new columns
+     * @param inputTable the input table
+     * @param availableFlowVariables the available flow variables
+     * @param exec the execution context
+     * @param setWarning a consumer that is called if the evaluation of an expression produces a warning with the index
+     *            of the expression and the warning message
+     * @return the output table
+     *
+     * @throws ExpressionCompileException if an expression cannot be compiled
+     * @throws CanceledExecutionException if the execution is canceled
+     * @throws VirtualTableIncompatibleException
+     */
+    static BufferedDataTable applyMapperExpressions( //
+        final List<String> expressions, //
+        final List<NewColumnPosition> newColumnPositions, //
+        final BufferedDataTable inputTable, //
+        final Map<String, FlowVariable> availableFlowVariables, //
+        final ExecutionContext exec, //
+        final BiConsumer<Integer, String> setWarning //
+    ) throws ExpressionCompileException, CanceledExecutionException, VirtualTableIncompatibleException {
+        var exprContext = new NodeExpressionMapperContext(x -> availableFlowVariables);
+        var numberOfExpressions = expressions.size();
+        var nextInputTable = inputTable;
+
+        for (int i = 0; i < numberOfExpressions; ++i) {
+            var subProgress = exec.createSubProgress(1.0 / numberOfExpressions);
+
+            var newColumnPosition = newColumnPositions.get(i);
+
+            // Parse the expression and infer the types
+            var expression =
+                getPreparedExpression(expressions.get(i), nextInputTable.getDataTableSpec(), availableFlowVariables);
 
             // Create a reference table for the input table
             var inRefTable =
-                ExpressionRunnerUtils.createReferenceTable(inTable, exec, subProgress.createSubProgress(0.33));
+                ExpressionRunnerUtils.createReferenceTable(nextInputTable, exec, subProgress.createSubProgress(0.33));
 
             // Pre-evaluate the aggregations
             // NB: We use the inRefTable because it is guaranteed to be a columnar table
@@ -208,7 +270,8 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
                 subProgress.createSubProgress(0.33));
 
             // Evaluate the expression and materialize the result
-            var exprContext = new NodeExpressionMapperContext(this::getAvailableInputFlowVariables);
+            final var finalI = i;
+            EvaluationContext ctx = warning -> setWarning.accept(finalI, warning);
             var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
                 newColumnPosition.columnName(), exec, subProgress.createSubProgress(0.34), exprContext, ctx);
 
@@ -226,22 +289,11 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
             @SuppressWarnings("resource") // #close clears the table but we still want to keep the data for the output
             var outputExtensionTable =
                 new VirtualTableExtensionTable(new ReferenceTable[]{inRefTable, expressionResult}, output,
-                    inTable.size(), Node.invokeGetDataRepository(exec).generateNewID());
+                    nextInputTable.size(), Node.invokeGetDataRepository(exec).generateNewID());
 
-            inTable = outputExtensionTable.create(exec);
+            nextInputTable = outputExtensionTable.create(exec);
         }
-
-        var issueCount = messageBuilder.getIssueCount();
-        if (issueCount > 0) {
-            var message = messageBuilder //
-                .withSummary(
-                    issueCount + " warning" + (issueCount == 1 ? "" : "s") + " occured while evaluating expression") //
-                .build() //
-                .orElse(null);
-            setWarning(message);
-        }
-
-        return new BufferedDataTable[]{inTable};
+        return nextInputTable;
     }
 
     @Override

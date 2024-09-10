@@ -248,36 +248,54 @@ public final class ExpressionRunnerUtils {
             // Fallback for the row-based backend
             LOGGER.debug("Copying table to columnar format to be compatible with expressions", ex);
 
-            try (var container = new ColumnarTableBackend().create(exec, table.getDataTableSpec(),
-                DataContainerSettings.builder() //
-                    .withInitializedDomain(true) //
-                    .withCheckDuplicateRowKeys(false) //
-                    .withDomainUpdate(false).build(), //
-                Node.invokeGetDataRepository(exec), Node.invokeGetFileStoreHandler(exec));
-                    var writeCursor = container.createCursor();
-                    var readCursor = table.cursor()) {
-
-                long rowIndex = 0;
-                while (readCursor.canForward() && rowIndex < maxRowsToConvert) {
-                    rowIndex++;
-                    writeCursor.forward().setFrom(readCursor.forward());
-
-                    progress.setProgress( //
-                        rowIndex / (double)table.size(), //
-                        "Copying row-based table to columnar format (row %d of %d)".formatted(rowIndex, table.size()) //
-                    );
-
-                    progress.checkCanceled();
-                }
-                return ReferenceTables.createReferenceTable(uuid, container.finish());
-            } catch (IOException e) {
-                throw new IllegalStateException("Copying row-based table failed.", e);
+            try {
+                return ReferenceTables.createReferenceTable(uuid,
+                    copyToColumnarTable(table, maxRowsToConvert, exec, progress));
             } catch (VirtualTableIncompatibleException e) {
                 // This cannot happen because we explicitly create a columnar table
                 throw new IllegalStateException(e);
             }
         } finally {
             progress.setProgress(1);
+        }
+    }
+
+    /**
+     * Copy the given table to a columnar table. Convert no more than {@code maxRowsToConvert} rows to columnar format
+     * and report progress using the given {@link ExecutionMonitor}.
+     *
+     * @param table the table to convert
+     * @param maxRowsToConvert the maximum number of rows to convert to columnar format
+     * @param exec the {@link ExecutionContext} to use for creating the new columnar container
+     * @param progress the {@link ExecutionMonitor} to report progress
+     * @return the columnar table
+     * @throws CanceledExecutionException if the execution was canceled
+     */
+    public static BufferedDataTable copyToColumnarTable(final BufferedDataTable table, final long maxRowsToConvert,
+        final ExecutionContext exec, final ExecutionMonitor progress) throws CanceledExecutionException {
+        try (var container = new ColumnarTableBackend().create(exec, table.getDataTableSpec(),
+            DataContainerSettings.builder() //
+                .withInitializedDomain(true) //
+                .withCheckDuplicateRowKeys(false) //
+                .withDomainUpdate(false).build(), //
+            Node.invokeGetDataRepository(exec), Node.invokeGetFileStoreHandler(exec));
+                var writeCursor = container.createCursor();
+                var readCursor = table.cursor()) {
+
+            for (long rowIndex = 0; readCursor.canForward() && rowIndex < maxRowsToConvert; ++rowIndex) {
+                writeCursor.forward().setFrom(readCursor.forward());
+
+                progress.setProgress( //
+                    rowIndex / (double)table.size(), //
+                    "Copying row-based table to columnar format (row %d of %d)".formatted(rowIndex, table.size()) //
+                );
+
+                progress.checkCanceled();
+            }
+
+            return container.finish();
+        } catch (IOException e) {
+            throw new IllegalStateException("Copying row-based table failed.", e);
         }
     }
 
@@ -294,6 +312,7 @@ public final class ExpressionRunnerUtils {
      */
     public static ReferenceTable createReferenceTable(final BufferedDataTable table, final ExecutionContext exec,
         final ExecutionMonitor progress) throws CanceledExecutionException {
+        // TODO can the one with the max rows be removed?
         return ExpressionRunnerUtils.createReferenceTable(table, exec, progress, table.size());
     }
 
