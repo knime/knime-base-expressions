@@ -1,4 +1,4 @@
-import type { Diagnostic } from "@/common/types";
+import type { Diagnostic, EditorErrorState } from "@/common/types";
 import type { UseCodeEditorReturn } from "@knime/scripting-editor";
 import { editor as MonacoEditor, Range } from "monaco-editor";
 import {
@@ -32,30 +32,31 @@ export const markDiagnosticsInEditor = (
 };
 
 /**
- * Get the first diagnostic with the highest severity, and its message. If there are no
- * diagnostics that are ERRORs or WARNINGs, return null.
+ * Get the first diagnostic with the highest severity, and its shortMessage as the EditorErrorState.
+ * If there are no diagnostics that are ERRORs or WARNINGs, return { level: "OK" }.
  *
  * @param diagnosticsForThisEditor
- * @returns
+ * @returns the EditorErrorState showing the first diagnostic with the highest severity,
+ *      or { level: "OK" } if there are no diagnostics.
  */
-export const getMostSevereDiagnostic = (
+export const getEditorErrorStateFromDiagnostics = (
   diagnosticsForThisEditor: Diagnostic[],
-): Diagnostic | null => {
+): EditorErrorState => {
   const errorDiagnostic = diagnosticsForThisEditor.find(
     (d) => d.severity === "ERROR",
   );
   if (errorDiagnostic) {
-    return errorDiagnostic;
+    return { level: "ERROR", message: errorDiagnostic.shortMessage };
   }
 
   const warningDiagnostic = diagnosticsForThisEditor.find(
     (d) => d.severity === "WARNING",
   );
   if (warningDiagnostic) {
-    return warningDiagnostic;
+    return { level: "WARNING", message: warningDiagnostic.shortMessage };
   }
 
-  return null;
+  return { level: "OK" };
 };
 
 export const runOutputDiagnostics = (

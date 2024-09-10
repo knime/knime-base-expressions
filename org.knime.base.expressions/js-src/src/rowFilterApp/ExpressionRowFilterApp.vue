@@ -51,20 +51,9 @@ const runDiagnosticsFunction = async () => {
     return;
   }
 
-  const errorLevel = await runRowFilterDiagnostics(
+  errorState.value = await runRowFilterDiagnostics(
     editorReference.getEditorState(),
   );
-
-  if (errorLevel === "OK") {
-    errorState.value = {
-      level: errorLevel,
-    };
-  } else {
-    errorState.value = {
-      level: errorLevel,
-      message: "A syntax error ocurred.",
-    };
-  }
 };
 
 onMounted(async () => {

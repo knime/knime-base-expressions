@@ -2,9 +2,9 @@ import {
   getScriptingService,
   type UseCodeEditorReturn,
 } from "@knime/scripting-editor";
-import type { Diagnostic, ErrorLevel } from "@/common/types";
+import type { Diagnostic, EditorErrorState } from "@/common/types";
 import {
-  getMostSevereDiagnostic,
+  getEditorErrorStateFromDiagnostics,
   markDiagnosticsInEditor,
 } from "@/generalDiagnostics";
 
@@ -17,7 +17,7 @@ import {
  */
 export const runRowFilterDiagnostics = async (
   editorState: UseCodeEditorReturn,
-): Promise<ErrorLevel> => {
+): Promise<EditorErrorState> => {
   const newText = editorState.text.value;
 
   const diagnostics: Diagnostic[] = await getScriptingService().sendToService(
@@ -27,14 +27,5 @@ export const runRowFilterDiagnostics = async (
 
   markDiagnosticsInEditor(diagnostics, editorState);
 
-  const mostSevere = getMostSevereDiagnostic(diagnostics);
-
-  if (
-    mostSevere === null ||
-    (mostSevere.severity !== "ERROR" && mostSevere.severity !== "WARNING")
-  ) {
-    return "OK";
-  } else {
-    return mostSevere.severity;
-  }
+  return getEditorErrorStateFromDiagnostics(diagnostics);
 };

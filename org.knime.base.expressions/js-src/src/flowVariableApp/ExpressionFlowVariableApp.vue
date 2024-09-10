@@ -180,14 +180,7 @@ const runDiagnosticsFunction = async () => {
       };
     }
 
-    if (codeErrors[index].level === "OK") {
-      editorErrorStates[key] = { level: "OK" };
-    } else {
-      editorErrorStates[key] = {
-        level: "ERROR",
-        message: codeErrors[index].message,
-      };
-    }
+    editorErrorStates[key] = codeErrors[index];
   });
 };
 

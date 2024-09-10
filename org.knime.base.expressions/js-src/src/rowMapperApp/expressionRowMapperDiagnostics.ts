@@ -4,7 +4,7 @@ import {
 } from "@knime/scripting-editor";
 import type { Diagnostic, EditorErrorState } from "@/common/types";
 import {
-  getMostSevereDiagnostic,
+  getEditorErrorStateFromDiagnostics,
   markDiagnosticsInEditor,
 } from "@/generalDiagnostics";
 
@@ -30,16 +30,5 @@ export const runRowMapperDiagnostics = async (
     markDiagnosticsInEditor(diagnosticsForThisEditor, editorStates[index]),
   );
 
-  return diagnostics.map(getMostSevereDiagnostic).map((d): EditorErrorState => {
-    if (d === null || (d.severity !== "ERROR" && d.severity !== "WARNING")) {
-      return {
-        level: "OK",
-      };
-    } else {
-      return {
-        level: d.severity,
-        message: d.shortMessage,
-      };
-    }
-  });
+  return diagnostics.map(getEditorErrorStateFromDiagnostics);
 };
