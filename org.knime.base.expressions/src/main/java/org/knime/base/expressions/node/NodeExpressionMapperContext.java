@@ -50,7 +50,6 @@ package org.knime.base.expressions.node;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContext;
 import org.knime.base.expressions.ExpressionRunnerUtils;
@@ -58,7 +57,6 @@ import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Computer;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.VariableType;
 
 /**
  * Simple implementation of {@link ExpressionMapperContext} that maps flow variables to computers and resolves
@@ -66,19 +64,18 @@ import org.knime.core.node.workflow.VariableType;
  */
 public class NodeExpressionMapperContext implements ExpressionMapperContext {
 
-    private final Function<VariableType<?>[], Map<String, FlowVariable>> m_getFlowVariable;
+    private final Map<String, FlowVariable> m_availableFlowVariables;
 
     /**
-     * @param getFlowVariable
+     * @param availableFlowVariables the available flow variables
      */
-    public NodeExpressionMapperContext(final Function<VariableType<?>[], Map<String, FlowVariable>> getFlowVariable) {
-        m_getFlowVariable = getFlowVariable;
+    public NodeExpressionMapperContext(final Map<String, FlowVariable> availableFlowVariables) {
+        m_availableFlowVariables = availableFlowVariables;
     }
 
     @Override
     public Optional<Computer> flowVariableToComputer(final FlowVarAccess flowVariableAccess) {
-        return Optional.ofNullable(
-            m_getFlowVariable.apply(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES).get(flowVariableAccess.name()))
+        return Optional.ofNullable(m_availableFlowVariables.get(flowVariableAccess.name()))
             .map(ExpressionRunnerUtils::computerForFlowVariable);
     }
 

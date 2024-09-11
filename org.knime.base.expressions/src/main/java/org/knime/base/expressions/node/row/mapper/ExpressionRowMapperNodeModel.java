@@ -247,7 +247,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         final ExecutionContext exec, //
         final BiConsumer<Integer, String> setWarning //
     ) throws ExpressionCompileException, CanceledExecutionException, VirtualTableIncompatibleException {
-        var exprContext = new NodeExpressionMapperContext(x -> availableFlowVariables);
+        var exprContext = new NodeExpressionMapperContext(availableFlowVariables);
         var numberOfExpressions = expressions.size();
         var nextInputTable = inputTable;
 

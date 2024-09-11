@@ -175,7 +175,7 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
         ExpressionRunnerUtils.evaluateAggregations(ast, inRefTable.getBufferedTable(), exec.createSubProgress(0.33));
 
         // Evaluate the expression and materialize the result
-        var exprContext = new NodeExpressionMapperContext(x -> availableFlowVariables);
+        var exprContext = new NodeExpressionMapperContext(availableFlowVariables);
 
         // We must avoid using inRefTable.getVirtualTable() directly. Doing so would result in building upon the
         // transformation of the input table, instead of initiating a new fragment. This approach leads to complications
