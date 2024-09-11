@@ -230,13 +230,13 @@ public final class ExpressionRunnerUtils {
      *
      * @param table
      * @param exec an {@link ExecutionContext} that is used to create a new columnar container if the table is not
-     *            columnar
-     * @param progress an {@link ExecutionMonitor} that is used to report progress
+     *            columnar and to report the progress. Use a sub execution context if needed for proper progress
+     *            reporting.
      * @return a {@link ReferenceTable} that can be used for a {@link ColumnarVirtualTable}
      * @throws CanceledExecutionException if the execution was canceled
      */
-    public static ReferenceTable createReferenceTable(final BufferedDataTable table, final ExecutionContext exec,
-        final ExecutionMonitor progress) throws CanceledExecutionException {
+    public static ReferenceTable createReferenceTable(final BufferedDataTable table, final ExecutionContext exec)
+        throws CanceledExecutionException {
 
         var uuid = UUID.randomUUID();
         try {
@@ -247,14 +247,13 @@ public final class ExpressionRunnerUtils {
             LOGGER.debug("Copying table to columnar format to be compatible with expressions", ex);
 
             try {
-                return ReferenceTables.createReferenceTable(uuid,
-                    copyToColumnarTable(table, table.size(), exec, progress));
+                return ReferenceTables.createReferenceTable(uuid, copyToColumnarTable(table, table.size(), exec));
             } catch (VirtualTableIncompatibleException e) {
                 // This cannot happen because we explicitly create a columnar table
                 throw new IllegalStateException(e);
             }
         } finally {
-            progress.setProgress(1);
+            exec.setProgress(1);
         }
     }
 
@@ -264,13 +263,14 @@ public final class ExpressionRunnerUtils {
      *
      * @param table the table to convert
      * @param maxRowsToConvert the maximum number of rows to convert to columnar format
-     * @param exec the {@link ExecutionContext} to use for creating the new columnar container
-     * @param progress the {@link ExecutionMonitor} to report progress
+     * @param exec an {@link ExecutionContext} that is used to create a new columnar container if the table is not
+     *            columnar and to report the progress. Use a sub execution context if needed for proper progress
+     *            reporting.
      * @return the columnar table
      * @throws CanceledExecutionException if the execution was canceled
      */
     public static BufferedDataTable copyToColumnarTable(final BufferedDataTable table, final long maxRowsToConvert,
-        final ExecutionContext exec, final ExecutionMonitor progress) throws CanceledExecutionException {
+        final ExecutionContext exec) throws CanceledExecutionException {
         try (var container = new ColumnarTableBackend().create(exec, table.getDataTableSpec(),
             DataContainerSettings.builder() //
                 .withInitializedDomain(true) //
@@ -283,12 +283,12 @@ public final class ExpressionRunnerUtils {
             for (long rowIndex = 0; readCursor.canForward() && rowIndex < maxRowsToConvert; ++rowIndex) {
                 writeCursor.forward().setFrom(readCursor.forward());
 
-                progress.setProgress( //
+                exec.setProgress( //
                     rowIndex / (double)table.size(), //
                     "Copying row-based table to columnar format (row %d of %d)".formatted(rowIndex, table.size()) //
                 );
 
-                progress.checkCanceled();
+                exec.checkCanceled();
             }
 
             return container.finish();

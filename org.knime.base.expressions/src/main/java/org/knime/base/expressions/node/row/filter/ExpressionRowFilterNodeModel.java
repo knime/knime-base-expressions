@@ -168,7 +168,7 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
         var ast = getPreparedExpression(expression, inputTable.getDataTableSpec(), availableFlowVariables);
 
         // Create a reference table for the input table
-        var inRefTable = ExpressionRunnerUtils.createReferenceTable(inputTable, exec, exec.createSubProgress(0.33));
+        var inRefTable = ExpressionRunnerUtils.createReferenceTable(inputTable, exec.createSubExecutionContext(0.33));
 
         // Pre-evaluate the aggregations
         // NB: We use the inRefTable because it is guaranteed to be a columnar table

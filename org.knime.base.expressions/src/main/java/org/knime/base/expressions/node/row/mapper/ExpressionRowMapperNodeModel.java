@@ -252,7 +252,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         var nextInputTable = inputTable;
 
         for (int i = 0; i < numberOfExpressions; ++i) {
-            var subProgress = exec.createSubProgress(1.0 / numberOfExpressions);
+            var subExec = exec.createSubExecutionContext(1.0 / numberOfExpressions);
 
             var newColumnPosition = newColumnPositions.get(i);
 
@@ -262,18 +262,18 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
 
             // Create a reference table for the input table
             var inRefTable =
-                ExpressionRunnerUtils.createReferenceTable(nextInputTable, exec, subProgress.createSubProgress(0.33));
+                ExpressionRunnerUtils.createReferenceTable(nextInputTable, subExec.createSubExecutionContext(0.33));
 
             // Pre-evaluate the aggregations
             // NB: We use the inRefTable because it is guaranteed to be a columnar table
             ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(),
-                subProgress.createSubProgress(0.33));
+                subExec.createSubProgress(0.33));
 
             // Evaluate the expression and materialize the result
             final var finalI = i;
             EvaluationContext ctx = warning -> setWarning.accept(finalI, warning);
             var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
-                newColumnPosition.columnName(), exec, subProgress.createSubProgress(0.34), exprContext, ctx);
+                newColumnPosition.columnName(), exec, subExec.createSubProgress(0.34), exprContext, ctx);
 
             // We must avoid using inRefTable.getVirtualTable() directly. Doing so would result in building upon the
             // transformation of the input table, instead of initiating a new fragment. This leads to complications

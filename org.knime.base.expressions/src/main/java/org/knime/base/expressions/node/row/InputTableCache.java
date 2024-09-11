@@ -105,8 +105,7 @@ public final class InputTableCache {
             var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
             var executionContext = nodeContainer.createExecutionContext();
             try {
-                var table =
-                    ExpressionRunnerUtils.copyToColumnarTable(m_fullTable, numRows, executionContext, executionContext);
+                var table = ExpressionRunnerUtils.copyToColumnarTable(m_fullTable, numRows, executionContext);
                 m_cachedTables.put(numRows, table);
                 return table;
             } catch (CanceledExecutionException ex) {
