@@ -309,16 +309,30 @@ public final class ExpressionRunnerUtils {
         }
 
         if (clazz.isInstance(expression)) {
-            result.add((T)expression);
+            @SuppressWarnings("unchecked")
+            var t = (T)expression;
+            result.add(t);
         }
 
         return result;
     }
 
+    /**
+     * Collect all column accesses in the given expression.
+     *
+     * @param expression the expression
+     * @return the column accesses
+     */
     public static List<ColumnAccess> collectColumnAccesses(final Ast expression) {
         return collectNodesAssignableFrom(expression, ColumnAccess.class);
     }
 
+    /**
+     * Collect all flow variable accesses in the given expression.
+     *
+     * @param expression the expression
+     * @return the flow variable accesses
+     */
     public static List<FlowVarAccess> collectFlowVariableAccesses(final Ast expression) {
         return collectNodesAssignableFrom(expression, FlowVarAccess.class);
     }
