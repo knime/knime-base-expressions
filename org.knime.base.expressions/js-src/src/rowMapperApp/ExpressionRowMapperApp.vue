@@ -8,491 +8,151 @@ import {
   useReadonlyStore,
 } from "@knime/scripting-editor";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
-import type {
-  ExpressionInitialData,
-  ExpressionVersion,
-  EditorErrorState,
-} from "@/common/types";
-import { FunctionButton, LoadingIcon } from "@knime/components";
-import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
-import { onKeyStroke } from "@vueuse/core";
+import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
+import { LoadingIcon } from "@knime/components";
 import {
-  type ComponentPublicInstance,
-  computed,
-  nextTick,
-  onMounted,
-  reactive,
-  ref,
-  watch,
-} from "vue";
+  type AllowedDropDownValue,
+  type SelectorState,
+} from "@/components/OutputSelector.vue";
+import { onMounted, ref } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
-import { v4 as uuidv4 } from "uuid";
-import ExpressionEditorPane, {
-  type ExpressionEditorPaneExposes,
-} from "@/components/ExpressionEditorPane.vue";
-import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
+import MultiEditorContainer, {
+  type EditorState,
+} from "@/components/MultiEditorContainer.vue";
 import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
 import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
-import {
-  calculateInitialPaneSizes,
-  registerInsertionListener,
-} from "@/common/functions";
+import { calculateInitialPaneSizes } from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
 import {
   type ExpressionRowMapperNodeSettings,
   getRowMapperSettingsService,
 } from "@/expressionSettingsService";
-import OutputSelector, {
-  type AllowedDropDownValue,
-  type SelectorState,
-} from "@/components/OutputSelector.vue";
 import { runOutputDiagnostics } from "@/generalDiagnostics";
 
-const activeEditorFileName = ref<string | null>(null);
+const initialData = ref<ExpressionInitialData | null>(null);
+const initialSettings = ref<ExpressionRowMapperNodeSettings | null>(null);
+const runButtonDisabledErrorReason = ref<string | null>(null);
+const multiEditorContainerRef =
+  ref<InstanceType<typeof MultiEditorContainer>>();
 
-// Populated by the initial settings
-const columnSelectorStates = reactive<{ [key: string]: SelectorState }>({});
-
-const editorErrorStates = reactive<{ [key: string]: EditorErrorState }>({});
-const columnSelectorErrorStates = reactive<{ [key: string]: EditorErrorState }>(
-  {},
-);
-
-/**
- * Generate a new key for a new editor. This is used to index the columnSelectorStates
- * and the multiEditorComponentRefs, plus it's used to keep track of the order of the editors.
- */
-const generateNewKey = () => {
-  return uuidv4();
-};
-
-// Overwritten by the initial settings
-const expressionVersion = ref<ExpressionVersion>({
-  languageVersion: 0,
-  builtinFunctionsVersion: 0,
-  builtinAggregationsVersion: 0,
-});
-
-const multiEditorComponentRefs = reactive<{
-  [key: string]: ExpressionEditorPaneExposes;
-}>({});
-
-const columnStateWatchers = reactive<{ [key: string]: Function }>({});
-const editorStateWatchers = reactive<{ [key: string]: Function }>({});
-
-// The canonical source of ordering truth, used to index the columnSelectorStates
-// and the multiEditorComponentRefs. Things are run in the order defined here,
-// saved in the order defined here, etc.
-const orderedEditorKeys = reactive<string[]>([]);
-
-const createEditorTitle = (index: number) => `Expression (${index + 1})`;
-
-const numberOfEditors = computed(() => orderedEditorKeys.length);
-
-/** Called by components when they're created, stores a ref to the component in our dict */
-const createElementReference = (title: string) => {
-  return (el: Element | ComponentPublicInstance | null) => {
-    multiEditorComponentRefs[title] =
-      el as unknown as ExpressionEditorPaneExposes;
-  };
-};
-
-// Input columns helpers
-const columnsInInputTable = ref<AllowedDropDownValue[]>([]);
-
-const getAvailableColumnsForReplacement = (
-  key: string,
-): AllowedDropDownValue[] => {
-  const index = orderedEditorKeys.indexOf(key);
-
-  const columnsFromPreviousEditors = orderedEditorKeys
-    .slice(0, index)
-    .filter((key) => columnSelectorStates[key].outputMode === "APPEND")
-    .map((key) => columnSelectorStates[key].create)
-    .map((column) => {
-      return { id: column, text: column };
-    });
-
-  return [...columnsInInputTable.value, ...columnsFromPreviousEditors];
-};
-
-const getActiveEditor = (): ExpressionEditorPaneExposes | null => {
-  if (activeEditorFileName.value === null) {
-    return null;
-  }
-
-  return multiEditorComponentRefs[activeEditorFileName.value];
-};
-
-const onEditorFocused = (filename: string) => {
-  activeEditorFileName.value = filename;
-  setActiveEditorStoreForAi(
-    multiEditorComponentRefs[filename]?.getEditorState(),
-  );
-
-  // Scroll to the editor. The focusing somehow interferes with scrolling,
-  // so wait for a tick first.
-  nextTick().then(() => {
-    multiEditorComponentRefs[filename]
-      ?.getEditorState()
-      .editor.value?.getDomNode()
-      ?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-  });
-};
-
-const functionCatalogData = ref<FunctionCatalogData>();
-const inputsAvailable = ref(false);
-
-const getFirstEditor = (): ExpressionEditorPaneExposes => {
-  return multiEditorComponentRefs[orderedEditorKeys[0]];
-};
-
-const runDiagnosticsFunction = async () => {
+const runDiagnosticsFunction = async (states: EditorState[]) => {
   const codeErrors = await runRowMapperDiagnostics(
-    orderedEditorKeys
-      .map((key) => multiEditorComponentRefs[key])
-      .map((editor) => editor.getEditorState()),
-    orderedEditorKeys
-      .map((key) => columnSelectorStates[key])
-      .map((state) =>
-        state.outputMode === "APPEND" ? state.create : state.replace,
-      ),
+    states.map((state) => state.monacoState),
+    states.map((state) =>
+      state.selectorState.outputMode === "APPEND"
+        ? state.selectorState.create
+        : state.selectorState.replace,
+    ),
   );
 
   const columnErrorMessages = runOutputDiagnostics(
     "column",
-    orderedEditorKeys.map((key) => columnSelectorStates[key]),
-    columnsInInputTable.value.map((column) => column.id),
+    states.map((state) => state.selectorState),
+    initialData.value?.inputObjects[0].subItems?.map((c) => c.name) ?? [],
   );
 
-  orderedEditorKeys.forEach((key, index) => {
+  for (const [index, state] of states.entries()) {
     if (columnErrorMessages[index] === null) {
-      columnSelectorErrorStates[key] = {
+      multiEditorContainerRef.value?.setSelectorErrorState(state.key, {
         level: "OK",
-      };
+      });
     } else {
-      columnSelectorErrorStates[key] = {
+      multiEditorContainerRef.value?.setSelectorErrorState(state.key, {
         level: "ERROR",
         message: columnErrorMessages[index],
-      };
+      });
     }
 
-    editorErrorStates[key] = codeErrors[index];
-  });
+    multiEditorContainerRef.value?.setEditorErrorState(
+      state.key,
+      codeErrors[index],
+    );
+  }
+
+  const haveColumnErrors = columnErrorMessages.some((error) => error !== null);
+  const haveSyntaxErrors = codeErrors.some((error) => error.level === "ERROR");
+
+  if (!initialData.value?.inputsAvailable) {
+    runButtonDisabledErrorReason.value =
+      "To evaluate your expression, first connect an executed node.";
+  } else if (haveSyntaxErrors) {
+    runButtonDisabledErrorReason.value =
+      "To evaluate your expression, first resolve syntax errors.";
+  } else if (haveColumnErrors) {
+    runButtonDisabledErrorReason.value =
+      "To evaluate your expression, first resolve column output errors.";
+  } else {
+    runButtonDisabledErrorReason.value = null;
+  }
 };
 
-const initialData = ref<ExpressionInitialData | null>(null);
-
 onMounted(async () => {
-  const [initialDataLocal, settings] = await Promise.all([
+  [initialData.value, initialSettings.value] = await Promise.all([
     getExpressionInitialDataService().getInitialData(),
     getRowMapperSettingsService().getSettings(),
   ]);
-  initialData.value = initialDataLocal;
 
-  const {
-    inputsAvailable: inputsAvailableLocal,
-    functionCatalog,
-    inputObjects,
-  } = initialData.value;
-
-  expressionVersion.value = {
-    languageVersion: settings.languageVersion,
-    builtinFunctionsVersion: settings.builtinFunctionsVersion,
-    builtinAggregationsVersion: settings.builtinAggregationsVersion,
-  };
-
-  inputsAvailable.value = inputsAvailableLocal;
-  if (!inputsAvailable.value) {
+  if (!initialData.value.inputsAvailable) {
     consoleHandler.writeln({
       warning: "No input available. Connect an executed node.",
     });
   }
 
-  functionCatalogData.value = functionCatalog;
-
-  if (inputObjects && inputObjects.length > 0 && inputObjects[0].subItems) {
-    columnsInInputTable.value = inputObjects[0]?.subItems?.map(
-      (c: { name: string }) => {
-        return { id: c.name, text: c.name };
-      },
-    );
-  }
-
-  registerKnimeExpressionLanguage(initialDataLocal);
-
-  for (let i = 0; i < settings.scripts.length; ++i) {
-    const key = generateNewKey();
-
-    orderedEditorKeys.push(key);
-
-    columnSelectorStates[key] = {
-      outputMode: settings.outputModes[i],
-      create: settings.createdColumns[i],
-      replace: settings.replacedColumns[i],
-    };
-
-    editorErrorStates[key] = { level: "OK" };
-    columnSelectorErrorStates[key] = { level: "OK" };
-  }
-
-  await nextTick(); // Wait for the editors to be rendered
+  registerKnimeExpressionLanguage(initialData.value);
 
   useReadonlyStore().value =
-    settings.settingsAreOverriddenByFlowVariable || false;
-
-  for (let i = 0; i < settings.scripts.length; i++) {
-    const key = orderedEditorKeys[i];
-
-    multiEditorComponentRefs[key]
-      .getEditorState()
-      .setInitialText(settings.scripts[i]);
-
-    multiEditorComponentRefs[key].getEditorState().editor.value?.updateOptions({
-      readOnly: useReadonlyStore().value,
-      readOnlyMessage: {
-        value: "Read-Only-Mode: configuration is set by flow variables.",
-      },
-      renderValidationDecorations: "on",
-    });
-
-    // Watch all editor text and when changes occur, rerun diagnostics
-    editorStateWatchers[key] = watch(
-      multiEditorComponentRefs[key].getEditorState().text,
-      runDiagnosticsFunction,
-    );
-    columnStateWatchers[key] = watch(
-      () => columnSelectorStates[key],
-      runDiagnosticsFunction,
-      {
-        deep: true,
-      },
-    );
-  }
-
-  setActiveEditorStoreForAi(getFirstEditor()?.getEditorState());
-  activeEditorFileName.value = orderedEditorKeys[0];
-
-  // Run initial diagnostics now that we've set the initial text
-  await runDiagnosticsFunction();
+    initialSettings.value.settingsAreOverriddenByFlowVariable ?? false;
 });
 
-const anyEditorHasError = () =>
-  Object.values(editorErrorStates).some(
-    (errorState) => errorState.level === "ERROR",
-  );
-
-const runRowMapperExpressions = (rows: number) => {
-  if (!anyEditorHasError()) {
-    getScriptingService().sendToService("runExpression", [
-      orderedEditorKeys
-        .map((key) => multiEditorComponentRefs[key])
-        .map((ref) => ref.getEditorState().text.value),
-      rows,
-      orderedEditorKeys
-        .map((key) => columnSelectorStates[key])
-        .map((state) => state.outputMode),
-      orderedEditorKeys
-        .map((key) => columnSelectorStates[key])
-        .map((state) =>
-          state.outputMode === "APPEND" ? state.create : state.replace,
-        ),
-    ]);
-  }
+const runRowMapperExpressions = (rows: number, editorStates: EditorState[]) => {
+  getScriptingService().sendToService("runExpression", [
+    editorStates.map((state) => state.monacoState.text.value),
+    rows,
+    editorStates.map((state) => state.selectorState.outputMode),
+    editorStates.map((state) =>
+      state.selectorState.outputMode === "APPEND"
+        ? state.selectorState.create
+        : state.selectorState.replace,
+    ),
+  ]);
 };
 
 getRowMapperSettingsService().registerSettingsGetterForApply(
-  (): ExpressionRowMapperNodeSettings => ({
-    ...expressionVersion.value,
-    createdColumns: orderedEditorKeys
-      .map((key) => columnSelectorStates[key])
-      .map((state) => state.create),
-    replacedColumns: orderedEditorKeys
-      .map((key) => columnSelectorStates[key])
-      .map((state) => state.replace),
-    scripts: orderedEditorKeys
-      .map((key) => multiEditorComponentRefs[key])
-      .map((editor) => editor.getEditorState().text.value ?? ""),
-    outputModes: orderedEditorKeys
-      .map((key) => columnSelectorStates[key])
-      .map((state) => state.outputMode),
-  }),
+  (): ExpressionRowMapperNodeSettings => {
+    const orderedEditorStates =
+      multiEditorContainerRef.value!.getOrderedEditorStates();
+
+    const expressionVersion: ExpressionVersion = {
+      languageVersion: initialSettings.value!.languageVersion,
+      builtinFunctionsVersion: initialSettings.value!.builtinFunctionsVersion,
+      builtinAggregationsVersion:
+        initialSettings.value!.builtinAggregationsVersion,
+    };
+
+    return {
+      ...expressionVersion,
+      outputModes: orderedEditorStates.map(
+        (state) => state.selectorState.outputMode,
+      ),
+      createdColumns: orderedEditorStates.map(
+        (state) => state.selectorState.create,
+      ),
+      replacedColumns: orderedEditorStates.map(
+        (state) => state.selectorState.replace,
+      ),
+      scripts: orderedEditorStates.map((state) => state.monacoState.text.value),
+    };
+  },
 );
-
-const addNewEditorBelowExisting = async (fileNameAbove: string) => {
-  const latestKey = generateNewKey();
-  const desiredInsertionIndex = orderedEditorKeys.indexOf(fileNameAbove) + 1;
-
-  columnSelectorStates[latestKey] = {
-    outputMode: "APPEND",
-    create: "New Column",
-    replace: initialData.value?.inputObjects[0].subItems?.[0].name ?? "",
-  };
-
-  editorErrorStates[latestKey] = { level: "OK" };
-  columnSelectorErrorStates[latestKey] = { level: "OK" };
-
-  orderedEditorKeys.splice(desiredInsertionIndex, 0, latestKey);
-
-  // Wait for the editor to render and populate the ref
-  await nextTick();
-
-  await runDiagnosticsFunction();
-
-  editorStateWatchers[latestKey] = watch(
-    multiEditorComponentRefs[latestKey].getEditorState().text,
-    runDiagnosticsFunction,
-  );
-  columnStateWatchers[latestKey] = watch(
-    () => columnSelectorStates[latestKey],
-    runDiagnosticsFunction,
-    {
-      deep: true,
-    },
-  );
-
-  multiEditorComponentRefs[latestKey].getEditorState().editor.value?.focus();
-
-  return latestKey;
-};
-
-const addEditorAtBottom = () => {
-  addNewEditorBelowExisting(orderedEditorKeys[orderedEditorKeys.length - 1]);
-};
-
-const onEditorRequestedDelete = (filename: string) => {
-  if (numberOfEditors.value === 1) {
-    return;
-  }
-
-  orderedEditorKeys.splice(orderedEditorKeys.indexOf(filename), 1);
-
-  delete columnSelectorStates[filename];
-  delete multiEditorComponentRefs[filename];
-  delete columnSelectorErrorStates[filename];
-  delete editorErrorStates[filename];
-
-  // Clean up watchers
-  editorStateWatchers[filename]();
-  columnStateWatchers[filename]();
-  delete editorStateWatchers[filename];
-  delete columnStateWatchers[filename];
-
-  runDiagnosticsFunction();
-};
-
-const onEditorRequestedMoveUp = (filename: string) => {
-  const index = orderedEditorKeys.indexOf(filename);
-  if (index <= 0) {
-    return;
-  }
-
-  // Swap the entries at index and index - 1
-  const temp = orderedEditorKeys[index];
-  orderedEditorKeys[index] = orderedEditorKeys[index - 1];
-  orderedEditorKeys[index - 1] = temp;
-
-  runDiagnosticsFunction();
-
-  // Focus the moved editor after rerendering
-  nextTick().then(() => {
-    multiEditorComponentRefs[filename].getEditorState().editor.value?.focus();
-  });
-};
-
-const onEditorRequestedMoveDown = (filename: string) => {
-  const index = orderedEditorKeys.indexOf(filename);
-  if (index >= orderedEditorKeys.length - 1) {
-    return;
-  }
-
-  // Swap the entries at index and index + 1
-  const temp = orderedEditorKeys[index];
-  orderedEditorKeys[index] = orderedEditorKeys[index + 1];
-  orderedEditorKeys[index + 1] = temp;
-
-  runDiagnosticsFunction();
-
-  // Focus the moved editor after rerendering
-  nextTick().then(() => {
-    multiEditorComponentRefs[filename].getEditorState().editor.value?.focus();
-  });
-};
-
-const onEditorRequestedCopyBelow = async (filename: string) => {
-  const newKey = await addNewEditorBelowExisting(filename);
-
-  // Copy state from the editor above to the new editor
-  columnSelectorStates[newKey] = { ...columnSelectorStates[filename] };
-  multiEditorComponentRefs[newKey]
-    .getEditorState()
-    .setInitialText(
-      multiEditorComponentRefs[filename].getEditorState().text.value,
-    );
-};
-
-registerInsertionListener(getActiveEditor);
-
-// Shift+Enter while editor has focus runs expressions
-onKeyStroke("Enter", (evt: KeyboardEvent) => {
-  if (
-    evt.shiftKey &&
-    Object.values(multiEditorComponentRefs).some((editor) =>
-      editor.getEditorState().editor.value?.hasTextFocus(),
-    )
-  ) {
-    evt.preventDefault();
-    runRowMapperExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN);
-  }
-});
-
-const runButtonDisabledErrorReason = computed(() => {
-  const haveSyntaxErrors = Object.values(editorErrorStates).some(
-    (errorState) => errorState.level === "ERROR",
-  );
-  const haveColumnErrors = Object.values(columnSelectorErrorStates).some(
-    (e) => e.level === "ERROR",
-  );
-
-  if (!inputsAvailable.value) {
-    return "To evaluate your expression, first connect an executed node.";
-  } else if (haveSyntaxErrors) {
-    return "To evaluate your expression, first resolve syntax errors.";
-  } else if (haveColumnErrors) {
-    return "To evaluate your expression, first resolve column output errors.";
-  } else {
-    return null;
-  }
-});
-
-const getMostConcerningErrorStateForEditor = (
-  key: string,
-): EditorErrorState => {
-  const severitiesInDescendingOrder = ["ERROR", "WARNING", "OK"];
-
-  for (const severity of severitiesInDescendingOrder) {
-    if (editorErrorStates[key].level === severity) {
-      return editorErrorStates[key];
-    } else if (columnSelectorErrorStates[key].level === severity) {
-      return columnSelectorErrorStates[key];
-    }
-  }
-
-  // This shouldn't happen
-  return { level: "OK" };
-};
 
 const initialPaneSizes = calculateInitialPaneSizes();
 </script>
 
 <template>
   <main>
-    <template v-if="numberOfEditors === 0">
+    <template v-if="initialData === null || initialSettings === null">
       <div class="no-editors">
         <LoadingIcon />
       </div>
@@ -520,54 +180,50 @@ const initialPaneSizes = calculateInitialPaneSizes();
         </template>
 
         <template #editor>
-          <ExpressionEditorPane
-            v-for="(key, index) in orderedEditorKeys"
-            :key="key"
-            :ref="createElementReference(key)"
-            :title="createEditorTitle(index)"
-            :file-name="key"
-            :language="LANGUAGE"
-            :ordering-options="{
-              isFirst: index === 0,
-              isLast: index === numberOfEditors - 1,
-              isOnly: numberOfEditors === 1,
-              isActive: activeEditorFileName === key,
-            }"
-            :error-state="getMostConcerningErrorStateForEditor(key)"
-            @focus="onEditorFocused(key)"
-            @delete="onEditorRequestedDelete"
-            @move-down="onEditorRequestedMoveDown"
-            @move-up="onEditorRequestedMoveUp"
-            @copy-below="onEditorRequestedCopyBelow"
-          >
-            <!-- Controls displayed once per editor -->
-            <template #multi-editor-controls>
-              <div class="editor-controls">
-                <OutputSelector
-                  v-model="columnSelectorStates[key]"
-                  entity-name="column"
-                  :is-valid="columnSelectorErrorStates[key].level === 'OK'"
-                  :allowed-replacement-entities="
-                    getAvailableColumnsForReplacement(key)
-                  "
-                />
-              </div>
-            </template>
-          </ExpressionEditorPane>
-
-          <FunctionButton
-            class="add-new-editor-button"
-            :disabled="useReadonlyStore().value"
-            @click="addEditorAtBottom"
-          >
-            <PlusIcon /><span>Add expression</span>
-          </FunctionButton>
+          <MultiEditorContainer
+            ref="multiEditorContainerRef"
+            item-type="column"
+            :default-replacement-item="
+              initialData?.inputObjects[0].subItems?.filter(
+                (c) => c.supported,
+              )[0].name ?? ''
+            "
+            :default-append-item="'New Column'"
+            :settings="
+              initialSettings.scripts.map((script, index) => ({
+                initialScript: script,
+                initialSelectorState: {
+                  outputMode: initialSettings!.outputModes[index],
+                  create: initialSettings!.createdColumns[index],
+                  replace: initialSettings!.replacedColumns[index],
+                } satisfies SelectorState,
+              }))
+            "
+            :replaceable-items-in-input-table="
+              initialData!.inputObjects[0].subItems
+                ?.filter((c) => c.supported)
+                .map(
+                  (c): AllowedDropDownValue => ({
+                    id: c.name,
+                    text: c.name,
+                  }),
+                ) ?? []
+            "
+            @active-editor-changed="
+              (state) => setActiveEditorStoreForAi(state.monacoState)
+            "
+            @editor-states-changed="runDiagnosticsFunction"
+            @run-expressions="
+              (states) =>
+                runRowMapperExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN, states)
+            "
+          />
         </template>
 
         <template #right-pane>
-          <template v-if="functionCatalogData">
+          <template v-if="initialData?.functionCatalog">
             <FunctionCatalog
-              :function-catalog-data="functionCatalogData"
+              :function-catalog-data="initialData.functionCatalog"
               :initially-expanded="false"
             />
           </template>
@@ -578,7 +234,13 @@ const initialPaneSizes = calculateInitialPaneSizes();
           <RunButton
             :run-button-disabled-error-reason="runButtonDisabledErrorReason"
             :show-button-text="showButtonText"
-            @run-expressions="runRowMapperExpressions"
+            @run-expressions="
+              (numRows) =>
+                runRowMapperExpressions(
+                  numRows,
+                  multiEditorContainerRef!.getOrderedEditorStates(),
+                )
+            "
           />
         </template>
       </ScriptingEditor>
@@ -591,17 +253,6 @@ const initialPaneSizes = calculateInitialPaneSizes();
 </style>
 
 <style lang="postcss" scoped>
-.editor-controls {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  padding: var(--space-4) var(--space-8);
-  height: fit-content;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-}
-
 .no-editors {
   position: absolute;
   inset: calc(50% - 25px);
@@ -609,9 +260,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
   height: 50px;
 }
 
-.add-new-editor-button {
-  width: fit-content;
-  margin: var(--space-16) auto;
-  outline: 1px solid var(--knime-silver-sand);
+.run-button {
+  display: inline;
 }
 </style>
