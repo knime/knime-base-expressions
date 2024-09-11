@@ -226,19 +226,17 @@ public final class ExpressionRunnerUtils {
 
     /**
      * Create a {@link ReferenceTable} from the given table. Copies the table to the columnar format if necessary.
-     * Convert no more than {@code maxRowsToConvert} rows to columnar format.
+     * Converts all table rows.
      *
      * @param table
      * @param exec an {@link ExecutionContext} that is used to create a new columnar container if the table is not
      *            columnar
      * @param progress an {@link ExecutionMonitor} that is used to report progress
-     * @param maxRowsToConvert the maximum number of rows to convert to columnar format (if it's too big, we just use
-     *            the table size instead)
      * @return a {@link ReferenceTable} that can be used for a {@link ColumnarVirtualTable}
      * @throws CanceledExecutionException if the execution was canceled
      */
     public static ReferenceTable createReferenceTable(final BufferedDataTable table, final ExecutionContext exec,
-        final ExecutionMonitor progress, final long maxRowsToConvert) throws CanceledExecutionException {
+        final ExecutionMonitor progress) throws CanceledExecutionException {
 
         var uuid = UUID.randomUUID();
         try {
@@ -250,7 +248,7 @@ public final class ExpressionRunnerUtils {
 
             try {
                 return ReferenceTables.createReferenceTable(uuid,
-                    copyToColumnarTable(table, maxRowsToConvert, exec, progress));
+                    copyToColumnarTable(table, table.size(), exec, progress));
             } catch (VirtualTableIncompatibleException e) {
                 // This cannot happen because we explicitly create a columnar table
                 throw new IllegalStateException(e);
@@ -297,23 +295,6 @@ public final class ExpressionRunnerUtils {
         } catch (IOException e) {
             throw new IllegalStateException("Copying row-based table failed.", e);
         }
-    }
-
-    /**
-     * Create a {@link ReferenceTable} from the given table. Copies the table to the columnar format if necessary.
-     * Converts all table rows.
-     *
-     * @param table
-     * @param exec an {@link ExecutionContext} that is used to create a new columnar container if the table is not
-     *            columnar
-     * @param progress an {@link ExecutionMonitor} that is used to report progress
-     * @return a {@link ReferenceTable} that can be used for a {@link ColumnarVirtualTable}
-     * @throws CanceledExecutionException if the execution was canceled
-     */
-    public static ReferenceTable createReferenceTable(final BufferedDataTable table, final ExecutionContext exec,
-        final ExecutionMonitor progress) throws CanceledExecutionException {
-        // TODO can the one with the max rows be removed?
-        return ExpressionRunnerUtils.createReferenceTable(table, exec, progress, table.size());
     }
 
     private static List<AggregationCall> collectAggregations(final Ast expression) {
