@@ -17,14 +17,15 @@ try {
     node('maven && java17') {
         knimetools.defaultTychoBuild(updateSiteProject: 'org.knime.update.base.expressions')
 
-        // TODO(workflow-tests)
-        // workflowTests.runTests(
-        //     dependencies: [
-        //         repositories: [
-        //             'knime-core-columnar',
-        //         ]
-        //     ]
-        // )
+        workflowTests.runTests(
+            dependencies: [
+                repositories: [
+                    'knime-base-expressions',
+                    'knime-scripting-editor',
+                    'knime-core-columnar',
+                ]
+            ]
+        )
 
         stage('Sonarqube analysis') {
             env.lastStage = env.STAGE_NAME
