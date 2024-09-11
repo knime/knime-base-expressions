@@ -3,7 +3,7 @@
 	xmlns="http://knime.org/node/v4.1"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
-	<name>Flow Variable Expression</name>
+	<name>Variable Expression</name>
 	<shortDescription>
 		Allows executing custom expressions on flow variables and creating new
 		or updating existing flow variables.
@@ -11,7 +11,7 @@
 	<fullDescription>
 		<intro>
 			<p>
-				The KNIME Expression node enables generic flow variable
+				The KNIME Variable Expression node enables generic flow variable
 				manipulation within KNIME workflows.
 			</p>
 		</intro>
