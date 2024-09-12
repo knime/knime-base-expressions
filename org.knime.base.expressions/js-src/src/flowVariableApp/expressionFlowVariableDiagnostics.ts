@@ -12,18 +12,17 @@ import {
  * Run the diagnostics for all editors and set the markers in the respective editors.
  *
  * @param editorStates
- * @param appendedFlowVariables the new flow variables. This has to have the same length as editorStates, so if any
- * editorState is not associated with a new flow variable, pass a null string.
+ * @param allFlowVariableOutputNames a list of all output flow variables names.
  */
 export const runFlowVariableDiagnostics = async (
   editorStates: UseCodeEditorReturn[],
-  appendedFlowVariables: (string | null)[],
+  allFlowVariableOutputNames: string[],
 ): Promise<EditorErrorState[]> => {
   const newTexts = editorStates.map((editorState) => editorState.text.value);
 
   const diagnostics: Diagnostic[][] = await getScriptingService().sendToService(
     "getFlowVariableDiagnostics",
-    [newTexts, appendedFlowVariables],
+    [newTexts, allFlowVariableOutputNames],
   );
 
   diagnostics.forEach((diagnosticsForThisEditor, index) =>

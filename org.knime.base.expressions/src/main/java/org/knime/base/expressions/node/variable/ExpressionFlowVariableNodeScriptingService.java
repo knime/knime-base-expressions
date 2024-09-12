@@ -146,19 +146,23 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
          * List of diagnostics for each editor, hence a 2D list.
          *
          * @param expressions
-         * @param newFlowVariableNames the names of the appended flow variables. Guaranteed to have the same length and
-         *            order as the expressions. Some elements are null, for expressions that replaced instead of
-         *            appending.
+         * @param allNewFlowVariableNames the names of all output flow variables. Guaranteed to have the same length and
+         *            order as the expressions.
          * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
          */
         public List<List<ExpressionDiagnostic>> getFlowVariableDiagnostics(final String[] expressions,
-            final String[] newFlowVariableNames) {
+            final String[] allNewFlowVariableNames) {
             // Note that this method is similar to ExpressionFlowVariableNodeModel#validateFlowVariablesExpressions but
             // it collects Diagnostic objects instead of throwing an exception.
 
             List<List<ExpressionDiagnostic>> diagnostics = new ArrayList<>();
 
             var availableFlowVariables = new HashMap<>(getSupportedFlowVariablesMap());
+
+            // Only the names of the columns that are appended (not replaced)
+            var appendedFlowVariableNames = Arrays.stream(allNewFlowVariableNames) //
+                .map(name -> availableFlowVariables.containsKey(name) ? null : name) //
+                .toList();
 
             for (int i = 0; i < expressions.length; i++) {
                 var expression = expressions[i];
@@ -170,7 +174,7 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                     var prematureAccessDiagnostics = getPrematureAccessDiagnostics( //
                         ast, //
                         i, //
-                        Arrays.asList(newFlowVariableNames) //
+                        appendedFlowVariableNames //
                     );
                     diagnosticsForThisExpression.addAll(prematureAccessDiagnostics);
 
@@ -194,7 +198,7 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                     } else {
                         ExpressionFlowVariableNodeModel.putFlowVariableForTypeCheck( //
                             availableFlowVariables, //
-                            newFlowVariableNames[i], //
+                            allNewFlowVariableNames[i], //
                             inferredType //
                         );
                     }

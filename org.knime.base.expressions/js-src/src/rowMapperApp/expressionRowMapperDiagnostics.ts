@@ -12,18 +12,18 @@ import {
  * Run the diagnostics for all editors and set the markers in the respective editors.
  *
  * @param editorStates
- * @param appendedColumns the new columns. This has to have the same length as editorStates, so if any
- * editorState is not associated with a new column, pass a null string.
+ * @param allOutputColumnNames  a list of output columns, so either the name of the replaced
+ *                              or the appended columnName.
  */
 export const runRowMapperDiagnostics = async (
   editorStates: UseCodeEditorReturn[],
-  appendedColumns: (string | null)[],
+  allOutputColumnNames: string[],
 ): Promise<EditorErrorState[]> => {
   const newTexts = editorStates.map((editorState) => editorState.text.value);
 
   const diagnostics: Diagnostic[][] = await getScriptingService().sendToService(
     "getRowMapperDiagnostics",
-    [newTexts, appendedColumns],
+    [newTexts, allOutputColumnNames],
   );
 
   diagnostics.forEach((diagnosticsForThisEditor, index) =>

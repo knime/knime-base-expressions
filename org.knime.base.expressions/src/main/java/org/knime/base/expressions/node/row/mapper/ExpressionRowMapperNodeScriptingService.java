@@ -51,7 +51,9 @@ package org.knime.base.expressions.node.row.mapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -85,12 +87,6 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
     private static final int PREVIEW_MAX_ROWS = 1000;
 
-    /**
-     * Cached function for mapping column access to output types for checking the expression types. Use
-     * {@link #getColumnToTypeMapper()} to access this!
-     */
-    private Function<String, ReturnResult<ValueType>> m_columnToType;
-
     private final AtomicReference<BufferedDataTable> m_outputBufferTableReference;
 
     private InputTableCache m_inputTableCache;
@@ -121,16 +117,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
     @Override
     public void onDeactivate() {
-        m_columnToType = null;
         m_inputTableCache = null;
-    }
-
-    private synchronized Function<String, ReturnResult<ValueType>> getColumnToTypeMapper() {
-        if (m_columnToType == null) {
-            var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
-            m_columnToType = ExpressionRunnerUtils.columnToTypesForTypeInference(spec);
-        }
-        return m_columnToType;
     }
 
     public final class ExpressionNodeRpcService extends RpcService {
@@ -150,26 +137,22 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
          * Parses and type-checks the expression.
          *
          * @param script the expression to parse
-         * @param additionalColumnNames the names of the additional columns that are available (from previous expression
-         *            editors in the same node)
-         * @param additionalColumnTypes the types of the additional columns that are available (from previous expression
-         *            editors in the same node)
+         * @param allOutputColumns a map from currently existing columnNames to their types
          *
          * @return an expression that is ready to be executed
          */
-        private Ast getPreparedExpression(final String script, final List<String> additionalColumnNames,
-            final List<ValueType> additionalColumnTypes) throws ExpressionCompileException {
+        private Ast getPreparedExpression(final String script,
+            final Map<String, ReturnResult<ValueType>> allOutputColumns) throws ExpressionCompileException {
 
             var ast = Expressions.parse(script);
             var flowVarToTypeMapper =
                 ExpressionRunnerUtils.flowVarToTypeForTypeInference(getSupportedFlowVariablesMap());
 
             Function<String, ReturnResult<ValueType>> columnToTypeMapper = columnName -> {
-                if (additionalColumnNames.contains(columnName)) {
-                    return ReturnResult.success(additionalColumnTypes.get(additionalColumnNames.indexOf(columnName)));
-                } else {
-                    return getColumnToTypeMapper().apply(columnName);
+                if (!allOutputColumns.containsKey(columnName)) {
+                    return ReturnResult.failure("No column with the name '%s' is available.".formatted(columnName));
                 }
+                return allOutputColumns.get(columnName);
             };
 
             Expressions.inferTypes(ast, columnToTypeMapper, flowVarToTypeMapper);
@@ -182,7 +165,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
          *
          * @param ast
          * @param expressionIndex
-         * @param allAppendedColumnNames the colum names that are appended. NOT the ones that were passed into the node.
+         * @param allAppendedColumnNames the column names that are appended. NOT the ones that were passed into the
+         *            node.
          * @return
          */
         private static List<ExpressionDiagnostic> getPrematureAccessDiagnostics(final Ast ast,
@@ -221,18 +205,27 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
          * List of diagnostics for each editor, hence a 2D list.
          *
          * @param expressions
-         * @param newColumnNames the names of the appended columns. Guaranteed to have the same length and order as the
-         *            expressions. Some elements are null, for expressions that replaced instead of appending.
+         * @param allNewColumnNames the names of the all output columns. Must align with the expressions.
          * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
          */
         public List<List<ExpressionDiagnostic>> getRowMapperDiagnostics(final String[] expressions,
-            final String[] newColumnNames) {
+            final String[] allNewColumnNames) {
 
-            List<ValueType> inferredColumnTypes = new ArrayList<>();
             List<List<ExpressionDiagnostic>> diagnostics = new ArrayList<>();
+            var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
+            Map<String, ReturnResult<ValueType>> columnToTypeMap1 = new HashMap<>();
+            Arrays.stream(spec.getColumnNames()).forEach(name1 -> columnToTypeMap1.put(name1,
+                ExpressionRunnerUtils.columnToTypesForTypeInference(spec).apply(name1)));
+
+            final Map<String, ReturnResult<ValueType>> columnToTypeMap = columnToTypeMap1;
+
+            var appendedColumnNames = Arrays.stream(allNewColumnNames) //
+                .map(name -> columnToTypeMap.containsKey(name) ? null : name) //
+                .toList();
 
             for (int i = 0; i < expressions.length; ++i) {
                 var expression = expressions[i];
+                var currentOutputColumnName = allNewColumnNames[i];
 
                 List<ExpressionDiagnostic> diagnosticsForThisExpression = new ArrayList<>();
 
@@ -240,21 +233,19 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     var untypedAst = Expressions.parse(expression);
 
                     // Check if the expression refers to any columns that are appended in the future
-                    var prematureAccessDiagnostics =
-                        getPrematureAccessDiagnostics(untypedAst, i, Arrays.asList(newColumnNames));
+                    var prematureAccessDiagnostics = getPrematureAccessDiagnostics(untypedAst, i, appendedColumnNames);
                     diagnosticsForThisExpression.addAll(prematureAccessDiagnostics);
 
                     // if prematureAccessDiagnostics are present, type inference will fail,
                     // so infer MISSING and continue to next expression
                     if (!prematureAccessDiagnostics.isEmpty()) {
-                        inferredColumnTypes.add(ValueType.MISSING);
+                        columnToTypeMap.put(currentOutputColumnName, ReturnResult.success(ValueType.MISSING));
                         continue;
                     }
 
                     var ast = getPreparedExpression( //
                         expression, //
-                        Arrays.asList(newColumnNames).subList(0, i), //
-                        inferredColumnTypes //
+                        columnToTypeMap //
                     );
                     var inferredType = Expressions.getInferredType(ast);
 
@@ -267,11 +258,11 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                         ));
                     }
 
-                    inferredColumnTypes.add(inferredType);
+                    columnToTypeMap.put(currentOutputColumnName, ReturnResult.success(inferredType));
                 } catch (ExpressionCompileException ex) {
                     // If there is an error in the expression, we still want to be able to continue with the other
                     // expression diagnostics, so add a missing type to the list of inferred types and continue
-                    inferredColumnTypes.add(ValueType.MISSING);
+                    columnToTypeMap.put(currentOutputColumnName, ReturnResult.success(ValueType.MISSING));
 
                     diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromException(ex));
                 } finally {

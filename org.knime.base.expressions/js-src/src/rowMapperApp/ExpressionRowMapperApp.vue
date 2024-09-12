@@ -159,7 +159,9 @@ const runDiagnosticsFunction = async () => {
       .map((editor) => editor.getEditorState()),
     orderedEditorKeys
       .map((key) => columnSelectorStates[key])
-      .map((state) => (state.outputMode === "APPEND" ? state.create : null)),
+      .map((state) =>
+        state.outputMode === "APPEND" ? state.create : state.replace,
+      ),
   );
 
   const columnErrorMessages = runOutputDiagnostics(
