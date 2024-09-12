@@ -64,6 +64,7 @@ import org.knime.base.expressions.node.row.InputTableCache;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.Ast.ColumnId.ColumnIdType;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ReturnResult;
@@ -179,7 +180,10 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
             List<ExpressionDiagnostic> diagnostics = new ArrayList<>();
 
-            var accessedColumns = ExpressionRunnerUtils.collectColumnAccesses(ast);
+            var accessedColumns = ExpressionRunnerUtils.collectColumnAccesses(ast) //
+                .stream() //
+                .filter(access -> access.columnId().type() == ColumnIdType.NAMED) //
+                .toList();
 
             // Find any columns that are accessed now but appended later
             var columnsAccessedEarly = accessedColumns.stream() //
