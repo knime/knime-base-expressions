@@ -18,6 +18,7 @@
 	<modules>
 		<module>org.knime.base.expressions/js-src</module>
 		<module>org.knime.base.expressions</module>
+		<module>org.knime.base.expressions.tests/libs/fetch_jars</module>
 		<module>org.knime.base.expressions.tests</module>
 		<module>org.knime.features.base.expressions</module>
 		<module>org.knime.update.base.expressions</module>
