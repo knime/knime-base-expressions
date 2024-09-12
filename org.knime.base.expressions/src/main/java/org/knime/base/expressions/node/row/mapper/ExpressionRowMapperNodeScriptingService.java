@@ -74,6 +74,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.scripting.editor.ScriptingService;
+import org.knime.scripting.editor.WorkflowControl;
 
 /**
  * {@link ScriptingService} implementation for the Expression node.
@@ -104,8 +105,17 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0]);
     }
 
+    /** Constructor for testing with a mocked workflow control */
+    ExpressionRowMapperNodeScriptingService(final AtomicReference<BufferedDataTable> outputTableRef,
+        final Runnable cleanUpTableViewDataService, final WorkflowControl workflowControl) {
+        super(null, ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains, workflowControl);
+        m_outputBufferTableReference = outputTableRef;
+        m_cleanUpTableViewDataService = cleanUpTableViewDataService;
+        m_inputTableCache = new InputTableCache((BufferedDataTable)workflowControl.getInputData()[0]);
+    }
+
     @Override
-    public RpcService getJsonRpcService() {
+    public ExpressionNodeRpcService getJsonRpcService() {
         return new ExpressionNodeRpcService();
     }
 
