@@ -61,12 +61,15 @@ import java.util.stream.IntStream;
 import org.knime.base.expressions.InsertionMode;
 import org.knime.base.expressions.node.ExpressionVersionSettings;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.VariableSettingsRO;
+import org.knime.core.webui.node.dialog.configmapping.ConfigMappings;
+import org.knime.core.webui.node.dialog.configmapping.NodeSettingsCorrectionUtil;
 import org.knime.scripting.editor.GenericSettingsIOManager;
 import org.knime.scripting.editor.ScriptingNodeSettings;
 
@@ -308,7 +311,13 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
         m_versionSettings.writeMapToNodeSettings(data);
 
-        saveSettingsTo(settings);
+        final var extractedSettings = new NodeSettings("extracted settings");
+        saveSettingsTo(extractedSettings);
+
+        NodeSettingsCorrectionUtil.correctNodeSettingsRespectingFlowVariables(new ConfigMappings(List.of()),
+            extractedSettings, previousSettings.get(SettingsType.MODEL), previousSettings.get(SettingsType.MODEL));
+
+        extractedSettings.copyTo(settings.get(SettingsType.MODEL));
         copyVariableSettings(previousSettings, settings);
     }
 

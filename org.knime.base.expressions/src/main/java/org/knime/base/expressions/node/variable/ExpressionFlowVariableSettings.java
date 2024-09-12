@@ -61,12 +61,15 @@ import java.util.stream.IntStream;
 import org.knime.base.expressions.InsertionMode;
 import org.knime.base.expressions.node.ExpressionVersionSettings;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsRO;
 import org.knime.core.webui.node.dialog.NodeAndVariableSettingsWO;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.VariableSettingsRO;
+import org.knime.core.webui.node.dialog.configmapping.ConfigMappings;
+import org.knime.core.webui.node.dialog.configmapping.NodeSettingsCorrectionUtil;
 import org.knime.scripting.editor.GenericSettingsIOManager;
 import org.knime.scripting.editor.ScriptingNodeSettings;
 
@@ -297,6 +300,14 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
         m_replacedFlowVariables = (List<String>)data.get(JSON_KEY_REPLACED_FLOW_VARIABLES);
 
         m_versionSettings.writeMapToNodeSettings(data);
+
+        final var extractedSettings = new NodeSettings("extracted settings");
+        saveSettingsTo(extractedSettings);
+
+        NodeSettingsCorrectionUtil.correctNodeSettingsRespectingFlowVariables(new ConfigMappings(List.of()),
+            extractedSettings, previousSettings.get(SettingsType.MODEL), previousSettings.get(SettingsType.MODEL));
+
+        extractedSettings.copyTo(settings.get(SettingsType.MODEL));
 
         saveSettingsTo(settings);
         copyVariableSettings(previousSettings, settings);
