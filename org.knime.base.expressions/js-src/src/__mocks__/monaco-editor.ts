@@ -29,6 +29,7 @@ export const editor = {
     onDidPaste: vi.fn(),
     dispose: vi.fn(),
     updateOptions: vi.fn(),
+    focus: vi.fn(),
   })),
   defineTheme: vi.fn(),
   setTheme: vi.fn(),
