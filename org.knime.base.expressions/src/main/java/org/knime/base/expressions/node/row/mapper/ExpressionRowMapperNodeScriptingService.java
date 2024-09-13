@@ -185,6 +185,11 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
             return columnToTypeMap;
         }
 
+        private static ReturnResult<ValueType> invalidExpressionType(final int expressionIdx, final String columnName) {
+            return ReturnResult.failure("Expression %d that outputs column '%s' has errors. Fix Expression %d."
+                .formatted(expressionIdx + 1, columnName, expressionIdx + 1));
+        }
+
         /**
          * List of diagnostics for each editor, hence a 2D list.
          *
@@ -225,9 +230,9 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     diagnosticsForThisExpression.addAll(prematureAccessDiagnostics);
 
                     // if prematureAccessDiagnostics are present, type inference will fail,
-                    // so infer MISSING and continue to next expression
+                    // so infer a failure and continue to next expression
                     if (!prematureAccessDiagnostics.isEmpty()) {
-                        columnToTypeMap.put(currentOutputColumnName, ReturnResult.success(ValueType.MISSING));
+                        columnToTypeMap.put(currentOutputColumnName, invalidExpressionType(i, currentOutputColumnName));
                         continue;
                     }
 
@@ -244,9 +249,9 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
                     columnToTypeMap.put(currentOutputColumnName, ReturnResult.success(inferredType));
                 } catch (ExpressionCompileException ex) {
-                    // If there is an error in the expression, we still want to be able to continue with the other
-                    // expression diagnostics, so add a missing type to the list of inferred types and continue
-                    columnToTypeMap.put(currentOutputColumnName, ReturnResult.success(ValueType.MISSING));
+                    // If there is an error in the expression, we still want to indicate that when accessing this column
+                    // in another expression. Therefore, we put an appropriate error message into the map
+                    columnToTypeMap.put(currentOutputColumnName, invalidExpressionType(i, currentOutputColumnName));
 
                     diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromException(ex));
                 } finally {

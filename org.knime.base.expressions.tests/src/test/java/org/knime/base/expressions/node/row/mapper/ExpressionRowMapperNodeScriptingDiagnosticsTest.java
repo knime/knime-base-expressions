@@ -50,6 +50,7 @@ package org.knime.base.expressions.node.row.mapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
@@ -211,6 +212,45 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
             "The full expression must not evaluate to MISSING.", //
             diagnostics.get(0).get(0).message(), //
             "Expected MISSING evaluation error message." //
+        );
+    }
+
+    @Test
+    void testAccessColumnFromInvalidExpression() {
+        var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
+        var diagnostics =
+            service.getRowMapperDiagnostics(new String[]{"___invalid", "$out + 10"}, new String[]{"out", "out2"});
+
+        assertEquals(2, diagnostics.size(), "Expected diagnostics for two expressions.");
+        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for accessing column from invalid expression.");
+
+        assertFalse(diagnostics.get(1).isEmpty(), "Expected error for accessing column from invalid expression.");
+        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(1).get(0).severity(),
+            "Expected error severity for accessing column from invalid expression.");
+        assertEquals( //
+            "Expression 1 that outputs column 'out' has errors. Fix Expression 1.", //
+            diagnostics.get(1).get(0).message(), //
+            "Expected invalid expression error message." //
+        );
+    }
+
+    @Test
+    void testAccessColumnFromExpressionWithPrematureColumnAccess() {
+        var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
+        var diagnostics = service.getRowMapperDiagnostics(new String[]{"$out1 + 10", "10", "$out + 10"},
+            new String[]{"out", "out1", "out2"});
+
+        assertEquals(3, diagnostics.size(), "Expected diagnostics for two expressions.");
+        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for accessing column that was not yet appended.");
+        assertTrue(diagnostics.get(1).isEmpty(), "Expected second expression to be valid.");
+
+        assertFalse(diagnostics.get(2).isEmpty(), "Expected error for accessing column from invalid expression.");
+        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(2).get(0).severity(),
+            "Expected error severity for accessing column from invalid expression.");
+        assertEquals( //
+            "Expression 1 that outputs column 'out' has errors. Fix Expression 1.", //
+            diagnostics.get(2).get(0).message(), //
+            "Expected invalid expression error message." //
         );
     }
 }
