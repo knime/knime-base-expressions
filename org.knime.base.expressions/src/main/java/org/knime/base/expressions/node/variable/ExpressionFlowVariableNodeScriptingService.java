@@ -53,7 +53,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
@@ -62,8 +64,11 @@ import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.ReturnResult;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.scripting.editor.ScriptingService;
+import org.knime.scripting.editor.WorkflowControl;
 
 /**
  * {@link ScriptingService} implementation for the Expression node.
@@ -81,8 +86,16 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
 
     }
 
+    ExpressionFlowVariableNodeScriptingService(final AtomicReference<List<FlowVariable>> outputFlowVariablesReference,
+        final WorkflowControl workflowControl) {
+        super(null, ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains, workflowControl);
+
+        m_outputFlowVariablesReference = outputFlowVariablesReference;
+
+    }
+
     @Override
-    public RpcService getJsonRpcService() {
+    public ExpressionNodeRpcService getJsonRpcService() {
         return new ExpressionNodeRpcService();
     }
 
@@ -142,6 +155,12 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
             return diagnostics;
         }
 
+        private static ReturnResult<FlowVariable> invalidExpressionType(final int expressionIdx,
+            final String columnName) {
+            return ReturnResult.failure("Expression %d that outputs flow variable '%s' has errors. Fix Expression %d."
+                .formatted(expressionIdx + 1, columnName, expressionIdx + 1));
+        }
+
         /**
          * List of diagnostics for each editor, hence a 2D list.
          *
@@ -156,10 +175,9 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
             // it collects Diagnostic objects instead of throwing an exception.
 
             List<List<ExpressionDiagnostic>> diagnostics = new ArrayList<>();
+            var availableFlowVariables = new HashMap<String, ReturnResult<FlowVariable>>(getFullFlowVariablesMap());
 
-            var availableFlowVariables = new HashMap<>(getSupportedFlowVariablesMap());
-
-            // Only the names of the columns that are appended (not replaced)
+            // Only the names of the flow variables that are appended (not replaced)
             var appendedFlowVariableNames = Arrays.stream(allNewFlowVariableNames) //
                 .map(name -> availableFlowVariables.containsKey(name) ? null : name) //
                 .toList();
@@ -178,15 +196,18 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                     );
                     diagnosticsForThisExpression.addAll(prematureAccessDiagnostics);
 
-                    // if prematureAccessDiagnostics are present, type inference will fail; continue to next expression
+                    // if prematureAccessDiagnostics are present, type inference will fail;
+                    // so infer a failure and continue to next expression
                     if (!prematureAccessDiagnostics.isEmpty()) {
+                        availableFlowVariables.put(allNewFlowVariableNames[i],
+                            invalidExpressionType(i, allNewFlowVariableNames[i]));
                         continue;
                     }
 
                     var inferredType = Expressions.inferTypes( //
                         ast, //
                         ExpressionFlowVariableNodeModel::columnTypeResolver, //
-                        fvName -> ExpressionFlowVariableNodeModel.toValueType(availableFlowVariables, fvName) //
+                        fvName -> toValueType(availableFlowVariables, fvName) //
                     );
                     if (inferredType.isOptional()) {
                         // Show an error if the full expression might evaluate to MISSING; this is not supported
@@ -196,13 +217,14 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                             Expressions.getTextLocation(ast) //
                         ));
                     } else {
-                        ExpressionFlowVariableNodeModel.putFlowVariableForTypeCheck( //
-                            availableFlowVariables, //
-                            allNewFlowVariableNames[i], //
-                            inferredType //
-                        );
+                        availableFlowVariables.put(allNewFlowVariableNames[i],
+                            ReturnResult.success(new FlowVariable(allNewFlowVariableNames[i],
+                                ExpressionRunnerUtils.mapValueTypeToVariableType(inferredType))));
+
                     }
                 } catch (ExpressionCompileException ex) {
+                    availableFlowVariables.put(allNewFlowVariableNames[i],
+                        invalidExpressionType(i, allNewFlowVariableNames[i]));
                     diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromException(ex));
                 } finally {
                     diagnostics.add(diagnosticsForThisExpression);
@@ -227,6 +249,37 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
 
             sendEvent("updatePreview", null);
 
+        }
+
+        /**
+         * Get a map of all flow variables (inclusive unsupported ones)
+         *
+         * @return a map of flow variables
+         */
+        private Map<String, ReturnResult<FlowVariable>> getFullFlowVariablesMap() {
+            var stack = getWorkflowControl().getFlowObjectStack();
+
+            return stack.getAllAvailableFlowVariables().entrySet().stream().map(e -> {
+                var v = e.getValue();
+                return Map.entry(e.getKey(), ReturnResult.success(v));
+            }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        }
+
+        /** Helper to get the ValueType of a flow variable from the given map (use for type inference) */
+        static ReturnResult<ValueType> toValueType(final Map<String, ReturnResult<FlowVariable>> flowVariables,
+            final String name) {
+            var flowVariableResult = flowVariables.get(name);
+
+            if (flowVariableResult == null) {
+                return ReturnResult.failure("No flow variable with the name '" + name + "' is available.");
+            }
+
+            return flowVariableResult //
+                .flatMap(flowVariable -> ReturnResult.fromNullable(
+                    ExpressionRunnerUtils.mapVariableToValueType(flowVariable.getVariableType()),
+                    "Flow variables of the type '" + flowVariable.getVariableType()
+                        + "' are not supported in expressions."));
         }
 
         private void handleWarningMessage(final int i, final String warningMessage) {

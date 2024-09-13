@@ -304,7 +304,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             .fromNullable(flowVariables.get(name), "No flow variable with the name '" + name + "' is available.") //
             .map(FlowVariable::getVariableType) //
             .flatMap(type -> ReturnResult.fromNullable(ExpressionRunnerUtils.mapVariableToValueType(type),
-                "Flow variables of the type '" + type + "' are not supported"));
+                "Flow variables of the type '" + type + "' are not supported in expressions."));
     }
 
     private static Optional<Computer> toComputer(final Map<String, FlowVariable> flowVariables,
