@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <knimeNode icon="expression_flow_variable.png"
-	type="Manipulator" xmlns="http://knime.org/node/v4.1"
+	type="Manipulator" xmlns="http://knime.org/node/v5.3"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
+	xsi:schemaLocation="http://knime.org/node/v5.3 http://knime.org/node/v5.3.xsd">
 	<name>Variable Expression</name>
 	<shortDescription>
 		Allows executing custom expressions on flow variables
@@ -93,14 +93,6 @@
 		<link
 			href="https://docs.knime.com/latest/knime_expressions_guide/index.html">Expression language specification</link>
 	</fullDescription>
-	<keywords>
-		<keyword>math formula</keyword>
-		<keyword>calculator</keyword>
-		<keyword>function</keyword>
-		<keyword>string manipulation</keyword>
-		<keyword>rule engine</keyword>
-		<keyword>rule based</keyword>
-	</keywords>
 	<ports>
 		<inPort index="0" name="Input flow variables"> The flow variables to be used
 			in the expression.
@@ -109,4 +101,12 @@
 			applying the expression.
 		</outPort>
 	</ports>
+	<keywords>
+		<keyword>math formula</keyword>
+		<keyword>calculator</keyword>
+		<keyword>function</keyword>
+		<keyword>string manipulation</keyword>
+		<keyword>rule engine</keyword>
+		<keyword>rule based</keyword>
+	</keywords>
 </knimeNode>
