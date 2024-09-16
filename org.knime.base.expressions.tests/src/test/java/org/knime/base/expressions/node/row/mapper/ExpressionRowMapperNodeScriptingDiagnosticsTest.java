@@ -142,6 +142,19 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     }
 
     @Test
+    void testNoInput() {
+        var service = createService(getWorkflowControl(null, FLOW_VARIABLES));
+        var diagnostics = service.getRowMapperDiagnostics( //
+            new String[]{"($int - 100) + $$int_flow_var"}, //
+            new String[]{"out"} //
+        );
+
+        assertEquals(1, diagnostics.size(), "Expected 1 expressions to be analyzed.");
+        assertTrue(diagnostics.get(0).get(0).message().contains("No input"),
+            "Expected \"No input...\" error message, got \"" + diagnostics.get(0).get(0).message() + "\".");
+    }
+
+    @Test
     void testSyntaxError() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
         var diagnostics =

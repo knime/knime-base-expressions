@@ -23,7 +23,10 @@ import MultiEditorContainer, {
 } from "@/components/MultiEditorContainer.vue";
 import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
 import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
-import { calculateInitialPaneSizes } from "@/common/functions";
+import {
+  calculateInitialPaneSizes,
+  mapConnectionInfoToErrorMessage,
+} from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
 import {
   type ExpressionRowMapperNodeSettings,
@@ -74,12 +77,13 @@ const runDiagnosticsFunction = async (states: EditorState[]) => {
   const haveColumnErrors = columnErrorMessages.some((error) => error !== null);
   const haveSyntaxErrors = codeErrors.some((error) => error.level === "ERROR");
 
-  if (!initialData.value?.inputsAvailable) {
+  runButtonDisabledErrorReason.value = mapConnectionInfoToErrorMessage(
+    initialData.value?.inputConnectionInfo,
+  );
+
+  if (haveSyntaxErrors) {
     runButtonDisabledErrorReason.value =
-      "To evaluate your expression, first connect an executed node.";
-  } else if (haveSyntaxErrors) {
-    runButtonDisabledErrorReason.value =
-      "To evaluate your expression, first resolve syntax errors.";
+      "To evaluate your expression, resolve existing errors first.";
   } else if (haveColumnErrors) {
     runButtonDisabledErrorReason.value =
       "To evaluate your expression, first resolve column output errors.";
@@ -94,7 +98,7 @@ onMounted(async () => {
     getRowMapperSettingsService().getSettings(),
   ]);
 
-  if (!initialData.value.inputsAvailable) {
+  if (initialData.value?.inputConnectionInfo[1].status !== "OK") {
     consoleHandler.writeln({
       warning: "No input available. Connect an executed node.",
     });

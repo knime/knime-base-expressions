@@ -67,6 +67,12 @@ import org.knime.core.expressions.TextRange;
 public record ExpressionDiagnostic(String message, String shortMessage, DiagnosticSeverity severity,
     TextRange location) {
 
+    public static final List<ExpressionDiagnostic> NO_INPUT_CONNECTED_DIAGNOSTICS = List.of(withSameMessage( //
+        "No input table available. Connect a node first.", //
+        DiagnosticSeverity.ERROR, //
+        null //
+    ));
+
     /**
      * @param error the error to convert to a diagnostic
      * @return a diagnostic for the given error

@@ -134,6 +134,16 @@ final class ExpressionRowFilterNodeScriptingDiagnosticsTest {
     }
 
     @Test
+    void testNoInput() {
+        var service = createService(getWorkflowControl(null, FLOW_VARIABLES));
+        var diagnostics = service.getRowFilterDiagnostics("($int - 100) + $$int_flow_var");
+
+        assertEquals(1, diagnostics.size(), "Expected 1 expressions to be analyzed.");
+        assertTrue(diagnostics.get(0).message().contains("No input"),
+            "Expected \"No input...\" error message, got \"" + diagnostics.get(0).message() + "\".");
+    }
+
+    @Test
     void testSyntaxError() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
         var diagnostics = service.getRowFilterDiagnostics("($int - ) + $$int_flow_var");
@@ -186,7 +196,7 @@ final class ExpressionRowFilterNodeScriptingDiagnosticsTest {
             "Expected error severity for expression evaluating to MISSING.");
         assertEquals( //
             "The full expression must return the value type BOOLEAN in order to "
-            + "filter out rows for which the filter expression evaluates to false.", //
+                + "filter out rows for which the filter expression evaluates to false.", //
             diagnostics.get(0).message(), //
             "Expected MISSING evaluation error message." //
         );

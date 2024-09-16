@@ -1,8 +1,4 @@
-import type {
-  InputOutputModel,
-  KAIConfig,
-  PortConfigs,
-} from "@knime/scripting-editor";
+import type { GenericInitialData } from "@knime/scripting-editor";
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 
 export type OutputInsertionMode = "APPEND" | "REPLACE_EXISTING";
@@ -13,13 +9,9 @@ export type ExpressionVersion = {
   builtinAggregationsVersion: number;
 };
 
-export type ExpressionInitialData = {
+export type ExpressionInitialData = GenericInitialData & {
+  expressionVersion: ExpressionVersion;
   functionCatalog: FunctionCatalogData;
-  inputObjects: InputOutputModel[];
-  flowVariables: InputOutputModel;
-  inputsAvailable: boolean;
-  kAiConfig: KAIConfig;
-  inputPortConfigs: PortConfigs;
 };
 
 /** Identifies the error level of an ExpressionEditorPane */

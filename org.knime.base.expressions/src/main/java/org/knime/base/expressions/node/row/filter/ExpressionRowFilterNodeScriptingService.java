@@ -162,6 +162,11 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
          */
         public List<ExpressionDiagnostic> getRowFilterDiagnostics(final String expression) {
 
+            if ((DataTableSpec)getWorkflowControl().getInputSpec()[0] == null) {
+                // No input table, so no column
+                return ExpressionDiagnostic.NO_INPUT_CONNECTED_DIAGNOSTICS;
+            }
+
             List<ExpressionDiagnostic> diagnostics = new ArrayList<>();
 
             try {

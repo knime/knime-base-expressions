@@ -10,7 +10,7 @@ import MultiEditorContainer, {
   type EditorState,
 } from "@/components/MultiEditorContainer.vue";
 import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
-import { Button, LoadingIcon } from "@knime/components";
+import { LoadingIcon } from "@knime/components";
 import { onMounted, ref } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
@@ -23,13 +23,13 @@ import {
 } from "@/expressionSettingsService";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
 import { runFlowVariableDiagnostics } from "@/flowVariableApp/expressionFlowVariableDiagnostics";
-import {
-  type AllowedDropDownValue,
-  type SelectorState,
-} from "@/components/OutputSelector.vue";
 import { runOutputDiagnostics } from "@/generalDiagnostics";
-import PlayIcon from "@knime/styles/img/icons/play.svg";
 import OutputPreviewFlowVariable from "@/flowVariableApp/OutputPreviewFlowVariable.vue";
+import SimpleRunButton from "@/components/SimpleRunButton.vue";
+import type {
+  AllowedDropDownValue,
+  SelectorState,
+} from "@/components/OutputSelector.vue";
 
 // Input flowVariables helpers
 const runButtonDisabledErrorReason = ref<string | null>(null);
@@ -72,20 +72,17 @@ const runDiagnosticsFunction = async (states: EditorState[]) => {
     );
   }
 
-  const haveColumnErrors = flowVariableErrorMessages.some(
+  const haveFlowVariableErrors = flowVariableErrorMessages.some(
     (error) => error !== null,
   );
   const haveSyntaxErrors = codeErrors.some((error) => error.level === "ERROR");
 
-  if (!initialData.value?.inputsAvailable) {
-    runButtonDisabledErrorReason.value =
-      "To evaluate your expression, first connect an executed node.";
-  } else if (haveSyntaxErrors) {
+  if (haveSyntaxErrors) {
     runButtonDisabledErrorReason.value =
       "To evaluate your expression, first resolve syntax errors.";
-  } else if (haveColumnErrors) {
+  } else if (haveFlowVariableErrors) {
     runButtonDisabledErrorReason.value =
-      "To evaluate your expression, first resolve column output errors.";
+      "To evaluate your expression, first resolve flow variable output errors.";
   } else {
     runButtonDisabledErrorReason.value = null;
   }
@@ -97,7 +94,7 @@ onMounted(async () => {
     getFlowVariableSettingsService().getSettings(),
   ]);
 
-  if (!initialData.value.inputsAvailable) {
+  if (initialData.value.inputConnectionInfo[1].status !== "OK") {
     consoleHandler.writeln({
       warning: "No input available. Connect an executed node.",
     });
@@ -230,27 +227,16 @@ const initialPaneSizes = calculateInitialPaneSizes();
 
         <!-- Controls displayed once only -->
         <template #code-editor-controls="{ showButtonText }">
-          <Button
-            primary
-            compact
-            :disabled="runButtonDisabledErrorReason !== null"
-            @click="
+          <SimpleRunButton
+            :run-button-disabled-error-reason="runButtonDisabledErrorReason"
+            :show-button-text="showButtonText"
+            @run-expressions="
               () =>
                 runFlowVariableExpressions(
                   multiEditorContainerRef!.getOrderedEditorStates(),
                 )
             "
-          >
-            <div
-              class="run-button"
-              :class="{
-                'hide-button-text': !showButtonText,
-              }"
-            >
-              <PlayIcon />
-            </div>
-            {{ showButtonText ? "Evaluate" : "" }}
-          </Button>
+          />
         </template>
       </ScriptingEditor>
     </template>

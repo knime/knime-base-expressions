@@ -16,18 +16,19 @@ import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contra
 import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
 } from "@/components/ExpressionEditorPane.vue";
-import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 import { runRowFilterDiagnostics } from "@/rowFilterApp/expressionRowFilterDiagnostics";
 import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
 import {
   calculateInitialPaneSizes,
+  mapConnectionInfoToErrorMessage,
   registerInsertionListener,
 } from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
 import type {
-  ExpressionVersion,
   EditorErrorState,
   ExpressionDiagnostic,
+  ExpressionInitialData,
+  ExpressionVersion,
 } from "@/common/types";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
 import {
@@ -44,8 +45,7 @@ const expressionVersion = ref<ExpressionVersion>({
 
 const editorRef = ref<Required<ExpressionEditorPaneExposes> | null>(null);
 
-const functionCatalogData = ref<FunctionCatalogData>();
-const inputsAvailable = ref(false);
+const initialData = ref<ExpressionInitialData>();
 const errorState = ref<EditorErrorState>({ level: "OK" });
 
 const runDiagnosticsFunction = async () => {
@@ -61,12 +61,12 @@ const runDiagnosticsFunction = async () => {
 };
 
 onMounted(async () => {
-  const [initialData, settings] = await Promise.all([
+  const [initialDataResponse, settings] = await Promise.all([
     getExpressionInitialDataService().getInitialData(),
     getRowFilterSettingsService().getSettings(),
   ]);
 
-  const { inputsAvailable: availableInputs, functionCatalog } = initialData;
+  initialData.value = initialDataResponse;
 
   expressionVersion.value = {
     languageVersion: settings.languageVersion,
@@ -74,16 +74,12 @@ onMounted(async () => {
     builtinAggregationsVersion: settings.builtinAggregationsVersion,
   };
 
-  inputsAvailable.value = availableInputs;
-  if (!availableInputs) {
+  if (initialData.value?.inputConnectionInfo[1].status !== "OK") {
     consoleHandler.writeln({
       warning: "No input available. Connect an executed node.",
     });
   }
-
-  functionCatalogData.value = functionCatalog;
-
-  registerKnimeExpressionLanguage(initialData);
+  registerKnimeExpressionLanguage(initialData.value);
 
   useReadonlyStore().value =
     settings.settingsAreOverriddenByFlowVariable || false;
@@ -158,15 +154,9 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
   }
 });
 
-const runButtonDisabledErrorReason = computed(() => {
-  if (!inputsAvailable.value) {
-    return "To evaluate your expression, first connect an executed node.";
-  } else if (errorState.value.level === "ERROR") {
-    return "To evaluate your expression, first resolve syntax errors.";
-  } else {
-    return null;
-  }
-});
+const runButtonDisabledErrorReason = computed(() =>
+  mapConnectionInfoToErrorMessage(initialData.value?.inputConnectionInfo),
+);
 
 const initialPaneSizes = calculateInitialPaneSizes();
 </script>
@@ -217,9 +207,9 @@ const initialPaneSizes = calculateInitialPaneSizes();
       </template>
 
       <template #right-pane>
-        <template v-if="functionCatalogData">
+        <template v-if="initialData?.functionCatalog">
           <FunctionCatalog
-            :function-catalog-data="functionCatalogData"
+            :function-catalog-data="initialData.functionCatalog"
             :initially-expanded="false"
           />
         </template>

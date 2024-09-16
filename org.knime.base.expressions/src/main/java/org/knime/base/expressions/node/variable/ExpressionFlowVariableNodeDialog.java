@@ -102,7 +102,6 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
                     .orElseGet(List::of);
                 return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(flowVariables);
             }) //
-            .addDataSupplier("outputObjects", List::of) //
             .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN_NO_AGGREGATIONS);
 
         var firstFlowVariable = workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().keySet().stream()

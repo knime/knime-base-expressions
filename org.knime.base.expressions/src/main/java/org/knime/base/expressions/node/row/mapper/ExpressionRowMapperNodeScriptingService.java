@@ -51,6 +51,7 @@ package org.knime.base.expressions.node.row.mapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -200,10 +201,15 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         public List<List<ExpressionDiagnostic>> getRowMapperDiagnostics(final String[] expressions,
             final String[] allNewColumnNames) {
 
+            var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
+            if (spec == null) {
+                // No input table, so no columns
+                return Collections.nCopies(expressions.length, ExpressionDiagnostic.NO_INPUT_CONNECTED_DIAGNOSTICS);
+            }
+
             List<List<ExpressionDiagnostic>> diagnostics = new ArrayList<>();
 
             // Handle the available columns - columnToTypeMap gets updated with appended and replaced columns
-            var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
             var columnToTypeMap = constructColumnToTypeMap(spec);
             Function<String, ReturnResult<ValueType>> columnToTypeMapper =
                 columnName -> columnToTypeMap.getOrDefault(columnName,

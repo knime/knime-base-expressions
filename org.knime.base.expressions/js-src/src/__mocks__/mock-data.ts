@@ -220,7 +220,15 @@ export const DEFAULT_INITIAL_DATA: ExpressionInitialData = {
   functionCatalog: FUNCTION_CATALOG,
   inputObjects: INPUT_OBJECTS,
   flowVariables: FLOW_VARIABLES,
-  inputsAvailable: true,
+  inputConnectionInfo: [
+    { status: "OK", isOptional: true },
+    { status: "OK", isOptional: false },
+  ],
+  expressionVersion: {
+    languageVersion: 1,
+    builtinFunctionsVersion: 1,
+    builtinAggregationsVersion: 1,
+  },
   inputPortConfigs: {
     inputPorts: [
       {
