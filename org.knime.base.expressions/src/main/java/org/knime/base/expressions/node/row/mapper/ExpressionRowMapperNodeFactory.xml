@@ -57,7 +57,6 @@
 				, As with column names, you can use the shorthand
 				$$flow_variable_name, if the name does not contain any special
 				characters nor spaces.
-				.
 			</p>
 			<p>
 				<b>Operators :</b>
