@@ -14,6 +14,7 @@ const mockedScriptingService = vi.hoisted(() => ({
   sendToService: vi.fn(),
   getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
   registerSettingsGetterForApply: vi.fn(),
+  registerEventHandler: vi.fn(),
 }));
 
 vi.mock("@knime/scripting-editor", async () => ({

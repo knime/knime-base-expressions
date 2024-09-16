@@ -24,7 +24,11 @@ import {
   registerInsertionListener,
 } from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
-import type { ExpressionVersion, EditorErrorState } from "@/common/types";
+import type {
+  ExpressionVersion,
+  EditorErrorState,
+  ExpressionDiagnostic,
+} from "@/common/types";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowFilterNodeSettings,
@@ -104,6 +108,21 @@ onMounted(async () => {
 
   // Run initial diagnostics now that we've set the initial text
   await runDiagnosticsFunction();
+
+  getScriptingService().registerEventHandler(
+    "updateWarning",
+    (warning: ExpressionDiagnostic) => {
+      if (warning) {
+        errorState.value = {
+          level: "WARNING",
+          message: warning.message,
+        };
+        consoleHandler.writeln({
+          warning: warning.message,
+        });
+      }
+    },
+  );
 });
 
 const runRowFilterExpressions = (rows: number) => {

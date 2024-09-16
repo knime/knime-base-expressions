@@ -30,7 +30,7 @@ export type EditorErrorState =
   | { level: "OK" }
   | { level: ErrorLevel; message: string };
 
-export type Diagnostic = {
+export type ExpressionDiagnostic = {
   message: string;
   shortMessage: string;
   severity: "ERROR" | "WARNING" | "INFO" | "HINT";

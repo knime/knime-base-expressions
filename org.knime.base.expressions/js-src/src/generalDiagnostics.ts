@@ -1,4 +1,4 @@
-import type { Diagnostic, EditorErrorState } from "@/common/types";
+import type { ExpressionDiagnostic, EditorErrorState } from "@/common/types";
 import type { UseCodeEditorReturn } from "@knime/scripting-editor";
 import { editor as MonacoEditor, Range } from "monaco-editor";
 import {
@@ -8,7 +8,7 @@ import {
 import type { SelectorState } from "@/components/OutputSelector.vue";
 
 export const markDiagnosticsInEditor = (
-  diagnosticsForThisEditor: Diagnostic[],
+  diagnosticsForThisEditor: ExpressionDiagnostic[],
   editorState: UseCodeEditorReturn,
 ) => {
   // Mark the diagnostics in the editor
@@ -40,7 +40,7 @@ export const markDiagnosticsInEditor = (
  *      or { level: "OK" } if there are no diagnostics.
  */
 export const getEditorErrorStateFromDiagnostics = (
-  diagnosticsForThisEditor: Diagnostic[],
+  diagnosticsForThisEditor: ExpressionDiagnostic[],
 ): EditorErrorState => {
   const errorDiagnostic = diagnosticsForThisEditor.find(
     (d) => d.severity === "ERROR",

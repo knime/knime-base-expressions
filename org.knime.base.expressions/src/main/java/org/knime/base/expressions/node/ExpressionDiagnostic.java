@@ -49,6 +49,8 @@
 package org.knime.base.expressions.node;
 
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.knime.core.expressions.ExpressionCompileError;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
@@ -104,6 +106,40 @@ public record ExpressionDiagnostic(String message, String shortMessage, Diagnost
     public static ExpressionDiagnostic withSameMessage(final String message, final DiagnosticSeverity severity,
         final TextRange location) {
         return new ExpressionDiagnostic(message, message, severity, location);
+    }
+
+    /**
+     * Convenience function to create a handler that stores the warning at the given index. The warnings array must be
+     * large enough to store the warning at the given index. If the index is out of bounds or the array already contains
+     * a warning at the given index, the handler does nothing.
+     *
+     * @param warnings the array to store the warnings in
+     * @return a handler that stores the warning at the given index in the array
+     */
+    public static BiConsumer<Integer, String> getWarningMessageHandler(final ExpressionDiagnostic[] warnings) {
+        return (i, warningMessage) -> {
+
+            if (i >= warnings.length || warnings[i] != null) { // already has a warning
+                return;
+            }
+            warnings[i] = ExpressionDiagnostic.withSameMessage( //
+                warningMessage, //
+                DiagnosticSeverity.WARNING, //
+                null //
+            );
+        };
+    }
+
+    /**
+     * Convenience function to create a handler that stores the warning just for a single editor. The warnings array
+     * must have at least one entry.
+     *
+     * @param warnings the array to store the warning in
+     * @return a handler that stores the warning of the first editor in the array
+     */
+    public static Consumer<String> getSingleWarningMessageHandler(final ExpressionDiagnostic[] warnings) {
+        var warningHandler = getWarningMessageHandler(warnings);
+        return warningMessage -> warningHandler.accept(0, warningMessage);
     }
 
     /**

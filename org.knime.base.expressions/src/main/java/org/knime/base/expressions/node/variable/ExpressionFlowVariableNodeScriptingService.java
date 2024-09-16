@@ -237,17 +237,20 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
         public void runFlowVariableExpression(final List<String> expressions, final List<String> newFlowVariableNames)
             throws ExpressionCompileException {
 
+            var warnings = new ExpressionDiagnostic[expressions.size()];
+
             var resultVariables = ExpressionFlowVariableNodeModel.applyFlowVariableExpressions( //
                 expressions, //
                 newFlowVariableNames, //
                 getSupportedFlowVariablesMap(), //
                 i -> {
                 }, // we do not show the progress
-                this::handleWarningMessage //
+                ExpressionDiagnostic.getWarningMessageHandler(warnings) //
             );
             m_outputFlowVariablesReference.set(resultVariables);
 
             sendEvent("updatePreview", null);
+            sendEvent("updateWarnings", warnings);
 
         }
 
@@ -282,9 +285,5 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                         + "' are not supported in expressions."));
         }
 
-        private void handleWarningMessage(final int i, final String warningMessage) {
-            // TODO(AP-23152) do not use the console output
-            addConsoleOutputEvent(new ConsoleText("Expression " + (i + 1) + ": " + warningMessage + "\n", false));
-        }
     }
 }

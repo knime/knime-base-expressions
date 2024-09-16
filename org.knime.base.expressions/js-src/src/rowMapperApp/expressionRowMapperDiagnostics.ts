@@ -2,7 +2,7 @@ import {
   getScriptingService,
   type UseCodeEditorReturn,
 } from "@knime/scripting-editor";
-import type { Diagnostic, EditorErrorState } from "@/common/types";
+import type { ExpressionDiagnostic, EditorErrorState } from "@/common/types";
 import {
   getEditorErrorStateFromDiagnostics,
   markDiagnosticsInEditor,
@@ -21,10 +21,11 @@ export const runRowMapperDiagnostics = async (
 ): Promise<EditorErrorState[]> => {
   const newTexts = editorStates.map((editorState) => editorState.text.value);
 
-  const diagnostics: Diagnostic[][] = await getScriptingService().sendToService(
-    "getRowMapperDiagnostics",
-    [newTexts, allOutputColumnNames],
-  );
+  const diagnostics: ExpressionDiagnostic[][] =
+    await getScriptingService().sendToService("getRowMapperDiagnostics", [
+      newTexts,
+      allOutputColumnNames,
+    ]);
 
   diagnostics.forEach((diagnosticsForThisEditor, index) =>
     markDiagnosticsInEditor(diagnosticsForThisEditor, editorStates[index]),

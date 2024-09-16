@@ -192,6 +192,8 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
             var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
             var executionContext = nodeContainer.createExecutionContext();
 
+            var warnings = new ExpressionDiagnostic[1];
+
             try {
                 var inColTable = m_inputTableCache.getTable(numPreviewRows);
                 var outputTable = ExpressionRowFilterNodeModel.applyFilterExpression( //
@@ -199,10 +201,15 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                     inColTable, //
                     getSupportedFlowVariablesMap(), //
                     executionContext, //
-                    this::handleWarningMessage //
+                    ExpressionDiagnostic.getSingleWarningMessageHandler(warnings) //
                 );
 
                 updateTablePreview(outputTable, (int)inColTable.size());
+
+                if (warnings[0] != null) {
+                    sendEvent("updateWarning", warnings[0]);
+                }
+
             } catch (CanceledExecutionException e) {
                 throw new IllegalStateException("This is an implementation error. Must not happen "
                     + "because canceling the execution should not be possible.", e);
@@ -215,14 +222,5 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
             updateOutputTable(numPreviewRows, m_inputTableCache.getFullRowCount());
         }
 
-        private void handleWarningMessage(final String warningMessage) {
-            // TODO(AP-23152) show warning next to the expression (only the first one)
-            addConsoleOutputEvent(new ConsoleText(formatWarning(warningMessage), true));
-        }
-
-        private static String formatWarning(final String warningText) {
-            // TODO: is this actually how we want to do it?
-            return "⚠️  \u001b[47m\u001b[30m%s\u001b[0m%n".formatted(warningText);
-        }
     }
 }

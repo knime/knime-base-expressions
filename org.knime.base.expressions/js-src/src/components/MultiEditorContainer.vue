@@ -2,8 +2,10 @@
 import {
   useReadonlyStore,
   type UseCodeEditorReturn,
+  getScriptingService,
+  consoleHandler,
 } from "@knime/scripting-editor";
-import type { EditorErrorState } from "@/common/types";
+import type { EditorErrorState, ExpressionDiagnostic } from "@/common/types";
 import { FunctionButton } from "@knime/components";
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
 import { onKeyStroke } from "@vueuse/core";
@@ -329,6 +331,25 @@ const getMostConcerningErrorStateForEditor = (
   return editorState?.editorErrorState;
 };
 
+const setWarningsHandler = (warnings: ExpressionDiagnostic[]) => {
+  for (let i = 0; i < warnings.length; i++) {
+    if (warnings[i]) {
+      editorStates[orderedEditorKeys[i]].editorErrorState = {
+        level: "WARNING",
+        message: warnings[i].message,
+      };
+    }
+  }
+  for (const warning of warnings) {
+    // TODO(AP-23173) remove warnings from console
+    if (warning?.severity === "WARNING") {
+      consoleHandler.writeln({
+        warning: warning.message,
+      });
+    }
+  }
+};
+
 onMounted(async () => {
   for (let i = 0; i < props.settings.length; ++i) {
     const key = generateNewKey();
@@ -337,6 +358,11 @@ onMounted(async () => {
   }
 
   await nextTick();
+
+  getScriptingService().registerEventHandler(
+    "updateWarnings",
+    setWarningsHandler,
+  );
 
   for (let i = 0; i < orderedEditorKeys.length; ++i) {
     const key = orderedEditorKeys[i];

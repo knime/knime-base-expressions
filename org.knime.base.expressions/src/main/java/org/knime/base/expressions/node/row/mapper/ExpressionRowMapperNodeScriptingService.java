@@ -270,6 +270,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
+            var warnings = new ExpressionDiagnostic[scripts.size()];
+
             var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
             var executionContext = nodeContainer.createExecutionContext();
             try {
@@ -283,10 +285,12 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     inColTable, //
                     getSupportedFlowVariablesMap(), //
                     executionContext, //
-                    this::handleWarningMessage //
+                    ExpressionDiagnostic.getWarningMessageHandler(warnings) //
                 );
 
                 updateTablePreview(outputTable);
+
+                sendEvent("updateWarnings", warnings);
 
             } catch (CanceledExecutionException e) {
                 throw new IllegalStateException("This is an implementation error. Must not happen "
@@ -300,14 +304,5 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
             updateOutputTable((int)outputTable.size(), m_inputTableCache.getFullRowCount());
         }
 
-        private void handleWarningMessage(final int i, final String warningMessage) {
-            // TODO(AP-23152) show warning next to the expression (only the first one)
-            addConsoleOutputEvent(new ConsoleText(formatWarning(i, warningMessage), true));
-        }
-
-        private static String formatWarning(final int i, final String warningText) {
-            // TODO: is this actually how we want to do it?
-            return "⚠️  \u001b[47m\u001b[30mExpression %d: %s\u001b[0m%n".formatted(i + 1, warningText);
-        }
     }
 }
