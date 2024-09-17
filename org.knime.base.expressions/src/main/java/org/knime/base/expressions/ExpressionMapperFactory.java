@@ -56,14 +56,14 @@ import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
-import org.knime.core.data.columnar.schema.ColumnarValueSchema;
-import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable.ColumnarMapperFactory;
 import org.knime.core.data.def.BooleanCell;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.data.def.StringCell;
 import org.knime.core.data.v2.ValueFactory;
+import org.knime.core.data.v2.schema.ValueSchema;
+import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.data.v2.value.BooleanValueFactory;
 import org.knime.core.data.v2.value.DoubleValueFactory;
 import org.knime.core.data.v2.value.LongValueFactory;
@@ -151,7 +151,7 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
     }
 
     @Override
-    public ColumnarValueSchema getOutputSchema() {
+    public ValueSchema getOutputSchema() {
         var schema = m_mapperFactory.getOutputSchema();
         CheckUtils.checkArgument(schema.numColumns() == 1,
             "An expression must create exactly one column, but got " + schema.numColumns());
@@ -159,7 +159,7 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
         var dataColumnSpecs =
             new DataColumnSpec[]{primitiveDataSpecToDataColumnSpec(schema.getSpec(0), m_outputColumnName)};
         var dataTableSpec = new DataTableSpec(dataColumnSpecs);
-        return ColumnarValueSchemaUtils.create(dataTableSpec, valueFactories);
+        return ValueSchemaUtils.create(dataTableSpec, valueFactories);
     }
 
     int[] getInputColumnIndices() {
