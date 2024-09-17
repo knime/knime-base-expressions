@@ -77,7 +77,6 @@ import org.knime.core.data.DoubleValue;
 import org.knime.core.data.LongValue;
 import org.knime.core.data.StringValue;
 import org.knime.core.data.columnar.ColumnarTableBackend;
-import org.knime.core.data.columnar.schema.ColumnarValueSchema;
 import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
@@ -85,6 +84,7 @@ import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializ
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.container.DataContainerSettings;
+import org.knime.core.data.v2.schema.ValueSchema;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.ColumnAccess;
@@ -453,7 +453,7 @@ public final class ExpressionRunnerUtils {
         final long numRows) {
 
         try {
-            final ColumnarValueSchema inputTableSchema = input.getSchema();
+            final ValueSchema inputTableSchema = input.getSchema();
 
             int numCols = inputTableSchema.numColumns();
 
