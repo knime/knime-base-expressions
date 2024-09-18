@@ -2,8 +2,9 @@ import {
   getScriptingService,
   type UseCodeEditorReturn,
 } from "@knime/scripting-editor";
-import type { ExpressionDiagnostic, EditorErrorState } from "@/common/types";
 import {
+  type EditorErrorState,
+  type ExpressionDiagnostic,
   getEditorErrorStateFromDiagnostics,
   markDiagnosticsInEditor,
 } from "@/generalDiagnostics";

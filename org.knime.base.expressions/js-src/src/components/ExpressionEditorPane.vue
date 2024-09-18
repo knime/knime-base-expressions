@@ -24,7 +24,7 @@ import DownArrowIcon from "@knime/styles/img/icons/arrow-down.svg";
 import CopyIcon from "@knime/styles/img/icons/copy.svg";
 import WarningIcon from "@knime/styles/img/icons/circle-warning.svg";
 import { FunctionButton } from "@knime/components";
-import type { EditorErrorState } from "@/common/types";
+import type { EditorErrorState } from "@/generalDiagnostics";
 import { editor as monaco } from "monaco-editor";
 import EditorOption = monaco.EditorOption;
 

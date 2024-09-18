@@ -13,21 +13,3 @@ export type ExpressionInitialData = GenericInitialData & {
   expressionVersion: ExpressionVersion;
   functionCatalog: FunctionCatalogData;
 };
-
-/** Identifies the error level of an ExpressionEditorPane */
-export type ErrorLevel = "ERROR" | "WARNING" | "OK";
-
-/** Error level with attached message */
-export type EditorErrorState =
-  | { level: "OK" }
-  | { level: ErrorLevel; message: string };
-
-export type ExpressionDiagnostic = {
-  message: string;
-  shortMessage: string;
-  severity: "ERROR" | "WARNING" | "INFO" | "HINT";
-  location: {
-    start: number;
-    stop: number;
-  } | null;
-};

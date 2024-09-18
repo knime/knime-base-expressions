@@ -5,7 +5,6 @@ import {
   getScriptingService,
   consoleHandler,
 } from "@knime/scripting-editor";
-import type { EditorErrorState, ExpressionDiagnostic } from "@/common/types";
 import { FunctionButton } from "@knime/components";
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
 import { onKeyStroke } from "@vueuse/core";
@@ -28,6 +27,10 @@ import OutputSelector, {
   type AllowedDropDownValue,
   type SelectorState,
 } from "@/components/OutputSelector.vue";
+import type {
+  EditorErrorState,
+  ExpressionDiagnostic,
+} from "@/generalDiagnostics";
 
 type EditorStateWithoutMonaco = {
   selectorState: SelectorState;

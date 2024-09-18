@@ -24,17 +24,16 @@ import {
   registerInsertionListener,
 } from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
-import type {
-  EditorErrorState,
-  ExpressionDiagnostic,
-  ExpressionInitialData,
-  ExpressionVersion,
-} from "@/common/types";
+import type { ExpressionVersion, ExpressionInitialData } from "@/common/types";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowFilterNodeSettings,
   getRowFilterSettingsService,
 } from "@/expressionSettingsService";
+import type {
+  EditorErrorState,
+  ExpressionDiagnostic,
+} from "@/generalDiagnostics";
 
 // Overwritten by the initial settings
 const expressionVersion = ref<ExpressionVersion>({

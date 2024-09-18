@@ -1,4 +1,3 @@
-import type { ExpressionDiagnostic, EditorErrorState } from "@/common/types";
 import type { UseCodeEditorReturn } from "@knime/scripting-editor";
 import { editor as MonacoEditor, Range } from "monaco-editor";
 import {
@@ -6,6 +5,34 @@ import {
   EXPRESSION_MARKERS_OWNER,
 } from "@/common/constants";
 import type { SelectorState } from "@/components/OutputSelector.vue";
+
+/** Identifies the error level of an ExpressionEditorPane */
+export type ErrorLevel = "ERROR" | "WARNING" | "OK";
+
+/** Error level with attached message */
+export type EditorErrorState =
+  | { level: "OK" }
+  | { level: ErrorLevel; message: string };
+
+export type ExpressionDiagnostic = {
+  message: string;
+  shortMessage: string;
+  severity: "ERROR" | "WARNING" | "INFO" | "HINT";
+  location: {
+    start: number;
+    stop: number;
+  } | null;
+};
+
+export type ExpressionDiagnosticResult = {
+  diagnostics: ExpressionDiagnostic[];
+  returnType: string;
+};
+
+export type Diagnostic = {
+  errorState: EditorErrorState;
+  returnType: string;
+};
 
 export const markDiagnosticsInEditor = (
   diagnosticsForThisEditor: ExpressionDiagnostic[],
