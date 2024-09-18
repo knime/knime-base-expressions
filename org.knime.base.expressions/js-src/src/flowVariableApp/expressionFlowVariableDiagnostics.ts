@@ -18,18 +18,21 @@ import {
 export const runFlowVariableDiagnostics = async (
   editorStates: UseCodeEditorReturn[],
   allFlowVariableOutputNames: string[],
-): Promise<EditorErrorState[]> => {
+): Promise<Diagnostic[]> => {
   const newTexts = editorStates.map((editorState) => editorState.text.value);
 
-  const diagnostics: ExpressionDiagnostic[][] =
+  const results: ExpressionDiagnosticResult[] =
     await getScriptingService().sendToService("getFlowVariableDiagnostics", [
       newTexts,
       allFlowVariableOutputNames,
     ]);
 
-  diagnostics.forEach((diagnosticsForThisEditor, index) =>
-    markDiagnosticsInEditor(diagnosticsForThisEditor, editorStates[index]),
+  results.forEach(({ diagnostics }, index) =>
+    markDiagnosticsInEditor(diagnostics, editorStates[index]),
   );
 
-  return diagnostics.map(getEditorErrorStateFromDiagnostics);
+  return results.map(({ diagnostics, returnType }) => ({
+    errorState: getEditorErrorStateFromDiagnostics(diagnostics),
+    returnType,
+  }));
 };

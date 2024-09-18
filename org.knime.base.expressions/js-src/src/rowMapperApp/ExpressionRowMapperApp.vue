@@ -41,7 +41,7 @@ const multiEditorContainerRef =
   ref<InstanceType<typeof MultiEditorContainer>>();
 
 const runDiagnosticsFunction = async (states: EditorState[]) => {
-  const codeErrors = await runRowMapperDiagnostics(
+  const diagnostics = await runRowMapperDiagnostics(
     states.map((state) => state.monacoState),
     states.map((state) =>
       state.selectorState.outputMode === "APPEND"
@@ -70,7 +70,7 @@ const runDiagnosticsFunction = async (states: EditorState[]) => {
 
     multiEditorContainerRef.value?.setEditorErrorState(
       state.key,
-      codeErrors[index],
+      diagnostics[index].errorState,
     );
   }
 
@@ -78,7 +78,9 @@ const runDiagnosticsFunction = async (states: EditorState[]) => {
     initialData.value?.inputConnectionInfo,
   );
   const haveColumnErrors = columnErrorMessages.some((error) => error !== null);
-  const haveSyntaxErrors = codeErrors.some((error) => error.level === "ERROR");
+  const haveSyntaxErrors = diagnostics.some(
+    ({ errorState }) => errorState.level === "ERROR",
+  );
 
   if (connectionErrors) {
     runButtonDisabledErrorReason.value = connectionErrors;

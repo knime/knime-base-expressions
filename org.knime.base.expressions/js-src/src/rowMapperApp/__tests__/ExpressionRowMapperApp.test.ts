@@ -5,6 +5,7 @@ import { nextTick } from "vue";
 import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
 import ExpressionRowMapperApp from "../ExpressionRowMapperApp.vue";
 import { DEFAULT_ROW_MAPPER_INITIAL_SETTINGS } from "../__mocks__/browser-mock-row-mapper-services";
+import type { Diagnostic } from "@/generalDiagnostics";
 
 vi.mock("@/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),
@@ -38,7 +39,14 @@ vi.mock("@/expressionSettingsService", () => ({
 }));
 
 vi.mock("@/rowMapperApp/expressionRowMapperDiagnostics", () => ({
-  runRowMapperDiagnostics: vi.fn(() => Promise.resolve([[]])),
+  runRowMapperDiagnostics: vi.fn(() =>
+    Promise.resolve([
+      {
+        errorState: { level: "OK" },
+        returnType: "notImportant",
+      } satisfies Diagnostic,
+    ]),
+  ),
   runColumnOutputDiagnostics: vi.fn(() => Promise.resolve([])),
 }));
 

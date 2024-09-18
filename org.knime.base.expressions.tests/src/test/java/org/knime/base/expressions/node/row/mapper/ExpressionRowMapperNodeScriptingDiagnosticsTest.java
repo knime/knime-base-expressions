@@ -68,6 +68,7 @@ import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.data.def.StringCell;
 import org.knime.core.data.vector.bitvector.DenseBitVectorCell;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.workflow.FlowObjectStack;
 import org.knime.core.node.workflow.FlowVariable;
@@ -129,69 +130,74 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     void testMultipleExpressionsNoError() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
         var diagnostics = service.getRowMapperDiagnostics( //
-            new String[]{"($int - 100) + $$int_flow_var", "$out - 10", "$[ROW_ID] + $[ROW_INDEX] + $[ROW_NUMBER]",
-                "$['long', 10] + 2"}, //
+            new String[]{"($int - 100) + $$int_flow_var", "$out / 5.5", "$[ROW_ID] + $[ROW_INDEX] + $[ROW_NUMBER]",
+                "$['long', 10] + 2 > 0"}, //
             new String[]{"out", "out2", "out3", "out4"} //
         );
 
         assertEquals(4, diagnostics.size(), "Expected 4 expressions to be analyzed.");
-        assertEquals(List.of(), diagnostics.get(0), "Expected no diagnostics for the first expression.");
-        assertEquals(List.of(), diagnostics.get(1), "Expected no diagnostics for the second expression.");
-        assertEquals(List.of(), diagnostics.get(2), "Expected no diagnostics for the third expression.");
-        assertEquals(List.of(), diagnostics.get(3), "Expected no diagnostics for the fourth expression.");
+        assertEquals(List.of(), diagnostics.get(0).diagnostics(), "Expected no diagnostics for the first expression.");
+        assertEquals(List.of(), diagnostics.get(1).diagnostics(), "Expected no diagnostics for the second expression.");
+        assertEquals(List.of(), diagnostics.get(2).diagnostics(), "Expected no diagnostics for the third expression.");
+        assertEquals(List.of(), diagnostics.get(3).diagnostics(), "Expected no diagnostics for the fourth expression.");
+
+        assertEquals(ValueType.INTEGER.name(), diagnostics.get(0).returnType(), "Expected integer type.");
+        assertEquals(ValueType.FLOAT.name(), diagnostics.get(1).returnType(), "Expected float type.");
+        assertEquals(ValueType.STRING.name(), diagnostics.get(2).returnType(), "Expected string type.");
+        assertEquals(ValueType.BOOLEAN.name(), diagnostics.get(3).returnType(), "Expected boolean type.");
     }
 
     @Test
     void testNoInput() {
         var service = createService(getWorkflowControl(null, FLOW_VARIABLES));
-        var diagnostics = service.getRowMapperDiagnostics( //
+        var result = service.getRowMapperDiagnostics( //
             new String[]{"($int - 100) + $$int_flow_var"}, //
             new String[]{"out"} //
         );
 
-        assertEquals(1, diagnostics.size(), "Expected 1 expressions to be analyzed.");
-        assertTrue(diagnostics.get(0).get(0).message().contains("No input"),
-            "Expected \"No input...\" error message, got \"" + diagnostics.get(0).get(0).message() + "\".");
+        assertEquals(1, result.size(), "Expected 1 expressions to be analyzed.");
+        assertTrue(result.get(0).diagnostics().get(0).message().contains("No input"),
+            "Expected \"No input...\" error message, got \"" + result.get(0).diagnostics().get(0).message() + "\".");
     }
 
     @Test
     void testSyntaxError() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
-        var diagnostics =
+        var result =
             service.getRowMapperDiagnostics(new String[]{"($int - ) + $$int_flow_var"}, new String[]{"out"});
 
-        assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected syntax error in the expression.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected syntax error in the expression.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
             "Expected error severity for syntax error.");
     }
 
     @Test
     void testMissingColumn() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
-        var diagnostics = service.getRowMapperDiagnostics(new String[]{"$mis_col"}, new String[]{"out"});
+        var result = service.getRowMapperDiagnostics(new String[]{"$mis_col"}, new String[]{"out"});
 
-        assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for missing column.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for missing column.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
             "Expected error severity for missing column.");
-        assertEquals("No column with the name 'mis_col' is available.", diagnostics.get(0).get(0).message(),
+        assertEquals("No column with the name 'mis_col' is available.", result.get(0).diagnostics().get(0).message(),
             "Expected missing column error message.");
     }
 
     @Test
     void testPrematureColumnAccess() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
-        var diagnostics =
+        var result =
             service.getRowMapperDiagnostics(new String[]{"$out2 + $int", "100"}, new String[]{"out1", "out2"});
 
-        assertEquals(2, diagnostics.size(), "Expected diagnostics for two expressions.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for premature column access.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+        assertEquals(2, result.size(), "Expected diagnostics for two expressions.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for premature column access.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
             "Expected error severity for premature column access.");
         assertEquals( //
             "The column 'out2' was used before it was appended by Expression 2. Try reordering your expressions.", //
-            diagnostics.get(0).get(0).message(), //
+            result.get(0).diagnostics().get(0).message(), //
             "Expected premature column access error message." //
         );
     }
@@ -199,15 +205,15 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     @Test
     void testUnsupportedColumnType() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
-        var diagnostics = service.getRowMapperDiagnostics(new String[]{"$unsupported + 1"}, new String[]{"out"});
+        var result = service.getRowMapperDiagnostics(new String[]{"$unsupported + 1"}, new String[]{"out"});
 
-        assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for unsupported column type.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for unsupported column type.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
             "Expected error severity for unsupported column type.");
         assertEquals( //
             "Columns of the type 'Bit vector' are not supported in expressions.", //
-            diagnostics.get(0).get(0).message(), //
+            result.get(0).diagnostics().get(0).message(), //
             "Expected unsupported column type error message." //
         );
     }
@@ -215,15 +221,15 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     @Test
     void testExpressionEvaluatesToMissing() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
-        var diagnostics = service.getRowMapperDiagnostics(new String[]{"MISSING"}, new String[]{"out"});
+        var result = service.getRowMapperDiagnostics(new String[]{"MISSING"}, new String[]{"out"});
 
-        assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for expression evaluating to MISSING.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for expression evaluating to MISSING.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
             "Expected error severity for expression evaluating to MISSING.");
         assertEquals( //
             "The full expression must not evaluate to MISSING.", //
-            diagnostics.get(0).get(0).message(), //
+            result.get(0).diagnostics().get(0).message(), //
             "Expected MISSING evaluation error message." //
         );
     }
@@ -231,18 +237,20 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     @Test
     void testAccessColumnFromInvalidExpression() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
-        var diagnostics =
+        var result =
             service.getRowMapperDiagnostics(new String[]{"___invalid", "$out + 10"}, new String[]{"out", "out2"});
 
-        assertEquals(2, diagnostics.size(), "Expected diagnostics for two expressions.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for accessing column from invalid expression.");
+        assertEquals(2, result.size(), "Expected diagnostics for two expressions.");
+        assertFalse(result.get(0).diagnostics().isEmpty(),
+            "Expected error for accessing column from invalid expression.");
 
-        assertFalse(diagnostics.get(1).isEmpty(), "Expected error for accessing column from invalid expression.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(1).get(0).severity(),
+        assertFalse(result.get(1).diagnostics().isEmpty(),
+            "Expected error for accessing column from invalid expression.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(1).diagnostics().get(0).severity(),
             "Expected error severity for accessing column from invalid expression.");
         assertEquals( //
             "Expression 1 that outputs column 'out' has errors. Fix Expression 1.", //
-            diagnostics.get(1).get(0).message(), //
+            result.get(1).diagnostics().get(0).message(), //
             "Expected invalid expression error message." //
         );
     }
@@ -250,19 +258,21 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     @Test
     void testAccessColumnFromExpressionWithPrematureColumnAccess() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
-        var diagnostics = service.getRowMapperDiagnostics(new String[]{"$out1 + 10", "10", "$out + 10"},
+        var result = service.getRowMapperDiagnostics(new String[]{"$out1 + 10", "10", "$out + 10"},
             new String[]{"out", "out1", "out2"});
 
-        assertEquals(3, diagnostics.size(), "Expected diagnostics for two expressions.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for accessing column that was not yet appended.");
-        assertTrue(diagnostics.get(1).isEmpty(), "Expected second expression to be valid.");
+        assertEquals(3, result.size(), "Expected diagnostics for two expressions.");
+        assertFalse(result.get(0).diagnostics().isEmpty(),
+            "Expected error for accessing column that was not yet appended.");
+        assertTrue(result.get(1).diagnostics().isEmpty(), "Expected second expression to be valid.");
 
-        assertFalse(diagnostics.get(2).isEmpty(), "Expected error for accessing column from invalid expression.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(2).get(0).severity(),
+        assertFalse(result.get(2).diagnostics().isEmpty(),
+            "Expected error for accessing column from invalid expression.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(2).diagnostics().get(0).severity(),
             "Expected error severity for accessing column from invalid expression.");
         assertEquals( //
             "Expression 1 that outputs column 'out' has errors. Fix Expression 1.", //
-            diagnostics.get(2).get(0).message(), //
+            result.get(2).diagnostics().get(0).message(), //
             "Expected invalid expression error message." //
         );
     }

@@ -61,6 +61,7 @@ import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
+import org.knime.base.expressions.node.ExpressionDiagnosticResult;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
@@ -162,19 +163,19 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
         }
 
         /**
-         * List of diagnostics for each editor, hence a 2D list.
+         * List of diagnostics results for each editor.
          *
          * @param expressions
          * @param allNewFlowVariableNames the names of all output flow variables. Guaranteed to have the same length and
          *            order as the expressions.
-         * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
+         * @return list of diagnostics results for each editor, i.e. a list of diagnostics and the return type.
          */
-        public List<List<ExpressionDiagnostic>> getFlowVariableDiagnostics(final String[] expressions,
+        public List<ExpressionDiagnosticResult> getFlowVariableDiagnostics(final String[] expressions,
             final String[] allNewFlowVariableNames) {
             // Note that this method is similar to ExpressionFlowVariableNodeModel#validateFlowVariablesExpressions but
             // it collects Diagnostic objects instead of throwing an exception.
 
-            List<List<ExpressionDiagnostic>> diagnostics = new ArrayList<>();
+            List<ExpressionDiagnosticResult> diagnostics = new ArrayList<>();
             var availableFlowVariables = new HashMap<String, ReturnResult<FlowVariable>>(getFullFlowVariablesMap());
 
             // Only the names of the flow variables that are appended (not replaced)
@@ -186,6 +187,7 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                 var expression = expressions[i];
                 List<ExpressionDiagnostic> diagnosticsForThisExpression = new ArrayList<>();
 
+                var inferredType = ValueType.MISSING;
                 try {
                     var ast = Expressions.parse(expression);
 
@@ -204,7 +206,7 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                         continue;
                     }
 
-                    var inferredType = Expressions.inferTypes( //
+                    inferredType = Expressions.inferTypes( //
                         ast, //
                         ExpressionFlowVariableNodeModel::columnTypeResolver, //
                         fvName -> toValueType(availableFlowVariables, fvName) //
@@ -241,7 +243,8 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                         invalidExpressionType(i, allNewFlowVariableNames[i]));
                     diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromException(ex));
                 } finally {
-                    diagnostics.add(diagnosticsForThisExpression);
+                    diagnostics
+                        .add(new ExpressionDiagnosticResult(diagnosticsForThisExpression, inferredType.toString()));
                 }
             }
 

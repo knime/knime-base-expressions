@@ -6,6 +6,7 @@ import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
 
 import { DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS } from "../__mocks__/browser-mock-flow-variable-services";
 import ExpressionFlowVariableApp from "../ExpressionFlowVariableApp.vue";
+import type { Diagnostic } from "@/generalDiagnostics";
 
 vi.mock("@/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),
@@ -39,7 +40,14 @@ vi.mock("@/expressionSettingsService", () => ({
 }));
 
 vi.mock("@/flowVariableApp/expressionFlowVariableDiagnostics", () => ({
-  runFlowVariableDiagnostics: vi.fn(() => Promise.resolve([[]])),
+  runFlowVariableDiagnostics: vi.fn(() =>
+    Promise.resolve([
+      {
+        errorState: { level: "OK" },
+        returnType: "notImportant",
+      } satisfies Diagnostic,
+    ]),
+  ),
 }));
 
 describe("ExpressionFlowVariableApp.vue", () => {

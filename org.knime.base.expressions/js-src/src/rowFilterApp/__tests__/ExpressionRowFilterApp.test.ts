@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { nextTick } from "vue";
 import ExpressionRowFilterApp from "../ExpressionRowFilterApp.vue";
-import { DEFAULT_INITIAL_DATA } from "../../__mocks__/mock-data";
+import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
 import { DEFAULT_ROW_FILTER_INITIAL_SETTINGS } from "../__mocks__/browser-mock-row-filter-services";
+import type { EditorErrorState } from "@/generalDiagnostics";
 
 vi.mock("@/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),
@@ -38,7 +39,9 @@ vi.mock("@/expressionSettingsService", () => ({
 }));
 
 vi.mock("@/rowFilterApp/expressionRowFilterDiagnostics", () => ({
-  runRowFilterDiagnostics: vi.fn(() => Promise.resolve([])),
+  runRowFilterDiagnostics: vi.fn(() =>
+    Promise.resolve({ level: "OK" } satisfies EditorErrorState),
+  ),
 }));
 
 describe("ExpressionsRowFilterApp.vue", () => {

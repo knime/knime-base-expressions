@@ -74,15 +74,6 @@ public record ExpressionDiagnostic(String message, String shortMessage, Diagnost
     ));
 
     /**
-     * Combines a list of diagnostics for an expression with the return type of the expression.
-     *
-     * @param diagnostics
-     * @param returnType
-     */
-    public record ExpressionDiagnosticResult(List<ExpressionDiagnostic> diagnostics, String returnType) {
-    }
-
-    /**
      * @param error the error to convert to a diagnostic
      * @return a diagnostic for the given error
      */

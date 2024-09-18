@@ -63,6 +63,7 @@ import org.knime.base.expressions.InsertionMode;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
+import org.knime.base.expressions.node.ExpressionDiagnosticResult;
 import org.knime.base.expressions.node.row.InputTableCache;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
@@ -192,22 +193,23 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         }
 
         /**
-         * List of diagnostics for each editor, hence a 2D list.
+         * List of diagnostics results for each editor.
          *
          * @param expressions
          * @param allNewColumnNames the names of the all output columns. Must align with the expressions.
-         * @return list of diagnostics for each editor, i.e. a list of a lists of diagnostics
+         * @return list of diagnostics results for each editor, i.e. a list of diagnostics and the return type.
          */
-        public List<List<ExpressionDiagnostic>> getRowMapperDiagnostics(final String[] expressions,
+        public List<ExpressionDiagnosticResult> getRowMapperDiagnostics(final String[] expressions,
             final String[] allNewColumnNames) {
 
             var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
             if (spec == null) {
                 // No input table, so no columns
-                return Collections.nCopies(expressions.length, ExpressionDiagnostic.NO_INPUT_CONNECTED_DIAGNOSTICS);
+                return Collections.nCopies(expressions.length,
+                    new ExpressionDiagnosticResult(ExpressionDiagnostic.NO_INPUT_CONNECTED_DIAGNOSTICS, "UNKNOWN"));
             }
 
-            List<List<ExpressionDiagnostic>> diagnostics = new ArrayList<>();
+            List<ExpressionDiagnosticResult> diagnostics = new ArrayList<>();
 
             // Handle the available columns - columnToTypeMap gets updated with appended and replaced columns
             var columnToTypeMap = constructColumnToTypeMap(spec);
@@ -227,6 +229,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 var currentOutputColumnName = allNewColumnNames[i];
 
                 List<ExpressionDiagnostic> diagnosticsForThisExpression = new ArrayList<>();
+                var inferredType = ValueType.MISSING;
 
                 try {
                     var ast = Expressions.parse(expression);
@@ -242,7 +245,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                         continue;
                     }
 
-                    var inferredType = Expressions.inferTypes(ast, columnToTypeMapper, flowVarToTypeMapper);
+                    inferredType = Expressions.inferTypes(ast, columnToTypeMapper, flowVarToTypeMapper);
 
                     if (ValueType.MISSING.equals(inferredType)) {
                         // Output type "MISSING" is not supported, hence error
@@ -261,7 +264,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
                     diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromException(ex));
                 } finally {
-                    diagnostics.add(diagnosticsForThisExpression);
+                    diagnostics.add(
+                        new ExpressionDiagnosticResult(diagnosticsForThisExpression, inferredType.baseType().name()));
                 }
             }
 

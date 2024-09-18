@@ -38,7 +38,7 @@ const multiEditorContainerRef =
   ref<InstanceType<typeof MultiEditorContainer>>();
 
 const runDiagnosticsFunction = async (states: EditorState[]) => {
-  const codeErrors = await runFlowVariableDiagnostics(
+  const diagnostics = await runFlowVariableDiagnostics(
     states.map((state) => state.monacoState),
     states.map((state) =>
       state.selectorState.outputMode === "APPEND"
@@ -67,15 +67,16 @@ const runDiagnosticsFunction = async (states: EditorState[]) => {
 
     multiEditorContainerRef.value?.setEditorErrorState(
       state.key,
-      codeErrors[index],
+      diagnostics[index].errorState,
     );
   }
 
   const haveFlowVariableErrors = flowVariableErrorMessages.some(
     (error) => error !== null,
   );
-  const haveSyntaxErrors = codeErrors.some((error) => error.level === "ERROR");
-
+  const haveSyntaxErrors = diagnostics.some(
+    ({ errorState }) => errorState.level === "ERROR",
+  );
   if (haveSyntaxErrors) {
     runButtonDisabledErrorReason.value =
       "To evaluate your expression, first resolve syntax errors.";

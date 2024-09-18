@@ -19,18 +19,21 @@ import {
 export const runRowMapperDiagnostics = async (
   editorStates: UseCodeEditorReturn[],
   allOutputColumnNames: string[],
-): Promise<EditorErrorState[]> => {
+): Promise<Diagnostic[]> => {
   const newTexts = editorStates.map((editorState) => editorState.text.value);
 
-  const diagnostics: ExpressionDiagnostic[][] =
+  const results: ExpressionDiagnosticResult[] =
     await getScriptingService().sendToService("getRowMapperDiagnostics", [
       newTexts,
       allOutputColumnNames,
     ]);
 
-  diagnostics.forEach((diagnosticsForThisEditor, index) =>
-    markDiagnosticsInEditor(diagnosticsForThisEditor, editorStates[index]),
+  results.forEach(({ diagnostics }, index) =>
+    markDiagnosticsInEditor(diagnostics, editorStates[index]),
   );
 
-  return diagnostics.map(getEditorErrorStateFromDiagnostics);
+  return results.map(({ diagnostics, returnType }) => ({
+    errorState: getEditorErrorStateFromDiagnostics(diagnostics),
+    returnType,
+  }));
 };

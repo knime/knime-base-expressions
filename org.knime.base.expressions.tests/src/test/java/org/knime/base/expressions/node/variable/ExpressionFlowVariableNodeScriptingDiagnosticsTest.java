@@ -58,6 +58,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.variable.ExpressionFlowVariableNodeScriptingService.ExpressionNodeRpcService;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowObjectStack;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType.BooleanType;
@@ -83,7 +84,7 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
         "double_flow_var", new FlowVariable("double_flow_var", DoubleType.INSTANCE, 3.14), //
         "string_flow_var", new FlowVariable("string_flow_var", StringType.INSTANCE, "foo"), //
         "bool_flow_var", new FlowVariable("bool_flow_var", BooleanType.INSTANCE, true), //
-        "unsupported_flow_var", new FlowVariable("unsupported", IntArrayType.INSTANCE) // no value needed
+        "unsupported_flow_var", new FlowVariable("unsupported_flow_var", IntArrayType.INSTANCE) // no value needed
     );
 
     private static WorkflowControl getWorkflowControl(final Map<String, FlowVariable> flowVariables) {
@@ -104,54 +105,60 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
     void testMultipleExpressionsNoError() {
         var service = createService(getWorkflowControl(FLOW_VARIABLES));
         var diagnostics = service.getFlowVariableDiagnostics( //
-            new String[]{"$$int_flow_var", "$$out - 10", "$$out+10"}, //
-            new String[]{"out", "out2", "out"} //
+            new String[]{"($$int_flow_var - 100) + $$int_flow_var", "$$out / 5.5", "$$string_flow_var + 'bar'",
+                "$$long_flow_var + 2 > 0"}, //
+            new String[]{"out", "out2", "out3", "out4"} //
         );
 
-        assertEquals(3, diagnostics.size(), "Expected 3 expressions to be analyzed.");
-        assertEquals(List.of(), diagnostics.get(0), "Expected no diagnostics for the first expression.");
-        assertEquals(List.of(), diagnostics.get(1), "Expected no diagnostics for the second expression.");
-        assertEquals(List.of(), diagnostics.get(2), "Expected no diagnostics for the third expression.");
+        assertEquals(4, diagnostics.size(), "Expected 4 expressions to be analyzed.");
+        assertEquals(List.of(), diagnostics.get(0).diagnostics(), "Expected no diagnostics for the first expression.");
+        assertEquals(List.of(), diagnostics.get(1).diagnostics(), "Expected no diagnostics for the second expression.");
+        assertEquals(List.of(), diagnostics.get(2).diagnostics(), "Expected no diagnostics for the third expression.");
+        assertEquals(List.of(), diagnostics.get(3).diagnostics(), "Expected no diagnostics for the fourth expression.");
+
+        assertEquals(ValueType.INTEGER.name(), diagnostics.get(0).returnType(), "Expected integer type.");
+        assertEquals(ValueType.FLOAT.name(), diagnostics.get(1).returnType(), "Expected float type.");
+        assertEquals(ValueType.STRING.name(), diagnostics.get(2).returnType(), "Expected string type.");
+        assertEquals(ValueType.BOOLEAN.name(), diagnostics.get(3).returnType(), "Expected boolean type.");
     }
 
     @Test
     void testSyntaxError() {
         var service = createService(getWorkflowControl(FLOW_VARIABLES));
-        var diagnostics =
-            service.getFlowVariableDiagnostics(new String[]{"(10 - ) + $$int_flow_var"}, new String[]{"out"});
+        var result = service.getFlowVariableDiagnostics(new String[]{"(10 - ) + $$int_flow_var"}, new String[]{"out"});
 
-        assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected syntax error in the expression.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected syntax error in the expression.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
             "Expected error severity for syntax error.");
     }
 
     @Test
     void testMissingFlowVariable() {
         var service = createService(getWorkflowControl(FLOW_VARIABLES));
-        var diagnostics = service.getFlowVariableDiagnostics(new String[]{"$$mis_flow"}, new String[]{"out"});
+        var result = service.getFlowVariableDiagnostics(new String[]{"$$mis_flow"}, new String[]{"out"});
 
-        assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for missing column.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
-            "Expected error severity for missing column.");
-        assertEquals("No flow variable with the name 'mis_flow' is available.", diagnostics.get(0).get(0).message(),
-            "Expected missing flow variable error message.");
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for missing flow variable.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
+            "Expected error severity for missing flow variable.");
+        assertEquals("No flow variable with the name 'mis_flow' is available.",
+            result.get(0).diagnostics().get(0).message(), "Expected missing flow variable error message.");
     }
 
     @Test
     void testPrematureFlowVariableAccess() {
         var service = createService(getWorkflowControl(FLOW_VARIABLES));
-        var diagnostics = service.getFlowVariableDiagnostics(new String[]{"$$out2 + $$int_flow_var", "100"},
+        var result = service.getFlowVariableDiagnostics(new String[]{"$$out2 + $$int_flow_var", "100"},
             new String[]{"out1", "out2"});
 
-        assertEquals(2, diagnostics.size(), "Expected diagnostics for two expressions.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for premature flow variable access.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
-            "Expected error severity for premature column access.");
+        assertEquals(2, result.size(), "Expected diagnostics for two expressions.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for premature flow variable access.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
+            "Expected error severity for premature flow variable access.");
         assertEquals( //
             "The flow variable 'out2' was used before it was appended by Expression 2. Try reordering your expressions.", //
-            diagnostics.get(0).get(0).message(), //
+            result.get(0).diagnostics().get(0).message(), //
             "Expected premature flow variable access error message." //
         );
     }
@@ -159,16 +166,16 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
     @Test
     void testUnsupportedFlowVariableType() {
         var service = createService(getWorkflowControl(FLOW_VARIABLES));
-        var diagnostics =
-            service.getFlowVariableDiagnostics(new String[]{"$$unsupported_flow_var + 1"}, new String[]{"out"});
+        var result = service.getFlowVariableDiagnostics(new String[]{"$$int_flow_var + $$unsupported_flow_var"},
+            new String[]{"out"});
 
-        assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for unsupported flow variable type.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for unsupported flow variable type.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
             "Expected error severity for unsupported flow variable type.");
         assertEquals( //
             "Flow variables of the type 'INTARRAY' are not supported in expressions.", //
-            diagnostics.get(0).get(0).message(), //
+            result.get(0).diagnostics().get(0).message(), //
             "Expected unsupported flow variable type error message." //
         );
     }
@@ -180,12 +187,12 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
             service.getFlowVariableDiagnostics(new String[]{"$$int_flow_var + $not_supported"}, new String[]{"out"});
 
         assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for unsupported flow variable type.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+        assertFalse(diagnostics.get(0).diagnostics().isEmpty(), "Expected error for unsupported column access type.");
+        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).diagnostics().get(0).severity(),
             "Expected error severity for unsupported flow variable type.");
         assertEquals( //
             "No row values are available. Use '$$' to access flow variables.", //
-            diagnostics.get(0).get(0).message(), //
+            diagnostics.get(0).diagnostics().get(0).message(), //
             "Expected unsupported column access type error message." //
         );
     }
@@ -197,12 +204,13 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
             service.getFlowVariableDiagnostics(new String[]{"$$int_flow_var + $[ROW_NUMBER]"}, new String[]{"out"});
 
         assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for unsupported special column access type.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+        assertFalse(diagnostics.get(0).diagnostics().isEmpty(),
+            "Expected error for unsupported special column access type.");
+        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).diagnostics().get(0).severity(),
             "Expected error severity for unsupported special column access type.");
         assertEquals( //
             "No rows are available.", //
-            diagnostics.get(0).get(0).message(), //
+            diagnostics.get(0).diagnostics().get(0).message(), //
             "Expected unsupported special column access type error message." //
         );
     }
@@ -210,15 +218,15 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
     @Test
     void testExpressionEvaluatesToMissing() {
         var service = createService(getWorkflowControl(FLOW_VARIABLES));
-        var diagnostics = service.getFlowVariableDiagnostics(new String[]{"MISSING"}, new String[]{"out"});
+        var result = service.getFlowVariableDiagnostics(new String[]{"MISSING"}, new String[]{"out"});
 
-        assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
-        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for expression evaluating to MISSING.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for expression evaluating to MISSING.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
             "Expected error severity for expression evaluating to MISSING.");
         assertEquals( //
             "The full expression must not evaluate to MISSING.", //
-            diagnostics.get(0).get(0).message(), //
+            result.get(0).diagnostics().get(0).message(), //
             "Expected MISSING evaluation error message." //
         );
     }
@@ -226,20 +234,20 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
     @Test
     void testAccessFlowVariableFromInvalidExpression() {
         var service = createService(getWorkflowControl(FLOW_VARIABLES));
-        var diagnostics =
+        var result =
             service.getFlowVariableDiagnostics(new String[]{"___invalid", "$$out + 10"}, new String[]{"out", "out2"});
 
-        assertEquals(2, diagnostics.size(), "Expected diagnostics for two expressions.");
-        assertFalse(diagnostics.get(0).isEmpty(),
-            "Expected error for accessing flow variables from invalid expression.");
+        assertEquals(2, result.size(), "Expected diagnostics for two expressions.");
+        assertFalse(result.get(0).diagnostics().isEmpty(),
+            "Expected error for accessing flow variable from invalid expression.");
 
-        assertFalse(diagnostics.get(1).isEmpty(),
-            "Expected error for accessing flow variables from invalid expression.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(1).get(0).severity(),
+        assertFalse(result.get(1).diagnostics().isEmpty(),
+            "Expected error for accessing flow variable from invalid expression.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(1).diagnostics().get(0).severity(),
             "Expected error severity for accessing flow variable from invalid expression.");
         assertEquals( //
             "Expression 1 that outputs flow variable 'out' has errors. Fix Expression 1.", //
-            diagnostics.get(1).get(0).message(), //
+            result.get(1).diagnostics().get(0).message(), //
             "Expected invalid expression error message." //
         );
     }
@@ -247,21 +255,21 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
     @Test
     void testAccessFlowVariableFromExpressionWithPrematureFlowVariableAccess() {
         var service = createService(getWorkflowControl(FLOW_VARIABLES));
-        var diagnostics = service.getFlowVariableDiagnostics(new String[]{"$$out1 + 10", "10", "$$out + 10"},
+        var result = service.getFlowVariableDiagnostics(new String[]{"$$out1 + 10", "10", "$$out + 10"},
             new String[]{"out", "out1", "out2"});
 
-        assertEquals(3, diagnostics.size(), "Expected diagnostics for two expressions.");
-        assertFalse(diagnostics.get(0).isEmpty(),
+        assertEquals(3, result.size(), "Expected diagnostics for two expressions.");
+        assertFalse(result.get(0).diagnostics().isEmpty(),
             "Expected error for accessing flow variable that was not yet appended.");
-        assertTrue(diagnostics.get(1).isEmpty(), "Expected second expression to be valid.");
+        assertTrue(result.get(1).diagnostics().isEmpty(), "Expected second expression to be valid.");
 
-        assertFalse(diagnostics.get(2).isEmpty(),
+        assertFalse(result.get(2).diagnostics().isEmpty(),
             "Expected error for accessing flow variable from invalid expression.");
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(2).get(0).severity(),
+        assertEquals(DiagnosticSeverity.ERROR, result.get(2).diagnostics().get(0).severity(),
             "Expected error severity for accessing flow variable from invalid expression.");
         assertEquals( //
             "Expression 1 that outputs flow variable 'out' has errors. Fix Expression 1.", //
-            diagnostics.get(2).get(0).message(), //
+            result.get(2).diagnostics().get(0).message(), //
             "Expected invalid expression error message." //
         );
     }
