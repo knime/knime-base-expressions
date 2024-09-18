@@ -200,7 +200,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
             "
             :replaceable-items-in-input-table="
               initialData!.flowVariables.subItems
-                ?.filter((c) => c.supported)
+                ?.filter((c) => c.supported && !c.name.startsWith('knime'))
                 .map(
                   (c): AllowedDropDownValue => ({
                     id: c.name,

@@ -230,6 +230,13 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                             DiagnosticSeverity.ERROR, //
                             Expressions.getTextLocation(ast) //
                         ));
+                    } else if (allNewFlowVariableNames[i].startsWith("knime")) {
+                        diagnosticsForThisExpression.add(ExpressionDiagnostic.withSameMessage( //
+                            "The flow variable '" + allNewFlowVariableNames[i]
+                                + "' has a reserved prefix ('knime'). Please change the name.", //
+                            DiagnosticSeverity.ERROR, //
+                            null //
+                        ));
                     } else {
                         availableFlowVariables.put(allNewFlowVariableNames[i],
                             ReturnResult.success(new FlowVariable(allNewFlowVariableNames[i],
