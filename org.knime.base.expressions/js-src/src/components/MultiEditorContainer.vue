@@ -49,6 +49,8 @@ export type MultiEditorContainerExposes = {
   getOrderedEditorStates: () => EditorState[];
   setEditorErrorState: (key: string, errorState: EditorErrorState) => void;
   setSelectorErrorState: (key: string, errorState: EditorErrorState) => void;
+  setActiveEditor: (key: string) => void;
+  getActiveEditorKey: () => string | null;
 };
 
 const activeEditorFileName = ref<string | null>(null);
@@ -97,6 +99,34 @@ const getEditorStatesWithMonacoState = (): EditorState[] =>
     key,
   }));
 
+const setActiveEditor = (key: string) => {
+  activeEditorFileName.value = key;
+  emit("active-editor-changed", {
+    ...editorStates[key],
+    monacoState: editorReferences[key].getEditorState(),
+    key,
+  });
+  // Scroll to the editor. The focusing somehow interferes with scrolling,
+  // so wait for a tick first.
+  nextTick().then(() => {
+    editorReferences[key]
+      ?.getEditorState()
+      .editor.value?.getDomNode()
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+  });
+  emit("editor-states-changed", getEditorStatesWithMonacoState());
+};
+
+const getActiveEditorKey = (): string | null => {
+  if (activeEditorFileName.value === null) {
+    return null;
+  }
+  return activeEditorFileName.value;
+};
+
 defineExpose<MultiEditorContainerExposes>({
   getOrderedEditorStates: getEditorStatesWithMonacoState,
   setEditorErrorState(key: string, errorState: EditorErrorState) {
@@ -104,6 +134,10 @@ defineExpose<MultiEditorContainerExposes>({
   },
   setSelectorErrorState(key: string, errorState: EditorErrorState) {
     editorStates[key].selectorErrorState = errorState;
+  },
+  setActiveEditor,
+  getActiveEditorKey() {
+    return getActiveEditorKey();
   },
 });
 
@@ -164,35 +198,6 @@ const getAvailableColumnsForReplacement = (
     });
 
   return [...props.replaceableItemsInInputTable, ...columnsFromPreviousEditors];
-};
-
-const getActiveEditorKey = (): string | null => {
-  if (activeEditorFileName.value === null) {
-    return null;
-  }
-
-  return activeEditorFileName.value;
-};
-
-const onEditorFocused = (key: string) => {
-  activeEditorFileName.value = key;
-  emit("active-editor-changed", {
-    ...editorStates[key],
-    monacoState: editorReferences[key].getEditorState(),
-    key,
-  });
-
-  // Scroll to the editor. The focusing somehow interferes with scrolling,
-  // so wait for a tick first.
-  nextTick().then(() => {
-    editorReferences[key]
-      ?.getEditorState()
-      .editor.value?.getDomNode()
-      ?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-  });
 };
 
 const addNewEditorBelowExisting = async (keyAbove: string) => {
@@ -395,7 +400,7 @@ onMounted(async () => {
         isActive: activeEditorFileName === key,
       }"
       :error-state="getMostConcerningErrorStateForEditor(key)"
-      @focus="onEditorFocused(key)"
+      @focus="setActiveEditor(key)"
       @delete="onEditorRequestedDelete"
       @move-down="onEditorRequestedMoveDown"
       @move-up="onEditorRequestedMoveUp"
