@@ -37,5 +37,5 @@ export type ExpressionDiagnostic = {
   location: {
     start: number;
     stop: number;
-  };
+  } | null;
 };

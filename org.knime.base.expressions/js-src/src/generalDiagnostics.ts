@@ -13,16 +13,21 @@ export const markDiagnosticsInEditor = (
 ) => {
   // Mark the diagnostics in the editor
 
-  const markers = diagnosticsForThisEditor.map(
-    (diagnostic): MonacoEditor.IMarkerData => ({
-      ...Range.fromPositions(
-        editorState.editorModel.getPositionAt(diagnostic.location.start),
-        editorState.editorModel.getPositionAt(diagnostic.location.stop),
-      ),
-      message: diagnostic.message,
-      severity: DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY[diagnostic.severity],
-    }),
-  );
+  const markers: MonacoEditor.IMarkerData[] = diagnosticsForThisEditor
+    .map((diagnostic) =>
+      diagnostic.location
+        ? {
+            ...Range.fromPositions(
+              editorState.editorModel.getPositionAt(diagnostic.location.start),
+              editorState.editorModel.getPositionAt(diagnostic.location.stop),
+            ),
+            message: diagnostic.message,
+            severity:
+              DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY[diagnostic.severity],
+          }
+        : null,
+    )
+    .filter((diagnostic) => diagnostic !== null);
 
   MonacoEditor.setModelMarkers(
     editorState.editorModel,

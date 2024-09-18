@@ -64,6 +64,7 @@ import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializ
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -108,9 +109,21 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
             throw new InvalidSettingsException("The expression node has not yet been configured. Enter an expression.");
         }
 
-        var lastOutputSpec = inSpecs[0];
+        var inputSpec = inSpecs[0];
 
-        return new DataTableSpec[]{lastOutputSpec};
+        try {
+            var ast = getPreparedExpression(m_settings.getScript(), inputSpec,
+                getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
+            var outputType = Expressions.getInferredType(ast);
+            if (!ValueType.BOOLEAN.equals(outputType)) {
+                throw new InvalidSettingsException("The full expression must return the value type BOOLEAN "
+                    + "in order to filter out rows for which the filter expression evaluates to false.");
+            }
+        } catch (final ExpressionCompileException e) {
+            throw new InvalidSettingsException("Error in Expression: %s".formatted(e.getMessage()), e);
+        }
+
+        return new DataTableSpec[]{inputSpec};
     }
 
     @Override
