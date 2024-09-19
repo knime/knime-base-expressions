@@ -60,7 +60,6 @@ import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
-import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
@@ -75,7 +74,6 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 /**
  * The node model for the row filter expression node.
@@ -177,16 +175,8 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
         // Evaluate the expression and materialize the result
         var exprContext = new NodeExpressionMapperContext(availableFlowVariables);
 
-        // We must avoid using inRefTable.getVirtualTable() directly. Doing so would result in building upon the
-        // transformation of the input table, instead of initiating a new fragment. This approach leads to complications
-        // when loading the virtual table, as it would attempt to resolve the sources of the input table. By creating a
-        // new ColumnarVirtualTable, we establish a new SourceTableTransform that references the input table. This
-        // ensures that the input table itself acts as the source, providing a clean slate for transformations.
-        // Note that the CursorType is irrelevant because the transform gets re-sourced for running the comp graph.
-        var inputVirtualTable = new ColumnarVirtualTable(inRefTable.getId(), inRefTable.getSchema(), CursorType.BASIC);
-
-        var filteredTable = ExpressionRunnerUtils.filterTableByExpression(inputVirtualTable, ast, inputTable.size(),
-            setWarning::accept, exprContext);
+        var filteredTable = ExpressionRunnerUtils.filterTableByExpression(inRefTable.getVirtualTable(), ast,
+            inputTable.size(), setWarning::accept, exprContext);
 
         var materializeProgress = exec.createSubProgress(0.34);
         return ColumnarVirtualTableMaterializer.materializer() //
