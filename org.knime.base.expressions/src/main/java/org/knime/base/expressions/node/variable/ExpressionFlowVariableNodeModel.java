@@ -52,6 +52,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -217,9 +218,10 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             (i, warningMessage) -> messageBuilder.addTextIssue("Expression " + (i + 1) + ": " + warningMessage) //
         );
 
-        // Push flow variables
-        for (var flowVariable : resultVariables) {
-            pushFlowVariableObj(flowVariable);
+        // Push flow variables in reverse, so they appear on the stack
+        // in the same order as the expressions in the dialog
+        for (int i = resultVariables.size() - 1; i >= 0; i--) {
+            pushFlowVariableObj(resultVariables.get(i));
         }
 
         // Set warning message if there are any issues
@@ -300,7 +302,21 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             outputVariables.add(outputVariable);
         }
 
-        return outputVariables;
+        return deduplicateOutputVariables(outputVariables);
+    }
+
+    private static List<FlowVariable> deduplicateOutputVariables(final List<FlowVariable> outputVariables) {
+
+        Map<String, FlowVariable> deduplicatedMap = new LinkedHashMap<>();
+
+        for (FlowVariable variable : outputVariables) {
+            if (deduplicatedMap.containsKey(variable.getName())) {
+                deduplicatedMap.remove(variable.getName());
+            }
+            deduplicatedMap.put(variable.getName(), variable);
+        }
+
+        return new ArrayList<>(deduplicatedMap.values());
     }
 
     /** Helper to return a failure message on column access */
