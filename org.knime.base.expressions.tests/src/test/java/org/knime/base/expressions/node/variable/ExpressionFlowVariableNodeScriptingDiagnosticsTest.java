@@ -191,6 +191,23 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
     }
 
     @Test
+    void testUnsupportedSpecialColumnAccess() {
+        var service = createService(getWorkflowControl(FLOW_VARIABLES));
+        var diagnostics =
+            service.getFlowVariableDiagnostics(new String[]{"$$int_flow_var + $[ROW_NUMBER]"}, new String[]{"out"});
+
+        assertEquals(1, diagnostics.size(), "Expected diagnostics for one expression.");
+        assertFalse(diagnostics.get(0).isEmpty(), "Expected error for unsupported special column access type.");
+        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).get(0).severity(),
+            "Expected error severity for unsupported special column access type.");
+        assertEquals( //
+            "No rows are available.", //
+            diagnostics.get(0).get(0).message(), //
+            "Expected unsupported special column access type error message." //
+        );
+    }
+
+    @Test
     void testExpressionEvaluatesToMissing() {
         var service = createService(getWorkflowControl(FLOW_VARIABLES));
         var diagnostics = service.getFlowVariableDiagnostics(new String[]{"MISSING"}, new String[]{"out"});

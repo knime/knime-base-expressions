@@ -150,9 +150,18 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                     ExpressionFlowVariableNodeModel::columnTypeResolver, //
                     flowVarName -> ExpressionFlowVariableNodeModel.toValueType(availableFlowVariables, flowVarName) //
                 );
+
+                var columnAccesses = ExpressionRunnerUtils.collectColumnAccesses(ast);
+                if (!columnAccesses.isEmpty()) {
+                    // Note that other column accesses cause errors during type inference
+                    throw new InvalidSettingsException("Expression " + (i + 1)
+                        + " refers to ROW_ID, ROW_INDEX, or ROW_NUMBER, but no rows are available.");
+                }
+
                 if (inferredType.isOptional()) {
-                    throw new InvalidSettingsException("Expression " + i + " evaluates to a type that can be MISSING. "
-                        + "Use the missing coalescing operator '??' to define a default value.");
+                    throw new InvalidSettingsException(
+                        "Expression " + (i + 1) + " evaluates to a type that can be MISSING. "
+                            + "Use the missing coalescing operator '??' to define a default value.");
                 }
                 putFlowVariableForTypeCheck(availableFlowVariables, name, inferredType);
             } catch (ExpressionCompileException e) {

@@ -209,6 +209,20 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                         ExpressionFlowVariableNodeModel::columnTypeResolver, //
                         fvName -> toValueType(availableFlowVariables, fvName) //
                     );
+
+                    // Note: we only collect special column accesses here, as normal column accesses would have
+                    // already thrown an error while inferring the type
+                    diagnosticsForThisExpression.addAll( //
+                        ExpressionRunnerUtils.collectColumnAccesses(ast) //
+                            .stream() //
+                            .map(specialColAccess -> ExpressionDiagnostic.withSameMessage( //
+                                "No rows are available.", //
+                                DiagnosticSeverity.ERROR, //
+                                Expressions.getTextLocation(specialColAccess) //
+                            )) //
+                            .toList() //
+                    );
+
                     if (inferredType.isOptional()) {
                         // Show an error if the full expression might evaluate to MISSING; this is not supported
                         diagnosticsForThisExpression.add(ExpressionDiagnostic.withSameMessage( //
