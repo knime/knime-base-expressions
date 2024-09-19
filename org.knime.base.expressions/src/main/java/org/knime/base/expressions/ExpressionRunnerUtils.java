@@ -281,7 +281,7 @@ public final class ExpressionRunnerUtils {
                 var readCursor = table.cursor()) {
 
             for (long rowIndex = 0; readCursor.canForward() && rowIndex < maxRowsToConvert; ++rowIndex) {
-                writeCursor.forward().setFrom(readCursor.forward());
+                writeCursor.commit(readCursor.forward());
 
                 exec.setProgress( //
                     rowIndex / (double)table.size(), //
