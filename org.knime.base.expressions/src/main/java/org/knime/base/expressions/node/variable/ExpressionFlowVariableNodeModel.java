@@ -165,7 +165,8 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                 }
                 putFlowVariableForTypeCheck(availableFlowVariables, name, inferredType);
             } catch (ExpressionCompileException e) {
-                throw new InvalidSettingsException(e);
+                throw new InvalidSettingsException( //
+                    "Error in Expression " + (i + 1) + ": " + e.getMessage(), e);
             }
         }
     }
