@@ -876,7 +876,7 @@ public final class StringFunctions {
 
     private static Computer titleCaseImpl(final Arguments<Computer> args) {
         Function<EvaluationContext, String> value = ctx -> {
-            String str = toString(args.get("string")).compute(ctx);
+            String str = toString(args.get("string")).compute(ctx).toLowerCase(Locale.ROOT);
             var output = new StringBuilder(str.length());
 
             var capitaliseNextChar = true;
