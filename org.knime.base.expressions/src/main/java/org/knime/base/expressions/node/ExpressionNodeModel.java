@@ -134,9 +134,15 @@ class ExpressionNodeModel extends NodeModel {
                 m_settings.getActiveOutputColumn());
 
             if (m_settings.getColumnInsertionMode() == ColumnInsertionMode.REPLACE_EXISTING) {
+                var columnIndex = inSpecs[0].findColumnIndex(m_settings.getActiveOutputColumn());
+                if (columnIndex == -1) {
+                    throw new InvalidSettingsException(
+                        "The output column '%s' does not exist in the input table. Choose an existing column to replace it."
+                            .formatted(m_settings.getActiveOutputColumn()));
+                }
                 return new DataTableSpec[]{ //
                     new DataTableSpecCreator(inSpecs[0]) //
-                        .replaceColumn(inSpecs[0].findColumnIndex(m_settings.getActiveOutputColumn()), outputColumnSpec) //
+                        .replaceColumn(columnIndex, outputColumnSpec) //
                         .createSpec() //
                 };
             } else if (!inSpecs[0].containsName(m_settings.getActiveOutputColumn())) {
