@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import {
   getScriptingService,
+  type InputOutputModel,
+  InputOutputPane,
   ScriptingEditor,
   setActiveEditorStoreForAi,
+  type SubItem,
   useReadonlyStore,
 } from "@knime/scripting-editor";
 import MultiEditorContainer, {
@@ -10,7 +13,7 @@ import MultiEditorContainer, {
 } from "@/components/MultiEditorContainer.vue";
 import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
 import { LoadingIcon } from "@knime/components";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, shallowRef } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
@@ -25,6 +28,11 @@ import { runFlowVariableDiagnostics } from "@/flowVariableApp/expressionFlowVari
 import { runOutputDiagnostics } from "@/generalDiagnostics";
 import OutputPreviewFlowVariable from "@/flowVariableApp/OutputPreviewFlowVariable.vue";
 import SimpleRunButton from "@/components/SimpleRunButton.vue";
+import { type TypeRendererProps } from "@/components/TypeRenderer.vue";
+import {
+  buildAppendedOutput,
+  replaceSubItems,
+} from "@/common/inputOutputUtils";
 import type {
   AllowedDropDownValue,
   SelectorState,
@@ -32,10 +40,71 @@ import type {
 
 // Input flowVariables helpers
 const runButtonDisabledErrorReason = ref<string | null>(null);
-const initialData = ref<ExpressionInitialData | null>(null);
+const initialData = shallowRef<ExpressionInitialData | null>(null);
 const initialSettings = ref<ExpressionFlowVariableNodeSettings | null>(null);
 const multiEditorContainerRef =
   ref<InstanceType<typeof MultiEditorContainer>>();
+
+const currentInputOutputItems = ref<InputOutputModel[]>();
+
+const getInitialItems = (): InputOutputModel[] => {
+  return initialData.value
+    ? [structuredClone(initialData.value?.flowVariables)]
+    : [];
+};
+
+const refreshInputOutputItems = (
+  states: EditorState[],
+  returnTypes: string[],
+) => {
+  const activeKey = multiEditorContainerRef.value?.getActiveEditorKey();
+  if (!activeKey) {
+    return;
+  }
+
+  const lastIndexToConsider =
+    states.findIndex((state) => state.key === activeKey) + 1;
+  const statesUntilActiveWithReturnTypes = states
+    .slice(0, lastIndexToConsider)
+    .map((state, index) => ({
+      selectorState: state.selectorState,
+      key: state.key,
+      returnType: returnTypes[index],
+    }));
+
+  const focusEditorActionBuilder = (editorKey: string) => () => {
+    multiEditorContainerRef.value?.setActiveEditor(editorKey);
+  };
+
+  currentInputOutputItems.value = getInitialItems();
+
+  currentInputOutputItems.value[0].subItems =
+    currentInputOutputItems.value[0].subItems?.map((subItem) =>
+      replaceSubItems(
+        subItem as SubItem<TypeRendererProps>,
+        statesUntilActiveWithReturnTypes,
+        focusEditorActionBuilder,
+      ),
+    );
+
+  if (
+    statesUntilActiveWithReturnTypes.some(
+      (state) => state.selectorState.outputMode === "APPEND",
+    )
+  ) {
+    currentInputOutputItems.value.push(
+      buildAppendedOutput(
+        statesUntilActiveWithReturnTypes,
+        focusEditorActionBuilder,
+        {
+          name: "f(X) appended flow variables",
+          portType: "flowVariable",
+          subItemCodeAliasTemplate: '$$["{{{escapeDblQuotes subItems.[0]}}}"]',
+        },
+      ),
+    );
+  }
+};
 
 const runDiagnosticsFunction = async (states: EditorState[]) => {
   const diagnostics = await runFlowVariableDiagnostics(
@@ -86,6 +155,11 @@ const runDiagnosticsFunction = async (states: EditorState[]) => {
   } else {
     runButtonDisabledErrorReason.value = null;
   }
+
+  refreshInputOutputItems(
+    states,
+    diagnostics.map(({ returnType }) => returnType),
+  );
 };
 
 onMounted(async () => {
@@ -164,12 +238,12 @@ const initialPaneSizes = calculateInitialPaneSizes();
         :additional-bottom-pane-tab-content="[
           {
             label: 'Preview',
-            value: 'outputPreview',
+            value: 'dynamicTabSlot:outputPreview',
           },
         ]"
       >
         <!-- Extra content in the bottom tab pane -->
-        <template #outputPreview="{ grabFocus }">
+        <template #dynamicTabSlot:outputPreview="{ grabFocus }">
           <OutputPreviewFlowVariable @output-preview-updated="grabFocus()" />
         </template>
 
@@ -205,9 +279,13 @@ const initialPaneSizes = calculateInitialPaneSizes();
             @active-editor-changed="
               (state) => setActiveEditorStoreForAi(state.monacoState)
             "
-            @editor-states-changed="runDiagnosticsFunction"
+            @run-diagnostics="runDiagnosticsFunction"
             @run-expressions="(states) => runFlowVariableExpressions(states)"
           />
+        </template>
+
+        <template #left-pane>
+          <InputOutputPane :input-output-items="currentInputOutputItems" />
         </template>
 
         <template #right-pane>

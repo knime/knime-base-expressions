@@ -229,7 +229,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 var currentOutputColumnName = allNewColumnNames[i];
 
                 List<ExpressionDiagnostic> diagnosticsForThisExpression = new ArrayList<>();
-                var inferredType = ValueType.MISSING;
+
+                var successfulInferredTypeName = "UNKNOWN";
 
                 try {
                     var ast = Expressions.parse(expression);
@@ -245,7 +246,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                         continue;
                     }
 
-                    inferredType = Expressions.inferTypes(ast, columnToTypeMapper, flowVarToTypeMapper);
+                    var inferredType = Expressions.inferTypes(ast, columnToTypeMapper, flowVarToTypeMapper);
 
                     if (ValueType.MISSING.equals(inferredType)) {
                         // Output type "MISSING" is not supported, hence error
@@ -256,6 +257,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                         ));
                     }
 
+                    successfulInferredTypeName = inferredType.baseType().name();
                     columnToTypeMap.put(currentOutputColumnName, ReturnResult.success(inferredType));
                 } catch (ExpressionCompileException ex) {
                     // If there is an error in the expression, we still want to indicate that when accessing this column
@@ -264,8 +266,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
                     diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromException(ex));
                 } finally {
-                    diagnostics.add(
-                        new ExpressionDiagnosticResult(diagnosticsForThisExpression, inferredType.baseType().name()));
+                    diagnostics
+                        .add(new ExpressionDiagnosticResult(diagnosticsForThisExpression, successfulInferredTypeName));
                 }
             }
 

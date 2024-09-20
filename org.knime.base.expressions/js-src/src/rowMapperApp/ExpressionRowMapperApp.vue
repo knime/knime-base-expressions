@@ -2,19 +2,18 @@
 import {
   consoleHandler,
   getScriptingService,
+  type InputOutputModel,
+  InputOutputPane,
   OutputTablePreview,
   ScriptingEditor,
   setActiveEditorStoreForAi,
+  type SubItem,
   useReadonlyStore,
 } from "@knime/scripting-editor";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
 import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
 import { LoadingIcon } from "@knime/components";
-import {
-  type AllowedDropDownValue,
-  type SelectorState,
-} from "@/components/OutputSelector.vue";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, shallowRef } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
@@ -33,12 +32,88 @@ import {
   getRowMapperSettingsService,
 } from "@/expressionSettingsService";
 import { runOutputDiagnostics } from "@/generalDiagnostics";
+import { type TypeRendererProps } from "@/components/TypeRenderer.vue";
+import {
+  buildAppendedOutput,
+  replaceSubItems,
+} from "@/common/inputOutputUtils";
+import type {
+  AllowedDropDownValue,
+  SelectorState,
+} from "@/components/OutputSelector.vue";
 
-const initialData = ref<ExpressionInitialData | null>(null);
+const initialData = shallowRef<ExpressionInitialData | null>(null);
 const initialSettings = ref<ExpressionRowMapperNodeSettings | null>(null);
 const runButtonDisabledErrorReason = ref<string | null>(null);
 const multiEditorContainerRef =
   ref<InstanceType<typeof MultiEditorContainer>>();
+const currentInputOutputItems = ref<InputOutputModel[]>();
+
+const getInitialItems = (): InputOutputModel[] => {
+  if (initialData.value === null) {
+    return [];
+  }
+  return [
+    structuredClone(initialData.value.inputObjects[0]),
+    structuredClone(initialData.value.flowVariables),
+  ];
+};
+
+const refreshInputOutputItems = (
+  states: EditorState[],
+  returnTypes: string[],
+) => {
+  const activeKey = multiEditorContainerRef.value?.getActiveEditorKey();
+  if (!activeKey) {
+    return;
+  }
+
+  const lastIndexToConsider =
+    states.findIndex((state) => state.key === activeKey) + 1;
+  const statesUntilActiveWithReturnTypes = states
+    .slice(0, lastIndexToConsider)
+    .map((state, index) => ({
+      selectorState: state.selectorState,
+      key: state.key,
+      returnType: returnTypes[index],
+    }));
+
+  const focusEditorActionBuilder = (editorKey: string) => () => {
+    multiEditorContainerRef.value?.setActiveEditor(editorKey);
+  };
+
+  // copy the initial items [input, flow variables]
+  currentInputOutputItems.value = getInitialItems();
+
+  currentInputOutputItems.value[0].subItems =
+    currentInputOutputItems.value[0].subItems?.map((subItem) =>
+      // we can make the InputOutputModel generic, but until the only benefit
+      // is avoiding the cast here, it's not worth it
+      replaceSubItems(
+        subItem as SubItem<TypeRendererProps>,
+        statesUntilActiveWithReturnTypes,
+        focusEditorActionBuilder,
+      ),
+    );
+
+  if (
+    statesUntilActiveWithReturnTypes.some(
+      (state) => state.selectorState.outputMode === "APPEND",
+    )
+  ) {
+    currentInputOutputItems.value.push(
+      buildAppendedOutput(
+        statesUntilActiveWithReturnTypes,
+        focusEditorActionBuilder,
+        {
+          name: "f(X) appended columns",
+          portType: "table",
+          subItemCodeAliasTemplate: '$["{{{escapeDblQuotes subItems.[0]}}}"]',
+        },
+      ),
+    );
+  }
+};
 
 const runDiagnosticsFunction = async (states: EditorState[]) => {
   const diagnostics = await runRowMapperDiagnostics(
@@ -93,6 +168,11 @@ const runDiagnosticsFunction = async (states: EditorState[]) => {
   } else {
     runButtonDisabledErrorReason.value = null;
   }
+
+  refreshInputOutputItems(
+    states,
+    diagnostics.map(({ returnType }) => returnType),
+  );
 };
 
 onMounted(async () => {
@@ -106,6 +186,8 @@ onMounted(async () => {
       warning: "No input available. Connect an executed node.",
     });
   }
+
+  currentInputOutputItems.value = getInitialItems();
 
   registerKnimeExpressionLanguage(initialData.value);
 
@@ -177,12 +259,12 @@ const initialPaneSizes = calculateInitialPaneSizes();
         :additional-bottom-pane-tab-content="[
           {
             label: 'Output preview',
-            value: 'outputPreview',
+            value: 'dynamicTabSlot:outputPreview',
           },
         ]"
       >
         <!-- Extra content in the bottom tab pane -->
-        <template #outputPreview="{ grabFocus }">
+        <template #dynamicTabSlot:outputPreview="{ grabFocus }">
           <OutputTablePreview @output-table-updated="grabFocus()" />
         </template>
 
@@ -219,12 +301,16 @@ const initialPaneSizes = calculateInitialPaneSizes();
             @active-editor-changed="
               (state) => setActiveEditorStoreForAi(state.monacoState)
             "
-            @editor-states-changed="runDiagnosticsFunction"
+            @run-diagnostics="runDiagnosticsFunction"
             @run-expressions="
               (states) =>
                 runRowMapperExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN, states)
             "
           />
+        </template>
+
+        <template #left-pane>
+          <InputOutputPane :input-output-items="currentInputOutputItems" />
         </template>
 
         <template #right-pane>

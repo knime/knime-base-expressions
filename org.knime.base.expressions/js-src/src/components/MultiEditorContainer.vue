@@ -67,7 +67,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "editor-states-changed": [editorStates: EditorState[]];
+  "run-diagnostics": [editorStates: EditorState[]];
   "run-expressions": [editorStates: EditorState[]];
   "active-editor-changed": [editorState: EditorState];
 }>();
@@ -117,7 +117,7 @@ const setActiveEditor = (key: string) => {
         block: "center",
       });
   });
-  emit("editor-states-changed", getEditorStatesWithMonacoState());
+  emit("run-diagnostics", getEditorStatesWithMonacoState());
 };
 
 const getActiveEditorKey = (): string | null => {
@@ -136,9 +136,7 @@ defineExpose<MultiEditorContainerExposes>({
     editorStates[key].selectorErrorState = errorState;
   },
   setActiveEditor,
-  getActiveEditorKey() {
-    return getActiveEditorKey();
-  },
+  getActiveEditorKey,
 });
 
 const pushNewEditorState = (key: string) => {
@@ -172,11 +170,11 @@ const createElementReferencePusher = (key: string) => {
     const newStateWatchers = {
       columnStateUnwatchHandle: watch(
         () => editorStates[key].selectorState,
-        () => emit("editor-states-changed", getEditorStatesWithMonacoState()),
+        () => emit("run-diagnostics", getEditorStatesWithMonacoState()),
         { deep: true },
       ),
       editorStateUnwatchHandle: watch(editorRef.getEditorState().text, () =>
-        emit("editor-states-changed", getEditorStatesWithMonacoState()),
+        emit("run-diagnostics", getEditorStatesWithMonacoState()),
       ),
     };
     editorStateWatchers[key] = newStateWatchers;
@@ -222,7 +220,7 @@ const onRequestedAddEditorAtBottom = async () => {
     editorReferences[latestKey].getEditorState().editor.value?.focus();
   });
 
-  emit("editor-states-changed", getEditorStatesWithMonacoState());
+  emit("run-diagnostics", getEditorStatesWithMonacoState());
 };
 
 const onEditorRequestedDelete = (key: string) => {
@@ -239,7 +237,7 @@ const onEditorRequestedDelete = (key: string) => {
   delete editorStateWatchers[key];
   delete editorReferences[key];
 
-  emit("editor-states-changed", getEditorStatesWithMonacoState());
+  emit("run-diagnostics", getEditorStatesWithMonacoState());
 };
 
 const onEditorRequestedMoveUp = (key: string) => {
@@ -259,7 +257,7 @@ const onEditorRequestedMoveUp = (key: string) => {
     editorReferences[key].getEditorState().editor.value?.focus();
   });
 
-  emit("editor-states-changed", getEditorStatesWithMonacoState());
+  emit("run-diagnostics", getEditorStatesWithMonacoState());
 };
 
 const onEditorRequestedMoveDown = (key: string) => {
@@ -279,7 +277,7 @@ const onEditorRequestedMoveDown = (key: string) => {
     editorReferences[key].getEditorState().editor.value?.focus();
   });
 
-  emit("editor-states-changed", getEditorStatesWithMonacoState());
+  emit("run-diagnostics", getEditorStatesWithMonacoState());
 };
 
 const onEditorRequestedCopyBelow = async (key: string) => {
@@ -380,7 +378,7 @@ onMounted(async () => {
     editorStates[key].selectorState = props.settings[i].initialSelectorState;
   }
 
-  emit("editor-states-changed", getEditorStatesWithMonacoState());
+  emit("run-diagnostics", getEditorStatesWithMonacoState());
 });
 </script>
 
