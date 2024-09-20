@@ -77,7 +77,6 @@ import org.knime.core.data.DoubleValue;
 import org.knime.core.data.LongValue;
 import org.knime.core.data.StringValue;
 import org.knime.core.data.columnar.ColumnarTableBackend;
-import org.knime.core.data.columnar.schema.ColumnarValueSchemaUtils;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
@@ -85,6 +84,7 @@ import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.data.v2.schema.ValueSchema;
+import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.ColumnAccess;
@@ -515,11 +515,9 @@ public final class ExpressionRunnerUtils {
                     modifiedInputTable = modifiedInputTable
                         .append(input.selectColumns(columnIndices).renameToRandomColumnNames().slice(offset, numRows));
                 } else {
-                    ColumnarVirtualTable appendedTable =
-                        input.selectColumns(0)
-                            .appendMissingValueColumns(
-                                ColumnarValueSchemaUtils.selectColumns(input.getSchema(), columnIndices))
-                            .dropColumns(0);
+                    ColumnarVirtualTable appendedTable = input.selectColumns(0)
+                        .appendMissingValueColumns(ValueSchemaUtils.selectColumns(input.getSchema(), columnIndices))
+                        .dropColumns(0);
 
                     modifiedInputTable = modifiedInputTable.append( //
                         appendedTable.slice(0, -offset).concatenate( //
