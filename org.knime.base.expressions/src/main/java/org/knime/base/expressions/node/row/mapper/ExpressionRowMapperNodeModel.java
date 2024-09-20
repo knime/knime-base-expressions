@@ -143,7 +143,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
             var outputType = Expressions.getInferredType(ast);
             if (ValueType.MISSING.equals(outputType)) {
                 throw new InvalidSettingsException(
-                    "Expression (%d) evaluates to MISSING. Enter an expression that has an output type."
+                    "Expression %d evaluates to MISSING. Enter an expression that has an output type."
                         .formatted(indexInScripts + 1));
             }
             var outputDataSpec = Exec.valueTypeToDataSpec(outputType);
@@ -151,20 +151,26 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
                 ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), outputColumn);
 
             if (outputMode == InsertionMode.REPLACE_EXISTING) {
+                var columnIndex = inputSpec.findColumnIndex(outputColumn);
+                if (columnIndex == -1) {
+                    throw new InvalidSettingsException("The output column '" + outputColumn + "' of Expression "
+                        + (indexInScripts + 1) + " does not exist in the input table. "
+                        + "Choose an existing column or choose to append a column.");
+                }
                 return new DataTableSpecCreator(inputSpec) //
-                    .replaceColumn(inputSpec.findColumnIndex(outputColumn), outputColumnSpec) //
+                    .replaceColumn(columnIndex, outputColumnSpec) //
                     .createSpec(); //
             } else if (!inputSpec.containsName(outputColumn)) {
                 return new DataTableSpecCreator(inputSpec).addColumns(outputColumnSpec) //
                     .createSpec();
             } else {
                 throw new InvalidSettingsException(
-                    "The output column '%s' of Expression (%d) exists in the input table. Choose another column name."
-                        .formatted(outputColumn, indexInScripts + 1));
+                    "The output column '%s' of Expression %d exists in the input table. ".formatted(outputColumn,
+                        indexInScripts + 1) + "Choose another column name or choose replacing the existing column.");
             }
         } catch (final ExpressionCompileException e) {
             throw new InvalidSettingsException(
-                "Error in Expression (%d): %s".formatted(indexInScripts + 1, e.getMessage()), e);
+                "Error in Expression %d: %s".formatted(indexInScripts + 1, e.getMessage()), e);
         }
     }
 
