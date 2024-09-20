@@ -8,6 +8,8 @@ import { onKeyStroke } from "@vueuse/core";
 import {
   computed,
   type FunctionalComponent,
+  nextTick,
+  onMounted,
   ref,
   type SVGAttributes,
   watch,
@@ -23,6 +25,8 @@ import CopyIcon from "@knime/styles/img/icons/copy.svg";
 import WarningIcon from "@knime/styles/img/icons/circle-warning.svg";
 import { FunctionButton } from "@knime/components";
 import type { EditorErrorState } from "@/common/types";
+import { editor as monaco } from "monaco-editor";
+import EditorOption = monaco.EditorOption;
 
 export type ExpressionEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;
@@ -106,6 +110,9 @@ const editorState = editor.useCodeEditor({
   fileName: props.fileName,
   container: monacoEditorContainerRef,
   extraEditorOptions: {
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    minimap: { enabled: false },
     overviewRulerLanes: 0,
     overviewRulerBorder: false,
   },
@@ -168,6 +175,30 @@ const onMenuItemClicked = (item: ButtonItem) => {
   // @ts-ignore TS doesn't like dyanmic event names
   emit(item.eventName, props.fileName);
 };
+
+const updateEditorHeight = async () => {
+  // If the query for the line height fails, we use this as a fallback
+  const DEFAULT_LINE_HEIGHT_IN_PIXEL = 13;
+  const lineHeight =
+    editorState.editor.value?.getOptions().get(EditorOption.lineHeight) ??
+    DEFAULT_LINE_HEIGHT_IN_PIXEL;
+
+  const MINIMUM_LINES_IN_EDITOR = 5;
+  const contentHeight = Math.max(
+    MINIMUM_LINES_IN_EDITOR * lineHeight,
+    editorState.editor.value?.getContentHeight() ?? 0,
+  );
+  if (monacoEditorContainerRef.value && editor) {
+    monacoEditorContainerRef.value.style.height = `${contentHeight}px`;
+  }
+  await nextTick();
+  editorState.editor.value?.layout();
+};
+
+onMounted(() => {
+  updateEditorHeight();
+  editorState.editor.value?.onDidChangeModelContent(updateEditorHeight);
+});
 </script>
 
 <template>
@@ -199,32 +230,37 @@ const onMenuItemClicked = (item: ButtonItem) => {
           </FunctionButton>
         </span>
       </span>
+
       <div
         ref="monacoEditorContainerRef"
         class="code-editor"
         @drop="onDropEvent"
       />
+
       <span class="editor-control-bar">
         <slot name="multi-editor-controls" />
       </span>
     </div>
     <div class="error-container">
-      <WarningIcon v-if="errorState.level !== 'OK'" class="error-icon" />
-      <span v-if="errorState.level !== 'OK'" class="error-message">
-        {{ errorState.message }}
+      <span v-if="errorState.level !== 'OK'">
+        <WarningIcon class="icon error-icon" />
+        <span class="error-message">
+          {{ errorState.message }}
+        </span>
       </span>
+      <span v-else>&nbsp;</span>
     </div>
   </div>
 </template>
 
 <style lang="postcss" scoped>
 .editor-and-controls-container {
-  margin: var(--space-4) var(--space-8);
+  margin: var(--space-4) var(--space-12);
   position: relative;
   display: flex;
+  flex-shrink: 1;
   flex-direction: column;
-  flex-grow: 1;
-  height: 0;
+  height: fit-content;
 
   --border-colour: var(--knime-cornflower);
 
@@ -250,13 +286,9 @@ const onMenuItemClicked = (item: ButtonItem) => {
     }
   }
 
-  /* Max height should be parent height */
-  max-height: 100%;
-  min-height: 200px;
-
   &:first-child {
     /* Editor gets an extra margin iff it's the first one of its type. */
-    margin-top: var(--space-24);
+    margin-top: var(--space-12);
   }
 
   & .everything-except-error {
@@ -273,7 +305,7 @@ const onMenuItemClicked = (item: ButtonItem) => {
     }
 
     & .editor-title-bar {
-      height: 30px;
+      height: var(--space-32);
       padding: 0 var(--space-16);
       background-color: var(--knime-porcelain);
       flex-shrink: 0;
@@ -288,13 +320,15 @@ const onMenuItemClicked = (item: ButtonItem) => {
         display: flex;
         gap: var(--space-8);
       }
+
+      & .title-text {
+        font-size: 13px;
+      }
     }
 
     & .code-editor {
-      flex-grow: 1;
-      flex-shrink: 1;
+      width: 100%;
       display: flex;
-      min-height: 70px;
       position: relative;
     }
 
@@ -317,7 +351,7 @@ const onMenuItemClicked = (item: ButtonItem) => {
       content: "";
       border: 1px solid var(--border-colour);
       pointer-events: none;
-      z-index: 1;
+      z-index: -1;
       inset: -1px;
     }
 
@@ -327,7 +361,7 @@ const onMenuItemClicked = (item: ButtonItem) => {
       background-color: var(--knime-cornflower);
       opacity: 0.075;
       pointer-events: none;
-      z-index: 1;
+      z-index: 0;
       inset: 0;
     }
 
@@ -345,23 +379,25 @@ const onMenuItemClicked = (item: ButtonItem) => {
     display: flex;
     flex-flow: row nowrap;
     align-items: flex-start;
-    margin-top: var(--space-4);
+    margin-top: 2px;
+    margin-bottom: -1px;
     margin-left: var(--space-4);
     min-height: 15px;
 
     & .error-message {
       color: var(--error-text-colour);
-      font-size: 12px;
-      line-height: 14px;
+      font-size: 10px;
+      line-height: 12px;
       word-break: break-word;
     }
 
     & .error-icon {
       stroke: var(--error-text-colour);
-      width: 13px;
-      min-width: 13px;
-      height: 13px;
-      margin-right: var(--space-8);
+      width: 12px;
+      min-width: 12px;
+      height: 12px;
+      margin-right: var(--space-4);
+      translate: 0 2px;
     }
   }
 }

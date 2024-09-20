@@ -14,6 +14,7 @@ export const languages = {
   setMonarchTokensProvider: vi.fn(),
   setLanguageConfiguration: vi.fn(),
 };
+
 export const editor = {
   getModel: vi.fn(() => ({
     getValue: () => "foo",
@@ -23,16 +24,26 @@ export const editor = {
     updateOptions: vi.fn(),
     dispose: vi.fn(),
   })),
+  onDidChangeModelContent: vi.fn(),
   createModel: vi.fn(),
   create: vi.fn(() => ({
     onDidChangeCursorSelection: vi.fn(),
     onDidPaste: vi.fn(),
     dispose: vi.fn(),
     updateOptions: vi.fn(),
+    getOptions: vi.fn(() => ({
+      get: vi.fn(),
+    })),
+    onDidChangeModelContent: vi.fn(),
+    getContentHeight: vi.fn(),
     focus: vi.fn(),
+    layout: vi.fn(),
   })),
   defineTheme: vi.fn(),
   setTheme: vi.fn(),
+  EditorOption: {
+    lineHeight: 1,
+  },
 };
 export const Uri = {
   parse: vi.fn(),
