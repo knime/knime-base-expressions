@@ -318,9 +318,16 @@ final class StringFunctionTests {
             .typing("STRING?", List.of(OPT_STRING), OPT_STRING) //
             .illegalArgs("2 strings", List.of(STRING, STRING)) //
             .illegalArgs("INTEGER", List.of(INTEGER)) //
-            .impl("capitalise", List.of(arg("abc 123 def Hij")), "Abc 123 Def Hij") //
-            .impl("capitalise ALL CAPS", List.of(arg("ALL CAPS")), "All Caps") //
-            .impl("noop", List.of(arg("A")), "A") //
+            .impl("empty string", List.of(arg("")), "") //
+            .impl("single lowercase letter", List.of(arg("a")), "A") //
+            .impl("single uppercase letter", List.of(arg("A")), "A") //
+            .impl("single word lowercase", List.of(arg("hello")), "Hello") //
+            .impl("single word uppercase", List.of(arg("HELLO")), "Hello") //
+            .impl("multiple words mixed case", List.of(arg("hElLo WoRLd")), "Hello World") //
+            .impl("multiple words uppercase", List.of(arg("HELLO WORLD")), "Hello World") //
+            .impl("string with leading/trailing spaces", List.of(arg("   hello world   ")), "   Hello World   ") //
+            .impl("string with punctuation", List.of(arg("hello, world!")), "Hello, World!") //
+            .impl("string with numbers and special characters", List.of(arg("123 hello @world")), "123 Hello @world") //
             .tests();
     }
 
