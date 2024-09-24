@@ -154,9 +154,18 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
   }
 });
 
-const runButtonDisabledErrorReason = computed(() =>
-  mapConnectionInfoToErrorMessage(initialData.value?.inputConnectionInfo),
-);
+const runButtonDisabledErrorReason = computed(() => {
+  const connectionErrors = mapConnectionInfoToErrorMessage(
+    initialData.value?.inputConnectionInfo,
+  );
+  if (connectionErrors) {
+    return connectionErrors;
+  } else if (errorState.value.level === "ERROR") {
+    return "To evaluate your expression, resolve existing errors first.";
+  } else {
+    return null;
+  }
+});
 
 const initialPaneSizes = calculateInitialPaneSizes();
 </script>

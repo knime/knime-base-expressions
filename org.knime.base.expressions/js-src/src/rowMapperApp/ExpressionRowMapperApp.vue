@@ -74,14 +74,15 @@ const runDiagnosticsFunction = async (states: EditorState[]) => {
     );
   }
 
+  const connectionErrors = mapConnectionInfoToErrorMessage(
+    initialData.value?.inputConnectionInfo,
+  );
   const haveColumnErrors = columnErrorMessages.some((error) => error !== null);
   const haveSyntaxErrors = codeErrors.some((error) => error.level === "ERROR");
 
-  runButtonDisabledErrorReason.value = mapConnectionInfoToErrorMessage(
-    initialData.value?.inputConnectionInfo,
-  );
-
-  if (haveSyntaxErrors) {
+  if (connectionErrors) {
+    runButtonDisabledErrorReason.value = connectionErrors;
+  } else if (haveSyntaxErrors) {
     runButtonDisabledErrorReason.value =
       "To evaluate your expression, resolve existing errors first.";
   } else if (haveColumnErrors) {
