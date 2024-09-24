@@ -116,7 +116,6 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
                     .orElseGet(List::of);
                 return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(flowVariables);
             }) //
-            .addDataSupplier("outputObjects", ExpressionNodeScriptingInputOutputModelUtils::getOutputObjects) //
             .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN);
 
         var spec = (DataTableSpec)workflowControl.getInputInfo()[0].portSpec();
