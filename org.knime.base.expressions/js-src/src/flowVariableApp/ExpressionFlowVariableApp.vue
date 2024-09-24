@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  consoleHandler,
   getScriptingService,
   ScriptingEditor,
   setActiveEditorStoreForAi,
@@ -93,12 +92,6 @@ onMounted(async () => {
     getExpressionInitialDataService().getInitialData(),
     getFlowVariableSettingsService().getSettings(),
   ]);
-
-  if (initialData.value.inputConnectionInfo[1].status !== "OK") {
-    consoleHandler.writeln({
-      warning: "No input available. Connect an executed node.",
-    });
-  }
 
   registerKnimeExpressionLanguage(initialData.value, {
     specialColumnAccess: false,
