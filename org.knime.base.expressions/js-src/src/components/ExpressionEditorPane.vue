@@ -115,6 +115,11 @@ const editorState = editor.useCodeEditor({
     minimap: { enabled: false },
     overviewRulerLanes: 0,
     overviewRulerBorder: false,
+    readOnly: useReadonlyStore().value,
+    readOnlyMessage: {
+      value: "Read-Only-Mode: configuration is set by flow variables.",
+    },
+    renderValidationDecorations: "on",
   },
 });
 
