@@ -4,12 +4,12 @@ import {
   type InputOutputModel,
   InputOutputPane,
   ScriptingEditor,
-  setActiveEditorStoreForAi,
   type SubItem,
   useReadonlyStore,
 } from "@knime/scripting-editor";
 import MultiEditorContainer, {
   type EditorState,
+  type EditorStates,
 } from "@/components/MultiEditorContainer.vue";
 import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
 import { LoadingIcon } from "@knime/components";
@@ -54,16 +54,15 @@ const getInitialItems = (): InputOutputModel[] => {
 };
 
 const refreshInputOutputItems = (
-  states: EditorState[],
+  { states, activeEditorKey }: EditorStates,
   returnTypes: string[],
 ) => {
-  const activeKey = multiEditorContainerRef.value?.getActiveEditorKey();
-  if (!activeKey) {
+  if (!activeEditorKey) {
     return;
   }
 
   const lastIndexToConsider =
-    states.findIndex((state) => state.key === activeKey) + 1;
+    states.findIndex((state) => state.key === activeEditorKey) + 1;
   const statesUntilActiveWithReturnTypes = states
     .slice(0, lastIndexToConsider)
     .map((state, index) => ({
@@ -106,7 +105,9 @@ const refreshInputOutputItems = (
   }
 };
 
-const runDiagnosticsFunction = async (states: EditorState[]) => {
+const runDiagnosticsFunction = async ({
+  states,
+}: EditorStates): Promise<string[]> => {
   const diagnostics = await runFlowVariableDiagnostics(
     states.map((state) => state.monacoState),
     states.map((state) =>
@@ -156,10 +157,12 @@ const runDiagnosticsFunction = async (states: EditorState[]) => {
     runButtonDisabledErrorReason.value = null;
   }
 
-  refreshInputOutputItems(
-    states,
-    diagnostics.map(({ returnType }) => returnType),
-  );
+  return diagnostics.map(({ returnType }) => returnType);
+};
+
+const onChange = async (editorStates: EditorStates) => {
+  const returnTypes = await runDiagnosticsFunction(editorStates);
+  refreshInputOutputItems(editorStates, returnTypes);
 };
 
 onMounted(async () => {
@@ -176,10 +179,10 @@ onMounted(async () => {
     initialSettings.value.settingsAreOverriddenByFlowVariable ?? false;
 });
 
-const runFlowVariableExpressions = (editorStates: EditorState[]) => {
+const runFlowVariableExpressions = (states: EditorState[]) => {
   getScriptingService().sendToService("runFlowVariableExpression", [
-    editorStates.map((state) => state.monacoState.text.value),
-    editorStates.map((state) =>
+    states.map((state) => state.monacoState.text.value),
+    states.map((state) =>
       state.selectorState.outputMode === "APPEND"
         ? state.selectorState.create
         : state.selectorState.replace,
@@ -238,12 +241,12 @@ const initialPaneSizes = calculateInitialPaneSizes();
         :additional-bottom-pane-tab-content="[
           {
             label: 'Preview',
-            value: 'dynamicTabSlot:outputPreview',
+            value: 'bottomPaneTabSlot:outputPreview',
           },
         ]"
       >
         <!-- Extra content in the bottom tab pane -->
-        <template #dynamicTabSlot:outputPreview="{ grabFocus }">
+        <template #bottomPaneTabSlot:outputPreview="{ grabFocus }">
           <OutputPreviewFlowVariable @output-preview-updated="grabFocus()" />
         </template>
 
@@ -276,11 +279,8 @@ const initialPaneSizes = calculateInitialPaneSizes();
                   }),
                 ) ?? []
             "
-            @active-editor-changed="
-              (state) => setActiveEditorStoreForAi(state.monacoState)
-            "
-            @run-diagnostics="runDiagnosticsFunction"
-            @run-expressions="(states) => runFlowVariableExpressions(states)"
+            @onChange="onChange"
+            @run-expressions="runFlowVariableExpressions"
           />
         </template>
 

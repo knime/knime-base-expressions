@@ -4,6 +4,7 @@ import {
   type UseCodeEditorReturn,
   getScriptingService,
   consoleHandler,
+  setActiveEditorStoreForAi,
 } from "@knime/scripting-editor";
 import { FunctionButton } from "@knime/components";
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
@@ -41,6 +42,10 @@ export type EditorState = EditorStateWithoutMonaco & {
   monacoState: UseCodeEditorReturn;
   key: string;
 };
+export type EditorStates = {
+  states: EditorState[];
+  activeEditorKey: string | null;
+};
 type EditorStateWatchers = {
   columnStateUnwatchHandle: Function;
   editorStateUnwatchHandle: Function;
@@ -50,7 +55,6 @@ export type MultiEditorContainerExposes = {
   setEditorErrorState: (key: string, errorState: EditorErrorState) => void;
   setSelectorErrorState: (key: string, errorState: EditorErrorState) => void;
   setActiveEditor: (key: string) => void;
-  getActiveEditorKey: () => string | null;
 };
 
 const activeEditorFileName = ref<string | null>(null);
@@ -67,10 +71,11 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "run-diagnostics": [editorStates: EditorState[]];
+  "on-change": [EditorStates];
   "run-expressions": [editorStates: EditorState[]];
-  "active-editor-changed": [editorState: EditorState];
 }>();
+
+const emitOnChange = () => emit("on-change", getEditorStates());
 
 /**
  * Generate a new key for a new editor. This is used to index the columnSelectorStates
@@ -99,13 +104,15 @@ const getEditorStatesWithMonacoState = (): EditorState[] =>
     key,
   }));
 
+const getEditorStates = (): EditorStates => ({
+  states: getEditorStatesWithMonacoState(),
+  activeEditorKey: getActiveEditorKey(),
+});
+
 const setActiveEditor = (key: string) => {
   activeEditorFileName.value = key;
-  emit("active-editor-changed", {
-    ...editorStates[key],
-    monacoState: editorReferences[key].getEditorState(),
-    key,
-  });
+  setActiveEditorStoreForAi(editorReferences[key].getEditorState());
+
   // Scroll to the editor. The focusing somehow interferes with scrolling,
   // so wait for a tick first.
   nextTick().then(() => {
@@ -117,7 +124,7 @@ const setActiveEditor = (key: string) => {
         block: "center",
       });
   });
-  emit("run-diagnostics", getEditorStatesWithMonacoState());
+  emitOnChange();
 };
 
 const getActiveEditorKey = (): string | null => {
@@ -136,7 +143,6 @@ defineExpose<MultiEditorContainerExposes>({
     editorStates[key].selectorErrorState = errorState;
   },
   setActiveEditor,
-  getActiveEditorKey,
 });
 
 const pushNewEditorState = (key: string) => {
@@ -170,11 +176,12 @@ const createElementReferencePusher = (key: string) => {
     const newStateWatchers = {
       columnStateUnwatchHandle: watch(
         () => editorStates[key].selectorState,
-        () => emit("run-diagnostics", getEditorStatesWithMonacoState()),
+        emitOnChange,
         { deep: true },
       ),
-      editorStateUnwatchHandle: watch(editorRef.getEditorState().text, () =>
-        emit("run-diagnostics", getEditorStatesWithMonacoState()),
+      editorStateUnwatchHandle: watch(
+        editorRef.getEditorState().text,
+        emitOnChange,
       ),
     };
     editorStateWatchers[key] = newStateWatchers;
@@ -220,7 +227,7 @@ const onRequestedAddEditorAtBottom = async () => {
     editorReferences[latestKey].getEditorState().editor.value?.focus();
   });
 
-  emit("run-diagnostics", getEditorStatesWithMonacoState());
+  emitOnChange();
 };
 
 const onEditorRequestedDelete = (key: string) => {
@@ -237,7 +244,7 @@ const onEditorRequestedDelete = (key: string) => {
   delete editorStateWatchers[key];
   delete editorReferences[key];
 
-  emit("run-diagnostics", getEditorStatesWithMonacoState());
+  emitOnChange();
 };
 
 const onEditorRequestedMoveUp = (key: string) => {
@@ -257,7 +264,7 @@ const onEditorRequestedMoveUp = (key: string) => {
     editorReferences[key].getEditorState().editor.value?.focus();
   });
 
-  emit("run-diagnostics", getEditorStatesWithMonacoState());
+  emitOnChange();
 };
 
 const onEditorRequestedMoveDown = (key: string) => {
@@ -277,7 +284,7 @@ const onEditorRequestedMoveDown = (key: string) => {
     editorReferences[key].getEditorState().editor.value?.focus();
   });
 
-  emit("run-diagnostics", getEditorStatesWithMonacoState());
+  emitOnChange();
 };
 
 const onEditorRequestedCopyBelow = async (key: string) => {
@@ -378,7 +385,7 @@ onMounted(async () => {
     editorStates[key].selectorState = props.settings[i].initialSelectorState;
   }
 
-  emit("run-diagnostics", getEditorStatesWithMonacoState());
+  emitOnChange();
 });
 </script>
 

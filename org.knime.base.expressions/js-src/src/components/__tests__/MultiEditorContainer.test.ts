@@ -231,9 +231,7 @@ describe("MultiEditorContainer", () => {
   it("should throw an event when editors are reordered, added, or removed", async () => {
     const { wrapper, keys } = await doMount();
 
-    let numEventsBeforeReorder = wrapper.emitted(
-      "editor-states-changed",
-    )!.length;
+    let numEventsBeforeReorder = wrapper.emitted("on-change")!.length;
 
     wrapper
       .findComponent({ name: "ExpressionEditorPane" })
@@ -242,7 +240,7 @@ describe("MultiEditorContainer", () => {
     await flushPromises();
     await nextTick();
 
-    expect(wrapper.emitted("editor-states-changed")).toHaveLength(
+    expect(wrapper.emitted("on-change")).toHaveLength(
       numEventsBeforeReorder + 1,
     );
 
@@ -255,7 +253,7 @@ describe("MultiEditorContainer", () => {
     await flushPromises();
     await nextTick();
 
-    expect(wrapper.emitted("editor-states-changed")).toHaveLength(
+    expect(wrapper.emitted("on-change")).toHaveLength(
       numEventsBeforeReorder + 1,
     );
 
@@ -267,7 +265,7 @@ describe("MultiEditorContainer", () => {
     await flushPromises();
     await nextTick();
 
-    expect(wrapper.emitted("editor-states-changed")).toHaveLength(
+    expect(wrapper.emitted("on-change")).toHaveLength(
       numEventsBeforeReorder + 1,
     );
 
@@ -280,7 +278,7 @@ describe("MultiEditorContainer", () => {
     await flushPromises();
     await nextTick();
 
-    expect(wrapper.emitted("editor-states-changed")).toHaveLength(
+    expect(wrapper.emitted("on-change")).toHaveLength(
       numEventsBeforeReorder + 1,
     );
 
@@ -293,7 +291,7 @@ describe("MultiEditorContainer", () => {
     await flushPromises();
     await nextTick();
 
-    expect(wrapper.emitted("editor-states-changed")).toHaveLength(
+    expect(wrapper.emitted("on-change")).toHaveLength(
       numEventsBeforeReorder + 1,
     );
   });

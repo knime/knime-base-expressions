@@ -6,7 +6,6 @@ import {
   InputOutputPane,
   OutputTablePreview,
   ScriptingEditor,
-  setActiveEditorStoreForAi,
   type SubItem,
   useReadonlyStore,
 } from "@knime/scripting-editor";
@@ -19,6 +18,7 @@ import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage"
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 import MultiEditorContainer, {
   type EditorState,
+  type EditorStates,
 } from "@/components/MultiEditorContainer.vue";
 import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
 import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
@@ -60,16 +60,15 @@ const getInitialItems = (): InputOutputModel[] => {
 };
 
 const refreshInputOutputItems = (
-  states: EditorState[],
+  { states, activeEditorKey }: EditorStates,
   returnTypes: string[],
 ) => {
-  const activeKey = multiEditorContainerRef.value?.getActiveEditorKey();
-  if (!activeKey) {
+  if (!activeEditorKey) {
     return;
   }
 
   const lastIndexToConsider =
-    states.findIndex((state) => state.key === activeKey) + 1;
+    states.findIndex((state) => state.key === activeEditorKey) + 1;
   const statesUntilActiveWithReturnTypes = states
     .slice(0, lastIndexToConsider)
     .map((state, index) => ({
@@ -87,8 +86,6 @@ const refreshInputOutputItems = (
 
   currentInputOutputItems.value[0].subItems =
     currentInputOutputItems.value[0].subItems?.map((subItem) =>
-      // we can make the InputOutputModel generic, but until the only benefit
-      // is avoiding the cast here, it's not worth it
       replaceSubItems(
         subItem as SubItem<TypeRendererProps>,
         statesUntilActiveWithReturnTypes,
@@ -115,7 +112,9 @@ const refreshInputOutputItems = (
   }
 };
 
-const runDiagnosticsFunction = async (states: EditorState[]) => {
+const runDiagnosticsFunction = async ({
+  states,
+}: EditorStates): Promise<string[]> => {
   const diagnostics = await runRowMapperDiagnostics(
     states.map((state) => state.monacoState),
     states.map((state) =>
@@ -169,10 +168,12 @@ const runDiagnosticsFunction = async (states: EditorState[]) => {
     runButtonDisabledErrorReason.value = null;
   }
 
-  refreshInputOutputItems(
-    states,
-    diagnostics.map(({ returnType }) => returnType),
-  );
+  return diagnostics.map(({ returnType }) => returnType);
+};
+
+const onChange = async (editorStates: EditorStates) => {
+  const returnTypes = await runDiagnosticsFunction(editorStates);
+  refreshInputOutputItems(editorStates, returnTypes);
 };
 
 onMounted(async () => {
@@ -259,12 +260,12 @@ const initialPaneSizes = calculateInitialPaneSizes();
         :additional-bottom-pane-tab-content="[
           {
             label: 'Output preview',
-            value: 'dynamicTabSlot:outputPreview',
+            value: 'bottomPaneTabSlot:outputPreview',
           },
         ]"
       >
         <!-- Extra content in the bottom tab pane -->
-        <template #dynamicTabSlot:outputPreview="{ grabFocus }">
+        <template #bottomPaneTabSlot:outputPreview="{ grabFocus }">
           <OutputTablePreview @output-table-updated="grabFocus()" />
         </template>
 
@@ -298,10 +299,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
                   }),
                 ) ?? []
             "
-            @active-editor-changed="
-              (state) => setActiveEditorStoreForAi(state.monacoState)
-            "
-            @run-diagnostics="runDiagnosticsFunction"
+            @on-change="onChange"
             @run-expressions="
               (states) =>
                 runRowMapperExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN, states)

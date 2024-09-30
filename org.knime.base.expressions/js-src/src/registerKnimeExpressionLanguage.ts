@@ -4,6 +4,8 @@ import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes
 import { convertFunctionsToInsertionItems } from "@/components/convertFunctionsToInsertionItems";
 import { LANGUAGE } from "@/common/constants";
 import type { ExpressionInitialData } from "@/common/types";
+import type { SubItem } from "@knime/scripting-editor";
+import type { TypeRendererProps } from "@/components/TypeRenderer.vue";
 
 export type CompletionItemWithType = {
   text: string;
@@ -224,7 +226,7 @@ const register = ({
             .replace(/\\/g, "\\\\")
             .replace(new RegExp(`${quoteType}`, "g"), '\\"');
 
-        const mapColumnNameReducerFactory =
+        const mapInputNameReducerFactory =
           (prefix: string) =>
           (aggregation: OptionalSuggestion[], column: ColumnWithDType) => {
             // Add column shorthand as an option if we can
@@ -256,11 +258,11 @@ const register = ({
 
         const columnAndFlowVariableNames = [
           ...columnNamesForCompletion.reduce(
-            mapColumnNameReducerFactory("$"),
+            mapInputNameReducerFactory("$"),
             [] as OptionalSuggestion[],
           ),
           ...flowVariableNamesForCompletion.reduce(
-            mapColumnNameReducerFactory("$$"),
+            mapInputNameReducerFactory("$$"),
             [] as OptionalSuggestion[],
           ),
         ];
@@ -379,6 +381,24 @@ const register = ({
 };
 
 /**
+ * Mapper to map a subItem to a ColumnWithDType.
+ * @param subItem
+ */
+const mapSubItemToColumnWithDType = (subItem: SubItem<TypeRendererProps>) => {
+  if (typeof subItem.type === "string") {
+    return {
+      name: subItem.name,
+      type: subItem.type,
+    };
+  } else {
+    return {
+      name: subItem.name,
+      type: subItem.type.props?.type ?? "UNKNOWN",
+    };
+  }
+};
+
+/**
  * Options for the autocompletion.
  * @param specialColumnAccess whether to include special column accesses
  * "$[ROW_ID]", "$[ROW_INDEX]", "$[ROW_NUMBER]"
@@ -404,21 +424,19 @@ const registerKnimeExpressionLanguage = (
 ) => {
   const registerSpecialColumnAccess = options?.specialColumnAccess ?? true;
 
+  const inputColumns = (initialData.inputObjects?.[0]?.subItems ??
+    []) as SubItem<TypeRendererProps>[];
+
+  const inputFlowVariables = (initialData.flowVariables?.subItems ??
+    []) as SubItem<TypeRendererProps>[];
+
   return register({
-    columnNamesForCompletion: initialData.inputObjects?.[0]?.subItems
-      ? initialData.inputObjects[0].subItems
-          .filter((column) => column.supported)
-          .map((column) => ({
-            name: column.name,
-            type: column.type,
-          }))
-      : [],
-    flowVariableNamesForCompletion: initialData.flowVariables?.subItems
-      ? initialData.flowVariables.subItems.map((flowVariable) => ({
-          name: flowVariable.name,
-          type: flowVariable.type,
-        }))
-      : [],
+    columnNamesForCompletion: inputColumns
+      .filter((column) => column.supported)
+      .map(mapSubItemToColumnWithDType),
+    flowVariableNamesForCompletion: inputFlowVariables.map(
+      mapSubItemToColumnWithDType,
+    ),
     extraCompletionItems: [
       ...convertFunctionsToInsertionItems(
         initialData.functionCatalog.functions,

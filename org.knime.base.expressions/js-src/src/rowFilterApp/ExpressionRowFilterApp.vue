@@ -183,12 +183,12 @@ const initialPaneSizes = calculateInitialPaneSizes();
       :additional-bottom-pane-tab-content="[
         {
           label: 'Output preview',
-          value: 'outputPreview',
+          value: 'bottomPaneTabSlot:outputPreview',
         },
       ]"
     >
       <!-- Extra content in the bottom tab pane -->
-      <template #outputPreview="{ grabFocus }">
+      <template #bottomPaneTabSlot:outputPreview="{ grabFocus }">
         <OutputTablePreview @output-table-updated="grabFocus()" />
       </template>
 
