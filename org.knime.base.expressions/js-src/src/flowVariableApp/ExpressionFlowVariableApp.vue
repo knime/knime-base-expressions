@@ -279,7 +279,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
                   }),
                 ) ?? []
             "
-            @onChange="onChange"
+            @on-change="onChange"
             @run-expressions="runFlowVariableExpressions"
           />
         </template>

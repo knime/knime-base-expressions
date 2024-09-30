@@ -70,12 +70,12 @@ const props = defineProps<{
   itemType: string;
 }>();
 
-const emit = defineEmits<{
-  "on-change": [EditorStates];
-  "run-expressions": [editorStates: EditorState[]];
-}>();
-
-const emitOnChange = () => emit("on-change", getEditorStates());
+const getActiveEditorKey = (): string | null => {
+  if (activeEditorFileName.value === null) {
+    return null;
+  }
+  return activeEditorFileName.value;
+};
 
 /**
  * Generate a new key for a new editor. This is used to index the columnSelectorStates
@@ -109,6 +109,13 @@ const getEditorStates = (): EditorStates => ({
   activeEditorKey: getActiveEditorKey(),
 });
 
+const emit = defineEmits<{
+  "on-change": [EditorStates];
+  "run-expressions": [editorStates: EditorState[]];
+}>();
+
+const emitOnChange = () => emit("on-change", getEditorStates());
+
 const setActiveEditor = (key: string) => {
   activeEditorFileName.value = key;
   setActiveEditorStoreForAi(editorReferences[key].getEditorState());
@@ -125,13 +132,6 @@ const setActiveEditor = (key: string) => {
       });
   });
   emitOnChange();
-};
-
-const getActiveEditorKey = (): string | null => {
-  if (activeEditorFileName.value === null) {
-    return null;
-  }
-  return activeEditorFileName.value;
 };
 
 defineExpose<MultiEditorContainerExposes>({
