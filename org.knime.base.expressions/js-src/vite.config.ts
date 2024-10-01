@@ -8,6 +8,7 @@ import monacoEditorPlugin, {
   type IMonacoEditorOpts,
 } from "vite-plugin-monaco-editor";
 import svgLoader from "vite-svg-loader";
+import { visualizer } from "rollup-plugin-visualizer";
 
 // @ts-ignore
 import { svgoConfig } from "@knime/styles/config/svgo.config";
@@ -26,6 +27,9 @@ export default defineConfig({
       languageWorkers: ["editorWorkerService"],
     }),
     svgLoader({ svgoConfig }),
+    visualizer({
+      filename: "dist/stats.html",
+    }),
   ],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
