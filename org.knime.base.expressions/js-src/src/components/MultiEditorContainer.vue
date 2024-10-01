@@ -314,12 +314,15 @@ registerInsertionListener(() =>
 
 // Shift+Enter while editor has focus runs expressions
 onKeyStroke("Enter", (evt: KeyboardEvent) => {
-  if (
-    evt.shiftKey &&
-    Object.values(editorReferences).some((state) =>
-      state.getEditorState().editor.value?.hasTextFocus(),
-    )
-  ) {
+  const atLeastOneEditorHasFocus = Object.values(editorReferences).some(
+    (state) => state.getEditorState().editor.value?.hasTextFocus(),
+  );
+
+  const allEditorsAreOk = Object.values(editorStates).every(
+    (state) => state.editorErrorState.level === "OK",
+  );
+
+  if (evt.shiftKey && atLeastOneEditorHasFocus && allEditorsAreOk) {
     evt.preventDefault();
     emit("run-expressions", getEditorStatesWithMonacoState());
   }
