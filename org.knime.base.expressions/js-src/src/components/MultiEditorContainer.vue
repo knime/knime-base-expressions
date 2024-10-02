@@ -2,6 +2,7 @@
 import {
   consoleHandler,
   getScriptingService,
+  getSettingsService,
   setActiveEditorStoreForAi,
   type UseCodeEditorReturn,
   useReadonlyStore,
@@ -40,6 +41,7 @@ import {
   getDropDownValuesForCurrentType,
 } from "@/flowVariableApp/flowVariableTypes";
 import NextIcon from "@knime/styles/img/icons/arrow-next.svg";
+import type { SettingState } from "@knime/ui-extension-service";
 
 type EditorStateWithoutMonaco = {
   selectorState: SelectorState;
@@ -120,12 +122,34 @@ const getEditorStates = (): EditorStates => ({
   activeEditorKey: getActiveEditorKey(),
 });
 
+/*
+ * Get a minimal state representation of all changes that matter
+ * for the settings service to evaluate if the current state is
+ * different from the last saved settings state.
+ */
+const getState = () => {
+  return orderedEditorKeys
+    .map(
+      (key) =>
+        `${key} ${editorReferences[key].getEditorState().text.value}
+    ${editorStates[key].selectorState.outputMode}
+    ${editorStates[key].selectorState.create}
+    ${editorStates[key].selectorState.replace}`,
+    )
+    .join("\n");
+};
+
+const onChangedState = ref<SettingState<string> | null>(null);
+
 const emit = defineEmits<{
   "on-change": [EditorStates];
   "run-expressions": [editorStates: EditorState[]];
 }>();
 
-const emitOnChange = () => emit("on-change", getEditorStates());
+const emitOnChange = () => {
+  onChangedState.value?.setValue(getState());
+  emit("on-change", getEditorStates());
+};
 
 /**
  * Called by the ExpressionEditorPane when it gains focus. This function updates
@@ -433,7 +457,10 @@ onMounted(async () => {
     editorControlsExpanded.value[key] = false;
   }
 
-  // focusEditor emits the change event, so we don't need to do it here.
+  const register = await getSettingsService().registerSettings("model");
+  onChangedState.value = register(getState());
+
+  // setActiveEditor emits the change event, so we don't need to do it here.
   setActiveEditor(orderedEditorKeys[0]);
 });
 
