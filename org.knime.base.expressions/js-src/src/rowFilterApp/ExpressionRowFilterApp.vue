@@ -2,6 +2,7 @@
 import {
   consoleHandler,
   getScriptingService,
+  getSettingsService,
   OutputTablePreview,
   ScriptingEditor,
   setActiveEditorStoreForAi,
@@ -97,12 +98,7 @@ onMounted(async () => {
     renderValidationDecorations: "on",
   });
 
-  watch(editorReference.getEditorState().text, runDiagnosticsFunction);
-
   setActiveEditorStoreForAi(editorReference.getEditorState());
-
-  // Run initial diagnostics now that we've set the initial text
-  await runDiagnosticsFunction();
 
   getScriptingService().registerEventHandler(
     "updateWarning",
@@ -118,6 +114,16 @@ onMounted(async () => {
       }
     },
   );
+
+  const register = await getSettingsService().registerSettings("model");
+  const onChangedScript = register(settings.script);
+
+  watch(editorReference.getEditorState().text, () => {
+    runDiagnosticsFunction();
+    onChangedScript.setValue(editorReference.getEditorState().text.value);
+  });
+
+  await runDiagnosticsFunction();
 });
 
 const runRowFilterExpressions = (rows: number) => {
