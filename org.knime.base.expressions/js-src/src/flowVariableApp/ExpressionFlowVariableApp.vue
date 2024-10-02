@@ -241,7 +241,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
         :additional-bottom-pane-tab-content="[
           {
             label: 'Preview',
-            value: 'bottomPaneTabSlot:outputPreview',
+            slotName: 'bottomPaneTabSlot:outputPreview',
           },
         ]"
       >
