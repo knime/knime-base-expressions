@@ -4,7 +4,11 @@ import { MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG } from "../function-catalo
 import FunctionCatalog, {
   FUNCTION_INSERTION_EVENT,
 } from "../function-catalog/FunctionCatalog.vue";
-import type { FunctionData, ConstantData } from "../functionCatalogTypes";
+import type {
+  FunctionData,
+  ConstantData,
+  FunctionCatalogData,
+} from "../functionCatalogTypes";
 import { useElementBounding } from "@vueuse/core";
 import { ref } from "vue";
 import { SearchInput } from "@knime/components";
@@ -69,17 +73,32 @@ describe("FunctionCatalog", () => {
   };
   const constant1: ConstantData = {
     name: "pi",
-    category: "math constants",
+    category: "Math -- math constants",
     description: "The constant PI",
     returnType: "number",
     entryType: "constant",
     keywords: ["pi"],
   };
-  const functionCatalogData = {
+  const functionCatalogData: FunctionCatalogData = {
     categories: [
-      { name: "category1", description: "This is a description for category1" },
-      { name: "category2", description: "need a description too" },
-      { name: "math constants", description: "Mathematical constants" },
+      {
+        name: "category1",
+        description: "This is a description for category1",
+        metaCategory: null,
+        fullName: "category1",
+      },
+      {
+        name: "category2",
+        description: "need a description too",
+        metaCategory: null,
+        fullName: "category2",
+      },
+      {
+        name: "math constants",
+        description: "Mathematical constants",
+        metaCategory: "Math",
+        fullName: "Math -- math constants",
+      },
     ],
     functions: [function1, function2, constant1],
   };

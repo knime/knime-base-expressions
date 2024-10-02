@@ -27,20 +27,36 @@ const descriptionAsHTML = computed(() =>
     ? functionDataToHtml(props.data)
     : categoryDataToHtml(props.data),
 );
-const title = computed(() => {
-  if (props.type === "category" || props.data.entryType === "constant") {
-    return props.data.name;
+const upperHeader = computed(() => {
+  if (props.type === "category") {
+    return props.data.metaCategory ?? "";
   } else {
-    // then it's a function and should be displayed with its args
-    return props.data.displayName;
+    return props.data.name;
+  }
+});
+const lowerHeader = computed(() => {
+  if (props.type === "category") {
+    return props.data.name;
+  } else if (props.data.entryType === "function") {
+    return `(${props.data.arguments.map((arg) => arg.name).join(", ")})`;
+  } else {
+    return "";
   }
 });
 </script>
 
 <template>
   <div class="node-description">
-    <h3 class="description-title">{{ title }}</h3>
-    <hr />
+    <div
+      class="titles"
+      :class="{
+        'is-category': props.type === 'category',
+        'is-function': props.type === 'functionOrConstant',
+      }"
+    >
+      <h3 class="description-title">{{ upperHeader }}</h3>
+      <h3 class="description-title">{{ lowerHeader }}</h3>
+    </div>
     <Description
       :text="descriptionAsHTML"
       render-as-html
@@ -53,7 +69,6 @@ const title = computed(() => {
 .markdown-function-desc {
   --description-font-size: 13px;
 
-  padding: 0 var(--space-4);
   font-size: 13px;
   line-height: 150%;
 
@@ -66,11 +81,40 @@ const title = computed(() => {
     line-height: 150%;
   }
 }
+</style>
 
+<style lang="postcss" scoped>
 .description-title {
-  font-size: 18px;
-  margin-bottom: 10px;
+  font-size: 16px;
+  margin-bottom: 0;
   margin-top: 0;
-  line-height: normal;
+  line-height: 16px;
+  min-height: 16px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.titles {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  margin-bottom: 10px;
+
+  &.is-function {
+    & .description-title:last-child {
+      white-space: wrap;
+      word-break: break-word;
+      font-weight: 300;
+      font-size: 13px;
+    }
+  }
+
+  &.is-category {
+    & .description-title:first-child {
+      font-weight: 300;
+      font-size: 13px;
+    }
+  }
 }
 </style>

@@ -11,7 +11,7 @@ export const mapFunctionCatalogData = (
   const catalog: CatalogData = {};
 
   for (const category of data.categories) {
-    catalog[category.name] = [];
+    catalog[category.fullName] = [];
   }
 
   for (const func of data.functions) {

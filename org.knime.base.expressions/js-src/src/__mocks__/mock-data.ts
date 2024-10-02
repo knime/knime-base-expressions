@@ -39,33 +39,50 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
     {
       name: "String Manipulation",
       description: "Functions for manipulating strings",
+      metaCategory: "String",
+      fullName: "String -- String Manipulation",
     },
     {
       name: "Demo",
       description: "Demo functions",
+      metaCategory: null,
+      fullName: "Demo",
     },
     {
       name: "Math Operations",
       description: "Functions for performing mathematical operations",
+      metaCategory: "Math",
+      fullName: "Math -- Math Operations",
     },
     {
       name: "Array Operations",
       description: "Functions for manipulating arrays",
+      metaCategory: "Array",
+      fullName: "Array -- Array Operations",
     },
     {
       name: "Date and Time",
       description: "Functions for working with dates and times",
+      metaCategory: "Date",
+      fullName: "Date -- Date and Time",
     },
     {
       name: "Very big category",
       description: "You have to scroll down to see everything",
+      metaCategory: null,
+      fullName: "Very big category",
     },
-    { name: "Mathematical Constants", description: "Constants" },
+    {
+      name: "Mathematical Constants",
+      description: "Constants",
+      metaCategory: "Math",
+      fullName: "Math -- Mathematical Constants",
+    },
   ],
   functions: [
     {
       name: "concatenateStringsIsAVeryLongFunctionName",
-      category: "String Manipulation",
+      category: "String -- String Manipulation",
       arguments: [
         { name: "string1", type: "string", description: "the first string" },
         { name: "string2", type: "string", description: "the second string" },
@@ -79,7 +96,7 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
     },
     {
       name: "substring",
-      category: "String Manipulation",
+      category: "String -- String Manipulation",
       arguments: [
         {
           name: "inputString",
@@ -116,7 +133,7 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
     },
     {
       name: "sum",
-      category: "Math Operations",
+      category: "Math -- Math Operations",
       arguments: [
         {
           name: "numbers",
@@ -133,7 +150,7 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
     },
     {
       name: "multiply",
-      category: "Math Operations",
+      category: "Math -- Math Operations",
       arguments: [
         { name: "factor1", type: "int", description: "the first factor" },
         { name: "factor2", type: "int", description: "the second factor" },
@@ -146,7 +163,7 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
     },
     {
       name: "filterArray",
-      category: "Array Operations",
+      category: "Array -- Array Operations",
       arguments: [
         { name: "array", type: "array", description: "input array" },
         {
@@ -164,7 +181,7 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
     },
     {
       name: "getDayOfWeek",
-      category: "Date and Time",
+      category: "Date -- Date and Time",
       arguments: [{ name: "date", type: "date", description: "input date" }],
       description: "# Markdown\nReturns the day of the week for a given date.",
       examples: "`getDayOfWeek('2024-03-07')`",
@@ -180,6 +197,20 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
       ],
       returnType: "string",
       entryType: "function",
+    },
+    {
+      name: "functionWithALotOfArgs",
+      category: "Demo",
+      arguments: Array.from({ length: 10 }, (_, i) => ({
+        name: `arg${i}`,
+        type: "int",
+        description: `Argument ${i}`,
+      })),
+      description: "A function with a lot of arguments.",
+      examples: "`functionWithALotOfArgs(1, 2, 3, 4, 5, 6)`",
+      returnType: "int",
+      entryType: "function",
+      keywords: ["demo"],
     },
     // eslint-disable-next-line no-magic-numbers
     ...[...Array(20).keys()].map(
@@ -199,7 +230,7 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
     ),
     {
       name: "pi",
-      category: "Mathematical Constants",
+      category: "Math -- Mathematical Constants",
       description: "The value of Pi",
       returnType: "float",
       keywords: ["pi", "π"],
@@ -207,7 +238,7 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
     },
     {
       name: "e",
-      category: "Mathematical Constants",
+      category: "Math -- Mathematical Constants",
       description: "The value of the Euler's number",
       returnType: "float",
       keywords: ["e", "Euler"],

@@ -13,6 +13,7 @@ import NextIcon from "@knime/styles/img/icons/arrow-next.svg";
 import { useElementBounding } from "@vueuse/core";
 import { mapFunctionCatalogData } from "@/components/function-catalog/mapFunctionCatalogData";
 import type {
+  CategoryData,
   FunctionCatalogData,
   FunctionCatalogEntryData,
 } from "@/components/functionCatalogTypes";
@@ -51,12 +52,19 @@ const categories = ref(
       categoryName,
       {
         expanded: props.initiallyExpanded,
-        name: categoryName,
+        fullName: categoryName,
         description:
           props.functionCatalogData.categories.find(
-            (category) => category.name === categoryName,
+            (category) => category.fullName === categoryName,
           )?.description ?? "No description for category available",
-      },
+        metaCategory:
+          props.functionCatalogData.categories.find(
+            (category) => category.fullName === categoryName,
+          )?.metaCategory ?? null,
+        name: props.functionCatalogData.categories.find(
+          (category) => category.fullName === categoryName,
+        )?.name!,
+      } satisfies Record<string, any> & CategoryData,
     ]),
   ),
 );
