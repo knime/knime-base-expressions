@@ -148,7 +148,7 @@ public final class ControlFlowFunctions {
                 "Common return type of conditional expressions", //
                 "Result of the expression belonging to the first matched condition", //
                 List.of("conditional"), //
-                CATEGORY.name(), //
+                CATEGORY.fullName(), //
                 "function" //
             );
         }
@@ -268,7 +268,7 @@ public final class ControlFlowFunctions {
                 "Common return type of case expressions", //
                 "Result of the expression belonging to the first matched case", //
                 List.of("conditional"), //
-                CATEGORY.name(), //
+                CATEGORY.fullName(), //
                 "function" //
             );
         }

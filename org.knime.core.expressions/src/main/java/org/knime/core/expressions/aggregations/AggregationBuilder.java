@@ -55,6 +55,7 @@ import java.util.regex.Pattern;
 
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast.ConstantAst;
+import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.OperatorDescription;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.SignatureUtils;
@@ -118,7 +119,7 @@ public class AggregationBuilder {
          * @param category the {@link OperatorDescription#category()}
          * @return the next stage of the builder
          */
-        RequiresArgs category(String category);
+        RequiresArgs category(OperatorCategory category);
     }
 
     interface RequiresArgs {
@@ -155,7 +156,7 @@ public class AggregationBuilder {
     }
 
     record FinalStage( // NOSONAR - equals and hashCode are not important for this record
-        String name, String description, String examples, String[] keywords, String category, Arg[] args,
+        String name, String description, String examples, String[] keywords, OperatorCategory category, Arg[] args,
         String returnDesc, String returnType, ReturnTypeMapper returnTypeMapping) {
 
         public ColumnAggregation build() {
@@ -170,7 +171,7 @@ public class AggregationBuilder {
             var desc = new OperatorDescription( //
                 name, description, examples, //
                 Arg.toOperatorDescription(argsList), returnType, returnDesc, //
-                List.of(keywords), category, OperatorDescription.FUNCTION_ENTRY_TYPE //
+                List.of(keywords), category.fullName(), OperatorDescription.FUNCTION_ENTRY_TYPE //
             );
 
             return new AggregationImpl(name, desc, argsList, returnTypeMapping);

@@ -91,15 +91,18 @@ public final class BuiltInAggregations {
     private BuiltInAggregations() {
     }
 
+    private static final String MATH_META_CATEGORY_NAME = "Math";
+
     /** The category for all built-in aggregations */
-    public static final OperatorCategory AGGREGATION_CATEGORY = new OperatorCategory("Math – Aggregate columns", """
-            The "Math – Aggregate Columns" category in KNIME Expression language includes functions that perform
-            aggregations over all rows of a column. These functions are distinct from other aggregations as they
-            operate across the entire column rather than individual values or subsets. They are essential for
-            summarizing and analyzing data at the column level within expressions. Note that aggregation functions
-            utilize the entire column as provided in the input. They do not use the output of the expression
-            if applied on a column configured to be replaced.
-            """);
+    public static final OperatorCategory AGGREGATION_CATEGORY =
+        new OperatorCategory(MATH_META_CATEGORY_NAME, "Aggregate columns", """
+                The "Math – Aggregate Columns" category in KNIME Expression language includes functions that perform
+                aggregations over all rows of a column. These functions are distinct from other aggregations as they
+                operate across the entire column rather than individual values or subsets. They are essential for
+                summarizing and analyzing data at the column level within expressions. Note that aggregation functions
+                utilize the entire column as provided in the input. They do not use the output of the expression
+                if applied on a column configured to be replaced.
+                """);
 
     /** The list of all built-in aggregation categories */
     public static final List<OperatorCategory> BUILT_IN_CATEGORIES = List.of(AGGREGATION_CATEGORY);
@@ -133,8 +136,7 @@ public final class BuiltInAggregations {
                 the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
                 """) //
-        .examples(
-            """
+        .examples("""
                 * `COLUMN_MAX("col")` returns the maximum value in column `col`,
                   including `NaN` values
                 * `COLUMN_MAX("col", ignore_nan=true)` returns the maximum value in
@@ -143,7 +145,7 @@ public final class BuiltInAggregations {
                   column `col`, including `NaN` values
                 """) //
         .keywords("maximum", "max") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY) //
         .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The maximum value of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING,
             BuiltInAggregations::maxReturnType) //
@@ -176,8 +178,7 @@ public final class BuiltInAggregations {
                 the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
                 """) //
-        .examples(
-            """
+        .examples("""
                 * `COLUMN_MIN("col")` returns the minimum value in column `col`,
                   including `NaN` values
                 * `COLUMN_MIN("col", ignore_nan=true)` returns the minimum value in
@@ -186,7 +187,7 @@ public final class BuiltInAggregations {
                   column `col`, including `NaN` values
                 """) //
         .keywords("minimum") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY) //
         .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The minimum value of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING,
             BuiltInAggregations::minReturnType) //
@@ -218,8 +219,7 @@ public final class BuiltInAggregations {
                 the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
                 """) //
-        .examples(
-            """
+        .examples("""
                 * `COLUMN_AVERAGE("col")` returns the mean value in column `col`,
                   including `NaN` values
                 * `COLUMN_AVERAGE("col", ignore_nan=true)` returns the mean value in
@@ -228,7 +228,7 @@ public final class BuiltInAggregations {
                   including `NaN` values
                 """) //
         .keywords("column_mean", "avg") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY) //
         .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The mean value of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
             BuiltInAggregations::meanReturnType) //
@@ -262,8 +262,7 @@ public final class BuiltInAggregations {
                 the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
                 """) //
-        .examples(
-            """
+        .examples("""
                 * `COLUMN_MEDIAN("col")` returns the median value in column `col`,
                   including `NaN` values
                 * `COLUMN_MEDIAN("col", ignore_nan=true)` returns the median value in
@@ -272,7 +271,7 @@ public final class BuiltInAggregations {
                   including `NaN` values
                 """) //
         .keywords("average", "avg") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY) //
         .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The median value of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
             BuiltInAggregations::medianReturnType) //
@@ -306,8 +305,7 @@ public final class BuiltInAggregations {
                 the result is 0. If it is `FALSE`, then `NaN` values are not ignored
                 and the result is `NaN` if any value in the column is `NaN`.
                 """) //
-        .examples(
-            """
+        .examples("""
                 * `COLUMN_SUM("col")` returns the sum of the values in column `col`,
                   including `NaN` values
                 * `COLUMN_SUM("col", ignore_nan=true)` returns the sum of the values in
@@ -316,7 +314,7 @@ public final class BuiltInAggregations {
                   including `NaN` values
                 """) //
         .keywords("sum", "total") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY) //
         .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The sum of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT,
             BuiltInAggregations::sumReturnType) //
@@ -348,8 +346,7 @@ public final class BuiltInAggregations {
                 the result is `MISSING`. If it is `FALSE`, then `NaN` values are not
                 ignored and the result is `NaN` if any value in the column is `NaN`.
                 """) //
-        .examples(
-            """
+        .examples("""
                 * `COLUMN_VARIANCE("col")` returns the variance of the values in column `col`,
                   including `NaN` values
                 * `COLUMN_VARIANCE("col", ignore_nan=true)` returns the variance of the values in
@@ -358,7 +355,7 @@ public final class BuiltInAggregations {
                   including `NaN` values
                 """) //
         .keywords("var", "variation") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY) //
         .args(COLUMN_ARG, IGNORE_NAN_ARG) //
         .returnType("The variance of the column", ReturnTypeDescriptions.RETURN_FLOAT_MISSING,
             BuiltInAggregations::varianceReturnType) //
@@ -397,8 +394,7 @@ public final class BuiltInAggregations {
                 See [wikipedia:standard_deviation](https://en.wikipedia.org/wiki/Standard_deviation).
                 Other integer values are also accepted.
                 """) //
-        .examples(
-            """
+        .examples("""
                 * `COLUMN_STDDEV("col")` returns the standard deviation of the values in column `col`,
                   including `NaN` values
                 * `COLUMN_STDDEV("col", ignore_nan=true)` returns the standard deviation of the values in
@@ -409,7 +405,7 @@ public final class BuiltInAggregations {
                   column `col`, including `NaN` values
                 """) //
         .keywords("standard deviation", "std") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY) //
         .args( //
             COLUMN_ARG, //
             IGNORE_NAN_ARG, //
@@ -445,8 +441,7 @@ public final class BuiltInAggregations {
                 set to `TRUE`, `MISSING` values are ignored. If it is `FALSE`, then `MISSING`
                 values are not ignored and are counted as well.
                 """) //
-        .examples(
-            """
+        .examples("""
                 * `COLUMN_COUNT("col")` returns the number of values in column `col`,
                   including `MISSING` values
                 * `COLUMN_COUNT("col", ignore_missing=true)` returns the number of
@@ -455,7 +450,7 @@ public final class BuiltInAggregations {
                   number of `MISSING`values in column `col`
                 """) //
         .keywords("number", "rows") //
-        .category(AGGREGATION_CATEGORY.name()) //
+        .category(AGGREGATION_CATEGORY) //
         .args( //
             COLUMN_ARG, //
             optarg("ignore_missing", "Whether to skip `MISSING` values (defaults to `FALSE`)", isBoolean()) //

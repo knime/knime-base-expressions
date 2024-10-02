@@ -51,9 +51,34 @@ package org.knime.core.expressions;
 /**
  * A category of functions or aggregations.
  *
+ * @param fullName the unique long name of the category, normally comprised of the meta category if there is one and the
+ *            category name, e.g. 'Math – Trigonometry' or 'Condition'.
+ * @param metaCategory the category containing category. It may be null.
  * @param name
  * @param description
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public record OperatorCategory(String name, String description) {
+public record OperatorCategory(String fullName, String metaCategory, String name, String description) {
+
+    /**
+     * Constructor for a category with a meta category. The fullName will be the meta category and the name, e.g. Math –
+     * Trigonometry.
+     *
+     * @param metaCategory
+     * @param name
+     * @param description
+     */
+    public OperatorCategory(final String metaCategory, final String name, final String description) {
+        this(metaCategory == null ? name : (metaCategory + " – " + name), metaCategory, name, description);
+    }
+
+    /**
+     * Constructor for a category without a meta category. The fullName will just be the name.
+     *
+     * @param name
+     * @param description
+     */
+    public OperatorCategory(final String name, final String description) {
+        this(null, name, description);
+    }
 }
