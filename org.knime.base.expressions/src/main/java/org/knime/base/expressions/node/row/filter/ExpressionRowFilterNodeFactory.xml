@@ -3,7 +3,7 @@
 	xmlns="http://knime.org/node/v5.3"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://knime.org/node/v5.3 http://knime.org/node/v5.3.xsd">
-	<name>Expression Filter</name>
+	<name>Expression Row Filter</name>
 	<shortDescription>
 		Allows executing custom expressions on the data
 		table filtering rows based on the result.
