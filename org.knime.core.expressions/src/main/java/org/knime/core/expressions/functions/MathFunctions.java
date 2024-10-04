@@ -115,29 +115,27 @@ public final class MathFunctions {
             """);
 
     /** The "Math – Aggregate" category */
-    public static final OperatorCategory CATEGORY_AGGREGATE = new OperatorCategory(MATH_META_CATEGORY_NAME, "Aggregate",
-        """
-                The "Math – Aggregate" category in KNIME Expression language includes functions for aggregating numerical
-                data. These functions calculate averages, medians, minimums, maximums, and identify the positions of
-                minimum and maximum values.
+    public static final OperatorCategory CATEGORY_AGGREGATE =
+        new OperatorCategory(MATH_META_CATEGORY_NAME, "Aggregate", """
+                The "Math – Aggregate" category in KNIME Expression language includes functions for aggregating
+                numerical data. These functions calculate averages, medians, minimums, maximums, and identify the
+                positions of minimum and maximum values.
                 """);
 
     /** The "Math – Trigonometry" category */
-    public static final OperatorCategory CATEGORY_TRIGONOMETRY = new OperatorCategory(MATH_META_CATEGORY_NAME,
-        "Trigonometry",
-        """
+    public static final OperatorCategory CATEGORY_TRIGONOMETRY =
+        new OperatorCategory(MATH_META_CATEGORY_NAME, "Trigonometry", """
                 The "Math – Trigonometry" category in KNIME Expression language includes functions for performing
-                trigonometric calculations. These functions convert between degrees and radians, and calculate sine, cosine,
-                tangent, and their respective inverse and hyperbolic functions.
+                trigonometric calculations. These functions convert between degrees and radians, and calculate sine,
+                cosine, tangent, and their respective inverse and hyperbolic functions.
                 """);
 
     /** The "Math – Distributions" category */
-    public static final OperatorCategory CATEGORY_DISTRIBUTIONS = new OperatorCategory(MATH_META_CATEGORY_NAME,
-        "Distributions",
-        """
+    public static final OperatorCategory CATEGORY_DISTRIBUTIONS =
+        new OperatorCategory(MATH_META_CATEGORY_NAME, "Distributions", """
                 The "Math – Distributions" category in KNIME Expression language includes functions for working with
-                statistical distributions. These functions handle binomial and normal distributions, as well as the error
-                function.
+                statistical distributions. These functions handle binomial and normal distributions, as well as the
+                error function.
                 """);
 
     // some common argument identifiers

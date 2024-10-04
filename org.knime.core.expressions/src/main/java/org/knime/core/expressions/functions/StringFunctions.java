@@ -116,11 +116,10 @@ public final class StringFunctions {
                 """);
 
     /** The "String – Match & Compare" category */
-    public static final OperatorCategory CATEGORY_MATCH_COMPARE = new OperatorCategory(STRING_META_CATEGORY_NAME,
-        "Match & Compare",
-        """
-                The "String – Match & Compare" category in KNIME Expression language includes functions for evaluating and
-                comparing string data. These functions check if strings start with, end with, or contain specific
+    public static final OperatorCategory CATEGORY_MATCH_COMPARE =
+        new OperatorCategory(STRING_META_CATEGORY_NAME, "Match & Compare", """
+                The "String – Match & Compare" category in KNIME Expression language includes functions for evaluating
+                and comparing string data. These functions check if strings start with, end with, or contain specific
                 substrings, match patterns using regular expressions, and perform general string comparisons.
                 """);
 

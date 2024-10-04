@@ -92,7 +92,7 @@ public final class ControlFlowFunctions {
     /** The "if*" function */
     public static final ExpressionFunction IF = new IfFunction();
 
-    private final static class IfFunction implements ExpressionFunction {
+    private static final class IfFunction implements ExpressionFunction {
 
         private static final String DESCRIPTION = """
                 **Conditional expression:**  \s
@@ -104,27 +104,27 @@ public final class ControlFlowFunctions {
                 Integers will be automatically cast to floats if necessary.  \s
                 """;
 
-        private static final String EXAMPLES =
-            """
-                    ```
-                    if(  \s
-                    \t $customer_id < 100,  #condition_1  \s
-                    \t $customer_name + " is an early customer", #value_1  \s
-                    \t $customer_id < 1000, #condtion_2  \s
-                    \t $customer_name + " is a mid customer", #value_2 and cond. 1 false  \s
-                    \t $customre_name + " is a late customer", #value_if_all_false  \s
-                    )
-                    ```
+        private static final String EXAMPLES = """
+                ```
+                if(  \s
+                \t $customer_id < 100,  #condition_1  \s
+                \t $customer_name + " is an early customer", #value_1  \s
+                \t $customer_id < 1000, #condtion_2  \s
+                \t $customer_name + " is a mid customer", #value_2 and cond. 1 false  \s
+                \t $customre_name + " is a late customer", #value_if_all_false  \s
+                )
+                ```
 
-                    The simplest case has no additional conditions (`if(condition_1, value_1, value_if_all_false)`) and this function becomes a classical *if-then-else*:  \s
-                    ```
-                    if(  \s
-                    \t $customer_id < 100,  #if / condition_1 \s
-                    \t $customer_name + " is an early customer", #then / value_1  \s
-                    \t $customer_name + " is a late customer", #else / value_if_all_false  \s
-                    )
-                    ```
-                        """;
+                The simplest case has no additional conditions (`if(condition_1, value_1, value_if_all_false)`) and this
+                function becomes a classical *if-then-else*:  \s
+                ```
+                if(  \s
+                \t $customer_id < 100,  #if / condition_1 \s
+                \t $customer_name + " is an early customer", #then / value_1  \s
+                \t $customer_name + " is a late customer", #else / value_if_all_false  \s
+                )
+                ```
+                    """;
 
         @Override
         public String name() {
@@ -141,9 +141,10 @@ public final class ControlFlowFunctions {
                     new Argument("condition_1", BOOLEAN.name(),
                         "Boolean condition. See how to chain multiple conditions in description below."),
                     new Argument("value_1", "ANYTHING", "The first condition to check"),
-                    new Argument("additional_conditions__value_if_all_false", "ANYTHING",
-                        "Pairs of conditions and related expressions executed when the condition evaluates to `TRUE`. "
-                            + "Last argument is the mandatory default (\"else\" case) to be returned when no condition is fulfilled.") //
+                    new Argument("additional_conditions__value_if_all_false", "ANYTHING", """
+                            Pairs of conditions and related expressions executed when the condition evaluates to
+                            `TRUE`. Last argument is the mandatory default ("else" case) to be returned when no
+                            condition is fulfilled.""") //
                 ), //
                 "Common return type of conditional expressions", //
                 "Result of the expression belonging to the first matched condition", //
@@ -255,15 +256,16 @@ public final class ControlFlowFunctions {
                 DESCRIPTION, //
                 EXAMPLE, //
                 List.of( //
-                    new Argument("expression", "STRING | INTEGER | MISSING", "Value to switch on."), //
+                    new Argument(SWITCH_EXPRESSION, "STRING | INTEGER | MISSING", "Value to switch on."), //
                     new Argument("case_1", "STRING | INTEGER | MISSING",
                         "Case to check equality against `expression`."), //
                     new Argument("value_1", "ANYTHING",
                         "Expression to execute, when `case_1` matches the `expression`."), //
-                    new Argument("value_if_none_matched", "ANYTHING",
-                        "Optional pairs of `case_N` values to check for equality with the `expression` and `value_N` expressions. "
-                            + "The last argument can be an optional `value_if_none_matched` expression to be applied as a default when no match is found. "
-                            + "If no `value_if_none_matched` expression is provided, the default is `MISSING`.") //
+                    new Argument("value_if_none_matched", "ANYTHING", """
+                            Optional pairs of `case_N` values to check for equality with the `expression` and `value_N`
+                            expressions. The last argument can be an optional `value_if_none_matched` expression to be
+                            applied as a default when no match is found. If no `value_if_none_matched` expression is
+                            provided, the default is `MISSING`.""") //
                 ), //
                 "Common return type of case expressions", //
                 "Result of the expression belonging to the first matched case", //
