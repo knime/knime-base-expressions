@@ -54,7 +54,9 @@ const getInitialItems = (): InputOutputModel[] => {
     return [];
   }
   return [
-    structuredClone(initialData.value.inputObjects[0]),
+    ...initialData.value.inputObjects.map((inputItem) =>
+      structuredClone(inputItem),
+    ),
     structuredClone(initialData.value.flowVariables),
   ];
 };
@@ -105,7 +107,8 @@ const refreshInputOutputItems = (
         {
           name: "f(X) appended columns",
           portType: "table",
-          subItemCodeAliasTemplate: '$["{{{escapeDblQuotes subItems.[0]}}}"]',
+          subItemCodeAliasTemplate:
+            currentInputOutputItems.value[0].subItemCodeAliasTemplate,
         },
       ),
     );

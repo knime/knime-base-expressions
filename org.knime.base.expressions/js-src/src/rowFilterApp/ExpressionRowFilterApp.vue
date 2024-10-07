@@ -24,7 +24,7 @@ import {
   registerInsertionListener,
 } from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
-import type { ExpressionVersion, ExpressionInitialData } from "@/common/types";
+import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
 import { getExpressionInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowFilterNodeSettings,

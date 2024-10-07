@@ -53,8 +53,10 @@ import java.util.List;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.scripting.editor.InputOutputModel;
+import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItem;
 import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
 
 import com.google.common.base.Preconditions;
@@ -66,10 +68,28 @@ import com.google.common.base.Preconditions;
  */
 public final class ExpressionNodeScriptingInputOutputModelUtils {
 
-    // escapeQuotes is a HandleBars helper registered in the frontend
-    private static final String COLUMN_ALIAS_TEMPLATE = "$[\"{{{escapeDblQuotes subItems.[0]}}}\"]";
+    private static final List<InputOutputModelSubItem> ROW_INFO_SUB_ITEMS = List.of( //
+        new InputOutputModelSubItem("ROW_NUMBER", ValueType.INTEGER.name(), true, "$[ROW_NUMBER]"), //
+        new InputOutputModelSubItem("ROW_INDEX", ValueType.INTEGER.name(), true, "$[ROW_INDEX]"), //
+        new InputOutputModelSubItem("ROW_ID", ValueType.STRING.name(), true, "$[ROW_ID]") //
+    );
 
-    private static final String FLOWVAR_ALIAS_TEMPLATE = "$$[\"{{{escapeDblQuotes subItems.[0]}}}\"]";
+    // escapeDblQuotes is a Handlebars.js helper registered in the frontend
+    private static final String COLUMN_ALIAS_TEMPLATE = """
+            {{~#if subItems.[0].insertionText~}}
+                {{ subItems.[0].insertionText }}
+            {{~else~}}
+                $[" {{~{ escapeDblQuotes subItems.[0].name }~}} "]
+            {{~/if~}}
+            """;
+
+    private static final String FLOWVAR_ALIAS_TEMPLATE = """
+            {{~#if subItems.[0].insertionText~}}
+                {{ subItems.[0].insertionText }}
+            {{~else~}}
+                $$[" {{~{ escapeDblQuotes subItems.[0].name }~}} "]
+            {{~/if~}}
+            """;
 
     private ExpressionNodeScriptingInputOutputModelUtils() {
         // utility class
@@ -99,32 +119,28 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
      * @return a list of size 1 of {@link InputOutputModel} for the input objects
      */
     public static List<InputOutputModel> getTableInputObjects(final InputPortInfo[] inputPorts) {
-
         Preconditions.checkArgument(inputPorts.length == 1, "expected one input port");
-
         final var spec = inputPorts[0].portSpec();
 
         // expecting an input table
         if (spec instanceof DataTableSpec dataTablespec) {
-            return List.of(InputOutputModel.createFromTableSpec( //
-                "Input table", //
-                dataTablespec, //
-                null, //
-                COLUMN_ALIAS_TEMPLATE, //
-                false, // no multiple selection
-                null, // no required import
-                type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) //
-                    .baseType() //
-                    .name(), //
-                type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null));
+            return List.of(InputOutputModel.table() //
+                .name("Input table") //
+                .subItemCodeAliasTemplate(COLUMN_ALIAS_TEMPLATE) //
+                .subItems(ROW_INFO_SUB_ITEMS) //
+                .subItems( //
+                    dataTablespec, //
+                    type -> ExpressionRunnerUtils.mapDataTypeToValueType(type).baseType().name(), //
+                    type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null //
+                ) //
+                .build() //
+            ); //
         } else {
-            return List.of(InputOutputModel.createForNonAvailableTable( //
-                "Input table", //
-                null, //
-                COLUMN_ALIAS_TEMPLATE, //
-                null, // no required import
-                false // no multiple selection
-            ));
+            return List.of(InputOutputModel.table() //
+                .name("Input table") //
+                .subItemCodeAliasTemplate(COLUMN_ALIAS_TEMPLATE) //
+                .build() //
+            );
         }
     }
 
