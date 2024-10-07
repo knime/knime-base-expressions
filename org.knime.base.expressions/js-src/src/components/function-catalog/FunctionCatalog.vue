@@ -461,21 +461,21 @@ const expandAll = () => {
   </div>
 </template>
 
-<style scoped>
+<style lang="postcss" scoped>
 @import url("@knime/styles/css/variables/spacings.css");
 
 .function-catalog-container {
   display: flex;
   flex-direction: row;
   height: 100%;
+
+  &.slim-mode {
+    flex-direction: column;
+  }
 }
 
 .read-only {
   opacity: 0.5;
-}
-
-.function-catalog-container.slim-mode {
-  flex-direction: column;
 }
 
 .sticky-search {
@@ -501,48 +501,50 @@ const expandAll = () => {
   background-color: white;
   display: flex;
   flex-direction: column;
+
+  &.slim-mode {
+    width: 100%;
+    height: 60%;
+  }
 }
 
-.function-catalog.slim-mode {
-  width: 100%;
-  height: 60%;
-}
+.category-header,
+.function-header {
+  padding: 2px 0 2px var(--space-4);
 
-.function-list {
-  overflow: hidden auto;
-  padding-top: var(--space-4);
-  flex: 1;
-}
+  &.selected {
+    position: relative;
+    color: var(--theme-dropdown-foreground-color-selected);
+    background-color: transparent;
+    z-index: 0;
 
-.function-list:focus {
-  outline: none;
-}
-
-.info-panel {
-  flex: 1;
-  padding: var(--space-8);
-  overflow-y: auto;
-  border-left: 1px solid var(--knime-silver-sand);
-}
-
-.info-panel.slim-mode {
-  border-left: none;
-  border-top: 1px solid var(--knime-silver-sand);
-  width: 100%;
-  height: 40%;
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0 100vw 0 -100vw;
+      width: 300vw;
+      height: 105%;
+      background-color: var(--theme-dropdown-background-color-selected);
+      z-index: -1;
+    }
+  }
 }
 
 .category-header {
-  cursor: pointer;
   display: flex;
   align-items: center;
   font-weight: 500;
   font-size: 13px;
   padding-left: var(--space-4);
-}
 
-.category-header:focus {
-  outline: none;
+  &:focus {
+    outline: none;
+  }
+
+  &.empty {
+    color: var(--knime-silver-sand-semi);
+    cursor: default;
+  }
 }
 
 .category-icon {
@@ -551,32 +553,63 @@ const expandAll = () => {
   margin-right: var(--space-4);
   stroke: var(--knime-masala);
   transition: transform 0.3s ease;
+
+  & svg {
+    stroke-width: 2px;
+  }
+
+  &.selected-icon {
+    & svg {
+      stroke: white;
+    }
+  }
+
+  &.expanded {
+    transform: rotate(90deg);
+  }
+
+  &.empty {
+    cursor: default;
+    visibility: hidden;
+  }
 }
 
-.category-icon svg {
-  stroke-width: 2px;
+.function-list {
+  overflow: hidden auto;
+  padding-top: var(--space-4);
+  flex: 1;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:not(:focus-within) {
+    & .category-icon.selected-icon svg {
+      stroke: var(--knime-masala);
+
+      & .selected {
+        color: var(--theme-dropdown-foreground-color-hover);
+
+        &::before {
+          background: var(--theme-dropdown-background-color-hover);
+        }
+      }
+    }
+  }
 }
 
-.category-icon.selected-icon svg {
-  stroke: white;
-}
+.info-panel {
+  flex: 1;
+  padding: var(--space-8);
+  overflow-y: auto;
+  border-left: 1px solid var(--knime-silver-sand);
 
-.function-list:not(:focus-within) .category-icon.selected-icon svg {
-  stroke: var(--knime-masala);
-}
-
-.category-icon.expanded {
-  transform: rotate(90deg);
-}
-
-.category-icon.empty {
-  cursor: default;
-  visibility: hidden;
-}
-
-.category-header.empty {
-  color: var(--knime-silver-sand-semi);
-  cursor: default;
+  &.slim-mode {
+    border-left: none;
+    border-top: 1px solid var(--knime-silver-sand);
+    width: 100%;
+    height: 40%;
+  }
 }
 
 .function-header {
@@ -586,40 +619,10 @@ const expandAll = () => {
   cursor: pointer;
   color: var(--knime-dove-gray);
   word-wrap: normal;
-}
 
-.function-header,
-.category-header {
-  padding: 2px 0 2px var(--space-4);
-}
-
-.function-header:focus {
-  outline: none;
-}
-
-.selected {
-  position: relative;
-  color: var(--theme-dropdown-foreground-color-selected);
-  background-color: transparent;
-  z-index: 0;
-}
-
-.selected::before {
-  content: "";
-  position: absolute;
-  inset: 0 100vw 0 -100vw;
-  width: 300vw;
-  height: 105%;
-  background-color: var(--theme-dropdown-background-color-selected);
-  z-index: -1;
-}
-
-.function-list:not(:focus-within) .selected::before {
-  background: var(--theme-dropdown-background-color-hover);
-}
-
-.function-list:not(:focus-within) .selected {
-  color: var(--theme-dropdown-foreground-color-hover);
+  &:focus {
+    outline: none;
+  }
 }
 
 .category-functions:not(.selected) > div:hover,
