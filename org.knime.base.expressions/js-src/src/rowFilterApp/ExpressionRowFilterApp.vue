@@ -35,16 +35,10 @@ import type {
   ExpressionDiagnostic,
 } from "@/generalDiagnostics";
 
-// Overwritten by the initial settings
-const expressionVersion = ref<ExpressionVersion>({
-  languageVersion: 0,
-  builtinFunctionsVersion: 0,
-  builtinAggregationsVersion: 0,
-});
-
 const editorRef = ref<Required<ExpressionEditorPaneExposes> | null>(null);
 
 const initialData = ref<ExpressionInitialData>();
+const initialSettings = ref<ExpressionRowFilterNodeSettings>();
 const errorState = ref<EditorErrorState>({ level: "OK" });
 
 const runDiagnosticsFunction = async () => {
@@ -60,18 +54,10 @@ const runDiagnosticsFunction = async () => {
 };
 
 onMounted(async () => {
-  const [initialDataResponse, settings] = await Promise.all([
+  [initialData.value, initialSettings.value] = await Promise.all([
     getExpressionInitialDataService().getInitialData(),
     getRowFilterSettingsService().getSettings(),
   ]);
-
-  initialData.value = initialDataResponse;
-
-  expressionVersion.value = {
-    languageVersion: settings.languageVersion,
-    builtinFunctionsVersion: settings.builtinFunctionsVersion,
-    builtinAggregationsVersion: settings.builtinAggregationsVersion,
-  };
 
   if (initialData.value?.inputConnectionInfo[1].status !== "OK") {
     consoleHandler.writeln({
@@ -81,14 +67,14 @@ onMounted(async () => {
   registerKnimeExpressionLanguage(initialData.value);
 
   useReadonlyStore().value =
-    settings.settingsAreOverriddenByFlowVariable || false;
+    initialSettings.value.settingsAreOverriddenByFlowVariable || false;
 
   const editorReference = editorRef.value;
   if (!editorReference) {
     return;
   }
 
-  editorReference.getEditorState().setInitialText(settings.script);
+  editorReference.getEditorState().setInitialText(initialSettings.value.script);
   editorReference.getEditorState().editor.value?.updateOptions({
     readOnly: useReadonlyStore().value,
     readOnlyMessage: {
@@ -132,10 +118,19 @@ const runRowFilterExpressions = (rows: number) => {
 };
 
 getRowFilterSettingsService().registerSettingsGetterForApply(
-  (): ExpressionRowFilterNodeSettings => ({
-    ...expressionVersion.value,
-    script: editorRef.value?.getEditorState().text.value ?? "",
-  }),
+  (): ExpressionRowFilterNodeSettings => {
+    const expressionVersion: ExpressionVersion = {
+      languageVersion: initialSettings.value!.languageVersion,
+      builtinFunctionsVersion: initialSettings.value!.builtinFunctionsVersion,
+      builtinAggregationsVersion:
+        initialSettings.value!.builtinAggregationsVersion,
+    };
+
+    return {
+      ...expressionVersion,
+      script: editorRef.value?.getEditorState().text.value ?? "",
+    };
+  },
 );
 
 registerInsertionListener(() => editorRef.value);
