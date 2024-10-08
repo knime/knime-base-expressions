@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
-  useReadonlyStore,
-  type UseCodeEditorReturn,
-  getScriptingService,
   consoleHandler,
+  getScriptingService,
   setActiveEditorStoreForAi,
+  type UseCodeEditorReturn,
+  useReadonlyStore,
 } from "@knime/scripting-editor";
 import { FunctionButton } from "@knime/components";
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
@@ -26,17 +26,27 @@ import { LANGUAGE } from "@/common/constants";
 import { registerInsertionListener } from "@/common/functions";
 import OutputSelector, {
   type AllowedDropDownValue,
+  type ItemType,
   type SelectorState,
 } from "@/components/OutputSelector.vue";
 import type {
   EditorErrorState,
   ExpressionDiagnostic,
 } from "@/generalDiagnostics";
+import ReturnTypeSelector from "@/components/ReturnTypeSelector.vue";
+import {
+  type ExpressionReturnType,
+  type FlowVariableType,
+  getDropDownValuesForCurrentType,
+} from "@/flowVariableApp/flowVariableTypes";
+import NextIcon from "@knime/styles/img/icons/arrow-next.svg";
 
 type EditorStateWithoutMonaco = {
   selectorState: SelectorState;
   editorErrorState: EditorErrorState;
   selectorErrorState: EditorErrorState;
+  expressionReturnType: ExpressionReturnType;
+  selectedFlowVariableOutputType?: FlowVariableType;
 };
 export type EditorState = EditorStateWithoutMonaco & {
   monacoState: UseCodeEditorReturn;
@@ -54,6 +64,10 @@ export type MultiEditorContainerExposes = {
   getOrderedEditorStates: () => EditorState[];
   setEditorErrorState: (key: string, errorState: EditorErrorState) => void;
   setSelectorErrorState: (key: string, errorState: EditorErrorState) => void;
+  setCurrentExpressionReturnType: (
+    key: string,
+    returnType: ExpressionReturnType,
+  ) => void;
   setActiveEditor: (key: string) => void;
 };
 
@@ -63,19 +77,15 @@ const props = defineProps<{
   settings: {
     initialScript: string;
     initialSelectorState: SelectorState;
+    initialOutputReturnType?: FlowVariableType;
   }[];
   replaceableItemsInInputTable: AllowedDropDownValue[];
   defaultReplacementItem: string;
   defaultAppendItem: string;
-  itemType: string;
+  itemType: ItemType;
 }>();
 
-const getActiveEditorKey = (): string | null => {
-  if (activeEditorFileName.value === null) {
-    return null;
-  }
-  return activeEditorFileName.value;
-};
+const getActiveEditorKey = (): string | null => activeEditorFileName.value;
 
 /**
  * Generate a new key for a new editor. This is used to index the columnSelectorStates
@@ -96,6 +106,7 @@ const editorStates = reactive<{ [key: string]: EditorStateWithoutMonaco }>({});
 const editorStateWatchers = reactive<{ [key: string]: EditorStateWatchers }>(
   {},
 );
+const editorControlsExpanded = ref<{ [key: string]: boolean }>({});
 
 const getEditorStatesWithMonacoState = (): EditorState[] =>
   orderedEditorKeys.map((key) => ({
@@ -155,6 +166,12 @@ defineExpose<MultiEditorContainerExposes>({
   setSelectorErrorState(key: string, errorState: EditorErrorState) {
     editorStates[key].selectorErrorState = errorState;
   },
+  setCurrentExpressionReturnType(
+    key: string,
+    returnType: ExpressionReturnType,
+  ) {
+    editorStates[key].expressionReturnType = returnType;
+  },
   setActiveEditor,
 });
 
@@ -167,7 +184,9 @@ const pushNewEditorState = (key: string) => {
     },
     editorErrorState: { level: "OK" },
     selectorErrorState: { level: "OK" },
+    expressionReturnType: "UNKNOWN",
   };
+  editorControlsExpanded.value[key] = true;
   editorStates[key] = newState;
 };
 
@@ -262,6 +281,7 @@ const onEditorRequestedDelete = (key: string) => {
   delete editorStates[key];
   delete editorStateWatchers[key];
   delete editorReferences[key];
+  delete editorControlsExpanded.value[key];
 
   const keyToFocus = orderedEditorKeys[Math.max(0, indexOfDeletedEditor - 1)];
 
@@ -311,6 +331,12 @@ const onEditorRequestedCopyBelow = async (key: string) => {
   editorStates[newKey].selectorState = {
     ...editorStates[key].selectorState,
   };
+  editorStates[newKey].expressionReturnType =
+    editorStates[key].expressionReturnType;
+  editorStates[newKey].selectedFlowVariableOutputType =
+    editorStates[key].selectedFlowVariableOutputType;
+
+  editorControlsExpanded.value[newKey] = true;
 
   editorReferences[newKey]
     .getEditorState()
@@ -401,11 +427,28 @@ onMounted(async () => {
       .getEditorState()
       .setInitialText(props.settings[i].initialScript);
     editorStates[key].selectorState = props.settings[i].initialSelectorState;
+    editorStates[key].expressionReturnType = "UNKNOWN";
+    editorStates[key].selectedFlowVariableOutputType =
+      props.settings[i].initialOutputReturnType;
+    editorControlsExpanded.value[key] = false;
   }
 
   // focusEditor emits the change event, so we don't need to do it here.
   setActiveEditor(orderedEditorKeys[0]);
 });
+
+const handleToggleExpand = (key: string) =>
+  (editorControlsExpanded.value[key] = !editorControlsExpanded.value[key]);
+
+const getOutputLabel = (key: string) => {
+  const selectorState = editorStates[key].selectorState;
+  const action = selectorState.outputMode === "APPEND" ? "creates" : "replaces";
+  const target =
+    selectorState.outputMode === "APPEND"
+      ? selectorState.create
+      : selectorState.replace;
+  return `Output ${action} "${target}"`;
+};
 </script>
 
 <template>
@@ -432,15 +475,46 @@ onMounted(async () => {
     >
       <!-- Controls displayed once per editor -->
       <template #multi-editor-controls>
-        <div class="editor-controls">
-          <OutputSelector
-            v-model="editorStates[key].selectorState"
-            :entity-name="itemType"
-            :is-valid="editorStates[key].selectorErrorState.level === 'OK'"
-            :allowed-replacement-entities="
-              getAvailableColumnsForReplacement(key)
-            "
-          />
+        <div class="output-label" @click="() => handleToggleExpand(key)">
+          <span
+            class="output-expansion-icon"
+            :class="{
+              expanded: editorControlsExpanded[key],
+            }"
+          >
+            <NextIcon />
+          </span>
+          {{ getOutputLabel(key) }}
+        </div>
+        <div
+          class="editor-controls"
+          :class="{
+            hidden: !editorControlsExpanded[key],
+          }"
+        >
+          <span class="output-settings-container">
+            <OutputSelector
+              v-model="editorStates[key].selectorState"
+              :item-type="itemType"
+              :is-valid="editorStates[key].selectorErrorState.level === 'OK'"
+              :allowed-replacement-entities="
+                getAvailableColumnsForReplacement(key)
+              "
+            />
+            <span
+              v-if="itemType === 'flow variable'"
+              class="return-type-selector"
+            >
+              <ReturnTypeSelector
+                v-model="editorStates[key].selectedFlowVariableOutputType"
+                :allowed-return-types="
+                  getDropDownValuesForCurrentType(
+                    editorStates[key].expressionReturnType,
+                  )
+                "
+              />
+            </span>
+          </span>
         </div>
       </template>
     </ExpressionEditorPane>
@@ -474,14 +548,79 @@ onMounted(async () => {
   outline: 1px solid var(--knime-silver-sand);
 }
 
+.output-settings-container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: var(--space-8);
+  width: 100%;
+  margin-bottom: var(--space-8);
+}
+
 .editor-controls {
   width: 100%;
+  padding: 0 var(--space-8);
+  transition:
+    max-height 0.4s ease-in-out,
+    opacity 0.4s ease-in-out;
+  max-height: 150px;
+  opacity: 1;
+  container-type: inline-size;
+
+  &.hidden {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+}
+
+.return-type-selector {
+  width: 100%;
+  max-width: 400px;
+}
+
+.output-expansion-icon {
+  width: 12px;
+  height: 12px;
+  stroke: var(--knime-masala);
+  transition: transform 0.3s ease;
+
+  & svg {
+    stroke-width: 2px;
+  }
+
+  &.expanded {
+    transform: rotate(90deg);
+  }
+
+  & :hover {
+    stroke: var(--knime-cornflower);
+    background-color: var(--knime-stone-light);
+    border-radius: 50%;
+  }
+}
+
+.output-label {
+  width: 100%;
   display: flex;
-  justify-content: space-between;
-  padding: var(--space-4) var(--space-8);
-  height: fit-content;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: row;
+  cursor: pointer;
   gap: var(--space-4);
+  padding: var(--space-8);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 14px;
+  text-align: left;
+  user-select: none;
+}
+
+@container (width < 390px) {
+  .output-settings-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-8);
+    width: 100%;
+  }
 }
 </style>

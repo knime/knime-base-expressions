@@ -23,7 +23,7 @@ const doMount = async () => {
     props: {
       defaultAppendItem: "defaultAppendItem",
       defaultReplacementItem: "defaultReplacementItem",
-      itemType: "itemType",
+      itemType: "column",
       replaceableItemsInInputTable: [
         {
           id: "a",

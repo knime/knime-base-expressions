@@ -146,6 +146,11 @@ const runDiagnosticsFunction = async ({
       state.key,
       diagnostics[index].errorState,
     );
+
+    multiEditorContainerRef.value?.setCurrentExpressionReturnType(
+      state.key,
+      diagnostics[index].returnType,
+    );
   }
 
   const haveFlowVariableErrors = flowVariableErrorMessages.some(
@@ -196,6 +201,7 @@ const runFlowVariableExpressions = (states: EditorState[]) => {
         ? state.selectorState.create
         : state.selectorState.replace,
     ),
+    states.map((state) => state.selectedFlowVariableOutputType ?? "Unknown"),
   ]);
 };
 
@@ -221,6 +227,9 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
       ),
       replacedFlowVariables: orderedEditorStates.map(
         (state) => state.selectorState.replace,
+      ),
+      flowVariableReturnTypes: orderedEditorStates.map(
+        (state) => state.selectedFlowVariableOutputType ?? "Unknown",
       ),
       scripts: orderedEditorStates.map((state) => state.monacoState.text.value),
     };
@@ -276,6 +285,8 @@ const initialPaneSizes = calculateInitialPaneSizes();
                   create: initialSettings!.createdFlowVariables[index],
                   replace: initialSettings!.replacedFlowVariables[index],
                 } satisfies SelectorState,
+                initialOutputReturnType:
+                  initialSettings!.flowVariableReturnTypes[index],
               }))
             "
             :replaceable-items-in-input-table="

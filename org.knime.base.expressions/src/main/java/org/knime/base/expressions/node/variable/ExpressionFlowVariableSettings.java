@@ -103,6 +103,13 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
     static final String DEFAULT_CREATED_FLOW_VARIABLE = "New Flow Variable";
 
     /**
+     * The default name of the return type of a flow variable expression In case of an expression returning an
+     * expression language type `INTEGER` the user can configure the return type to be `Number (integer)` or `Number
+     * (double)`
+     */
+    static final FlowVariableTypeNames DEFAULT_FLOW_VARIABLE_RETURN_TYPE = FlowVariableTypeNames.UNKNOWN;
+
+    /**
      * The default output mode for the expression node.
      */
 
@@ -119,6 +126,8 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
 
     private static final String CFG_KEY_REPLACED_FLOW_VARIABLE = "replacedFlowVariable";
 
+    private static final String CFG_KEY_RETURN_TYPES = "flowVariableReturnType";
+
     private static final String JSON_KEY_SCRIPTS = "scripts";
 
     private static final String JSON_KEY_OUTPUT_MODES = "flowVariableOutputModes";
@@ -126,6 +135,8 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
     private static final String JSON_KEY_CREATED_FLOW_VARIABLES = "createdFlowVariables";
 
     private static final String JSON_KEY_REPLACED_FLOW_VARIABLES = "replacedFlowVariables";
+
+    private static final String JSON_KEY_RETURN_TYPES = "flowVariableReturnTypes";
 
     private static final String JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES =
         "settingsAreOverriddenByFlowVariable";
@@ -138,6 +149,39 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
 
     private List<String> m_scripts;
 
+    enum FlowVariableTypeNames {
+            STRING("String"), //
+            LONG("Long"), //
+            INTEGER("Integer"), //
+            BOOLEAN("Boolean"), //
+            DOUBLE("Double"), //
+            UNKNOWN("Unknown");
+
+        private final String m_typeName;
+
+        FlowVariableTypeNames(final String typeName) {
+            m_typeName = typeName;
+        }
+
+        @Override
+        public String toString() {
+            return m_typeName;
+        }
+
+        /**
+         * @return the typeName
+         */
+        public String getTypeName() {
+            return m_typeName;
+        }
+
+        public static FlowVariableTypeNames getByTypeName(final String typeName) {
+            return Arrays.stream(values()).filter(v -> v.m_typeName.equals(typeName)).findFirst().orElse(UNKNOWN);
+        }
+    }
+
+    private List<FlowVariableTypeNames> m_flowVariableReturnTypes;
+
     private ExpressionVersionSettings m_versionSettings;
 
     /**
@@ -147,7 +191,8 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
      *
      */
     ExpressionFlowVariableSettings(final String replacedFlowVariable) {
-        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_FLOW_VARIABLE, replacedFlowVariable);
+        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_FLOW_VARIABLE, DEFAULT_FLOW_VARIABLE_RETURN_TYPE,
+            replacedFlowVariable);
     }
 
     /**
@@ -162,7 +207,7 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
      * @param replacedFlowVariable
      */
     ExpressionFlowVariableSettings(final String script, final InsertionMode outputMode,
-        final String createdFlowVariable, final String replacedFlowVariable) {
+        final String createdFlowVariable, final FlowVariableTypeNames returnType, final String replacedFlowVariable) {
 
         super(SettingsType.MODEL);
 
@@ -172,6 +217,7 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
         this.m_outputModes = new ArrayList<>(Arrays.asList(outputMode));
         this.m_createdFlowVariables = new ArrayList<>(Arrays.asList(createdFlowVariable));
         this.m_replacedFlowVariables = new ArrayList<>(Arrays.asList(replacedFlowVariable));
+        this.m_flowVariableReturnTypes = new ArrayList<>(Arrays.asList(returnType));
     }
 
     @Override
@@ -183,6 +229,7 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
         m_outputModes = new ArrayList<>();
         m_createdFlowVariables = new ArrayList<>();
         m_replacedFlowVariables = new ArrayList<>();
+        m_flowVariableReturnTypes = new ArrayList<>();
 
         if (settings.containsKey(CFG_KEY_ADDITIONAL_EXPRESSIONS)) {
             var additionalExpressionsConfig = settings.getConfig(CFG_KEY_ADDITIONAL_EXPRESSIONS);
@@ -194,6 +241,8 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
                 m_outputModes.add(InsertionMode.valueOf(additionalExpressionConfig.getString(CFG_KEY_OUTPUT_MODE)));
                 m_createdFlowVariables.add(additionalExpressionConfig.getString(CFG_KEY_CREATED_FLOW_VARIABLE));
                 m_replacedFlowVariables.add(additionalExpressionConfig.getString(CFG_KEY_REPLACED_FLOW_VARIABLE));
+                m_flowVariableReturnTypes.add(
+                    FlowVariableTypeNames.getByTypeName(additionalExpressionConfig.getString(CFG_KEY_RETURN_TYPES)));
             }
         }
     }
@@ -217,6 +266,13 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
      */
     List<String> getReplacedFlowVariables() {
         return Collections.unmodifiableList(m_replacedFlowVariables);
+    }
+
+    /**
+     * @return the unmodifiable list of all return types
+     */
+    List<FlowVariableTypeNames> getReturnTypes() {
+        return Collections.unmodifiableList(m_flowVariableReturnTypes);
     }
 
     /**
@@ -261,6 +317,7 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
             singleExprConfig.addString(CFG_KEY_OUTPUT_MODE, m_outputModes.get(i).name());
             singleExprConfig.addString(CFG_KEY_CREATED_FLOW_VARIABLE, m_createdFlowVariables.get(i));
             singleExprConfig.addString(CFG_KEY_REPLACED_FLOW_VARIABLE, m_replacedFlowVariables.get(i));
+            singleExprConfig.addString(CFG_KEY_RETURN_TYPES, m_flowVariableReturnTypes.get(i).getTypeName());
 
         }
     }
@@ -281,7 +338,9 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
             JSON_KEY_OUTPUT_MODES, m_outputModes, //
             JSON_KEY_CREATED_FLOW_VARIABLES, m_createdFlowVariables, //
             JSON_KEY_REPLACED_FLOW_VARIABLES, m_replacedFlowVariables, //
-            JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES, configOverWrittenByFlowVars //
+            JSON_KEY_ARE_SETTINGS_OVERRIDDEN_BY_FLOW_VARIABLES, configOverWrittenByFlowVars, //
+            JSON_KEY_RETURN_TYPES, m_flowVariableReturnTypes.stream() //
+                .map(FlowVariableTypeNames::getTypeName).toList() //
         ));
 
         return settingsMap;
@@ -298,6 +357,8 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
             .collect(Collectors.toList());
         m_createdFlowVariables = (List<String>)data.get(JSON_KEY_CREATED_FLOW_VARIABLES);
         m_replacedFlowVariables = (List<String>)data.get(JSON_KEY_REPLACED_FLOW_VARIABLES);
+        m_flowVariableReturnTypes =
+            ((List<String>)data.get(JSON_KEY_RETURN_TYPES)).stream().map(FlowVariableTypeNames::getByTypeName).toList();
 
         m_versionSettings.writeMapToNodeSettings(data);
 

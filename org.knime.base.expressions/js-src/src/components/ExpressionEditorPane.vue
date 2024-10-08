@@ -249,9 +249,7 @@ onMounted(() => {
     <div class="error-container">
       <span v-if="errorState.level !== 'OK'">
         <WarningIcon class="icon error-icon" />
-        <span class="error-message">
-          {{ errorState.message }}
-        </span>
+        <span class="error-message"> {{ errorState.message }} </span>
       </span>
       <span v-else>&nbsp;</span>
     </div>
@@ -338,11 +336,6 @@ onMounted(() => {
     }
 
     & .editor-control-bar {
-      display: flex;
-      align-items: center;
-      flex-direction: row;
-      justify-content: flex-end;
-      margin: 0;
       background-color: var(--knime-gray-light-semi);
       border-top: 1px solid var(--knime-silver-sand);
       height: fit-content;

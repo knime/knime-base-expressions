@@ -24,7 +24,7 @@ describe("OutputSelector", () => {
       props: {
         selectorType: "column",
         allowedReplacementEntities: columnsToReplace,
-        entityName: "column",
+        itemType: "column",
         modelValue,
       },
       attachTo: "body", // needed for label clicking to work
@@ -49,7 +49,6 @@ describe("OutputSelector", () => {
     expect(inputField.props("modelValue")).toBe("a1");
     const dropdown = wrapper.findComponent(Dropdown);
     expect(dropdown.exists()).toBe(false);
-    wrapper.unmount();
   });
 
   it("shows dropdown field on REPLACE mode", () => {
@@ -66,7 +65,6 @@ describe("OutputSelector", () => {
     const dropdown = wrapper.findComponent(Dropdown);
     expect(dropdown.isVisible()).toBe(true);
     expect(dropdown.props("modelValue")).toBe("c");
-    wrapper.unmount();
   });
 
   it("switches mode on ValueSwitch click", async () => {

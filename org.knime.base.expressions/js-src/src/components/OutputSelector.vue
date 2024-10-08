@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ValueSwitch, Dropdown, InputField } from "@knime/components";
+import { Dropdown, InputField, ValueSwitch } from "@knime/components";
 import {
   useReadonlyStore,
   useShouldFocusBePainted,
@@ -18,8 +18,10 @@ export type AllowedDropDownValue = {
   text: string;
 };
 
+export type ItemType = "flow variable" | "column";
+
 type PropType = {
-  entityName: string;
+  itemType: ItemType;
   allowedReplacementEntities: AllowedDropDownValue[];
   isValid?: boolean;
 };
@@ -52,7 +54,7 @@ watch(
 );
 
 const allowedOperationModes = [
-  { id: "APPEND", text: "Append" },
+  { id: "APPEND", text: props.itemType === "column" ? "Append" : "Create" },
   { id: "REPLACE_EXISTING", text: "Replace" },
 ];
 
@@ -61,39 +63,37 @@ const paintFocus = useShouldFocusBePainted();
 
 <template>
   <span class="output-selector-container">
-    <span class="output-label">{{ `Output ${entityName}` }} </span>
-    <ValueSwitch
-      v-model="modelValue.outputMode"
-      :possible-values="allowedOperationModes"
-      :disabled="props.allowedReplacementEntities.length === 0 || readOnly"
-      class="switch-button"
-      :class="{ 'focus-painted': paintFocus }"
-      compact
-    />
-    <div
-      v-if="modelValue.outputMode === 'APPEND'"
-      class="output-selector-child right"
-    >
+    <div class="mode-value-switch">
+      <ValueSwitch
+        v-model="modelValue.outputMode"
+        :possible-values="allowedOperationModes"
+        :disabled="props.allowedReplacementEntities.length === 0 || readOnly"
+        class="switch-button"
+        :class="{ 'focus-painted': paintFocus }"
+        compact
+      />
+    </div>
+    <div v-if="modelValue.outputMode === 'APPEND'" class="input">
       <InputField
         id="input-field-to-add-new-entity"
         v-model="modelValue.create"
         type="text"
-        class="input"
-        :placeholder="`New ${entityName}...`"
+        :placeholder="`New ${itemType}...`"
         :is-valid="isValid"
+        class="input"
         :disabled="readOnly"
         compact
       />
     </div>
-    <div v-else class="output-selector-child right">
+    <div v-else class="input">
       <!-- eslint-disable vue/attribute-hyphenation typescript complains with ':aria-label' instead of ':ariaLabel'-->
       <Dropdown
         id="dropdown-box-to-select-entity"
         v-model="modelValue.replace"
-        :ariaLabel="`${entityName} selection`"
+        :ariaLabel="`${itemType} selection`"
         :possible-values="allowedReplacementEntities"
-        class="input"
         direction="up"
+        class="input"
         :is-valid="isValid"
         :disabled="readOnly"
         compact
@@ -105,64 +105,19 @@ const paintFocus = useShouldFocusBePainted();
 <style scoped lang="postcss">
 .output-selector-container {
   display: flex;
-  flex-flow: row wrap;
-  height: fit-content;
-  flex-grow: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
   gap: var(--space-8);
-  align-items: center;
-  container-type: inline-size;
-  justify-content: center;
-  padding: var(--space-4);
-}
-
-.output-selector-child {
-  flex-grow: 1;
-  height: 100%;
-  display: flex;
-  top: 0;
-  gap: var(--space-8);
-  width: 150px;
 }
 
 .input {
   width: 100%;
-}
-
-.output-selector-child.left {
-  flex-wrap: wrap;
-  container-type: inline-size;
-}
-
-@container (width < 390px) {
-  .output-label {
-    display: none;
-  }
-}
-
-.output-selector-child.right {
-  overflow: visible;
-  top: 0;
-  align-items: flex-start;
-  max-width: 100%;
-  min-width: 100px;
-  height: var(--single-line-form-height-compact);
-}
-
-/* Stop the dropdown being taller than the bar. This takes some forcing, since it REALLY doesn't want to be smaller than about 40px */
-.input,
-:deep(.dropdown),
-:deep(#dropdown-box-to-select-entity),
-:deep(#button-dropdown-box-to-select-entity) {
   max-width: 400px;
 }
 
-.output-label {
-  font-size: small;
-  font-weight: bold;
-}
-
-.switch-button {
-  position: relative;
+.mode-value-switch {
+  padding: var(--space-4) 0;
 }
 
 /* Create a selection highlight slightly bigger than the buttons themselves */

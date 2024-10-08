@@ -16,6 +16,7 @@ export const DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS: ExpressionFlowVariableNodeS
     flowVariableOutputModes: ["APPEND"],
     createdFlowVariables: ["mocked output col"],
     replacedFlowVariables: [FLOW_VARIABLES.subItems![1].name],
+    flowVariableReturnTypes: ["String"],
     languageVersion: 1,
     builtinFunctionsVersion: 1,
     builtinAggregationsVersion: 1,

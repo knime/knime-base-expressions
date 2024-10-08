@@ -61,6 +61,7 @@ import java.util.function.IntConsumer;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.InsertionMode;
+import org.knime.base.expressions.node.variable.ExpressionFlowVariableSettings.FlowVariableTypeNames;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
@@ -87,6 +88,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableType.BooleanType;
 import org.knime.core.node.workflow.VariableType.DoubleType;
+import org.knime.core.node.workflow.VariableType.IntType;
 import org.knime.core.node.workflow.VariableType.LongType;
 import org.knime.core.node.workflow.VariableType.StringType;
 
@@ -210,6 +212,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         var resultVariables = applyFlowVariableExpressions( //
             m_settings.getScripts(), //
             names, //
+            m_settings.getReturnTypes(), //
             getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES), //
             i -> exec.setProgress( //
                 1.0 * i / m_settings.getNumScripts(), //
@@ -255,6 +258,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
     static List<FlowVariable> applyFlowVariableExpressions( //
         final List<String> expressions, //
         final List<String> names, //
+        final List<FlowVariableTypeNames> returnTypes, //
         final Map<String, FlowVariable> existingVariables, //
         final IntConsumer updateProgress, //
         final BiConsumer<Integer, String> setWarning //
@@ -284,25 +288,50 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             );
 
             final var finalI = i;
-            EvaluationContext ctx = warning -> setWarning.accept(finalI, warning);
+            var outputVariable = createFlowVariableFromComputer(name, //
+                resultComputer, //
+                returnTypes.get(finalI), //
+                warning -> setWarning.accept(finalI, warning));
 
-            final FlowVariable outputVariable;
-            if (resultComputer instanceof IntegerComputer c) {
-                outputVariable = new FlowVariable(name, LongType.INSTANCE, c.compute(ctx));
-            } else if (resultComputer instanceof StringComputer c) {
-                outputVariable = new FlowVariable(name, StringType.INSTANCE, c.compute(ctx));
-            } else if (resultComputer instanceof FloatComputer c) {
-                outputVariable = new FlowVariable(name, DoubleType.INSTANCE, c.compute(ctx));
-            } else if (resultComputer instanceof BooleanComputer c) {
-                outputVariable = new FlowVariable(name, BooleanType.INSTANCE, c.compute(ctx));
-            } else {
-                throw new IllegalStateException("Unexpected computer type: " + resultComputer);
-            }
             availableFlowVariables.put(name, outputVariable);
             outputVariables.add(outputVariable);
         }
 
         return deduplicateOutputVariables(outputVariables);
+    }
+
+    private static FlowVariable createFlowVariableFromComputer(final String name, final Computer computer,
+        final FlowVariableTypeNames returnType, final EvaluationContext ctx) {
+
+        if (computer instanceof IntegerComputer c) {
+            return createFlowVariableFromIntegerComputer(name, c, returnType, ctx);
+        } else if (computer instanceof StringComputer c) {
+            return new FlowVariable(name, StringType.INSTANCE, c.compute(ctx));
+        } else if (computer instanceof FloatComputer c) {
+            return new FlowVariable(name, DoubleType.INSTANCE, c.compute(ctx));
+        } else if (computer instanceof BooleanComputer c) {
+            return new FlowVariable(name, BooleanType.INSTANCE, c.compute(ctx));
+        } else {
+            throw new IllegalStateException("Unexpected computer type: " + computer);
+        }
+    }
+
+    private static FlowVariable createFlowVariableFromIntegerComputer(final String name, final IntegerComputer computer,
+        final FlowVariableTypeNames returnType, final EvaluationContext ctx) {
+        var computedValue = computer.compute(ctx);
+
+        if (returnType == FlowVariableTypeNames.INTEGER) {
+            var isCastingSafelyPossible = computedValue >= Integer.MIN_VALUE && computedValue <= Integer.MAX_VALUE;
+            if (!isCastingSafelyPossible) {
+                ctx.addWarning("The result is outside the range of the integer type. "
+                    + "The result will be set to '0'. Use a long flow variable type instead.");
+                return new FlowVariable(name, IntType.INSTANCE, 0);
+            }
+            return new FlowVariable(name, IntType.INSTANCE, (int)computedValue);
+
+        } else {
+            return new FlowVariable(name, LongType.INSTANCE, computedValue);
+        }
     }
 
     private static List<FlowVariable> deduplicateOutputVariables(final List<FlowVariable> outputVariables) {

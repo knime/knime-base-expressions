@@ -62,6 +62,7 @@ import org.knime.base.expressions.node.ExpressionCodeAssistant;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.ExpressionDiagnosticResult;
+import org.knime.base.expressions.node.variable.ExpressionFlowVariableSettings.FlowVariableTypeNames;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.Expressions.ExpressionCompileException;
@@ -262,14 +263,15 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
             return diagnostics;
         }
 
-        public void runFlowVariableExpression(final List<String> expressions, final List<String> newFlowVariableNames)
-            throws ExpressionCompileException {
+        public void runFlowVariableExpression(final List<String> expressions, final List<String> newFlowVariableNames,
+            final List<String> outputReturnType) throws ExpressionCompileException {
 
             var warnings = new ExpressionDiagnostic[expressions.size()];
 
             var resultVariables = ExpressionFlowVariableNodeModel.applyFlowVariableExpressions( //
                 expressions, //
                 newFlowVariableNames, //
+                outputReturnType.stream().map(FlowVariableTypeNames::getByTypeName).toList(), //
                 getSupportedFlowVariablesMap(), //
                 i -> {
                 }, // we do not show the progress
