@@ -37,6 +37,7 @@ import type {
   AllowedDropDownValue,
   SelectorState,
 } from "@/components/OutputSelector.vue";
+import { flowVariableTypes } from "@/flowVariableApp/flowVariableTypes";
 
 // Input flowVariables helpers
 const runButtonDisabledErrorReason = ref<string | null>(null);
@@ -139,6 +140,11 @@ const runDiagnosticsFunction = async ({
       state.key,
       diagnostics[index].errorState,
     );
+
+    multiEditorContainerRef.value?.setCurrentExpressionReturnType(
+      state.key,
+      diagnostics[index].returnType,
+    );
   }
 
   const haveFlowVariableErrors = flowVariableErrorMessages.some(
@@ -187,6 +193,7 @@ const runFlowVariableExpressions = (states: EditorState[]) => {
         ? state.selectorState.create
         : state.selectorState.replace,
     ),
+    states.map((state) => state.expressionReturnType ?? "UNKNOWN"),
   ]);
 };
 
@@ -212,6 +219,10 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
       ),
       replacedFlowVariables: orderedEditorStates.map(
         (state) => state.selectorState.replace,
+      ),
+      flowVariableReturnTypes: orderedEditorStates.map(
+        (state) =>
+          state.selectedFlowVariableOutputType ?? flowVariableTypes.Unknown,
       ),
       scripts: orderedEditorStates.map((state) => state.monacoState.text.value),
     };

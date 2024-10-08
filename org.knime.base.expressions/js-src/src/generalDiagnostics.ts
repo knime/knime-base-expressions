@@ -5,6 +5,7 @@ import {
   EXPRESSION_MARKERS_OWNER,
 } from "@/common/constants";
 import type { SelectorState } from "@/components/OutputSelector.vue";
+import type { ExpressionReturnType } from "@/flowVariableApp/flowVariableTypes";
 
 /** Identifies the error level of an ExpressionEditorPane */
 export type ErrorLevel = "ERROR" | "WARNING" | "OK";
@@ -26,20 +27,18 @@ export type ExpressionDiagnostic = {
 
 export type ExpressionDiagnosticResult = {
   diagnostics: ExpressionDiagnostic[];
-  returnType: string;
+  returnType: ExpressionReturnType;
 };
 
 export type Diagnostic = {
   errorState: EditorErrorState;
-  returnType: string;
+  returnType: ExpressionReturnType;
 };
 
 export const markDiagnosticsInEditor = (
   diagnosticsForThisEditor: ExpressionDiagnostic[],
   editorState: UseCodeEditorReturn,
 ) => {
-  // Mark the diagnostics in the editor
-
   const markers: MonacoEditor.IMarkerData[] = diagnosticsForThisEditor
     .map((diagnostic) =>
       diagnostic.location

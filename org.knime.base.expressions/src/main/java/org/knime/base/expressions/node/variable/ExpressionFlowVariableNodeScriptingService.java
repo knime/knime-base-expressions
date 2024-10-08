@@ -251,14 +251,15 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
             return diagnostics;
         }
 
-        public void runFlowVariableExpression(final List<String> expressions, final List<String> newFlowVariableNames)
-            throws ExpressionCompileException {
+        public void runFlowVariableExpression(final List<String> expressions, final List<String> newFlowVariableNames,
+            final List<String> outputReturnType) throws ExpressionCompileException {
 
             var warnings = new ExpressionDiagnostic[expressions.size()];
 
             var resultVariables = ExpressionFlowVariableNodeModel.applyFlowVariableExpressions( //
                 expressions, //
                 newFlowVariableNames, //
+                outputReturnType, //
                 getSupportedFlowVariablesMap(), //
                 i -> {
                 }, // we do not show the progress

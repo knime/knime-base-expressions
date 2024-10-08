@@ -87,6 +87,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableType.BooleanType;
 import org.knime.core.node.workflow.VariableType.DoubleType;
+import org.knime.core.node.workflow.VariableType.IntType;
 import org.knime.core.node.workflow.VariableType.LongType;
 import org.knime.core.node.workflow.VariableType.StringType;
 
@@ -210,6 +211,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         var resultVariables = applyFlowVariableExpressions( //
             m_settings.getScripts(), //
             names, //
+            m_settings.getReturnTypes(), //
             getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES), //
             i -> exec.setProgress( //
                 1.0 * i / m_settings.getNumScripts(), //
@@ -255,6 +257,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
     static List<FlowVariable> applyFlowVariableExpressions( //
         final List<String> expressions, //
         final List<String> names, //
+        final List<String> returnTypes, //
         final Map<String, FlowVariable> existingVariables, //
         final IntConsumer updateProgress, //
         final BiConsumer<Integer, String> setWarning //
@@ -288,7 +291,14 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
 
             final FlowVariable outputVariable;
             if (resultComputer instanceof IntegerComputer c) {
-                outputVariable = new FlowVariable(name, LongType.INSTANCE, c.compute(ctx));
+                var computedValue = c.compute(ctx);
+
+                if (returnTypes.get(i).equals("INTEGER")) {
+                    outputVariable = new FlowVariable(name, IntType.INSTANCE, (int)computedValue);
+                } else {
+                    outputVariable = new FlowVariable(name, LongType.INSTANCE, computedValue);
+                }
+
             } else if (resultComputer instanceof StringComputer c) {
                 outputVariable = new FlowVariable(name, StringType.INSTANCE, c.compute(ctx));
             } else if (resultComputer instanceof FloatComputer c) {

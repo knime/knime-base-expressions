@@ -9,6 +9,7 @@ import {
 import { DEFAULT_INITIAL_DATA, FLOW_VARIABLES } from "@/__mocks__/mock-data";
 import type { ExpressionFlowVariableNodeSettings } from "@/expressionSettingsService";
 import { log } from "@/common/functions";
+import { flowVariableTypes } from "@/flowVariableApp/flowVariableTypes";
 
 export const DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS: ExpressionFlowVariableNodeSettings =
   {
@@ -16,6 +17,7 @@ export const DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS: ExpressionFlowVariableNodeS
     flowVariableOutputModes: ["APPEND"],
     createdFlowVariables: ["mocked output col"],
     replacedFlowVariables: [FLOW_VARIABLES.subItems![1].name],
+    flowVariableReturnTypes: [flowVariableTypes.String],
     languageVersion: 1,
     builtinFunctionsVersion: 1,
     builtinAggregationsVersion: 1,

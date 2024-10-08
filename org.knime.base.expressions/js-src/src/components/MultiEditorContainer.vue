@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
-  useReadonlyStore,
-  type UseCodeEditorReturn,
-  getScriptingService,
   consoleHandler,
+  getScriptingService,
   setActiveEditorStoreForAi,
+  type UseCodeEditorReturn,
+  useReadonlyStore,
 } from "@knime/scripting-editor";
 import { FunctionButton } from "@knime/components";
 import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
@@ -26,17 +26,28 @@ import { LANGUAGE } from "@/common/constants";
 import { registerInsertionListener } from "@/common/functions";
 import OutputSelector, {
   type AllowedDropDownValue,
+  type ItemType,
   type SelectorState,
 } from "@/components/OutputSelector.vue";
 import type {
   EditorErrorState,
   ExpressionDiagnostic,
 } from "@/generalDiagnostics";
+import ReturnTypeSelector from "@/components/ReturnTypeSelector.vue";
+import {
+  type ExpressionReturnType,
+  type FlowVariableType,
+  getDropDownValuesForCurrentType,
+} from "@/flowVariableApp/flowVariableTypes";
+import NextIcon from "@knime/styles/img/icons/arrow-next.svg";
 
 type EditorStateWithoutMonaco = {
   selectorState: SelectorState;
   editorErrorState: EditorErrorState;
   selectorErrorState: EditorErrorState;
+  expressionReturnType: ExpressionReturnType;
+  selectedFlowVariableOutputType?: FlowVariableType;
+  expanded: boolean;
 };
 export type EditorState = EditorStateWithoutMonaco & {
   monacoState: UseCodeEditorReturn;
@@ -54,6 +65,10 @@ export type MultiEditorContainerExposes = {
   getOrderedEditorStates: () => EditorState[];
   setEditorErrorState: (key: string, errorState: EditorErrorState) => void;
   setSelectorErrorState: (key: string, errorState: EditorErrorState) => void;
+  setCurrentExpressionReturnType: (
+    key: string,
+    returnType: ExpressionReturnType,
+  ) => void;
   setActiveEditor: (key: string) => void;
 };
 
@@ -63,19 +78,15 @@ const props = defineProps<{
   settings: {
     initialScript: string;
     initialSelectorState: SelectorState;
+    initialOutputReturnType?: FlowVariableType;
   }[];
   replaceableItemsInInputTable: AllowedDropDownValue[];
   defaultReplacementItem: string;
   defaultAppendItem: string;
-  itemType: string;
+  itemType: ItemType;
 }>();
 
-const getActiveEditorKey = (): string | null => {
-  if (activeEditorFileName.value === null) {
-    return null;
-  }
-  return activeEditorFileName.value;
-};
+const getActiveEditorKey = (): string | null => activeEditorFileName.value;
 
 /**
  * Generate a new key for a new editor. This is used to index the columnSelectorStates
@@ -142,6 +153,12 @@ defineExpose<MultiEditorContainerExposes>({
   setSelectorErrorState(key: string, errorState: EditorErrorState) {
     editorStates[key].selectorErrorState = errorState;
   },
+  setCurrentExpressionReturnType(
+    key: string,
+    returnType: ExpressionReturnType,
+  ) {
+    editorStates[key].expressionReturnType = returnType;
+  },
   setActiveEditor,
 });
 
@@ -154,6 +171,8 @@ const pushNewEditorState = (key: string) => {
     },
     editorErrorState: { level: "OK" },
     selectorErrorState: { level: "OK" },
+    expressionReturnType: "UNKNOWN",
+    expanded: false,
   };
   editorStates[key] = newState;
 };
@@ -294,6 +313,11 @@ const onEditorRequestedCopyBelow = async (key: string) => {
   editorStates[newKey].selectorState = {
     ...editorStates[key].selectorState,
   };
+  editorStates[newKey].expressionReturnType =
+    editorStates[key].expressionReturnType;
+  editorStates[newKey].selectedFlowVariableOutputType =
+    editorStates[key].selectedFlowVariableOutputType;
+
   editorReferences[newKey]
     .getEditorState()
     .setInitialText(editorReferences[key].getEditorState().text.value);
@@ -386,10 +410,26 @@ onMounted(async () => {
       .getEditorState()
       .setInitialText(props.settings[i].initialScript);
     editorStates[key].selectorState = props.settings[i].initialSelectorState;
+    editorStates[key].expressionReturnType = "UNKNOWN";
+    editorStates[key].selectedFlowVariableOutputType =
+      props.settings[i].initialOutputReturnType;
   }
 
   emitOnChange();
 });
+
+const handleToggleExpand = (key: string) =>
+  (editorStates[key].expanded = !editorStates[key].expanded);
+
+const getOutputLabel = (key: string) => {
+  const selectorState = editorStates[key].selectorState;
+  const action = selectorState.outputMode === "APPEND" ? "creates" : "replaces";
+  const target =
+    selectorState.outputMode === "APPEND"
+      ? selectorState.create
+      : selectorState.replace;
+  return `Output ${action} "${target}"`;
+};
 </script>
 
 <template>
@@ -416,15 +456,43 @@ onMounted(async () => {
     >
       <!-- Controls displayed once per editor -->
       <template #multi-editor-controls>
-        <div class="editor-controls">
-          <OutputSelector
-            v-model="editorStates[key].selectorState"
-            :entity-name="itemType"
-            :is-valid="editorStates[key].selectorErrorState.level === 'OK'"
-            :allowed-replacement-entities="
-              getAvailableColumnsForReplacement(key)
-            "
-          />
+        <div class="output-label" @click="() => handleToggleExpand(key)">
+          <span
+            class="output-expansion-icon"
+            :class="{
+              expanded: editorStates[key].expanded,
+            }"
+          >
+            <NextIcon />
+          </span>
+          {{ getOutputLabel(key) }}
+        </div>
+        <div
+          class="editor-controls"
+          :class="{
+            hidden: !editorStates[key].expanded && key !== activeEditorFileName,
+          }"
+        >
+          <span class="output-settings-container">
+            <OutputSelector
+              v-model="editorStates[key].selectorState"
+              :item-type="itemType"
+              :is-valid="editorStates[key].selectorErrorState.level === 'OK'"
+              :allowed-replacement-entities="
+                getAvailableColumnsForReplacement(key)
+              "
+            />
+            <span v-if="itemType === 'flow variable'" class="input">
+              <ReturnTypeSelector
+                v-model="editorStates[key].selectedFlowVariableOutputType"
+                :allowed-return-types="
+                  getDropDownValuesForCurrentType(
+                    editorStates[key].expressionReturnType,
+                  )
+                "
+              />
+            </span>
+          </span>
         </div>
       </template>
     </ExpressionEditorPane>
@@ -445,11 +513,17 @@ onMounted(async () => {
 </style>
 
 <style lang="postcss" scoped>
+.input {
+  width: 100%;
+  max-width: 400px;
+}
+
 .multi-editor-container {
   display: flex;
   flex-direction: column;
   overflow: hidden scroll;
   min-height: 100%;
+  container-type: inline-size;
 }
 
 .add-new-editor-button {
@@ -458,14 +532,72 @@ onMounted(async () => {
   outline: 1px solid var(--knime-silver-sand);
 }
 
+.output-settings-container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: var(--space-8);
+  width: 100%;
+  margin-bottom: var(--space-8);
+}
+
 .editor-controls {
   width: 100%;
+  padding: 0 var(--space-8);
+  transition:
+    max-height 0.4s ease-in-out,
+    opacity 0.4s ease-in-out;
+  max-height: 150px;
+  opacity: 1;
+
+  &.hidden {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+}
+
+.output-expansion-icon {
+  width: 12px;
+  height: 12px;
+  stroke: var(--knime-masala);
+  transition: transform 0.3s ease;
+
+  & svg {
+    stroke-width: 2px;
+  }
+
+  &.expanded {
+    transform: rotate(90deg);
+  }
+
+  & :hover {
+    stroke: var(--knime-cornflower);
+    background-color: var(--knime-stone-light);
+    border-radius: 50%;
+  }
+}
+
+.output-label {
+  width: 100%;
   display: flex;
-  justify-content: space-between;
-  padding: var(--space-4) var(--space-8);
-  height: fit-content;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: row;
+  cursor: pointer;
   gap: var(--space-4);
+  padding: var(--space-8);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 14px;
+  text-align: left;
+}
+
+@container (width < 390px) {
+  .output-settings-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-8);
+    width: 100%;
+  }
 }
 </style>
