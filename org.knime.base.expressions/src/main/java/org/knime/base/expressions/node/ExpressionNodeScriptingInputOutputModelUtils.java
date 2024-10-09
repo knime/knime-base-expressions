@@ -92,47 +92,39 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
     }
 
     /**
-     * @param inputPorts
-     * @return a list of {@link InputOutputModel} for the input objects
+     * Return the single input object for expression nodes with a single input table. The resulting list will always
+     * have length 1.
+     *
+     * @param inputPorts (a list of size 1)
+     * @return a list of size 1 of {@link InputOutputModel} for the input objects
      */
-    public static List<InputOutputModel> getInputObjects(final InputPortInfo[] inputPorts) {
+    public static List<InputOutputModel> getTableInputObjects(final InputPortInfo[] inputPorts) {
 
         Preconditions.checkArgument(inputPorts.length == 1, "expected one input port");
 
         final var spec = inputPorts[0].portSpec();
-        final var expectedPortSpecType = inputPorts[0].portType().getPortObjectSpecClass();
 
-        // We use the port type to differentiate between the flow variable node and the expression node
-        // In case of no input connected the spec is always null and we can't differentiate.
-        // For the expression node we show an empty table input object
-        // For the flow variable node we do not have additional input objects
-        // as input flow variables are shown separately
-        if (DataTableSpec.class.isAssignableFrom(expectedPortSpecType)) {
-            // expecting an input table
-            if (spec instanceof DataTableSpec dataTablespec) {
-                return List.of(InputOutputModel.createFromTableSpec( //
-                    "Input table", //
-                    dataTablespec, //
-                    null, //
-                    COLUMN_ALIAS_TEMPLATE, //
-                    false, // no multiple selection
-                    null, // no required import
-                    type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) //
-                        .baseType() //
-                        .name(), //
-                    type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null));
-            } else {
-                return List.of(InputOutputModel.createForNonAvailableTable( //
-                    "Input table", //
-                    null, //
-                    COLUMN_ALIAS_TEMPLATE, //
-                    null, // no required import
-                    false // no multiple selection
-                ));
-            }
-
+        // expecting an input table
+        if (spec instanceof DataTableSpec dataTablespec) {
+            return List.of(InputOutputModel.createFromTableSpec( //
+                "Input table", //
+                dataTablespec, //
+                null, //
+                COLUMN_ALIAS_TEMPLATE, //
+                false, // no multiple selection
+                null, // no required import
+                type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) //
+                    .baseType() //
+                    .name(), //
+                type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null));
         } else {
-            return List.of();
+            return List.of(InputOutputModel.createForNonAvailableTable( //
+                "Input table", //
+                null, //
+                COLUMN_ALIAS_TEMPLATE, //
+                null, // no required import
+                false // no multiple selection
+            ));
         }
     }
 

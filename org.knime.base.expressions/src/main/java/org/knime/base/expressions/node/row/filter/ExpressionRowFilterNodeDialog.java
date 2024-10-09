@@ -109,8 +109,10 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
         var workflowControl = new WorkflowControl(NodeContext.getContext().getNodeContainer());
 
         var initialDataBuilder = GenericInitialDataBuilder.createDefaultInitialDataBuilder(NodeContext.getContext()) //
-            .addDataSupplier("inputObjects",
-                () -> ExpressionNodeScriptingInputOutputModelUtils.getInputObjects(workflowControl.getInputInfo())) //
+            .addDataSupplier("inputObjects", //
+                () -> ExpressionNodeScriptingInputOutputModelUtils.getTableInputObjects( //
+                    workflowControl.getInputInfo() //
+                )) //
             .addDataSupplier("flowVariables", () -> {
                 var flowVariables = Optional.ofNullable(workflowControl.getFlowObjectStack()) //
                     .map(stack -> stack.getAllAvailableFlowVariables().values()) //
