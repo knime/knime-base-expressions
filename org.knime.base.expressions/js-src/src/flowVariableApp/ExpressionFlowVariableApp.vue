@@ -178,6 +178,8 @@ onMounted(async () => {
 
   useReadonlyStore().value =
     initialSettings.value.settingsAreOverriddenByFlowVariable ?? false;
+
+  currentInputOutputItems.value = getInitialItems();
 });
 
 const runFlowVariableExpressions = (states: EditorState[]) => {
