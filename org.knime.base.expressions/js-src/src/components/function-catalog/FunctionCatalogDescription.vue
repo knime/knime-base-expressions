@@ -88,8 +88,8 @@ const lowerHeader = computed(() => {
   font-size: 16px;
   margin-bottom: 0;
   margin-top: 0;
-  line-height: 16px;
-  min-height: 16px;
+  line-height: 18px;
+  min-height: 18px;
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
