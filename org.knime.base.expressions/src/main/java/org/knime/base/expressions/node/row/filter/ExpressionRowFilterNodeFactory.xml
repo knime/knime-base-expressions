@@ -11,7 +11,7 @@
 	<fullDescription>
 		<intro>
 			<p>
-				The KNIME Expression node enables generic row-by-row data
+				The KNIME Expression Row Filter node enables generic row-by-row data
 				filtering within KNIME workflows.
 			</p>
 			<p>
@@ -34,10 +34,7 @@
 						<tt>$["column_name", offset]</tt>
 						to reference previous or next rows relative to the current one.
 						The offset is a static number. Negative offsets point to previous
-						rows, positive offsets to rows next the current row. Replacing a
-						column will only take effect after evaluating the expression for
-						the whole table. This means that the expression only uses the
-						original data from that column.
+						rows, positive offsets to rows next the current row.
 					</li>
 					<li>
 						<tt>$[ROW_NUMBER]</tt>
