@@ -100,15 +100,14 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
      * @return the {@link InputOutputModel} for the flow variables
      */
     public static InputOutputModel getFlowVariableInputs(final Collection<FlowVariable> flowVariables) {
-        return InputOutputModel.createFromFlowVariables( //
-            flowVariables, //
-            null, //
-            FLOWVAR_ALIAS_TEMPLATE, //
-            null, // no required import
-            false, // no multiple selection
-            type -> ExpressionRunnerUtils.mapVariableToValueType(type).toString(), //
-            ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains //
-        );
+        return InputOutputModel.flowVariables() //
+            .subItemCodeAliasTemplate(FLOWVAR_ALIAS_TEMPLATE) //
+            .subItems( //
+                flowVariables, //
+                type -> ExpressionRunnerUtils.mapVariableToValueType(type).toString(), //
+                ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains //
+            ) //
+            .build();
     }
 
     /**
@@ -148,6 +147,6 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
      * @return a list of {@link InputOutputModel} for the output objects
      */
     public static List<InputOutputModel> getOutputObjects() {
-        return List.of(InputOutputModel.createForNonAvailableTable("Output table", null, null, null, false));
+        return List.of(InputOutputModel.table().name("Output table").build());
     }
 }
