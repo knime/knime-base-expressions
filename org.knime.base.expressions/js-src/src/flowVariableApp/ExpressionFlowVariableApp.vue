@@ -98,7 +98,8 @@ const refreshInputOutputItems = (
         {
           name: "f(X) appended flow variables",
           portType: "flowVariable",
-          subItemCodeAliasTemplate: '$$["{{{escapeDblQuotes subItems.[0]}}}"]',
+          subItemCodeAliasTemplate:
+            currentInputOutputItems.value[0].subItemCodeAliasTemplate,
         },
       ),
     );
