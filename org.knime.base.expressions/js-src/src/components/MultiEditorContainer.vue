@@ -388,7 +388,8 @@ onMounted(async () => {
     editorStates[key].selectorState = props.settings[i].initialSelectorState;
   }
 
-  emitOnChange();
+  // setActiveEditor emits the change event, so we don't need to do it here.
+  setActiveEditor(orderedEditorKeys[0]);
 });
 </script>
 

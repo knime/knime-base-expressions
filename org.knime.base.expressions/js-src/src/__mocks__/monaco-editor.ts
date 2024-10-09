@@ -38,6 +38,7 @@ export const editor = {
     getContentHeight: vi.fn(),
     focus: vi.fn(),
     layout: vi.fn(),
+    getDomNode: vi.fn(),
   })),
   defineTheme: vi.fn(),
   setTheme: vi.fn(),
