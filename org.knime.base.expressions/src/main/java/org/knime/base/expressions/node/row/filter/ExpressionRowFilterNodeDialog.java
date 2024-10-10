@@ -120,7 +120,8 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
                 return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(flowVariables);
             }) //
             .addDataSupplier("outputObjects", ExpressionNodeScriptingInputOutputModelUtils::getOutputObjects) //
-            .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN);
+            .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN) //
+            .addDataSupplier("rowInformation", ExpressionNodeScriptingInputOutputModelUtils::getRowInfoSubItems);
 
         return new ScriptingNodeSettingsService( //
             ExpressionRowFilterSettings::new, //

@@ -2,13 +2,14 @@
 import {
   consoleHandler,
   getScriptingService,
+  InputOutputPane,
   OutputTablePreview,
   ScriptingEditor,
   setActiveEditorStoreForAi,
   useReadonlyStore,
 } from "@knime/scripting-editor";
 import { onKeyStroke } from "@vueuse/core";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, toRaw, watch } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
@@ -24,8 +25,11 @@ import {
   registerInsertionListener,
 } from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
-import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
-import { getExpressionInitialDataService } from "@/expressionInitialDataService";
+import type {
+  ExpressionRowFilterInitialData,
+  ExpressionVersion,
+} from "@/common/types";
+import { getRowFilterInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowFilterNodeSettings,
   getRowFilterSettingsService,
@@ -37,7 +41,7 @@ import type {
 
 const editorRef = ref<Required<ExpressionEditorPaneExposes> | null>(null);
 
-const initialData = ref<ExpressionInitialData>();
+const initialData = ref<ExpressionRowFilterInitialData>();
 const initialSettings = ref<ExpressionRowFilterNodeSettings>();
 const errorState = ref<EditorErrorState>({ level: "OK" });
 
@@ -53,9 +57,24 @@ const runDiagnosticsFunction = async () => {
   );
 };
 
+const inputObjectsWithRowInfo = computed(() => {
+  if (!initialData.value) {
+    return [];
+  }
+
+  const inputObjects = initialData.value.inputObjects.map((inputItem) => {
+    return structuredClone(toRaw(inputItem));
+  });
+  for (const rowInfoObject of initialData.value.rowInformation) {
+    inputObjects[0].subItems?.unshift(rowInfoObject);
+  }
+
+  return [...inputObjects, initialData.value.flowVariables];
+});
+
 onMounted(async () => {
   [initialData.value, initialSettings.value] = await Promise.all([
-    getExpressionInitialDataService().getInitialData(),
+    getRowFilterInitialDataService().getInitialData(),
     getRowFilterSettingsService().getSettings(),
   ]);
 
@@ -216,6 +235,10 @@ const initialPaneSizes = calculateInitialPaneSizes();
             :initially-expanded="false"
           />
         </template>
+      </template>
+
+      <template #left-pane>
+        <InputOutputPane :input-output-items="inputObjectsWithRowInfo" />
       </template>
 
       <!-- Controls displayed once only -->

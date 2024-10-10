@@ -9,10 +9,13 @@ import {
   type SubItem,
   useReadonlyStore,
 } from "@knime/scripting-editor";
-import { getExpressionInitialDataService } from "@/expressionInitialDataService";
-import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
+import { getRowMapperInitialDataService } from "@/expressionInitialDataService";
+import type {
+  ExpressionRowMapperInitialData,
+  ExpressionVersion,
+} from "@/common/types";
 import { LoadingIcon } from "@knime/components";
-import { onMounted, ref, shallowRef } from "vue";
+import { onMounted, ref, shallowRef, toRaw } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
@@ -42,7 +45,7 @@ import type {
   SelectorState,
 } from "@/components/OutputSelector.vue";
 
-const initialData = shallowRef<ExpressionInitialData | null>(null);
+const initialData = shallowRef<ExpressionRowMapperInitialData | null>(null);
 const initialSettings = ref<ExpressionRowMapperNodeSettings | null>(null);
 const runButtonDisabledErrorReason = ref<string | null>(null);
 const multiEditorContainerRef =
@@ -53,12 +56,15 @@ const getInitialItems = (): InputOutputModel[] => {
   if (initialData.value === null) {
     return [];
   }
-  return [
-    ...initialData.value.inputObjects.map((inputItem) =>
-      structuredClone(inputItem),
-    ),
-    structuredClone(initialData.value.flowVariables),
-  ];
+
+  const inputObjects = initialData.value.inputObjects.map((inputItem) =>
+    structuredClone(toRaw(inputItem)),
+  );
+  for (const rowInfoObject of initialData.value.rowInformation) {
+    inputObjects[0].subItems?.unshift(rowInfoObject);
+  }
+
+  return [...inputObjects, structuredClone(initialData.value.flowVariables)];
 };
 
 const refreshInputOutputItems = (
@@ -181,7 +187,7 @@ const onChange = async (editorStates: EditorStates) => {
 
 onMounted(async () => {
   [initialData.value, initialSettings.value] = await Promise.all([
-    getExpressionInitialDataService().getInitialData(),
+    getRowMapperInitialDataService().getInitialData(),
     getRowMapperSettingsService().getSettings(),
   ]);
 

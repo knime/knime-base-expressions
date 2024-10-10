@@ -2,7 +2,12 @@ import type {
   FunctionCatalogData,
   FunctionCatalogEntryData,
 } from "@/components/functionCatalogTypes";
-import type { ExpressionInitialData } from "@/common/types";
+import type {
+  ExpressionFlowVariableInitialData,
+  ExpressionInitialData,
+  ExpressionRowFilterInitialData,
+  ExpressionRowMapperInitialData,
+} from "@/common/types";
 import type {
   GenericNodeSettings,
   InputOutputModel,
@@ -247,7 +252,10 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
   ],
 };
 
-export const DEFAULT_INITIAL_DATA: ExpressionInitialData = {
+/**
+ * Mock initial data common to all editors.
+ */
+export const DEFAULT_BASE_INITIAL_DATA: ExpressionInitialData = {
   functionCatalog: FUNCTION_CATALOG,
   inputObjects: INPUT_OBJECTS,
   flowVariables: FLOW_VARIABLES,
@@ -281,6 +289,35 @@ export const DEFAULT_INITIAL_DATA: ExpressionInitialData = {
     hubId: "mocked hub id",
   },
 };
+
+export const DEFAULT_FLOW_VARIABLE_NODE_INITIAL_DATA: ExpressionFlowVariableInitialData =
+  {
+    ...DEFAULT_BASE_INITIAL_DATA,
+  };
+
+export const DEFAULT_ROW_MAPPER_NODE_INITIAL_DATA: ExpressionRowMapperInitialData =
+  {
+    ...DEFAULT_BASE_INITIAL_DATA,
+    rowInformation: [
+      {
+        name: "Row info",
+        type: "int",
+        supported: true,
+      },
+    ],
+  };
+
+export const DEFAULT_ROW_FILTER_NODE_INITIAL_DATA: ExpressionRowFilterInitialData =
+  {
+    ...DEFAULT_BASE_INITIAL_DATA,
+    rowInformation: [
+      {
+        name: "Row info",
+        type: "int",
+        supported: true,
+      },
+    ],
+  };
 
 export const DEFAULT_INITIAL_SETTINGS: GenericNodeSettings = {
   settingsAreOverriddenByFlowVariable: false,

@@ -49,6 +49,7 @@
 package org.knime.base.expressions.node;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
@@ -126,7 +127,6 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
             return List.of(InputOutputModel.table() //
                 .name("Input table") //
                 .subItemCodeAliasTemplate(COLUMN_ALIAS_TEMPLATE) //
-                .subItems(ROW_INFO_SUB_ITEMS) //
                 .subItems( //
                     dataTablespec, //
                     type -> ExpressionRunnerUtils.mapDataTypeToValueType(type).baseType().name(), //
@@ -141,6 +141,13 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
                 .build() //
             );
         }
+    }
+
+    /**
+     * @return a list of {@link InputOutputModel} for the row info objects, that the frontend should handle.
+     */
+    public static List<InputOutputModelSubItem> getRowInfoSubItems() {
+        return Collections.unmodifiableList(ROW_INFO_SUB_ITEMS);
     }
 
     /**

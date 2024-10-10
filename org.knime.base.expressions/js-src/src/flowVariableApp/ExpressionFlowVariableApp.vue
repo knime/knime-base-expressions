@@ -11,7 +11,10 @@ import MultiEditorContainer, {
   type EditorState,
   type EditorStates,
 } from "@/components/MultiEditorContainer.vue";
-import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
+import type {
+  ExpressionFlowVariableInitialData,
+  ExpressionVersion,
+} from "@/common/types";
 import { LoadingIcon } from "@knime/components";
 import { onMounted, ref, shallowRef } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
@@ -23,7 +26,7 @@ import {
   type ExpressionFlowVariableNodeSettings,
   getFlowVariableSettingsService,
 } from "@/expressionSettingsService";
-import { getExpressionInitialDataService } from "@/expressionInitialDataService";
+import { getFlowVariableInitialDataService } from "@/expressionInitialDataService";
 import { runFlowVariableDiagnostics } from "@/flowVariableApp/expressionFlowVariableDiagnostics";
 import { runOutputDiagnostics } from "@/generalDiagnostics";
 import OutputPreviewFlowVariable from "@/flowVariableApp/OutputPreviewFlowVariable.vue";
@@ -40,7 +43,7 @@ import type {
 
 // Input flowVariables helpers
 const runButtonDisabledErrorReason = ref<string | null>(null);
-const initialData = shallowRef<ExpressionInitialData | null>(null);
+const initialData = shallowRef<ExpressionFlowVariableInitialData | null>(null);
 const initialSettings = ref<ExpressionFlowVariableNodeSettings | null>(null);
 const multiEditorContainerRef =
   ref<InstanceType<typeof MultiEditorContainer>>();
@@ -168,7 +171,7 @@ const onChange = async (editorStates: EditorStates) => {
 
 onMounted(async () => {
   [initialData.value, initialSettings.value] = await Promise.all([
-    getExpressionInitialDataService().getInitialData(),
+    getFlowVariableInitialDataService().getInitialData(),
     getFlowVariableSettingsService().getSettings(),
   ]);
 
