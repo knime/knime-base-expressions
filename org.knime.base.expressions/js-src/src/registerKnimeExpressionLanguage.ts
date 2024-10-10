@@ -68,13 +68,12 @@ const register = ({
         { include: "@comments" },
         { include: "@numbers" },
         { include: "@columnAccess" },
+        { include: "@rowInformationAccess" },
         { include: "@strings" },
 
         [/MISSING/, "constant"],
         [/TRUE/, "keyword.true"],
         [/FALSE/, "keyword.false"],
-        [/\$\[?["']?/, "@columnAccess"],
-
         [/[[\]()]/, "@brackets"],
 
         [
@@ -126,7 +125,18 @@ const register = ({
           "string.colname.escape",
           "@columnAccessBodySingleQuotes",
         ],
-        [/\${1,2}/, "string.colname.escape", "@columnAccessBodyNoQuotes"],
+        [
+          /\${1,2}(?=[A-Za-z_])/,
+          "string.colname.escape",
+          "@columnAccessBodyNoQuotes",
+        ],
+      ],
+      rowInformationAccess: [
+        [
+          /\$\[(?!\[['"])/,
+          "string.rowinfo.escape",
+          "@rowInformationAccessBody",
+        ],
       ],
       columnAccessBodySingleQuotes: [
         // seems like we have to make this a type of string in order to override bracket colouration
@@ -152,6 +162,12 @@ const register = ({
       columnOffsetSeparator: [[/\s*,\s*/, "", "@columnOffset"]],
       columnOffset: [[/[\d_]+/, "number.coloffset", "@columnAccessTerminator"]],
       columnAccessTerminator: [[/\s*\]/, "string.colname.escape", "@popall"]],
+      rowInformationAccessBody: [
+        [/ROW_ID/, "string.rowinfo"],
+        [/ROW_INDEX/, "string.rowinfo"],
+        [/ROW_NUMBER/, "string.rowinfo"],
+        [/\]/, "string.rowinfo.escape", "@popall"],
+      ],
     },
   });
 
@@ -181,6 +197,8 @@ const register = ({
       { token: "string.colname.escape", foreground: "3289ac" },
       { token: "string.colname", foreground: "af01db" },
       { token: "number.coloffset", foreground: "af01db" },
+      { token: "string.rowinfo.escape", foreground: "3289ac" },
+      { token: "string.rowinfo", foreground: "af01db" },
     ],
     colors: {},
   });
