@@ -511,6 +511,7 @@ const expandAll = () => {
 .category-header,
 .function-header {
   padding: 2px 0 2px var(--space-4);
+  cursor: pointer;
 
   &.selected {
     position: relative;
@@ -616,7 +617,6 @@ const expandAll = () => {
   font-size: 13px;
   font-weight: normal;
   margin-left: var(--space-24);
-  cursor: pointer;
   color: var(--knime-dove-gray);
   word-wrap: normal;
 
