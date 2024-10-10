@@ -5,6 +5,7 @@ import {
   useShouldFocusBePainted,
 } from "@knime/scripting-editor";
 import type { OutputInsertionMode } from "@/common/types";
+import { watch } from "vue";
 
 export type SelectorState = {
   outputMode: OutputInsertionMode;
@@ -35,6 +36,20 @@ const modelValue = defineModel<SelectorState>({
     create: "New Entity",
   } satisfies SelectorState,
 });
+watch(
+  modelValue,
+  () => {
+    // Set the initial value for the replace field if it has not been set by backend
+    if (
+      modelValue.value.outputMode === "REPLACE_EXISTING" &&
+      modelValue.value.replace === null
+    ) {
+      modelValue.value.replace =
+        props.allowedReplacementEntities?.[0]?.id ?? "";
+    }
+  },
+  { deep: true },
+);
 
 const allowedOperationModes = [
   { id: "APPEND", text: "Append" },
