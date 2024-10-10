@@ -587,13 +587,13 @@ const expandAll = () => {
   &:not(:focus-within) {
     & .category-icon.selected-icon svg {
       stroke: var(--knime-masala);
+    }
 
-      & .selected {
-        color: var(--theme-dropdown-foreground-color-hover);
+    & .selected {
+      color: var(--theme-dropdown-foreground-color-hover);
 
-        &::before {
-          background: var(--theme-dropdown-background-color-hover);
-        }
+      &::before {
+        background: var(--theme-dropdown-background-color-hover);
       }
     }
   }
