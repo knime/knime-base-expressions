@@ -116,7 +116,11 @@ const emit = defineEmits<{
 
 const emitOnChange = () => emit("on-change", getEditorStates());
 
-const setActiveEditor = (key: string) => {
+/**
+ * Called by the ExpressionEditorPane when it gains focus. This function updates
+ * the active editor and emits the change event.
+ */
+const onFocusChanged = (key: string) => {
   activeEditorFileName.value = key;
   setActiveEditorStoreForAi(editorReferences[key].getEditorState());
 
@@ -133,6 +137,15 @@ const setActiveEditor = (key: string) => {
   });
   emitOnChange();
 };
+
+/**
+ * Focus the editor with the given key. Note that the focus will trigger onFocusChanged,
+ * which updates the active editor and emits the change event.
+ *
+ * @param key The key of the editor to focus.
+ */
+const setActiveEditor = (key: string) =>
+  editorReferences[key].getEditorState().editor.value?.focus();
 
 defineExpose<MultiEditorContainerExposes>({
   getOrderedEditorStates: getEditorStatesWithMonacoState,
@@ -205,6 +218,12 @@ const getAvailableColumnsForReplacement = (
   return [...props.replaceableItemsInInputTable, ...columnsFromPreviousEditors];
 };
 
+/**
+ * This function doesn't directly trigger an emit, because it is expected that
+ * the caller will do so after the new editor is added.
+ *
+ * @param keyAbove
+ */
 const addNewEditorBelowExisting = async (keyAbove: string) => {
   const latestKey = generateNewKey();
   const desiredInsertionIndex = orderedEditorKeys.indexOf(keyAbove) + 1;
@@ -223,11 +242,8 @@ const onRequestedAddEditorAtBottom = async () => {
     orderedEditorKeys[orderedEditorKeys.length - 1],
   );
 
-  nextTick().then(() => {
-    editorReferences[latestKey].getEditorState().editor.value?.focus();
-  });
-
-  emitOnChange();
+  // setActiveEditor will emit the change event
+  nextTick().then(() => setActiveEditor(latestKey));
 };
 
 const onEditorRequestedDelete = (key: string) => {
@@ -235,7 +251,8 @@ const onEditorRequestedDelete = (key: string) => {
     return;
   }
 
-  orderedEditorKeys.splice(orderedEditorKeys.indexOf(key), 1);
+  const indexOfDeletedEditor = orderedEditorKeys.indexOf(key);
+  orderedEditorKeys.splice(indexOfDeletedEditor, 1);
 
   // Clean up state
   editorStateWatchers[key].columnStateUnwatchHandle();
@@ -244,7 +261,11 @@ const onEditorRequestedDelete = (key: string) => {
   delete editorStateWatchers[key];
   delete editorReferences[key];
 
-  emitOnChange();
+  const keyToFocus = orderedEditorKeys[Math.max(0, indexOfDeletedEditor - 1)];
+
+  // Now that the editor is gone, focus the one above it
+  // setActiveEditor will emit the change event
+  nextTick().then(() => setActiveEditor(keyToFocus));
 };
 
 const onEditorRequestedMoveUp = (key: string) => {
@@ -260,11 +281,8 @@ const onEditorRequestedMoveUp = (key: string) => {
   ];
 
   // Focus the moved editor after rerendering
-  nextTick().then(() => {
-    editorReferences[key].getEditorState().editor.value?.focus();
-  });
-
-  emitOnChange();
+  // setActiveEditor will emit the change event
+  nextTick().then(() => setActiveEditor(key));
 };
 
 const onEditorRequestedMoveDown = (key: string) => {
@@ -280,11 +298,8 @@ const onEditorRequestedMoveDown = (key: string) => {
   ];
 
   // Focus the moved editor after rerendering
-  nextTick().then(() => {
-    editorReferences[key].getEditorState().editor.value?.focus();
-  });
-
-  emitOnChange();
+  // setActiveEditor will emit the change event
+  nextTick().then(() => setActiveEditor(key));
 };
 
 const onEditorRequestedCopyBelow = async (key: string) => {
@@ -294,16 +309,14 @@ const onEditorRequestedCopyBelow = async (key: string) => {
   editorStates[newKey].selectorState = {
     ...editorStates[key].selectorState,
   };
+
   editorReferences[newKey]
     .getEditorState()
     .setInitialText(editorReferences[key].getEditorState().text.value);
 
-  nextTick().then(() => {
-    editorReferences[newKey].getEditorState().editor.value?.focus();
-  });
-
-  // Don't need to explicitly emit because changing the text will trigger the
-  // watcher which will emit the change event.
+  // focusing the editor will cause the change event to be emitted
+  // setActiveEditor will emit the change event
+  nextTick().then(() => setActiveEditor(newKey));
 };
 
 registerInsertionListener(() =>
@@ -388,7 +401,7 @@ onMounted(async () => {
     editorStates[key].selectorState = props.settings[i].initialSelectorState;
   }
 
-  // setActiveEditor emits the change event, so we don't need to do it here.
+  // focusEditor emits the change event, so we don't need to do it here.
   setActiveEditor(orderedEditorKeys[0]);
 });
 </script>
@@ -409,7 +422,7 @@ onMounted(async () => {
         isActive: activeEditorFileName === key,
       }"
       :error-state="getMostConcerningErrorStateForEditor(key)"
-      @focus="setActiveEditor(key)"
+      @focus="onFocusChanged(key)"
       @delete="onEditorRequestedDelete"
       @move-down="onEditorRequestedMoveDown"
       @move-up="onEditorRequestedMoveUp"
