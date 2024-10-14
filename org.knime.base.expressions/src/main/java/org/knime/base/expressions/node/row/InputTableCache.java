@@ -50,10 +50,16 @@ package org.knime.base.expressions.node.row;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
+import org.knime.core.data.IDataRepository;
+import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
+import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.Node;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 
@@ -74,6 +80,12 @@ public final class InputTableCache {
     // using a virtual operation
     private final Map<Long, BufferedDataTable> m_cachedTables = new HashMap<>();
 
+    private ExecutionContext m_exec;
+
+    private IDataRepository m_dataRepository;
+
+    private IWriteFileStoreHandler m_fileStoreHandler;
+
     /**
      * Creates a new input table cache for the given full table.
      *
@@ -81,6 +93,11 @@ public final class InputTableCache {
      */
     public InputTableCache(final BufferedDataTable fullTable) {
         m_fullTable = fullTable;
+
+        var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
+        m_exec = nodeContainer.createExecutionContext();
+        m_dataRepository = Node.invokeGetDataRepository(m_exec);
+        m_fileStoreHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(), m_dataRepository);
     }
 
     /** @return the number of rows in the full table */
@@ -102,10 +119,9 @@ public final class InputTableCache {
         if (m_cachedTables.containsKey(numRows)) {
             return m_cachedTables.get(numRows);
         } else {
-            var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
-            var executionContext = nodeContainer.createExecutionContext();
             try {
-                var table = ExpressionRunnerUtils.copyToColumnarTable(m_fullTable, numRows, executionContext);
+                var table = ExpressionRunnerUtils.copyToColumnarTable(m_fullTable, numRows, m_exec, m_dataRepository,
+                    m_fileStoreHandler);
                 m_cachedTables.put(numRows, table);
                 return table;
             } catch (CanceledExecutionException ex) {
