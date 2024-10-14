@@ -215,7 +215,9 @@ const getAvailableColumnsForReplacement = (
       return { id: column, text: column };
     });
 
-  return [...props.replaceableItemsInInputTable, ...columnsFromPreviousEditors];
+  return [...props.replaceableItemsInInputTable, ...columnsFromPreviousEditors]
+    .filter((flowVariableName) => !flowVariableName.text.startsWith("knime"))
+    .filter((flowVariableName) => flowVariableName.text.trim() !== "");
 };
 
 /**

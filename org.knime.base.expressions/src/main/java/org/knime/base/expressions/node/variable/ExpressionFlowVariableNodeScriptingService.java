@@ -156,6 +156,10 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
             return diagnostics;
         }
 
+        private static boolean appendsInvalidFlowVariable(final String appendedFlowVariable) {
+            return appendedFlowVariable.isBlank() || appendedFlowVariable.startsWith("knime");
+        }
+
         private static ReturnResult<FlowVariable> invalidExpressionType(final int expressionIdx,
             final String columnName) {
             return ReturnResult.failure("Expression %d that outputs flow variable '%s' has errors. Fix Expression %d."
@@ -224,6 +228,13 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                             )) //
                             .toList() //
                     );
+
+                    if (appendedFlowVariableNames.get(i) != null
+                        && appendsInvalidFlowVariable(appendedFlowVariableNames.get(i))) {
+                        // this error will also be caught by the frontend - here we just
+                        // need to make sure the diagnostics don't choke...
+                        continue;
+                    }
 
                     if (inferredType.isOptional()) {
                         // Show an error if the full expression might evaluate to MISSING; this is not supported

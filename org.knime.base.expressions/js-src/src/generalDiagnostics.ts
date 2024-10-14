@@ -112,6 +112,11 @@ export const runOutputDiagnostics = (
         inputItems.includes(state.create)
       ) {
         return `${labelCapitalised} "${state.create}" already exists. Try another name.`;
+      } else if (
+        label === "flow variable" &&
+        state.create.startsWith("knime")
+      ) {
+        return `${labelCapitalised} names starting with 'knime' are reserved. Try another name.`;
       }
       appendedItemsSoFar.push(state.create);
     }
