@@ -74,6 +74,7 @@ import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
 import org.knime.core.data.DoubleValue;
+import org.knime.core.data.IDataRepository;
 import org.knime.core.data.LongValue;
 import org.knime.core.data.StringValue;
 import org.knime.core.data.columnar.ColumnarTableBackend;
@@ -83,6 +84,7 @@ import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializ
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.container.DataContainerSettings;
+import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
 import org.knime.core.data.v2.schema.ValueSchema;
 import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.expressions.Ast;
@@ -247,7 +249,8 @@ public final class ExpressionRunnerUtils {
             LOGGER.debug("Copying table to columnar format to be compatible with expressions", ex);
 
             try {
-                return ReferenceTables.createReferenceTable(uuid, copyToColumnarTable(table, table.size(), exec));
+                return ReferenceTables.createReferenceTable(uuid, copyToColumnarTable(table, table.size(), exec,
+                    Node.invokeGetDataRepository(exec), Node.invokeGetFileStoreHandler(exec)));
             } catch (VirtualTableIncompatibleException e) {
                 // This cannot happen because we explicitly create a columnar table
                 throw new IllegalStateException(e);
@@ -266,19 +269,24 @@ public final class ExpressionRunnerUtils {
      * @param exec an {@link ExecutionContext} that is used to create a new columnar container if the table is not
      *            columnar and to report the progress. Use a sub execution context if needed for proper progress
      *            reporting.
+     * @param dataRepository
+     * @param fsHandler
      * @return the columnar table
      * @throws CanceledExecutionException if the execution was canceled
      */
     public static BufferedDataTable copyToColumnarTable(final BufferedDataTable table, final long maxRowsToConvert,
-        final ExecutionContext exec) throws CanceledExecutionException {
-        try (var container = new ColumnarTableBackend().create(exec, table.getDataTableSpec(),
-            DataContainerSettings.builder() //
-                .withInitializedDomain(true) //
-                .withCheckDuplicateRowKeys(false) //
-                .withDomainUpdate(false).build(), //
-            Node.invokeGetDataRepository(exec), Node.invokeGetFileStoreHandler(exec));
-                var writeCursor = container.createCursor();
-                var readCursor = table.cursor()) {
+        final ExecutionContext exec, final IDataRepository dataRepository, final IWriteFileStoreHandler fsHandler)
+        throws CanceledExecutionException {
+        var containerSettings = DataContainerSettings.builder() //
+            .withInitializedDomain(true) //
+            .withCheckDuplicateRowKeys(false) //
+            .withDomainUpdate(false) //
+            .build();
+        try (var container = new ColumnarTableBackend().create(exec, table.getDataTableSpec(), containerSettings,
+            dataRepository, fsHandler); //
+                var writeCursor = container.createCursor(); //
+                var readCursor = table.cursor() //
+        ) {
 
             for (long rowIndex = 0; readCursor.canForward() && rowIndex < maxRowsToConvert; ++rowIndex) {
                 writeCursor.forward().setFrom(readCursor.forward());
