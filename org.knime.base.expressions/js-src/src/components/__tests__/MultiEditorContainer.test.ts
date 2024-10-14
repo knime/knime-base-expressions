@@ -5,6 +5,7 @@ import MultiEditorContainer, {
 } from "../MultiEditorContainer.vue";
 import { onKeyStroke } from "@vueuse/core";
 import { nextTick } from "vue";
+import type { ExpressionEditorPaneExposes } from "../ExpressionEditorPane.vue";
 
 vi.mock("@vueuse/core", async (importOriginal) => {
   const original = await importOriginal<typeof import("@vueuse/core")>();
@@ -228,71 +229,73 @@ describe("MultiEditorContainer", () => {
     ).toEqual(keys);
   });
 
-  it("should throw an event when editors are reordered, added, or removed", async () => {
-    const { wrapper, keys } = await doMount();
+  it("should focus the first editor by default", async () => {
+    const { wrapper } = await doMount();
 
-    let numEventsBeforeReorder = wrapper.emitted("on-change")!.length;
+    const editors = wrapper.findAllComponents({ name: "ExpressionEditorPane" });
 
-    wrapper
-      .findComponent({ name: "ExpressionEditorPane" })
-      .vm.$emit("move-down", keys[0]);
+    // we expect that the first editor is focused by default, but let's make sure
+    expect(
+      (editors[0].vm as ExpressionEditorPaneExposes).getEditorState().editor
+        .value?.focus,
+    ).toHaveBeenCalled();
+    expect(
+      (editors[1].vm as ExpressionEditorPaneExposes).getEditorState().editor
+        .value?.focus,
+    ).not.toHaveBeenCalled();
+  });
 
-    await flushPromises();
-    await nextTick();
+  it.for([
+    { eventToEmit: "move-down", keyIndexToPass: 0, expectedFocusedKeyIndex: 1 },
+    { eventToEmit: "move-up", keyIndexToPass: 1, expectedFocusedKeyIndex: 0 },
+    { eventToEmit: "delete", keyIndexToPass: 1, expectedFocusedKeyIndex: 0 },
+    {
+      eventToEmit: "copy-below",
+      keyIndexToPass: 1,
+      expectedFocusedKeyIndex: 2,
+    },
+  ])(
+    "should focus the right editor when an editor fires $eventToEmit",
+    async ({ eventToEmit, keyIndexToPass, expectedFocusedKeyIndex }) => {
+      const { wrapper } = await doMount();
 
-    expect(wrapper.emitted("on-change")).toHaveLength(
-      numEventsBeforeReorder + 1,
-    );
+      wrapper
+        .findAllComponents({ name: "ExpressionEditorPane" })
+        [
+          keyIndexToPass
+        ].vm.$emit(eventToEmit, extractKeysFromWrapper(wrapper.vm)[keyIndexToPass]);
 
-    numEventsBeforeReorder++;
+      await flushPromises();
+      await nextTick();
 
-    wrapper
-      .findComponent({ name: "ExpressionEditorPane" })
-      .vm.$emit("move-up", keys[0]);
+      // Get the editor model from the wrapper
+      const hopefullyFocusedEditor = (
+        wrapper.vm as MultiEditorContainerExposes
+      ).getOrderedEditorStates()[expectedFocusedKeyIndex].monacoState;
 
-    await flushPromises();
-    await nextTick();
+      const failureMessage =
+        `editor ${expectedFocusedKeyIndex} wasn't focused after ` +
+        `emitting ${eventToEmit} by editor ${keyIndexToPass}`;
 
-    expect(wrapper.emitted("on-change")).toHaveLength(
-      numEventsBeforeReorder + 1,
-    );
+      expect(
+        hopefullyFocusedEditor.editor.value?.focus,
+        failureMessage,
+      ).toHaveBeenCalled();
+    },
+  );
 
-    numEventsBeforeReorder++;
+  it("should add a new editor when pressing the 'add new editor' button", async () => {
+    const { wrapper } = await doMount();
 
     const addButton = wrapper.find("[data-testid='add-new-editor-button']");
     await addButton.trigger("click");
 
-    await flushPromises();
     await nextTick();
 
-    expect(wrapper.emitted("on-change")).toHaveLength(
-      numEventsBeforeReorder + 1,
-    );
+    const editors = wrapper.findAllComponents({ name: "ExpressionEditorPane" });
+    expect(editors).toHaveLength(3);
 
-    numEventsBeforeReorder++;
-
-    wrapper
-      .findComponent({ name: "ExpressionEditorPane" })
-      .vm.$emit("delete", keys[0]);
-
-    await flushPromises();
-    await nextTick();
-
-    expect(wrapper.emitted("on-change")).toHaveLength(
-      numEventsBeforeReorder + 1,
-    );
-
-    numEventsBeforeReorder++;
-
-    wrapper
-      .findComponent({ name: "ExpressionEditorPane" })
-      .vm.$emit("copy-below", keys[1]);
-
-    await flushPromises();
-    await nextTick();
-
-    expect(wrapper.emitted("on-change")).toHaveLength(
-      numEventsBeforeReorder + 1,
-    );
+    const selectors = wrapper.findAllComponents({ name: "OutputSelector" });
+    expect(selectors).toHaveLength(3);
   });
 });
