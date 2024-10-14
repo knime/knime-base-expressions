@@ -55,7 +55,7 @@
 				Flow variables can be accessed via
 				<tt>$$["Flow Variable Name"]</tt>
 				, As with column names, you can use the shorthand
-				$$flow_variable_name, if the name does not contain any special
+				<tt>$$flow_variable_name</tt>, if the name does not contain any special
 				characters nor spaces.
 			</p>
 			<p>
@@ -113,7 +113,7 @@
 				<tt> COLUMN_MIN("Column Name") </tt>
 				. Note that these take a "Column
 				name" instead of a value from a row
-				($["column name"]) as input.
+				(<tt>$["column name"]</tt>) as input.
 			</p>
 			<p>
 				<b>AI Expression Assistance (Labs):</b>
