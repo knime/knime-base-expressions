@@ -50,10 +50,16 @@ package org.knime.base.expressions.node.row;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
+import org.knime.core.data.IDataRepository;
+import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
+import org.knime.core.data.filestore.internal.NotInWorkflowWriteFileStoreHandler;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.Node;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 
@@ -66,13 +72,17 @@ import org.knime.core.node.workflow.NodeContext;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public final class InputTableCache {
+public final class InputTableCache implements AutoCloseable {
 
     private final BufferedDataTable m_fullTable;
 
     // TODO(AP-23302) instead of holding one table per row count, we could also hold a single table slice it on demand
     // using a virtual operation
     private final Map<Long, BufferedDataTable> m_cachedTables = new HashMap<>();
+
+    private IDataRepository m_dataRepository;
+
+    private IWriteFileStoreHandler m_fileStoreHandler;
 
     /**
      * Creates a new input table cache for the given full table.
@@ -81,6 +91,11 @@ public final class InputTableCache {
      */
     public InputTableCache(final BufferedDataTable fullTable) {
         m_fullTable = fullTable;
+
+        var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
+        var executionContext = nodeContainer.createExecutionContext();
+        m_dataRepository = Node.invokeGetDataRepository(executionContext);
+        m_fileStoreHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(), m_dataRepository);
     }
 
     /** @return the number of rows in the full table */
@@ -96,21 +111,34 @@ public final class InputTableCache {
      * @return a table with the given number of rows
      */
     public synchronized BufferedDataTable getTable(final long numRows) {
-        if (numRows >= m_fullTable.size()) {
-            return m_fullTable;
-        }
         if (m_cachedTables.containsKey(numRows)) {
             return m_cachedTables.get(numRows);
         } else {
             var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
             var executionContext = nodeContainer.createExecutionContext();
             try {
-                var table = ExpressionRunnerUtils.copyToColumnarTable(m_fullTable, numRows, executionContext);
+                // TODO close?
+                //                var fsHandler = NotInWorkflowWriteFileStoreHandler.create();
+                //                var dataRep = fsHandler.getDataRepository();
+                //                var fsHandler = new ROWriteFileStoreHandler(dataRep);
+
+                //                executionContext.clearTable(hh);
+                //                fsHandler.clearAndDispose();
+
+                var table = ExpressionRunnerUtils.copyToColumnarTable(m_fullTable, numRows, new ExecutionMonitor(),
+                    m_dataRepository, m_fileStoreHandler);
                 m_cachedTables.put(numRows, table);
                 return table;
             } catch (CanceledExecutionException ex) {
                 throw new IllegalStateException("Input table preparation for expression cancelled by the user", ex);
             }
         }
+    }
+
+    @Override
+    public void close() throws Exception {
+        m_fileStoreHandler.clearAndDispose();
+
+        // TODO close or clear tables?
     }
 }
