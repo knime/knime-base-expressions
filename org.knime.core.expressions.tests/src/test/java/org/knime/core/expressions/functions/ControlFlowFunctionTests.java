@@ -59,6 +59,7 @@ import static org.knime.core.expressions.ValueType.OPT_STRING;
 import static org.knime.core.expressions.ValueType.STRING;
 import static org.knime.core.expressions.functions.FunctionTestBuilder.arg;
 import static org.knime.core.expressions.functions.FunctionTestBuilder.mis;
+import static org.knime.core.expressions.functions.FunctionTestBuilder.misBoolean;
 import static org.knime.core.expressions.functions.FunctionTestBuilder.misInteger;
 import static org.knime.core.expressions.functions.FunctionTestBuilder.misString;
 
@@ -88,13 +89,15 @@ final class ControlFlowFunctionTests {
             .typing("string", List.of(BOOLEAN, STRING, STRING), STRING)
             .typing("boolean", List.of(BOOLEAN, BOOLEAN, BOOLEAN), BOOLEAN)
             .typing("MISSING else case", List.of(BOOLEAN, STRING, MISSING), OPT_STRING) //
-            .illegalArgs("incompatible return expressions string/float", List.of(BOOLEAN, STRING, FLOAT))//
-            .illegalArgs("incompatible return expressions string/integer", List.of(BOOLEAN, STRING, INTEGER))//
-            .illegalArgs("incompatible return expressions integer/boolean", List.of(BOOLEAN, INTEGER, BOOLEAN))//
+            .typing("conditions can be optional (1 condition)", List.of(OPT_BOOLEAN, STRING, STRING), STRING) //
+            .typing("conditions can be optional (2 conditions)", List.of(BOOLEAN, STRING, OPT_BOOLEAN, STRING, STRING),
+                STRING) //
+            .illegalArgs("incompatible return expressions string/float", List.of(BOOLEAN, STRING, FLOAT)) //
+            .illegalArgs("incompatible return expressions string/integer", List.of(BOOLEAN, STRING, INTEGER)) //
+            .illegalArgs("incompatible return expressions integer/boolean", List.of(BOOLEAN, INTEGER, BOOLEAN)) //
             .illegalArgs("too few arguments", List.of(BOOLEAN, STRING))//
-            .illegalArgs("even number of arguments/ missing else case", List.of(BOOLEAN, STRING, STRING, STRING))//
-            .illegalArgs("conditions must not be optional", List.of(OPT_BOOLEAN, FLOAT, FLOAT))//
-            .illegalArgs("second condition not boolean", List.of(BOOLEAN, FLOAT, FLOAT, FLOAT, FLOAT))//
+            .illegalArgs("even number of arguments/ missing else case", List.of(BOOLEAN, STRING, STRING, STRING)) //
+            .illegalArgs("second condition not boolean", List.of(BOOLEAN, FLOAT, FLOAT, FLOAT, FLOAT)) //
             .impl("integer", List.of(arg(true), arg(2), arg(-1)), 2) //
             .impl("float", List.of(arg(true), arg(1.4), arg(1.5)), 1.4) //
             .impl("missing integer true case", List.of(arg(false), arg(1), misInteger())) //
@@ -118,6 +121,10 @@ final class ControlFlowFunctionTests {
                     arg(true), arg("some name branch"), arg("else branch")),
                 "true branch") //
             .impl("MISSING else case", List.of(arg(true), arg("true branch"), mis()), "true branch") //
+            .impl("MISSING counts as false (1 condition)",
+                List.of(misBoolean(), arg("true branch"), arg("false branch")), "false branch") //
+            .impl("MISSING counts as false (2 conditions)", List.of(arg(false), arg(0), misBoolean(), arg(1), arg(3)),
+                3) //
             .tests();
     }
 

@@ -52,6 +52,7 @@ import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
+import static org.knime.core.expressions.ValueType.OPT_BOOLEAN;
 import static org.knime.core.expressions.ValueType.STRING;
 
 import java.util.ArrayList;
@@ -102,6 +103,8 @@ public final class ControlFlowFunctions {
                 If no condition evaluates to `TRUE` the `else` case, i.e. `value_if_all_false` will be returned.   \
                 Conditions need to be boolean expressions and all `value_N` expressions have to return the same type. \
                 Integers will be automatically cast to floats if necessary.  \s
+
+                Note that `MISSING` conditions are considered to be `FALSE` for the purposes of this function.
                 """;
 
         private static final String EXAMPLES = """
@@ -138,7 +141,7 @@ public final class ControlFlowFunctions {
                 DESCRIPTION, //
                 EXAMPLES, //
                 List.of(
-                    new Argument("condition_1", BOOLEAN.name(),
+                    new Argument("condition_1", OPT_BOOLEAN.name(),
                         "Boolean condition. See how to chain multiple conditions in description below."),
                     new Argument("value_1", "ANYTHING", "The first condition to check"),
                     new Argument("additional_conditions__value_if_all_false", "ANYTHING", """
@@ -175,7 +178,7 @@ public final class ControlFlowFunctions {
             // Conditions (note that the last argument is the else case)
             for (int i = 0; i < args.size() - 1; i += 2) {
                 var condition = args.get(i);
-                if (!BOOLEAN.equals(condition)) {
+                if (!BOOLEAN.equals(condition.baseType())) {
                     return ReturnResult
                         .failure("Argument " + (i + 1) + " is not a BOOLEAN but is expected to be a condition");
                 }
@@ -205,7 +208,7 @@ public final class ControlFlowFunctions {
             final EvaluationContext ctx) {
             var args = arguments.getVariableArgument();
             for (int i = 0; i < args.size() - 1; i += 2) {
-                if (((BooleanComputer)args.get(i)).compute(ctx)) {
+                if (!args.get(i).isMissing(ctx) && ((BooleanComputer)args.get(i)).compute(ctx)) {
                     return args.get(i + 1);
                 }
             }
