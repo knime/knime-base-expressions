@@ -5,7 +5,7 @@ import { convertFunctionsToInsertionItems } from "@/components/convertFunctionsT
 import { LANGUAGE } from "@/common/constants";
 import type { ExpressionInitialData } from "@/common/types";
 import type { SubItem } from "@knime/scripting-editor";
-import type { TypeRendererProps } from "@/components/TypeRenderer.vue";
+import type { IconRendererProps } from "@/components/IconRenderer.vue";
 
 export type CompletionItemWithType = {
   text: string;
@@ -399,22 +399,13 @@ const register = ({
 };
 
 /**
- * Mapper to map a subItem to a ColumnWithDType.
+ * Mapper to map a subItem to a ColumnWithType.
  * @param subItem
  */
-const mapSubItemToColumnWithDType = (subItem: SubItem<TypeRendererProps>) => {
-  if (typeof subItem.type === "string") {
-    return {
-      name: subItem.name,
-      type: subItem.type,
-    };
-  } else {
-    return {
-      name: subItem.name,
-      type: subItem.type.props?.type ?? "UNKNOWN",
-    };
-  }
-};
+const mapSubItemToColumnWithType = (subItem: SubItem<IconRendererProps>) => ({
+  name: subItem.name,
+  type: subItem.type,
+});
 
 /**
  * Options for the autocompletion.
@@ -443,17 +434,17 @@ const registerKnimeExpressionLanguage = (
   const registerSpecialColumnAccess = options?.specialColumnAccess ?? true;
 
   const inputColumns = (initialData.inputObjects?.[0]?.subItems ??
-    []) as SubItem<TypeRendererProps>[];
+    []) as SubItem<IconRendererProps>[];
 
   const inputFlowVariables = (initialData.flowVariables?.subItems ??
-    []) as SubItem<TypeRendererProps>[];
+    []) as SubItem<IconRendererProps>[];
 
   return register({
     columnNamesForCompletion: inputColumns
       .filter((column) => column.supported)
-      .map(mapSubItemToColumnWithDType),
+      .map(mapSubItemToColumnWithType),
     flowVariableNamesForCompletion: inputFlowVariables.map(
-      mapSubItemToColumnWithDType,
+      mapSubItemToColumnWithType,
     ),
     extraCompletionItems: [
       ...convertFunctionsToInsertionItems(
