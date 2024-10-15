@@ -31,7 +31,6 @@ import { runFlowVariableDiagnostics } from "@/flowVariableApp/expressionFlowVari
 import { runOutputDiagnostics } from "@/generalDiagnostics";
 import OutputPreviewFlowVariable from "@/flowVariableApp/OutputPreviewFlowVariable.vue";
 import SimpleRunButton from "@/components/SimpleRunButton.vue";
-import { type TypeRendererProps } from "@/components/TypeRenderer.vue";
 import {
   buildAppendedOutput,
   replaceSubItems,
@@ -40,6 +39,7 @@ import type {
   AllowedDropDownValue,
   SelectorState,
 } from "@/components/OutputSelector.vue";
+import type { IconRendererProps } from "@/components/IconRenderer.vue";
 
 // Input flowVariables helpers
 const runButtonDisabledErrorReason = ref<string | null>(null);
@@ -89,7 +89,7 @@ const refreshInputOutputItems = (
   currentInputOutputItems.value[0].subItems =
     currentInputOutputItems.value[0].subItems?.map((subItem) =>
       replaceSubItems(
-        subItem as SubItem<TypeRendererProps>,
+        subItem as SubItem<IconRendererProps>,
         statesUntilActiveWithReturnTypes,
         focusEditorActionBuilder,
       ),
