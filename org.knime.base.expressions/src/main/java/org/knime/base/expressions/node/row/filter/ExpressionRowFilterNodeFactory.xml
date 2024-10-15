@@ -19,6 +19,8 @@
 				The expression is evaluated for each row in the input table and needs
 				to return a boolean value. If the result is <tt>FALSE</tt>, the row is removed
 				from the output table. If the result is <tt>TRUE</tt>, the row is kept.
+			</p>
+			<p>
 				<b>Data Access: </b>
 				To access table data, you can use the following methods:
 				<ul>
