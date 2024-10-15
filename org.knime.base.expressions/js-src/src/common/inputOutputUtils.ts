@@ -1,8 +1,8 @@
 import type { SelectorState } from "@/components/OutputSelector.vue";
 import type { InputOutputModel, SubItem } from "@knime/scripting-editor";
-import type { TypeRendererProps } from "@/components/TypeRenderer.vue";
 import { shallowRef } from "vue";
-import TypeRenderer from "@/components/TypeRenderer.vue";
+import type { IconRendererProps } from "@/components/IconRenderer.vue";
+import IconRenderer from "@/components/IconRenderer.vue";
 
 export type SubItemState = {
   selectorState: SelectorState;
@@ -11,10 +11,10 @@ export type SubItemState = {
 };
 
 export const replaceSubItems = (
-  subItem: SubItem<TypeRendererProps>,
+  subItem: SubItem<IconRendererProps>,
   states: SubItemState[],
   actionBuilder: (editorKey: string) => () => void,
-): SubItem<TypeRendererProps> => {
+): SubItem<IconRendererProps> => {
   const lastReplacement = states.findLast(
     (state) =>
       state.selectorState.outputMode === "REPLACE_EXISTING" &&
@@ -24,12 +24,11 @@ export const replaceSubItems = (
   if (lastReplacement) {
     return {
       name: subItem.name,
-      type: {
-        component: shallowRef(TypeRenderer),
+      type: lastReplacement.returnType,
+      icon: {
+        component: shallowRef(IconRenderer),
         props: {
-          type: lastReplacement.returnType,
           action: actionBuilder(lastReplacement.key),
-          isReplacement: lastReplacement.returnType !== subItem.type,
         },
       },
       supported: true,
@@ -51,7 +50,7 @@ export const buildAppendedOutput = (
   portType: metaData.portType,
   subItemCodeAliasTemplate: metaData.subItemCodeAliasTemplate,
   subItems: states
-    .map((state): SubItem<TypeRendererProps> | null =>
+    .map((state): SubItem<IconRendererProps> | null =>
       state.selectorState.outputMode === "APPEND"
         ? {
             name: state.selectorState.create,

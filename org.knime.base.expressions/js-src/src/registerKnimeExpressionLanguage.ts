@@ -5,7 +5,7 @@ import { convertFunctionsToInsertionItems } from "@/components/convertFunctionsT
 import { LANGUAGE } from "@/common/constants";
 import type { GenericExpressionInitialData } from "@/common/types";
 import type { SubItem } from "@knime/scripting-editor";
-import type { TypeRendererProps } from "@/components/TypeRenderer.vue";
+import type { IconRendererProps } from "@/components/IconRenderer.vue";
 
 export type CompletionItemWithType = {
   text: string;
@@ -401,25 +401,15 @@ const register = ({
  * @param subItem
  */
 const mapSubItemToCompletionItemWithType = (
-  subItem: SubItem<TypeRendererProps>,
+  subItem: SubItem<IconRendererProps>,
 ): CompletionItemWithType => {
-  if (typeof subItem.type === "string") {
-    return {
-      text: subItem.insertionText ?? subItem.name,
-      kind: monaco.languages.CompletionItemKind.Variable,
-      extraDetailForMonaco: {
-        detail: `Type: ${subItem.type}`,
-      },
-    };
-  } else {
-    return {
-      text: subItem.insertionText ?? subItem.name,
-      kind: monaco.languages.CompletionItemKind.Variable,
-      extraDetailForMonaco: {
-        detail: `Type: ${subItem.type.props?.type ?? "UNKNOWN"}`,
-      },
-    };
-  }
+  return {
+    text: subItem.insertionText ?? subItem.name,
+    kind: monaco.languages.CompletionItemKind.Variable,
+    extraDetailForMonaco: {
+      detail: `Type: ${subItem.type}`,
+    },
+  };
 };
 
 /**
@@ -439,11 +429,11 @@ const registerKnimeExpressionLanguage = (
   const allSupportedColumns = (
     (initialData.inputObjects
       ?.map((inputItem) => inputItem.subItems ?? [])
-      .flat(1) ?? []) as SubItem<TypeRendererProps>[]
+      .flat(1) ?? []) as SubItem<IconRendererProps>[]
   ).filter((subItem) => subItem.supported);
 
   const allSupportedInputFlowVariables = (
-    (initialData.flowVariables?.subItems ?? []) as SubItem<TypeRendererProps>[]
+    (initialData.flowVariables?.subItems ?? []) as SubItem<IconRendererProps>[]
   ).filter((subItem) => subItem.supported);
 
   // Any input columns or flow variables that have insertionText specified can be passed
