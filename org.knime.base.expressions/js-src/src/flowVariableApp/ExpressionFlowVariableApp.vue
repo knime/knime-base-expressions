@@ -61,8 +61,16 @@ const refreshInputOutputItems = (
     return;
   }
 
-  const lastIndexToConsider =
-    states.findIndex((state) => state.key === activeEditorKey) + 1;
+  currentInputOutputItems.value = getInitialItems();
+
+  const lastIndexToConsider = states.findIndex(
+    (state) => state.key === activeEditorKey,
+  );
+
+  if (lastIndexToConsider === -1) {
+    return;
+  }
+
   const statesUntilActiveWithReturnTypes = states
     .slice(0, lastIndexToConsider)
     .map((state, index) => ({
@@ -74,8 +82,6 @@ const refreshInputOutputItems = (
   const focusEditorActionBuilder = (editorKey: string) => () => {
     multiEditorContainerRef.value?.setActiveEditor(editorKey);
   };
-
-  currentInputOutputItems.value = getInitialItems();
 
   currentInputOutputItems.value[0].subItems =
     currentInputOutputItems.value[0].subItems?.map((subItem) =>
