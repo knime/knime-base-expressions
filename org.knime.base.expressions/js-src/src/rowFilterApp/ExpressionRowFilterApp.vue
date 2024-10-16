@@ -24,8 +24,8 @@ import {
   registerInsertionListener,
 } from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
-import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
-import { getExpressionInitialDataService } from "@/expressionInitialDataService";
+import type { ExpressionVersion, RowFilterInitialData } from "@/common/types";
+import { getRowFilterInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowFilterNodeSettings,
   getRowFilterSettingsService,
@@ -37,7 +37,7 @@ import type {
 
 const editorRef = ref<Required<ExpressionEditorPaneExposes> | null>(null);
 
-const initialData = ref<ExpressionInitialData>();
+const initialData = ref<RowFilterInitialData>();
 const initialSettings = ref<ExpressionRowFilterNodeSettings>();
 const errorState = ref<EditorErrorState>({ level: "OK" });
 
@@ -55,7 +55,7 @@ const runDiagnosticsFunction = async () => {
 
 onMounted(async () => {
   [initialData.value, initialSettings.value] = await Promise.all([
-    getExpressionInitialDataService().getInitialData(),
+    getRowFilterInitialDataService().getInitialData(),
     getRowFilterSettingsService().getSettings(),
   ]);
 

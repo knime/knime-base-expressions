@@ -6,7 +6,7 @@ import {
   getScriptingService,
   getSettingsService,
 } from "@knime/scripting-editor";
-import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { ROW_FILTER_INITIAL_DATA } from "@/__mocks__/mock-data";
 import type { ExpressionRowFilterNodeSettings } from "@/expressionSettingsService";
 import { log } from "@/common/functions";
 
@@ -33,7 +33,7 @@ if (import.meta.env.MODE === "development.browser") {
 
   Object.assign(
     getInitialDataService(),
-    createInitialDataServiceMock(DEFAULT_INITIAL_DATA),
+    createInitialDataServiceMock(ROW_FILTER_INITIAL_DATA),
   );
 
   Object.assign(

@@ -9,8 +9,8 @@ import {
   type SubItem,
   useReadonlyStore,
 } from "@knime/scripting-editor";
-import { getExpressionInitialDataService } from "@/expressionInitialDataService";
-import type { ExpressionInitialData, ExpressionVersion } from "@/common/types";
+import { getRowMapperInitialDataService } from "@/expressionInitialDataService";
+import type { ExpressionVersion, RowMapperInitialData } from "@/common/types";
 import { LoadingIcon } from "@knime/components";
 import { onMounted, ref, shallowRef } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
@@ -42,7 +42,7 @@ import type {
   SelectorState,
 } from "@/components/OutputSelector.vue";
 
-const initialData = shallowRef<ExpressionInitialData | null>(null);
+const initialData = shallowRef<RowMapperInitialData | null>(null);
 const initialSettings = ref<ExpressionRowMapperNodeSettings | null>(null);
 const runButtonDisabledErrorReason = ref<string | null>(null);
 const multiEditorContainerRef =
@@ -186,7 +186,7 @@ const onChange = async (editorStates: EditorStates) => {
 
 onMounted(async () => {
   [initialData.value, initialSettings.value] = await Promise.all([
-    getExpressionInitialDataService().getInitialData(),
+    getRowMapperInitialDataService().getInitialData(),
     getRowMapperSettingsService().getSettings(),
   ]);
 
@@ -281,11 +281,7 @@ const initialPaneSizes = calculateInitialPaneSizes();
           <MultiEditorContainer
             ref="multiEditorContainerRef"
             item-type="column"
-            :default-replacement-item="
-              initialData?.inputObjects[0].subItems?.filter(
-                (c) => c.supported,
-              )[0].name ?? ''
-            "
+            :default-replacement-item="initialData!.columnNames[0]"
             :default-append-item="'New Column'"
             :settings="
               initialSettings.scripts.map((script, index) => ({
@@ -298,14 +294,12 @@ const initialPaneSizes = calculateInitialPaneSizes();
               }))
             "
             :replaceable-items-in-input-table="
-              initialData!.inputObjects[0].subItems
-                ?.filter((c) => c.supported)
-                .map(
-                  (c): AllowedDropDownValue => ({
-                    id: c.name,
-                    text: c.name,
-                  }),
-                ) ?? []
+              initialData!.columnNames.map(
+                (name): AllowedDropDownValue => ({
+                  id: name,
+                  text: name,
+                }),
+              ) ?? []
             "
             @on-change="onChange"
             @run-expressions="

@@ -9,7 +9,17 @@ export type ExpressionVersion = {
   builtinAggregationsVersion: number;
 };
 
-export type ExpressionInitialData = GenericInitialData & {
+export type GenericExpressionInitialData = GenericInitialData & {
   expressionVersion: ExpressionVersion;
   functionCatalog: FunctionCatalogData;
+};
+
+export type FlowVariableInitialData = GenericExpressionInitialData; // NOSONAR this type is here for consistency
+
+export type RowMapperInitialData = GenericExpressionInitialData & {
+  columnNames: string[];
+};
+
+export type RowFilterInitialData = GenericExpressionInitialData & {
+  columnNames: string[];
 };

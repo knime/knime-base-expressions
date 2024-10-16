@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { nextTick } from "vue";
-import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { ROW_MAPPER_INITIAL_DATA } from "@/__mocks__/mock-data";
 import ExpressionRowMapperApp from "../ExpressionRowMapperApp.vue";
 import { DEFAULT_ROW_MAPPER_INITIAL_SETTINGS } from "../__mocks__/browser-mock-row-mapper-services";
 import type { Diagnostic } from "@/generalDiagnostics";
@@ -13,7 +13,7 @@ vi.mock("@/registerKnimeExpressionLanguage", () => ({
 
 const mockedScriptingService = vi.hoisted(() => ({
   sendToService: vi.fn(),
-  getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+  getInitialData: vi.fn(() => Promise.resolve(ROW_MAPPER_INITIAL_DATA)),
   registerSettingsGetterForApply: vi.fn(),
   registerEventHandler: vi.fn(),
 }));
@@ -24,8 +24,8 @@ vi.mock("@knime/scripting-editor", async () => ({
 }));
 
 vi.mock("@/expressionInitialDataService", () => ({
-  getExpressionInitialDataService: vi.fn(() => ({
-    getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+  getRowMapperInitialDataService: vi.fn(() => ({
+    getInitialData: vi.fn(() => Promise.resolve(ROW_MAPPER_INITIAL_DATA)),
   })),
 }));
 
@@ -97,7 +97,7 @@ describe("ExpressionRowMapperApp.vue", () => {
     const functionCatalog = wrapper.findComponent({ name: "FunctionCatalog" });
     expect(functionCatalog.exists()).toBeTruthy();
     expect(functionCatalog.props("functionCatalogData")).toEqual(
-      DEFAULT_INITIAL_DATA.functionCatalog,
+      ROW_MAPPER_INITIAL_DATA.functionCatalog,
     );
   });
 

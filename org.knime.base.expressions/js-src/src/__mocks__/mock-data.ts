@@ -2,7 +2,12 @@ import type {
   FunctionCatalogData,
   FunctionCatalogEntryData,
 } from "@/components/functionCatalogTypes";
-import type { ExpressionInitialData } from "@/common/types";
+import type {
+  FlowVariableInitialData,
+  GenericExpressionInitialData,
+  RowFilterInitialData,
+  RowMapperInitialData,
+} from "@/common/types";
 import type {
   GenericNodeSettings,
   InputOutputModel,
@@ -27,6 +32,9 @@ export const INPUT_OBJECTS: InputOutputModel[] = [
     subItemCodeAliasTemplate: '$["{{{escapeDblQuotes subItems.[0]}}}"]',
   },
 ];
+
+export const COLUMN_NAMES: string[] =
+  INPUT_OBJECTS[0].subItems?.map((subItem) => subItem.name) ?? [];
 
 export const FLOW_VARIABLES: InputOutputModel = {
   ...DEFAULT_FLOW_VARIABLE_INPUTS,
@@ -247,7 +255,7 @@ export const FUNCTION_CATALOG: FunctionCatalogData = {
   ],
 };
 
-export const DEFAULT_INITIAL_DATA: ExpressionInitialData = {
+export const BASE_INITIAL_DATA: GenericExpressionInitialData = {
   functionCatalog: FUNCTION_CATALOG,
   inputObjects: INPUT_OBJECTS,
   flowVariables: FLOW_VARIABLES,
@@ -280,6 +288,20 @@ export const DEFAULT_INITIAL_DATA: ExpressionInitialData = {
     codeAssistantInstalled: true,
     hubId: "mocked hub id",
   },
+};
+
+export const ROW_MAPPER_INITIAL_DATA: RowMapperInitialData = {
+  ...BASE_INITIAL_DATA,
+  columnNames: COLUMN_NAMES,
+};
+
+export const ROW_FILTER_INITIAL_DATA: RowFilterInitialData = {
+  ...BASE_INITIAL_DATA,
+  columnNames: COLUMN_NAMES,
+};
+
+export const FLOW_VARIABLE_INITIAL_DATA: FlowVariableInitialData = {
+  ...BASE_INITIAL_DATA,
 };
 
 export const DEFAULT_INITIAL_SETTINGS: GenericNodeSettings = {

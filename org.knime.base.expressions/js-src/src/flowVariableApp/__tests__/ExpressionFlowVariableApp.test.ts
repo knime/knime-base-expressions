@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { nextTick } from "vue";
-import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { FLOW_VARIABLE_INITIAL_DATA } from "@/__mocks__/mock-data";
 
 import { DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS } from "../__mocks__/browser-mock-flow-variable-services";
 import ExpressionFlowVariableApp from "../ExpressionFlowVariableApp.vue";
@@ -14,7 +14,7 @@ vi.mock("@/registerKnimeExpressionLanguage", () => ({
 
 const mockedScriptingService = vi.hoisted(() => ({
   sendToService: vi.fn(),
-  getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+  getInitialData: vi.fn(() => Promise.resolve(FLOW_VARIABLE_INITIAL_DATA)),
   registerSettingsGetterForApply: vi.fn(),
   registerEventHandler: vi.fn(),
 }));
@@ -25,8 +25,8 @@ vi.mock("@knime/scripting-editor", async () => ({
 }));
 
 vi.mock("@/expressionInitialDataService", () => ({
-  getExpressionInitialDataService: vi.fn(() => ({
-    getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+  getFlowVariableInitialDataService: vi.fn(() => ({
+    getInitialData: vi.fn(() => Promise.resolve(FLOW_VARIABLE_INITIAL_DATA)),
   })),
 }));
 
@@ -97,7 +97,7 @@ describe("ExpressionFlowVariableApp.vue", () => {
     const functionCatalog = wrapper.findComponent({ name: "FunctionCatalog" });
     expect(functionCatalog.exists()).toBeTruthy();
     expect(functionCatalog.props("functionCatalogData")).toEqual(
-      DEFAULT_INITIAL_DATA.functionCatalog,
+      FLOW_VARIABLE_INITIAL_DATA.functionCatalog,
     );
   });
 

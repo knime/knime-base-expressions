@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { nextTick } from "vue";
 import ExpressionRowFilterApp from "../ExpressionRowFilterApp.vue";
-import { DEFAULT_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { ROW_FILTER_INITIAL_DATA } from "@/__mocks__/mock-data";
 import { DEFAULT_ROW_FILTER_INITIAL_SETTINGS } from "../__mocks__/browser-mock-row-filter-services";
 import type { EditorErrorState } from "@/generalDiagnostics";
 
@@ -13,7 +13,7 @@ vi.mock("@/registerKnimeExpressionLanguage", () => ({
 
 const mockedScriptingService = vi.hoisted(() => ({
   sendToService: vi.fn(),
-  getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+  getInitialData: vi.fn(() => Promise.resolve(ROW_FILTER_INITIAL_DATA)),
   registerSettingsGetterForApply: vi.fn(),
   registerEventHandler: vi.fn(),
 }));
@@ -24,8 +24,8 @@ vi.mock("@knime/scripting-editor", async () => ({
 }));
 
 vi.mock("@/expressionInitialDataService", () => ({
-  getExpressionInitialDataService: vi.fn(() => ({
-    getInitialData: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_DATA)),
+  getRowFilterInitialDataService: vi.fn(() => ({
+    getInitialData: vi.fn(() => Promise.resolve(ROW_FILTER_INITIAL_DATA)),
   })),
 }));
 
@@ -91,7 +91,7 @@ describe("ExpressionsRowFilterApp.vue", () => {
     const functionCatalog = wrapper.findComponent({ name: "FunctionCatalog" });
     expect(functionCatalog.exists()).toBeTruthy();
     expect(functionCatalog.props("functionCatalogData")).toEqual(
-      DEFAULT_INITIAL_DATA.functionCatalog,
+      ROW_FILTER_INITIAL_DATA.functionCatalog,
     );
   });
 });

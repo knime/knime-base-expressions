@@ -1,3 +1,4 @@
+import type { CompletionItemWithType } from "@/registerKnimeExpressionLanguage";
 import { functionDataToMarkdown } from "./function-catalog/functionDescriptionToMarkdown";
 import type { FunctionCatalogEntryData } from "./functionCatalogTypes";
 import * as monaco from "monaco-editor";
@@ -12,7 +13,7 @@ import * as monaco from "monaco-editor";
  */
 export const convertFunctionsToInsertionItems = (
   entries: FunctionCatalogEntryData[],
-) => {
+): CompletionItemWithType[] => {
   return entries.map((entry) => {
     if (entry.entryType === "function") {
       // closest we can get to a list comprehension over a range in JS

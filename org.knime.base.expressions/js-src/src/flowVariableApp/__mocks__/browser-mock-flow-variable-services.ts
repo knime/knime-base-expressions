@@ -6,7 +6,10 @@ import {
   getScriptingService,
   getSettingsService,
 } from "@knime/scripting-editor";
-import { DEFAULT_INITIAL_DATA, FLOW_VARIABLES } from "@/__mocks__/mock-data";
+import {
+  FLOW_VARIABLE_INITIAL_DATA,
+  FLOW_VARIABLES,
+} from "@/__mocks__/mock-data";
 import type { ExpressionFlowVariableNodeSettings } from "@/expressionSettingsService";
 import { log } from "@/common/functions";
 
@@ -37,7 +40,7 @@ if (import.meta.env.MODE === "development.browser") {
 
   Object.assign(
     getInitialDataService(),
-    createInitialDataServiceMock(DEFAULT_INITIAL_DATA),
+    createInitialDataServiceMock(FLOW_VARIABLE_INITIAL_DATA),
   );
 
   Object.assign(

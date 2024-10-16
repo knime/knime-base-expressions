@@ -6,7 +6,7 @@ import {
   getScriptingService,
   getSettingsService,
 } from "@knime/scripting-editor";
-import { DEFAULT_INITIAL_DATA, INPUT_OBJECTS } from "@/__mocks__/mock-data";
+import { ROW_MAPPER_INITIAL_DATA, INPUT_OBJECTS } from "@/__mocks__/mock-data";
 import type { ExpressionRowMapperNodeSettings } from "@/expressionSettingsService";
 import { log } from "@/common/functions";
 
@@ -36,7 +36,7 @@ if (import.meta.env.MODE === "development.browser") {
 
   Object.assign(
     getInitialDataService(),
-    createInitialDataServiceMock(DEFAULT_INITIAL_DATA),
+    createInitialDataServiceMock(ROW_MAPPER_INITIAL_DATA),
   );
 
   Object.assign(

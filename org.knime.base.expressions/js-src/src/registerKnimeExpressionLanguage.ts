@@ -3,7 +3,7 @@ import { functionDataToMarkdown } from "@/components/function-catalog/functionDe
 import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
 import { convertFunctionsToInsertionItems } from "@/components/convertFunctionsToInsertionItems";
 import { LANGUAGE } from "@/common/constants";
-import type { ExpressionInitialData } from "@/common/types";
+import type { GenericExpressionInitialData } from "@/common/types";
 import type { SubItem } from "@knime/scripting-editor";
 import type { TypeRendererProps } from "@/components/TypeRenderer.vue";
 
@@ -11,11 +11,6 @@ export type CompletionItemWithType = {
   text: string;
   kind: monaco.languages.CompletionItemKind;
   extraDetailForMonaco: { [key: string]: any };
-};
-
-export type ColumnWithDType = {
-  name: string;
-  type: string;
 };
 
 /**
@@ -44,8 +39,8 @@ const register = ({
   functionData = [],
   languageName = "knime-expression",
 }: {
-  columnNamesForCompletion?: Array<ColumnWithDType>;
-  flowVariableNamesForCompletion?: Array<ColumnWithDType>;
+  columnNamesForCompletion?: Array<CompletionItemWithType>;
+  flowVariableNamesForCompletion?: Array<CompletionItemWithType>;
   extraCompletionItems?: Array<CompletionItemWithType>;
   functionData?: FunctionCatalogEntryData[];
   languageName?: string;
@@ -246,29 +241,32 @@ const register = ({
 
         const mapInputNameReducerFactory =
           (prefix: string) =>
-          (aggregation: OptionalSuggestion[], column: ColumnWithDType) => {
+          (
+            aggregation: OptionalSuggestion[],
+            column: CompletionItemWithType,
+          ) => {
             // Add column shorthand as an option if we can
-            if (/^[_a-zA-Z]\w*$/.test(column.name)) {
+            if (/^[_a-zA-Z]\w*$/.test(column.text)) {
               aggregation.push({
-                text: `${prefix}${column.name}`,
+                ...column,
+                text: `${prefix}${column.text}`,
                 requirePrefixMatches: RegExp(
                   `^.*${escapeRegex(prefix)}([A-Za-z_]\\w*)?$`,
                 ),
-                extraDetailForMonaco: { detail: `Type: ${column.type}` },
               });
             }
             // Add the longhand methods (single and double quotes both)
             aggregation.push({
-              text: `${prefix}['${escapeColumnName(column.name, "'")}']`,
+              ...column,
+              text: `${prefix}['${escapeColumnName(column.text, "'")}']`,
               requirePrefixMatches: RegExp(`^.*${escapeRegex(prefix)}\\['.*$`),
-              extraDetailForMonaco: { detail: `Type: ${column.type}` },
             });
             aggregation.push({
-              text: `${prefix}["${escapeColumnName(column.name, '"')}"]`,
+              ...column,
+              text: `${prefix}["${escapeColumnName(column.text, '"')}"]`,
               requirePrefixMatches: RegExp(
                 `^.*${escapeRegex(prefix)}($|(\\[("?).*$))`,
               ),
-              extraDetailForMonaco: { detail: `Type: ${column.type}` },
             });
 
             return aggregation;
@@ -399,30 +397,29 @@ const register = ({
 };
 
 /**
- * Mapper to map a subItem to a ColumnWithDType.
+ * Mapper to map a SubItem to a CompletionItemWithType.
  * @param subItem
  */
-const mapSubItemToColumnWithDType = (subItem: SubItem<TypeRendererProps>) => {
+const mapSubItemToCompletionItemWithType = (
+  subItem: SubItem<TypeRendererProps>,
+): CompletionItemWithType => {
   if (typeof subItem.type === "string") {
     return {
-      name: subItem.name,
-      type: subItem.type,
+      text: subItem.insertionText ?? subItem.name,
+      kind: monaco.languages.CompletionItemKind.Variable,
+      extraDetailForMonaco: {
+        detail: `Type: ${subItem.type}`,
+      },
     };
   } else {
     return {
-      name: subItem.name,
-      type: subItem.type.props?.type ?? "UNKNOWN",
+      text: subItem.insertionText ?? subItem.name,
+      kind: monaco.languages.CompletionItemKind.Variable,
+      extraDetailForMonaco: {
+        detail: `Type: ${subItem.type.props?.type ?? "UNKNOWN"}`,
+      },
     };
   }
-};
-
-/**
- * Options for the autocompletion.
- * @param specialColumnAccess whether to include special column accesses
- * "$[ROW_ID]", "$[ROW_INDEX]", "$[ROW_NUMBER]"
- */
-export type RegisterKnimeExpressionLanguageOptions = {
-  specialColumnAccess?: boolean;
 };
 
 /**
@@ -437,37 +434,55 @@ export type RegisterKnimeExpressionLanguageOptions = {
  *          suggestions, call this.
  */
 const registerKnimeExpressionLanguage = (
-  initialData: ExpressionInitialData,
-  options?: RegisterKnimeExpressionLanguageOptions,
+  initialData: GenericExpressionInitialData,
 ) => {
-  const registerSpecialColumnAccess = options?.specialColumnAccess ?? true;
+  const allSupportedColumns = (
+    (initialData.inputObjects
+      ?.map((inputItem) => inputItem.subItems ?? [])
+      .flat(1) ?? []) as SubItem<TypeRendererProps>[]
+  ).filter((subItem) => subItem.supported);
 
-  const inputColumns = (initialData.inputObjects?.[0]?.subItems ??
-    []) as SubItem<TypeRendererProps>[];
+  const allSupportedInputFlowVariables = (
+    (initialData.flowVariables?.subItems ?? []) as SubItem<TypeRendererProps>[]
+  ).filter((subItem) => subItem.supported);
 
-  const inputFlowVariables = (initialData.flowVariables?.subItems ??
-    []) as SubItem<TypeRendererProps>[];
+  // Any input columns or flow variables that have insertionText specified can be passed
+  // as extraCompletionItems directly (but we also have to remove them from the other lists)
+  const inputsWithInsertionText: CompletionItemWithType[] = [
+    ...allSupportedInputFlowVariables,
+    ...allSupportedColumns,
+  ]
+    .filter((input) => input.insertionText)
+    .map((input) => ({
+      text: input.insertionText!,
+      kind: monaco.languages.CompletionItemKind.Variable,
+      extraDetailForMonaco: {
+        detail: `Type: ${input.type}`, // NOSONAR
+      },
+    }));
+  // TODO(AP-23422): remove the NOSONAR above when the type becomes a string
+
+  const inputsWithoutInsertionText = allSupportedColumns.filter(
+    (column) => !column.insertionText,
+  );
+
+  const flowVariablesWithoutInsertionText =
+    allSupportedInputFlowVariables.filter(
+      (flowVariable) => !flowVariable.insertionText,
+    );
 
   return register({
-    columnNamesForCompletion: inputColumns
-      .filter((column) => column.supported)
-      .map(mapSubItemToColumnWithDType),
-    flowVariableNamesForCompletion: inputFlowVariables.map(
-      mapSubItemToColumnWithDType,
+    columnNamesForCompletion: inputsWithoutInsertionText.map(
+      mapSubItemToCompletionItemWithType,
+    ),
+    flowVariableNamesForCompletion: flowVariablesWithoutInsertionText.map(
+      mapSubItemToCompletionItemWithType,
     ),
     extraCompletionItems: [
       ...convertFunctionsToInsertionItems(
         initialData.functionCatalog.functions,
       ),
-      ...(registerSpecialColumnAccess
-        ? ["$[ROW_ID]", "$[ROW_INDEX]", "$[ROW_NUMBER]"].map((item) => ({
-            text: item,
-            kind: monaco.languages.CompletionItemKind.Variable,
-            extraDetailForMonaco: {
-              detail: "Type: INTEGER",
-            },
-          }))
-        : []),
+      ...inputsWithInsertionText,
     ],
     functionData: initialData.functionCatalog.functions,
     languageName: LANGUAGE,
