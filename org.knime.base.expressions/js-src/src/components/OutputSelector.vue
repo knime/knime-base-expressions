@@ -58,6 +58,9 @@ const allowedOperationModes = [
   { id: "REPLACE_EXISTING", text: "Replace" },
 ];
 
+const isStringFalsy = (s: string | null | undefined): boolean =>
+  !s || s.trim() === "";
+
 const paintFocus = useShouldFocusBePainted();
 </script>
 
@@ -67,7 +70,12 @@ const paintFocus = useShouldFocusBePainted();
       <ValueSwitch
         v-model="modelValue.outputMode"
         :possible-values="allowedOperationModes"
-        :disabled="props.allowedReplacementEntities.length === 0 || readOnly"
+        :disabled="
+          (props.allowedReplacementEntities.length === 0 &&
+            modelValue.outputMode === 'APPEND' &&
+            isStringFalsy(modelValue.replace)) ||
+          readOnly
+        "
         class="switch-button"
         :class="{ 'focus-painted': paintFocus }"
         compact
