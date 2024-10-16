@@ -11,6 +11,7 @@ import type {
 import type {
   GenericNodeSettings,
   InputOutputModel,
+  SubItem,
 } from "@knime/scripting-editor";
 import { DEFAULT_FLOW_VARIABLE_INPUTS } from "@knime/scripting-editor/initial-data-service-browser-mock";
 
@@ -29,7 +30,13 @@ export const INPUT_OBJECTS: InputOutputModel[] = [
       { name: 'b\\lah"blah', type: "problem", supported: true },
     ],
     multiSelection: false,
-    subItemCodeAliasTemplate: '$["{{{escapeDblQuotes subItems.[0]}}}"]',
+    subItemCodeAliasTemplate: `
+            {{~#if subItems.[0].insertionText~}}
+                {{ subItems.[0].insertionText }}
+            {{~else~}}
+                $[" {{~{ escapeDblQuotes subItems.[0].name }~}} "]
+            {{~/if~}}
+    `,
   },
 ];
 
@@ -290,13 +297,48 @@ export const BASE_INITIAL_DATA: GenericExpressionInitialData = {
   },
 };
 
+const ROW_INFO_SUBITEMS: SubItem<Record<string, any>>[] = [
+  {
+    name: "$[ROW_NUMBER]",
+    type: "INTEGER",
+    supported: true,
+    insertionText: "$[ROW_NUMBER]",
+  },
+  {
+    name: "$[ROW_INDEX]",
+    type: "INTEGER",
+    supported: true,
+    insertionText: "$[ROW_INDEX]",
+  },
+  {
+    name: "$[ROW_ID]",
+    type: "STRING",
+    supported: true,
+    insertionText: "$[ROW_ID]",
+  },
+];
+
 export const ROW_MAPPER_INITIAL_DATA: RowMapperInitialData = {
   ...BASE_INITIAL_DATA,
+  inputObjects: [
+    {
+      ...INPUT_OBJECTS[0],
+      subItems: [...ROW_INFO_SUBITEMS, ...INPUT_OBJECTS[0].subItems!],
+    },
+    ...INPUT_OBJECTS.slice(1),
+  ],
   columnNames: COLUMN_NAMES,
 };
 
 export const ROW_FILTER_INITIAL_DATA: RowFilterInitialData = {
   ...BASE_INITIAL_DATA,
+  inputObjects: [
+    {
+      ...INPUT_OBJECTS[0],
+      subItems: [...ROW_INFO_SUBITEMS, ...INPUT_OBJECTS[0].subItems!],
+    },
+    ...INPUT_OBJECTS.slice(1),
+  ],
   columnNames: COLUMN_NAMES,
 };
 
