@@ -49,6 +49,8 @@ const multiEditorContainerRef =
 
 const currentInputOutputItems = ref<InputOutputModel[]>();
 
+const appendedSubItems = ref<SubItem<Record<string, any>>[]>([]);
+
 const getInitialItems = (): InputOutputModel[] => {
   return initialData.value
     ? [structuredClone(initialData.value?.flowVariables)]
@@ -99,18 +101,21 @@ const refreshInputOutputItems = (
       (state) => state.selectorState.outputMode === "APPEND",
     )
   ) {
-    currentInputOutputItems.value.push(
-      buildAppendedOutput(
-        statesUntilActiveWithReturnTypes,
-        focusEditorActionBuilder,
-        {
-          name: "f(X) appended flow variables",
-          portType: "flowVariable",
-          subItemCodeAliasTemplate:
-            currentInputOutputItems.value[0].subItemCodeAliasTemplate,
-        },
-      ),
+    const appendedInputOutputItem = buildAppendedOutput(
+      statesUntilActiveWithReturnTypes,
+      focusEditorActionBuilder,
+      {
+        name: "f(X) appended flow variables",
+        portType: "flowVariable",
+        subItemCodeAliasTemplate:
+          currentInputOutputItems.value[0].subItemCodeAliasTemplate,
+      },
     );
+
+    currentInputOutputItems.value.push(appendedInputOutputItem);
+    appendedSubItems.value = appendedInputOutputItem.subItems ?? [];
+  } else {
+    appendedSubItems.value = [];
   }
 };
 
@@ -185,7 +190,14 @@ onMounted(async () => {
     getFlowVariableSettingsService().getSettings(),
   ]);
 
-  registerKnimeExpressionLanguage(initialData.value);
+  registerKnimeExpressionLanguage({
+    columnGetter: () => [],
+    flowVariableGetter: () => [
+      ...(currentInputOutputItems.value?.[0].subItems ?? []),
+      ...appendedSubItems.value,
+    ],
+    functionData: initialData.value?.functionCatalog.functions,
+  });
 
   useReadonlyStore().value =
     initialSettings.value.settingsAreOverriddenByFlowVariable ?? false;

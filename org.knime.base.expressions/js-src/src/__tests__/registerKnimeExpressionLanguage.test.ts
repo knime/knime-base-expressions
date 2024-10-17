@@ -20,16 +20,22 @@ beforeAll(() => {
   });
 });
 
+const registerKnimeExpressionLanguageArgs = {
+  functionData: BASE_INITIAL_DATA.functionCatalog.functions,
+  columnGetter: () => BASE_INITIAL_DATA.inputObjects[0].subItems ?? [],
+  flowVariableGetter: () => BASE_INITIAL_DATA.flowVariables.subItems ?? [],
+};
+
 describe("registerKnimeExpressionLanguage", () => {
   it("registers the language", () => {
-    registerKnimeExpressionLanguage(BASE_INITIAL_DATA);
+    registerKnimeExpressionLanguage(registerKnimeExpressionLanguageArgs);
     expect(monaco.languages.register).toHaveBeenCalledWith({
       id: "knime-expression",
     });
   });
 
   it("registers a configuration", () => {
-    registerKnimeExpressionLanguage(BASE_INITIAL_DATA);
+    registerKnimeExpressionLanguage(registerKnimeExpressionLanguageArgs);
 
     expect(monaco.languages.setLanguageConfiguration).toHaveBeenCalledWith(
       "knime-expression",
@@ -38,7 +44,7 @@ describe("registerKnimeExpressionLanguage", () => {
   });
 
   it("registers monarch tokeniser", () => {
-    registerKnimeExpressionLanguage(BASE_INITIAL_DATA);
+    registerKnimeExpressionLanguage(registerKnimeExpressionLanguageArgs);
 
     expect(monaco.languages.setMonarchTokensProvider).toHaveBeenCalledWith(
       "knime-expression",
@@ -47,7 +53,7 @@ describe("registerKnimeExpressionLanguage", () => {
   });
 
   it("registers a theme", () => {
-    registerKnimeExpressionLanguage(BASE_INITIAL_DATA);
+    registerKnimeExpressionLanguage(registerKnimeExpressionLanguageArgs);
 
     expect(monaco.editor.defineTheme).toHaveBeenCalledWith(
       "knime-expression",
@@ -56,7 +62,7 @@ describe("registerKnimeExpressionLanguage", () => {
   });
 
   it("registers autocompletion", () => {
-    registerKnimeExpressionLanguage(BASE_INITIAL_DATA);
+    registerKnimeExpressionLanguage(registerKnimeExpressionLanguageArgs);
 
     expect(
       monaco.languages.registerCompletionItemProvider,
@@ -64,7 +70,7 @@ describe("registerKnimeExpressionLanguage", () => {
   });
 
   it("registers hover", () => {
-    registerKnimeExpressionLanguage(BASE_INITIAL_DATA);
+    registerKnimeExpressionLanguage(registerKnimeExpressionLanguageArgs);
 
     expect(monaco.languages.registerHoverProvider).toHaveBeenCalledWith(
       "knime-expression",
@@ -73,7 +79,9 @@ describe("registerKnimeExpressionLanguage", () => {
   });
 
   it("returns a disposal function that disposes registered providers", () => {
-    const dispose = registerKnimeExpressionLanguage(BASE_INITIAL_DATA);
+    const dispose = registerKnimeExpressionLanguage(
+      registerKnimeExpressionLanguageArgs,
+    );
     dispose();
     expect(disposeOfCompletionProvider).toHaveBeenCalled();
     expect(disposeOfHoverProvider).toHaveBeenCalled();

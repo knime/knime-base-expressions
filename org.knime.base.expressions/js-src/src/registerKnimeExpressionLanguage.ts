@@ -3,15 +3,38 @@ import { functionDataToMarkdown } from "@/components/function-catalog/functionDe
 import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
 import { convertFunctionsToInsertionItems } from "@/components/convertFunctionsToInsertionItems";
 import { LANGUAGE } from "@/common/constants";
-import type { GenericExpressionInitialData } from "@/common/types";
 import type { SubItem } from "@knime/scripting-editor";
-import type { IconRendererProps } from "@/components/IconRenderer.vue";
 
 export type CompletionItemWithType = {
   text: string;
   kind: monaco.languages.CompletionItemKind;
   extraDetailForMonaco: { [key: string]: any };
 };
+
+/**
+ * Mapper to map a SubItem to a CompletionItemWithType.
+ * @param subItem
+ */
+const mapSubItemToCompletionItemWithType = (
+  subItem: SubItem<Record<string, any>>,
+): CompletionItemWithType => ({
+  text: subItem.insertionText ?? subItem.name,
+  kind: monaco.languages.CompletionItemKind.Variable,
+  extraDetailForMonaco: {
+    detail: `Type: ${subItem.type}`,
+  },
+});
+
+const mapCompletionItemWithTypeToMonacoCompletionItem = (
+  completionItemWithType: CompletionItemWithType,
+  range: monaco.Range,
+): monaco.languages.CompletionItem => ({
+  label: completionItemWithType.text,
+  kind: completionItemWithType.kind,
+  insertText: completionItemWithType.text,
+  range,
+  ...completionItemWithType.extraDetailForMonaco,
+});
 
 /**
  * Set up the knime-expression language and register it with Monaco.
@@ -33,18 +56,18 @@ export type CompletionItemWithType = {
  *          suggestions, call this.
  */
 const register = ({
-  columnNamesForCompletion = [],
-  flowVariableNamesForCompletion = [],
-  extraCompletionItems = [],
-  functionData = [],
-  languageName = "knime-expression",
+  columnGetter,
+  flowVariableGetter,
+  extraCompletionItems,
+  functionData,
+  languageName,
 }: {
-  columnNamesForCompletion?: Array<CompletionItemWithType>;
-  flowVariableNamesForCompletion?: Array<CompletionItemWithType>;
-  extraCompletionItems?: Array<CompletionItemWithType>;
-  functionData?: FunctionCatalogEntryData[];
-  languageName?: string;
-} = {}) => {
+  columnGetter: () => SubItem<Record<string, any>>[];
+  flowVariableGetter: () => SubItem<Record<string, any>>[];
+  extraCompletionItems: CompletionItemWithType[];
+  functionData: FunctionCatalogEntryData[];
+  languageName: string;
+}) => {
   monaco.languages.register({ id: languageName });
 
   monaco.languages.setMonarchTokensProvider(languageName, {
@@ -203,6 +226,20 @@ const register = ({
     monaco.languages.registerCompletionItemProvider(languageName, {
       triggerCharacters: ["$"],
       provideCompletionItems: (model, position) => {
+        const allSupportedColumns = columnGetter().filter(
+          (subItem) => subItem.supported,
+        );
+        const allSupportedFlowVariables = flowVariableGetter().filter(
+          (subItem) => subItem.supported,
+        );
+
+        const columnNamesForCompletion = allSupportedColumns
+          .filter((c) => !c.insertionText)
+          .map(mapSubItemToCompletionItemWithType);
+        const flowVariableNamesForCompletion = allSupportedFlowVariables
+          .filter((c) => !c.insertionText)
+          .map(mapSubItemToCompletionItemWithType);
+
         // Suggestion that is provided iff the characters before the start of
         // the current word match the regex.
         type OptionalSuggestion = {
@@ -215,21 +252,40 @@ const register = ({
           extraDetailForMonaco: { [key: string]: any };
         };
 
-        const staticSuggestions = extraCompletionItems.map(
-          (item: CompletionItemWithType) => ({
+        const staticSuggestionRange = new monaco.Range(
+          position.lineNumber,
+          position.column,
+          position.lineNumber,
+          model.getWordUntilPosition(position).startColumn,
+        );
+        const staticSuggestions: monaco.languages.CompletionItem[] = [
+          ...extraCompletionItems.map((item: CompletionItemWithType) => ({
             // Replace from beginning of current word
             label: item.text,
             kind: item.kind,
             insertText: item.text,
-            range: new monaco.Range(
-              position.lineNumber,
-              position.column,
-              position.lineNumber,
-              model.getWordUntilPosition(position).startColumn,
-            ),
+            range: staticSuggestionRange,
             ...item.extraDetailForMonaco,
-          }),
-        );
+          })),
+          ...allSupportedColumns
+            .filter((c) => c.insertionText)
+            .map(mapSubItemToCompletionItemWithType)
+            .map((x) =>
+              mapCompletionItemWithTypeToMonacoCompletionItem(
+                x,
+                staticSuggestionRange,
+              ),
+            ),
+          ...allSupportedFlowVariables
+            .filter((c) => c.insertionText)
+            .map(mapSubItemToCompletionItemWithType)
+            .map((x) =>
+              mapCompletionItemWithTypeToMonacoCompletionItem(
+                x,
+                staticSuggestionRange,
+              ),
+            ),
+        ];
 
         const escapeRegex = (text: string) =>
           text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
@@ -397,22 +453,6 @@ const register = ({
 };
 
 /**
- * Mapper to map a SubItem to a CompletionItemWithType.
- * @param subItem
- */
-const mapSubItemToCompletionItemWithType = (
-  subItem: SubItem<IconRendererProps>,
-): CompletionItemWithType => {
-  return {
-    text: subItem.insertionText ?? subItem.name,
-    kind: monaco.languages.CompletionItemKind.Variable,
-    extraDetailForMonaco: {
-      detail: `Type: ${subItem.type}`,
-    },
-  };
-};
-
-/**
  * Set up the knime-expression language and register it with Monaco directly from initial data.
  *
  * @param initialData the initial data from the initialData service to use for
@@ -423,58 +463,21 @@ const mapSubItemToCompletionItemWithType = (
  *          language multiple times, e.g. to add/remove autocompletion
  *          suggestions, call this.
  */
-const registerKnimeExpressionLanguage = (
-  initialData: GenericExpressionInitialData,
-) => {
-  const allSupportedColumns = (
-    (initialData.inputObjects
-      ?.map((inputItem) => inputItem.subItems ?? [])
-      .flat(1) ?? []) as SubItem<IconRendererProps>[]
-  ).filter((subItem) => subItem.supported);
-
-  const allSupportedInputFlowVariables = (
-    (initialData.flowVariables?.subItems ?? []) as SubItem<IconRendererProps>[]
-  ).filter((subItem) => subItem.supported);
-
-  // Any input columns or flow variables that have insertionText specified can be passed
-  // as extraCompletionItems directly (but we also have to remove them from the other lists)
-  const inputsWithInsertionText: CompletionItemWithType[] = [
-    ...allSupportedInputFlowVariables,
-    ...allSupportedColumns,
-  ]
-    .filter((input) => input.insertionText)
-    .map((input) => ({
-      text: input.insertionText!,
-      kind: monaco.languages.CompletionItemKind.Variable,
-      extraDetailForMonaco: {
-        detail: `Type: ${input.type}`, // NOSONAR
-      },
-    }));
-  // TODO(AP-23422): remove the NOSONAR above when the type becomes a string
-
-  const inputsWithoutInsertionText = allSupportedColumns.filter(
-    (column) => !column.insertionText,
-  );
-
-  const flowVariablesWithoutInsertionText =
-    allSupportedInputFlowVariables.filter(
-      (flowVariable) => !flowVariable.insertionText,
-    );
-
+const registerKnimeExpressionLanguage = ({
+  columnGetter = () => [],
+  flowVariableGetter = () => [],
+  functionData = [],
+}: {
+  columnGetter?: () => SubItem<Record<string, any>>[];
+  flowVariableGetter?: () => SubItem<Record<string, any>>[];
+  functionData?: FunctionCatalogEntryData[];
+  languageName?: string;
+} = {}) => {
   return register({
-    columnNamesForCompletion: inputsWithoutInsertionText.map(
-      mapSubItemToCompletionItemWithType,
-    ),
-    flowVariableNamesForCompletion: flowVariablesWithoutInsertionText.map(
-      mapSubItemToCompletionItemWithType,
-    ),
-    extraCompletionItems: [
-      ...convertFunctionsToInsertionItems(
-        initialData.functionCatalog.functions,
-      ),
-      ...inputsWithInsertionText,
-    ],
-    functionData: initialData.functionCatalog.functions,
+    columnGetter,
+    flowVariableGetter,
+    extraCompletionItems: convertFunctionsToInsertionItems(functionData),
+    functionData,
     languageName: LANGUAGE,
   });
 };
