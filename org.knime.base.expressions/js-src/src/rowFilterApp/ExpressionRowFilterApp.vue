@@ -6,7 +6,7 @@ import {
   ScriptingEditor,
   setActiveEditorStoreForAi,
   useReadonlyStore,
-  useRegisterScriptSettingsChange,
+  getSettingsService,
 } from "@knime/scripting-editor";
 import { onKeyStroke } from "@vueuse/core";
 import { computed, onMounted, ref, watch } from "vue";
@@ -101,13 +101,12 @@ onMounted(async () => {
     },
   );
 
-  useRegisterScriptSettingsChange(
-    "model",
-    () => editorReference.getEditorState().text.value,
-  );
+  const register = await getSettingsService().registerSettings("model");
+  const onScriptChange = register(initialSettings.value.script);
 
   watch(editorReference.getEditorState().text, () => {
     runDiagnosticsFunction();
+    onScriptChange.setValue(editorReference.getEditorState().text.value);
   });
   await runDiagnosticsFunction();
 });
