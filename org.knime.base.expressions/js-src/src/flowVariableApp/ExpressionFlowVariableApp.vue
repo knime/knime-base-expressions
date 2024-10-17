@@ -186,7 +186,7 @@ onMounted(async () => {
     getFlowVariableSettingsService().getSettings(),
   ]);
 
-  registerKnimeExpressionLanguage(initialData.value);
+  registerKnimeExpressionLanguage(initialData.value, () => [], () => );
 
   useReadonlyStore().value =
     initialSettings.value.settingsAreOverriddenByFlowVariable ?? false;

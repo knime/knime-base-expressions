@@ -198,7 +198,12 @@ onMounted(async () => {
 
   currentInputOutputItems.value = getInitialItems();
 
-  registerKnimeExpressionLanguage(initialData.value);
+  registerKnimeExpressionLanguage({
+    columnGetter: () => currentInputOutputItems.value?.[0].subItems ?? [],
+    flowVariableGetter: () => initialData.value?.flowVariables.subItems ?? [],
+    extraCompletionItems: [],
+    functionData: initialData.value?.functionCatalog.functions,
+  });
 
   useReadonlyStore().value =
     initialSettings.value.settingsAreOverriddenByFlowVariable ?? false;
