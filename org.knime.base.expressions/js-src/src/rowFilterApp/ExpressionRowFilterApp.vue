@@ -64,7 +64,11 @@ onMounted(async () => {
       warning: "No input available. Connect an executed node.",
     });
   }
-  registerKnimeExpressionLanguage(initialData.value);
+  registerKnimeExpressionLanguage({
+    columnGetter: () => initialData.value?.inputObjects[0].subItems ?? [],
+    flowVariableGetter: () => initialData.value?.flowVariables.subItems ?? [],
+    functionData: initialData.value?.functionCatalog.functions,
+  });
 
   useReadonlyStore().value =
     initialSettings.value.settingsAreOverriddenByFlowVariable || false;

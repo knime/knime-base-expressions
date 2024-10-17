@@ -48,6 +48,7 @@ const runButtonDisabledErrorReason = ref<string | null>(null);
 const multiEditorContainerRef =
   ref<InstanceType<typeof MultiEditorContainer>>();
 const currentInputOutputItems = ref<InputOutputModel[]>();
+const appendedSubItems = ref<SubItem<Record<string, any>>[]>([]);
 
 const getInitialItems = (): InputOutputModel[] => {
   if (initialData.value === null) {
@@ -105,18 +106,20 @@ const refreshInputOutputItems = (
       (state) => state.selectorState.outputMode === "APPEND",
     )
   ) {
-    currentInputOutputItems.value.push(
-      buildAppendedOutput(
-        statesUntilActiveWithReturnTypes,
-        focusEditorActionBuilder,
-        {
-          name: "f(X) appended columns",
-          portType: "table",
-          subItemCodeAliasTemplate:
-            currentInputOutputItems.value[0].subItemCodeAliasTemplate,
-        },
-      ),
+    const appendedInputOutputItem = buildAppendedOutput(
+      statesUntilActiveWithReturnTypes,
+      focusEditorActionBuilder,
+      {
+        name: "f(X) appended columns",
+        portType: "table",
+        subItemCodeAliasTemplate:
+          currentInputOutputItems.value[0].subItemCodeAliasTemplate,
+      },
     );
+    appendedSubItems.value = appendedInputOutputItem.subItems ?? [];
+    currentInputOutputItems.value.push(appendedInputOutputItem);
+  } else {
+    appendedSubItems.value = [];
   }
 };
 
@@ -198,7 +201,15 @@ onMounted(async () => {
 
   currentInputOutputItems.value = getInitialItems();
 
-  registerKnimeExpressionLanguage(initialData.value);
+  registerKnimeExpressionLanguage({
+    columnGetter: () => [
+      ...(currentInputOutputItems.value?.[0].subItems ?? []),
+      ...appendedSubItems.value,
+    ],
+    flowVariableGetter: () => initialData.value?.flowVariables.subItems ?? [],
+    extraCompletionItems: [],
+    functionData: initialData.value?.functionCatalog.functions,
+  });
 
   useReadonlyStore().value =
     initialSettings.value.settingsAreOverriddenByFlowVariable ?? false;
