@@ -11,7 +11,10 @@ import { onKeyStroke } from "@vueuse/core";
 import { computed, onMounted, ref, watch } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
-import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
+import {
+  MAX_WIDTH_FUNCTION_CATALOG,
+  MIN_WIDTH_FUNCTION_CATALOG,
+} from "@/components/function-catalog/contraints";
 
 import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
@@ -167,7 +170,10 @@ const initialPaneSizes = calculateInitialPaneSizes();
 <template>
   <main>
     <ScriptingEditor
-      :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
+      :right-pane-width-limits-pixels="{
+        min: MIN_WIDTH_FUNCTION_CATALOG,
+        max: MAX_WIDTH_FUNCTION_CATALOG,
+      }"
       :show-control-bar="true"
       :language="LANGUAGE"
       :initial-pane-sizes="{
