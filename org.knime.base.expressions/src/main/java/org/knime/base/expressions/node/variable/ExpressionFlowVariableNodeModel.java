@@ -321,14 +321,16 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         var computedValue = computer.compute(ctx);
 
         if (returnType == FlowVariableTypeNames.INTEGER) {
-            var isCastingSafelyPossible = computedValue >= Integer.MIN_VALUE && computedValue <= Integer.MAX_VALUE;
-            if (!isCastingSafelyPossible) {
-                ctx.addWarning("The result is outside the range of the integer type. "
-                    + "The result will be set to '0'. Use a long flow variable type instead.");
-                return new FlowVariable(name, IntType.INSTANCE, 0);
+            if (computedValue < Integer.MIN_VALUE) {
+                ctx.addWarning("The result " + computedValue + " is below the minimum value of integer numbers. "
+                    + "The result will be set to " + Integer.MIN_VALUE + ".");
+                return new FlowVariable(name, IntType.INSTANCE, Integer.MIN_VALUE);
+            } else if (computedValue > Integer.MAX_VALUE) {
+                ctx.addWarning("The result " + computedValue + " is above the maximum value of integer numbers. "
+                    + "The result will be set to " + Integer.MAX_VALUE + ".");
+                return new FlowVariable(name, IntType.INSTANCE, Integer.MAX_VALUE);
             }
             return new FlowVariable(name, IntType.INSTANCE, (int)computedValue);
-
         } else {
             return new FlowVariable(name, LongType.INSTANCE, computedValue);
         }
