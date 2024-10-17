@@ -55,13 +55,17 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Platform;
+import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.ui.CoreUIPlugin;
 import org.knime.core.webui.page.FromFilePageBuilder;
 import org.knime.core.webui.page.Page;
+import org.knime.scripting.editor.GenericInitialDataBuilder.DataSupplier;
+import org.knime.scripting.editor.WorkflowControl;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
@@ -116,6 +120,20 @@ public final class ExpressionNodeDialogUtils {
         return getCoreUIResource(FLOW_VARIABLE_VIEW_RESOURCE);
     }
 
+    /**
+     * Get a data supplier that provides the column names of the first input table.
+     *
+     * @param workflowControl the workflow control
+     * @return the data supplier
+     */
+    public static DataSupplier getColumnNamesSupplier(final WorkflowControl workflowControl) {
+        return () -> Optional.ofNullable(workflowControl.getInputInfo()[0]) //
+            .flatMap(info -> Optional.ofNullable(info.portSpec())) //
+            .map(DataTableSpec.class::cast) //
+            .map(DataTableSpec::getColumnNames) //
+            .orElseGet(() -> new String[0]);
+    }
+
     /** Get a resource from the js-src/dist folder of the core UI plugin. */
     private static InputStream getCoreUIResource(final String nameOfResource) {
         try {
@@ -146,5 +164,4 @@ public final class ExpressionNodeDialogUtils {
             throw new IllegalStateException("Failed to resolve the directory " + baseDir, ex);
         }
     }
-
 }

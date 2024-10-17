@@ -60,7 +60,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.knime.base.expressions.node.ExpressionNodeDialogUtils;
 import org.knime.base.expressions.node.ExpressionNodeScriptingInputOutputModelUtils;
 import org.knime.base.expressions.node.FunctionCatalogData;
-import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.NodeContext;
@@ -122,8 +121,7 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
             }) //
             .addDataSupplier("outputObjects", ExpressionNodeScriptingInputOutputModelUtils::getOutputObjects) //
             .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN) //
-            .addDataSupplier("columnNames",
-                ((DataTableSpec)workflowControl.getInputInfo()[0].portSpec())::getColumnNames);
+            .addDataSupplier("columnNames", ExpressionNodeDialogUtils.getColumnNamesSupplier(workflowControl));
 
         return new ScriptingNodeSettingsService( //
             ExpressionRowFilterSettings::new, //
