@@ -408,6 +408,13 @@ public final class SignatureUtils {
                     positionInSignature += signature.indexOf(expectedArgument.get());
                 }
 
+                var isOptionalWhenItsNotAllowed = expectedArgument.get().matcher().matches(arg.getValue().baseType());
+                if (isOptionalWhenItsNotAllowed) {
+                    return ReturnResult.failure("Argument (" + positionInSignature + ", '" + arg.getKey()
+                        + "') is optional but MISSING values are not allowed here. "
+                        + "Use the nullish coalescing operator '??' to define a default value.");
+                }
+
                 return ReturnResult.failure(
                     "Argument (" + positionInSignature + ", '" + arg.getKey() + "') is not of the expected type: "
                         + expectedArgument.get().matcher().allowed() + " but got " + arg.getValue() + ".");
