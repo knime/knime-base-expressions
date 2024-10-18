@@ -114,7 +114,7 @@ public final class ControlFlowFunctions {
                 \t $customer_name + " is an early customer", #value_1  \s
                 \t $customer_id < 1000, #condtion_2  \s
                 \t $customer_name + " is a mid customer", #value_2 and cond. 1 false  \s
-                \t $customre_name + " is a late customer", #value_if_all_false  \s
+                \t $customer_name + " is a late customer", #value_if_all_false  \s
                 )
                 ```
 
