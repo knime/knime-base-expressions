@@ -167,7 +167,7 @@ const onFocusChanged = (key: string) => {
       .editor.value?.getDomNode()
       ?.scrollIntoView({
         behavior: "smooth",
-        block: "center",
+        block: "nearest",
       });
   });
   emitOnChange();
