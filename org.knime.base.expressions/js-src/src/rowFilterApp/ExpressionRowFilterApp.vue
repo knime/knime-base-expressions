@@ -20,7 +20,6 @@ import ExpressionEditorPane, {
 import { runRowFilterDiagnostics } from "@/rowFilterApp/expressionRowFilterDiagnostics";
 import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
 import {
-  calculateInitialPaneSizes,
   mapConnectionInfoToErrorMessage,
   registerInsertionListener,
 } from "@/common/functions";
@@ -165,8 +164,6 @@ const runButtonDisabledErrorReason = computed(() => {
     return null;
   }
 });
-
-const initialPaneSizes = calculateInitialPaneSizes();
 </script>
 
 <template>
@@ -176,8 +173,8 @@ const initialPaneSizes = calculateInitialPaneSizes();
       :show-control-bar="true"
       :language="LANGUAGE"
       :initial-pane-sizes="{
-        right: initialPaneSizes.right,
-        left: initialPaneSizes.left,
+        right: 30,
+        left: 20,
         bottom: 30,
       }"
       :additional-bottom-pane-tab-content="[
