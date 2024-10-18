@@ -22,10 +22,7 @@ import MultiEditorContainer, {
 } from "@/components/MultiEditorContainer.vue";
 import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
 import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
-import {
-  calculateInitialPaneSizes,
-  mapConnectionInfoToErrorMessage,
-} from "@/common/functions";
+import { mapConnectionInfoToErrorMessage } from "@/common/functions";
 import RunButton from "@/components/RunButton.vue";
 import {
   type ExpressionRowMapperNodeSettings,
@@ -244,8 +241,6 @@ getRowMapperSettingsService().registerSettingsGetterForApply(
     };
   },
 );
-
-const initialPaneSizes = calculateInitialPaneSizes();
 </script>
 
 <template>
@@ -261,8 +256,8 @@ const initialPaneSizes = calculateInitialPaneSizes();
         :show-control-bar="true"
         :language="LANGUAGE"
         :initial-pane-sizes="{
-          right: initialPaneSizes.right,
-          left: initialPaneSizes.left,
+          right: 30,
+          left: 20,
           bottom: 30,
         }"
         :additional-bottom-pane-tab-content="[

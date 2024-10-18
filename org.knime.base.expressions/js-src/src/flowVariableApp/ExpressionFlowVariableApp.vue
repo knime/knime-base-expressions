@@ -21,7 +21,6 @@ import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 import { LANGUAGE } from "@/common/constants";
-import { calculateInitialPaneSizes } from "@/common/functions";
 import {
   type ExpressionFlowVariableNodeSettings,
   getFlowVariableSettingsService,
@@ -236,8 +235,6 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
     };
   },
 );
-
-const initialPaneSizes = calculateInitialPaneSizes();
 </script>
 
 <template>
@@ -253,8 +250,8 @@ const initialPaneSizes = calculateInitialPaneSizes();
         :show-control-bar="true"
         :language="LANGUAGE"
         :initial-pane-sizes="{
-          right: initialPaneSizes.right,
-          left: initialPaneSizes.left,
+          right: 30,
+          left: 20,
           bottom: 30,
         }"
         :additional-bottom-pane-tab-content="[
