@@ -55,7 +55,7 @@ const doMount = async () => {
     },
   });
 
-  await nextTick();
+  await flushPromises();
 
   const keys = extractKeysFromWrapper(
     wrapper.vm as MultiEditorContainerExposes,

@@ -13,11 +13,11 @@ export const consola = new Consola({
 // @ts-expect-error
 window.consola = consola;
 
-// The ui extension service is used basically everywhere.
-// This mock will prevent the EventPoller from crashing the test.
-// Therefore, a global mock is necessary.
-vi.mock("@knime/ui-extension-service", async () => ({
-  ...(await vi.importActual("@knime/ui-extension-service")),
+// NB: We do not use importActual here, because we want to ensure everything is mocked.
+// Not mocking something can lead randomly appearing timeout errors because of the
+// `getConfig` call of the ui-extension-service.
+vi.mock("@knime/ui-extension-service", () => ({
+  ExtensionTypes: { DIALOG: "dialog", VIEW: "view" },
   JsonDataService: {
     getInstance: vi.fn(() =>
       Promise.resolve({
@@ -57,5 +57,11 @@ vi.mock("@knime/ui-extension-service", async () => ({
         sendAlert: vi.fn(),
       }),
     ),
+  },
+  DialogService: {
+    getInstance: vi.fn(() => ({
+      registerSettings: vi.fn(() => () => ({ setValue: vi.fn() })),
+      setApplyListener: vi.fn(),
+    })),
   },
 }));
