@@ -14,7 +14,6 @@ import type { ExpressionVersion, RowMapperInitialData } from "@/common/types";
 import { LoadingIcon } from "@knime/components";
 import { onMounted, ref, shallowRef } from "vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
-import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 import MultiEditorContainer, {
   type EditorState,
@@ -38,6 +37,9 @@ import type {
   SelectorState,
 } from "@/components/OutputSelector.vue";
 import type { IconRendererProps } from "@/components/IconRenderer.vue";
+
+// Auto-complete registered at the top level
+import "@/newAutoComplete";
 
 const initialData = shallowRef<RowMapperInitialData | null>(null);
 const initialSettings = ref<ExpressionRowMapperNodeSettings | null>(null);
@@ -198,14 +200,14 @@ onMounted(async () => {
 
   currentInputOutputItems.value = getInitialItems();
 
-  registerKnimeExpressionLanguage({
-    columnGetter: () => [
-      ...(currentInputOutputItems.value?.[0].subItems ?? []),
-      ...appendedSubItems.value,
-    ],
-    flowVariableGetter: () => initialData.value?.flowVariables.subItems ?? [],
-    functionData: initialData.value?.functionCatalog.functions,
-  });
+  // registerKnimeExpressionLanguage({
+  //   columnGetter: () => [
+  //     ...(currentInputOutputItems.value?.[0].subItems ?? []),
+  //     ...appendedSubItems.value,
+  //   ],
+  //   flowVariableGetter: () => initialData.value?.flowVariables.subItems ?? [],
+  //   functionData: initialData.value?.functionCatalog.functions,
+  // });
 
   useReadonlyStore().value =
     initialSettings.value.settingsAreOverriddenByFlowVariable ?? false;
