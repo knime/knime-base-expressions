@@ -119,7 +119,10 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
     @Override
     public void onDeactivate() {
-        m_inputTableCache = null;
+        if (m_inputTableCache != null) {
+            m_inputTableCache.close();
+            m_inputTableCache = null;
+        }
     }
 
     public final class ExpressionNodeRpcService extends RpcService {

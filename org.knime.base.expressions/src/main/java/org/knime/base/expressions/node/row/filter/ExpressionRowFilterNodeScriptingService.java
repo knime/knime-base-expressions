@@ -118,7 +118,10 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
     @Override
     public void onDeactivate() {
         m_columnToType = null;
-        m_inputTableCache = null;
+        if (m_inputTableCache != null) {
+            m_inputTableCache.close();
+            m_inputTableCache = null;
+        }
     }
 
     private synchronized Function<String, ReturnResult<ValueType>> getColumnToTypeMapper() {

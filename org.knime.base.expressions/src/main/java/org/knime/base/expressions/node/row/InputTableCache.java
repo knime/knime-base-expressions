@@ -72,7 +72,7 @@ import org.knime.core.node.workflow.NodeContext;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public final class InputTableCache {
+public final class InputTableCache implements AutoCloseable {
 
     private final BufferedDataTable m_fullTable;
 
@@ -125,5 +125,17 @@ public final class InputTableCache {
                 throw new IllegalStateException("Input table preparation for expression cancelled by the user", ex);
             }
         }
+    }
+
+    @Override
+    public void close() {
+        // Clear the temporary tables
+        for (var table : m_cachedTables.values()) {
+            m_exec.clearTable(table);
+        }
+        m_cachedTables.clear();
+
+        // Clear the file stores
+        m_fileStoreHandler.clearAndDispose();
     }
 }
