@@ -75,6 +75,7 @@ import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.scripting.editor.ScriptingService;
@@ -91,7 +92,15 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
     private final AtomicReference<BufferedDataTable> m_outputBufferTableReference;
 
+    private ExecutionContext m_exec;
+
     private InputTableCache m_inputTableCache;
+
+    /**
+     * Note that this is a list of all intermediate results. We remember all of them to be able to clear the tables when
+     * they are not needed anymore.
+     */
+    private List<BufferedDataTable> m_outputTables = List.of();
 
     private final Runnable m_cleanUpTableViewDataService;
 
@@ -100,6 +109,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         super(null, ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains);
         m_outputBufferTableReference = outputTableRef;
         m_cleanUpTableViewDataService = cleanUpTableViewDataService;
+        var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
+        m_exec = nodeContainer.createExecutionContext();
         m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0]);
     }
 
@@ -119,10 +130,17 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
     @Override
     public void onDeactivate() {
+        updateOutputTables(List.of());
         if (m_inputTableCache != null) {
             m_inputTableCache.close();
             m_inputTableCache = null;
         }
+    }
+
+    private void updateOutputTables(final List<BufferedDataTable> newTables) {
+        m_outputTables.forEach(m_exec::clearTable);
+        m_outputTables = newTables;
+        m_outputBufferTableReference.set(newTables.isEmpty() ? null : newTables.get(newTables.size() - 1));
     }
 
     public final class ExpressionNodeRpcService extends RpcService {
@@ -287,11 +305,9 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
             var warnings = new ExpressionDiagnostic[scripts.size()];
 
-            var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
-            var executionContext = nodeContainer.createExecutionContext();
             try {
                 var inColTable = m_inputTableCache.getTable(numPreviewRows);
-                var outputTable = ExpressionRowMapperNodeModel.applyMapperExpressions( //
+                var outputTables = ExpressionRowMapperNodeModel.applyMapperExpressions( //
                     scripts, //
                     ExpressionRowMapperNodeModel.getColumnPositions( //
                         columnInsertionModesString.stream().map(InsertionMode::valueOf).toList(), //
@@ -299,11 +315,11 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     ), //
                     inColTable, //
                     getSupportedFlowVariablesMap(), //
-                    executionContext, //
+                    m_exec, //
                     ExpressionDiagnostic.getWarningMessageHandler(warnings) //
                 );
 
-                updateTablePreview(outputTable);
+                updateTablePreview(outputTables);
 
                 sendEvent("updateWarnings", warnings);
 
@@ -313,11 +329,11 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
             }
         }
 
-        private void updateTablePreview(final BufferedDataTable outputTable) {
-            m_outputBufferTableReference.set(outputTable);
+        private void updateTablePreview(final List<BufferedDataTable> outputTables) {
+            updateOutputTables(outputTables);
             m_cleanUpTableViewDataService.run();
-            updateOutputTable((int)outputTable.size(), m_inputTableCache.getFullRowCount());
+            updateOutputTable((int)outputTables.get(outputTables.size() - 1).size(),
+                m_inputTableCache.getFullRowCount());
         }
-
     }
 }

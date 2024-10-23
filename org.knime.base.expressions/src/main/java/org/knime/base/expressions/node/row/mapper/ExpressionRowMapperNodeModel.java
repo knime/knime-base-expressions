@@ -53,6 +53,7 @@ import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForT
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -202,7 +203,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         throws Exception {
         var messageBuilder = createMessageBuilder();
 
-        var outputTable = applyMapperExpressions(m_settings.getScripts(), //
+        var outputTables = applyMapperExpressions(m_settings.getScripts(), //
             getColumnPositions(m_settings.getColumnInsertionModes(), m_settings.getActiveOutputColumns()), //
             inData[0], //
             getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES), //
@@ -221,7 +222,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
             setWarning(message);
         }
 
-        return new BufferedDataTable[]{outputTable};
+        return new BufferedDataTable[]{outputTables.get(outputTables.size() - 1)};
     }
 
     /**
@@ -234,13 +235,13 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
      * @param exec the execution context
      * @param setWarning a consumer that is called if the evaluation of an expression produces a warning with the index
      *            of the expression and the warning message
-     * @return the output table
+     * @return the output tables, one for each expression, use the last table for the final output
      *
      * @throws ExpressionCompileException if an expression cannot be compiled
      * @throws CanceledExecutionException if the execution is canceled
      * @throws VirtualTableIncompatibleException
      */
-    static BufferedDataTable applyMapperExpressions( //
+    static List<BufferedDataTable> applyMapperExpressions( //
         final List<String> expressions, //
         final List<NewColumnPosition> newColumnPositions, //
         final BufferedDataTable inputTable, //
@@ -251,6 +252,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         var exprContext = new NodeExpressionMapperContext(availableFlowVariables);
         var numberOfExpressions = expressions.size();
         var nextInputTable = inputTable;
+        var outputTables = new ArrayList<BufferedDataTable>();
 
         for (int i = 0; i < numberOfExpressions; ++i) {
             var subExec = exec.createSubExecutionContext(1.0 / numberOfExpressions);
@@ -293,8 +295,9 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
                     nextInputTable.size(), Node.invokeGetDataRepository(exec).generateNewID());
 
             nextInputTable = outputExtensionTable.create(exec);
+            outputTables.add(nextInputTable);
         }
-        return nextInputTable;
+        return outputTables;
     }
 
     @Override
