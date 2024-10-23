@@ -113,9 +113,6 @@ public final class InputTableCache {
      * @return a table with the given number of rows
      */
     public synchronized BufferedDataTable getTable(final long numRows) {
-        if (numRows >= m_fullTable.size()) {
-            return m_fullTable;
-        }
         if (m_cachedTables.containsKey(numRows)) {
             return m_cachedTables.get(numRows);
         } else {
