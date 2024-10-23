@@ -191,8 +191,10 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
             .addService(OutputPreviewTableInitialDataRpcSupplier.class.getSimpleName(), //
                 new OutputPreviewTableInitialDataRpcSupplier(previewTable, outputPreviewTableDataService)) //
             .addService(TableViewDataService.class.getSimpleName(), outputPreviewTableDataService) //
-            .onDeactivate(scriptingService::onDeactivate) //
-            .onDeactivate(cleanUpTableViewDataService) //
+            .onDeactivate(() -> {
+                scriptingService.onDeactivate();
+                cleanUpTableViewDataService.run();
+            }) //
             .build()); //
     }
 
