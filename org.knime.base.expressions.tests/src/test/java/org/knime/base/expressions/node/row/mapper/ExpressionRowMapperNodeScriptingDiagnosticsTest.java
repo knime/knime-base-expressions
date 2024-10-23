@@ -123,7 +123,7 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     }
 
     private static ExpressionNodeRpcService createService(final WorkflowControl workflowControl) {
-        return new ExpressionRowMapperNodeScriptingService(null, null, workflowControl).getJsonRpcService();
+        return new ExpressionRowMapperNodeScriptingService(null, workflowControl).getJsonRpcService();
     }
 
     @Test

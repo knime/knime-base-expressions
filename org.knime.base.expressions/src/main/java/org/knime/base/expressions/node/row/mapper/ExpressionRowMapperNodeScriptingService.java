@@ -55,7 +55,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
@@ -65,6 +64,7 @@ import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.ExpressionDiagnosticResult;
 import org.knime.base.expressions.node.row.InputTableCache;
+import org.knime.base.expressions.node.row.OutputTablePreview;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.expressions.Ast;
@@ -90,36 +90,25 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
     private static final int PREVIEW_MAX_ROWS = 1000;
 
-    private final AtomicReference<BufferedDataTable> m_outputBufferTableReference;
+    private final OutputTablePreview m_tablePreview;
 
     private ExecutionContext m_exec;
 
     private InputTableCache m_inputTableCache;
 
-    /**
-     * Note that this is a list of all intermediate results. We remember all of them to be able to clear the tables when
-     * they are not needed anymore.
-     */
-    private List<BufferedDataTable> m_outputTables = List.of();
-
-    private final Runnable m_cleanUpTableViewDataService;
-
-    ExpressionRowMapperNodeScriptingService(final AtomicReference<BufferedDataTable> outputTableRef,
-        final Runnable cleanUpTableViewDataService) {
+    ExpressionRowMapperNodeScriptingService(final OutputTablePreview tablePreview) {
         super(null, ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains);
-        m_outputBufferTableReference = outputTableRef;
-        m_cleanUpTableViewDataService = cleanUpTableViewDataService;
+        m_tablePreview = tablePreview;
         var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
         m_exec = nodeContainer.createExecutionContext();
         m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0]);
     }
 
     /** Constructor for testing with a mocked workflow control */
-    ExpressionRowMapperNodeScriptingService(final AtomicReference<BufferedDataTable> outputTableRef,
-        final Runnable cleanUpTableViewDataService, final WorkflowControl workflowControl) {
+    ExpressionRowMapperNodeScriptingService(final OutputTablePreview tablePreview,
+        final WorkflowControl workflowControl) {
         super(null, ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains, workflowControl);
-        m_outputBufferTableReference = outputTableRef;
-        m_cleanUpTableViewDataService = cleanUpTableViewDataService;
+        m_tablePreview = tablePreview;
         m_inputTableCache = new InputTableCache((BufferedDataTable)workflowControl.getInputData()[0]);
     }
 
@@ -130,17 +119,11 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
     @Override
     public void onDeactivate() {
-        updateOutputTables(List.of());
+        m_tablePreview.clearTables(m_exec);
         if (m_inputTableCache != null) {
             m_inputTableCache.close();
             m_inputTableCache = null;
         }
-    }
-
-    private void updateOutputTables(final List<BufferedDataTable> newTables) {
-        m_outputTables.forEach(m_exec::clearTable);
-        m_outputTables = newTables;
-        m_outputBufferTableReference.set(newTables.isEmpty() ? null : newTables.get(newTables.size() - 1));
     }
 
     public final class ExpressionNodeRpcService extends RpcService {
@@ -319,7 +302,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     ExpressionDiagnostic.getWarningMessageHandler(warnings) //
                 );
 
-                updateTablePreview(outputTables);
+                m_tablePreview.updateTables(outputTables, m_exec);
+                updateOutputTable((int)m_tablePreview.numRows(), m_inputTableCache.getFullRowCount());
 
                 sendEvent("updateWarnings", warnings);
 
@@ -327,13 +311,6 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 throw new IllegalStateException("This is an implementation error. Must not happen "
                     + "because canceling the execution should not be possible.", e);
             }
-        }
-
-        private void updateTablePreview(final List<BufferedDataTable> outputTables) {
-            updateOutputTables(outputTables);
-            m_cleanUpTableViewDataService.run();
-            updateOutputTable((int)outputTables.get(outputTables.size() - 1).size(),
-                m_inputTableCache.getFullRowCount());
         }
     }
 }
