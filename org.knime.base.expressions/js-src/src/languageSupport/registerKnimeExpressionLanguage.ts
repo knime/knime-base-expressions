@@ -3,40 +3,10 @@ import * as monaco from "monaco-editor";
 import type { SubItem } from "@knime/scripting-editor";
 
 import { LANGUAGE } from "@/common/constants";
-import { convertFunctionsToInsertionItems } from "@/components/convertFunctionsToInsertionItems";
 import { functionDataToMarkdown } from "@/components/function-catalog/functionDescriptionToMarkdown";
 import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
 
-export type CompletionItemWithType = {
-  text: string;
-  kind: monaco.languages.CompletionItemKind;
-  extraDetailForMonaco: { [key: string]: any };
-};
-
-/**
- * Mapper to map a SubItem to a CompletionItemWithType.
- * @param subItem
- */
-const mapSubItemToCompletionItemWithType = (
-  subItem: SubItem<Record<string, any>>,
-): CompletionItemWithType => ({
-  text: subItem.insertionText ?? subItem.name,
-  kind: monaco.languages.CompletionItemKind.Variable,
-  extraDetailForMonaco: {
-    detail: `Type: ${subItem.type}`,
-  },
-});
-
-const mapCompletionItemWithTypeToMonacoCompletionItem = (
-  completionItemWithType: CompletionItemWithType,
-  range: monaco.Range,
-): monaco.languages.CompletionItem => ({
-  label: completionItemWithType.text,
-  kind: completionItemWithType.kind,
-  insertText: completionItemWithType.text,
-  range,
-  ...completionItemWithType.extraDetailForMonaco,
-});
+import { registerCompletionItemProvider } from "./autoComplete";
 
 /**
  * Set up the knime-expression language and register it with Monaco.
@@ -60,13 +30,11 @@ const mapCompletionItemWithTypeToMonacoCompletionItem = (
 const register = ({
   columnGetter,
   flowVariableGetter,
-  extraCompletionItems,
   functionData,
   languageName,
 }: {
   columnGetter: () => SubItem<Record<string, any>>[];
   flowVariableGetter: () => SubItem<Record<string, any>>[];
-  extraCompletionItems: CompletionItemWithType[];
   functionData: FunctionCatalogEntryData[];
   languageName: string;
 }) => {
@@ -191,6 +159,13 @@ const register = ({
     },
   });
 
+  const completionItemProvider = registerCompletionItemProvider({
+    columnGetter,
+    flowVariableGetter,
+    functionData,
+    languageName,
+  });
+
   monaco.languages.setLanguageConfiguration(languageName, {
     comments: {
       lineComment: "#",
@@ -223,186 +198,6 @@ const register = ({
     colors: {},
   });
   monaco.editor.setTheme("knime-expression");
-
-  const completionItemProvider =
-    monaco.languages.registerCompletionItemProvider(languageName, {
-      triggerCharacters: ["$"],
-      provideCompletionItems: (model, position) => {
-        const allSupportedColumns = columnGetter().filter(
-          (subItem) => subItem.supported,
-        );
-        const allSupportedFlowVariables = flowVariableGetter().filter(
-          (subItem) => subItem.supported,
-        );
-
-        const columnNamesForCompletion = allSupportedColumns
-          .filter((c) => !c.insertionText)
-          .map(mapSubItemToCompletionItemWithType);
-        const flowVariableNamesForCompletion = allSupportedFlowVariables
-          .filter((c) => !c.insertionText)
-          .map(mapSubItemToCompletionItemWithType);
-
-        // Suggestion that is provided iff the characters before the start of
-        // the current word match the regex.
-        type OptionalSuggestion = {
-          text: string;
-
-          // RegEx to be tested on the word + the 4 chars before it (since our
-          // longest possible delimiter, `$$["`, is 4 chars long)
-          requirePrefixMatches: RegExp | null;
-
-          extraDetailForMonaco: { [key: string]: any };
-        };
-
-        const staticSuggestionRange = new monaco.Range(
-          position.lineNumber,
-          position.column,
-          position.lineNumber,
-          model.getWordUntilPosition(position).startColumn,
-        );
-        const staticSuggestions: monaco.languages.CompletionItem[] = [
-          ...extraCompletionItems.map((item: CompletionItemWithType) => ({
-            // Replace from beginning of current word
-            label: item.text,
-            kind: item.kind,
-            insertText: item.text,
-            range: staticSuggestionRange,
-            ...item.extraDetailForMonaco,
-          })),
-          ...allSupportedColumns
-            .filter((c) => c.insertionText)
-            .map(mapSubItemToCompletionItemWithType)
-            .map((x) =>
-              mapCompletionItemWithTypeToMonacoCompletionItem(
-                x,
-                staticSuggestionRange,
-              ),
-            ),
-          ...allSupportedFlowVariables
-            .filter((c) => c.insertionText)
-            .map(mapSubItemToCompletionItemWithType)
-            .map((x) =>
-              mapCompletionItemWithTypeToMonacoCompletionItem(
-                x,
-                staticSuggestionRange,
-              ),
-            ),
-        ];
-
-        const escapeRegex = (text: string) =>
-          text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-
-        const escapeColumnName = (columnName: string, quoteType: string) =>
-          columnName
-            .replace(/\\/g, "\\\\")
-            .replace(new RegExp(`${quoteType}`, "g"), '\\"');
-
-        const mapInputNameReducerFactory =
-          (prefix: string) =>
-          (
-            aggregation: OptionalSuggestion[],
-            column: CompletionItemWithType,
-          ) => {
-            // Add column shorthand as an option if we can
-            if (/^[_a-zA-Z]\w*$/.test(column.text)) {
-              aggregation.push({
-                ...column,
-                text: `${prefix}${column.text}`,
-                requirePrefixMatches: RegExp(
-                  `^.*${escapeRegex(prefix)}([A-Za-z_]\\w*)?$`,
-                ),
-              });
-            }
-            // Add the longhand methods (single and double quotes both)
-            aggregation.push({
-              ...column,
-              text: `${prefix}['${escapeColumnName(column.text, "'")}']`,
-              requirePrefixMatches: RegExp(`^.*${escapeRegex(prefix)}\\['.*$`),
-            });
-            aggregation.push({
-              ...column,
-              text: `${prefix}["${escapeColumnName(column.text, '"')}"]`,
-              requirePrefixMatches: RegExp(
-                `^.*${escapeRegex(prefix)}($|(\\[("?).*$))`,
-              ),
-            });
-
-            return aggregation;
-          };
-
-        const columnAndFlowVariableNames = [
-          ...columnNamesForCompletion.reduce(
-            mapInputNameReducerFactory("$"),
-            [] as OptionalSuggestion[],
-          ),
-          ...flowVariableNamesForCompletion.reduce(
-            mapInputNameReducerFactory("$$"),
-            [] as OptionalSuggestion[],
-          ),
-        ];
-
-        // So first let's adjust the start to include the left delimiters.
-        const partialWordBeforeCursor = model.getWordUntilPosition(position);
-        const fourCharsBefore = model.getValueInRange({
-          // eslint-disable-next-line no-magic-numbers
-          startColumn: partialWordBeforeCursor.startColumn - 4,
-          endColumn: partialWordBeforeCursor.startColumn,
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-        });
-        const twoCharsAfter = model.getValueInRange({
-          startColumn: partialWordBeforeCursor.endColumn,
-          // eslint-disable-next-line no-magic-numbers
-          endColumn: partialWordBeforeCursor.endColumn + 2,
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-        });
-
-        const columnNameSuggestions = columnAndFlowVariableNames
-          .filter((columnSuggestion) => {
-            return (
-              columnSuggestion.requirePrefixMatches === null ||
-              columnSuggestion.requirePrefixMatches.test(
-                `${fourCharsBefore}${partialWordBeforeCursor.word}`,
-              )
-            );
-          })
-          .map((columSuggestion) => {
-            // Column name suggestions need a bit of special handling because
-            // monaco doesn't consider [\$\['"] to be parts of a word so we need
-            // custom logic to replace them, and because matching of brackets
-            // means we'll often have a bracket before and after the cursor (but
-            // not always!)
-            const startDelimiterPosition =
-              partialWordBeforeCursor.startColumn -
-              /(?:[^$]*(\${1,2}(?:\[["']?)?)?)/.exec(fourCharsBefore)![1]
-                .length;
-            const endDelimiterPosition =
-              partialWordBeforeCursor.endColumn +
-              /(?:['"]?\])?/.exec(twoCharsAfter)![0].length;
-
-            return {
-              label: columSuggestion.text,
-              kind: monaco.languages.CompletionItemKind.Variable,
-              insertText: columSuggestion.text,
-              range: new monaco.Range(
-                position.lineNumber,
-                startDelimiterPosition,
-                position.lineNumber,
-                endDelimiterPosition,
-              ),
-              ...columSuggestion.extraDetailForMonaco,
-            };
-          });
-
-        return {
-          suggestions: [
-            ...columnNameSuggestions,
-            ...staticSuggestions,
-          ] as monaco.languages.CompletionItem[],
-        };
-      },
-    });
 
   const hoverProvider = monaco.languages.registerHoverProvider(languageName, {
     provideHover: (model, position) => {
@@ -478,7 +273,6 @@ const registerKnimeExpressionLanguage = ({
   return register({
     columnGetter,
     flowVariableGetter,
-    extraCompletionItems: convertFunctionsToInsertionItems(functionData),
     functionData,
     languageName: LANGUAGE,
   });

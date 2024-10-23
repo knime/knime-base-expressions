@@ -4,11 +4,11 @@ import { flushPromises, mount } from "@vue/test-utils";
 
 import { ROW_MAPPER_INITIAL_DATA } from "@/__mocks__/mock-data";
 import type { Diagnostic } from "@/generalDiagnostics";
-import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
+import registerKnimeExpressionLanguage from "@/languageSupport/registerKnimeExpressionLanguage";
 import ExpressionRowMapperApp from "../ExpressionRowMapperApp.vue";
 import { DEFAULT_ROW_MAPPER_INITIAL_SETTINGS } from "../__mocks__/browser-mock-row-mapper-services";
 
-vi.mock("@/registerKnimeExpressionLanguage", () => ({
+vi.mock("@/languageSupport/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),
 }));
 

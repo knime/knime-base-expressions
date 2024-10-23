@@ -4,11 +4,11 @@ import { flushPromises, mount } from "@vue/test-utils";
 
 import { ROW_FILTER_INITIAL_DATA } from "@/__mocks__/mock-data";
 import type { EditorErrorState } from "@/generalDiagnostics";
-import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
+import registerKnimeExpressionLanguage from "@/languageSupport/registerKnimeExpressionLanguage";
 import ExpressionRowFilterApp from "../ExpressionRowFilterApp.vue";
 import { DEFAULT_ROW_FILTER_INITIAL_SETTINGS } from "../__mocks__/browser-mock-row-filter-services";
 
-vi.mock("@/registerKnimeExpressionLanguage", () => ({
+vi.mock("@/languageSupport/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),
 }));
 

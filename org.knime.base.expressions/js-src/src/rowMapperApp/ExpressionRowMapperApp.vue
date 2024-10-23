@@ -38,8 +38,8 @@ import {
   getRowMapperSettingsService,
 } from "@/expressionSettingsService";
 import { runOutputDiagnostics } from "@/generalDiagnostics";
+import registerKnimeExpressionLanguage from "@/languageSupport/registerKnimeExpressionLanguage";
 import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
-import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 
 const initialData = shallowRef<RowMapperInitialData | null>(null);
 const initialSettings = ref<ExpressionRowMapperNodeSettings | null>(null);

@@ -33,8 +33,8 @@ import type {
   EditorErrorState,
   ExpressionDiagnostic,
 } from "@/generalDiagnostics";
+import registerKnimeExpressionLanguage from "@/languageSupport/registerKnimeExpressionLanguage";
 import { runRowFilterDiagnostics } from "@/rowFilterApp/expressionRowFilterDiagnostics";
-import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 
 const editorRef = ref<Required<ExpressionEditorPaneExposes> | null>(null);
 

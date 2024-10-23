@@ -3,12 +3,9 @@ import { vi } from "vitest";
 export const MarkerTag = {};
 export const MarkerSeverity = {};
 export const languages = {
-  CompletionItemKind: {
-    Snippet: 0,
-  },
-  CompletionItemInsertTextRule: {
-    InsertAsSnippet: 0,
-  },
+  CompletionItemKind: { Snippet: 0 },
+  CompletionItemInsertTextRule: { InsertAsSnippet: 0 },
+  CompletionTriggerKind: { Invoke: 0, TriggerCharacter: 1 },
   registerCompletionItemProvider: vi.fn(),
   registerHoverProvider: vi.fn(),
   register: vi.fn(),

@@ -1,15 +1,15 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as monaco from "monaco-editor";
 
-import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
-import { BASE_INITIAL_DATA } from "../__mocks__/mock-data";
+import { BASE_INITIAL_DATA } from "@/__mocks__/mock-data";
+import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 
 vi.mock("monaco-editor");
 
 const disposeOfCompletionProvider = vi.fn();
 const disposeOfHoverProvider = vi.fn();
 
-beforeAll(() => {
+beforeEach(() => {
   vi.restoreAllMocks();
 
   vi.spyOn(monaco.languages, "registerCompletionItemProvider").mockReturnValue({
@@ -67,7 +67,13 @@ describe("registerKnimeExpressionLanguage", () => {
 
     expect(
       monaco.languages.registerCompletionItemProvider,
-    ).toHaveBeenCalledWith("knime-expression", expect.anything());
+    ).toHaveBeenCalledWith(
+      "knime-expression",
+      expect.objectContaining({
+        triggerCharacters: ["$", "[", '"', "'"],
+        provideCompletionItems: expect.any(Function),
+      }),
+    );
   });
 
   it("registers hover", () => {

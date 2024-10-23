@@ -40,7 +40,7 @@ import {
 import OutputPreviewFlowVariable from "@/flowVariableApp/OutputPreviewFlowVariable.vue";
 import { runFlowVariableDiagnostics } from "@/flowVariableApp/expressionFlowVariableDiagnostics";
 import { runOutputDiagnostics } from "@/generalDiagnostics";
-import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
+import registerKnimeExpressionLanguage from "@/languageSupport/registerKnimeExpressionLanguage";
 
 // Input flowVariables helpers
 const runButtonDisabledErrorReason = ref<string | null>(null);
