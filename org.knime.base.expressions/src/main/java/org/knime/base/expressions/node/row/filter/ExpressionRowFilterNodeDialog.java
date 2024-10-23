@@ -48,39 +48,23 @@
  */
 package org.knime.base.expressions.node.row.filter;
 
-import static org.knime.core.webui.node.view.table.RowHeightPersistorUtil.LEGACY_CUSTOM_ROW_HEIGHT_COMPACT;
-
-import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.knime.base.expressions.node.ExpressionNodeDialogUtils;
 import org.knime.base.expressions.node.ExpressionNodeScriptingInputOutputModelUtils;
 import org.knime.base.expressions.node.FunctionCatalogData;
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.NodeLogger;
+import org.knime.base.expressions.node.row.OutputTablePreview;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeSettingsSerializer;
-import org.knime.core.webui.node.dialog.defaultdialog.setting.selection.SelectionMode;
-import org.knime.core.webui.node.view.table.TableViewUtil;
-import org.knime.core.webui.node.view.table.TableViewViewSettings;
-import org.knime.core.webui.node.view.table.TableViewViewSettings.RowHeightMode;
-import org.knime.core.webui.node.view.table.TableViewViewSettings.VerticalPaddingMode;
-import org.knime.core.webui.node.view.table.data.TableViewDataService;
-import org.knime.core.webui.node.view.table.data.TableViewInitialDataImpl;
 import org.knime.core.webui.page.Page;
 import org.knime.scripting.editor.GenericInitialDataBuilder;
 import org.knime.scripting.editor.ScriptingNodeSettingsService;
 import org.knime.scripting.editor.WorkflowControl;
-
-// TODO(AP-23188): find an abstraction for all node dialogs of different expression nodes
 
 /**
  * The node dialog implementation of the Expression filter node.
@@ -129,72 +113,16 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
         );
     }
 
-    /**
-     *
-     */
-    public static class OutputPreviewTableInitialDataRpcSupplier {
-
-        AtomicReference<BufferedDataTable> m_table;
-
-        private TableViewDataService m_tableViewDataService;
-
-        OutputPreviewTableInitialDataRpcSupplier(final AtomicReference<BufferedDataTable> table,
-            final TableViewDataService tableViewDataService) {
-            this.m_table = table;
-            m_tableViewDataService = tableViewDataService;
-        }
-
-        /**
-         * @return the initial data for the output table
-         */
-        public String getInitialData() {
-            if (m_table.get() == null) {
-                // This can happen if no input table is connected to the node
-                return null;
-            }
-
-            var tab = new TableViewViewSettings(m_table.get().getSpec());
-            tab.m_title = null;
-            tab.m_enableGlobalSearch = false;
-            tab.m_showTableSize = false;
-            tab.m_enablePagination = false;
-            tab.m_rowHeightMode = RowHeightMode.CUSTOM;
-            tab.m_verticalPaddingMode = VerticalPaddingMode.COMPACT;
-            tab.m_customRowHeight = LEGACY_CUSTOM_ROW_HEIGHT_COMPACT;
-            tab.m_selectionMode = SelectionMode.OFF;
-            tab.m_showOnlySelectedRowsConfigurable = false;
-            tab.m_enableColumnSearch = false;
-            try {
-                return new DefaultNodeSettingsSerializer<>().serialize(
-                    Map.of("result", new TableViewInitialDataImpl(tab, m_table::get, m_tableViewDataService)));
-            } catch (IOException e) {
-                NodeLogger.getLogger(this.getClass()).error("Failed to serialize the initial data", e);
-                return null;
-            }
-        }
-    }
-
     @Override
     public Optional<RpcDataService> createRpcDataService() {
-
-        final AtomicReference<BufferedDataTable> previewTable = new AtomicReference<>();
-        var tableId = "previewTable.dummyId";
-        var outputPreviewTableDataService = TableViewUtil.createTableViewDataService(previewTable::get, null, tableId);
-
-        Runnable cleanUpTableViewDataService =
-            () -> TableViewUtil.deactivateTableViewDataService(outputPreviewTableDataService, tableId);
-
-        var scriptingService = new ExpressionRowFilterNodeScriptingService(previewTable, cleanUpTableViewDataService);
+        var tablePreview = new OutputTablePreview();
+        var scriptingService = new ExpressionRowFilterNodeScriptingService(tablePreview);
 
         return Optional.of(RpcDataService.builder() //
             .addService("ScriptingService", scriptingService.getJsonRpcService()) //
-            .addService(OutputPreviewTableInitialDataRpcSupplier.class.getSimpleName(), //
-                new OutputPreviewTableInitialDataRpcSupplier(previewTable, outputPreviewTableDataService)) //
-            .addService(TableViewDataService.class.getSimpleName(), outputPreviewTableDataService) //
-            .onDeactivate(() -> {
-                scriptingService.onDeactivate();
-                cleanUpTableViewDataService.run();
-            }) //
+            .addService(OutputTablePreview.INITIAL_DATA_SERVICE_NAME, tablePreview) //
+            .addService(OutputTablePreview.DATA_SERVICE_NAME, tablePreview.getTableViewDataService()) //
+            .onDeactivate(scriptingService::onDeactivate) //
             .build()); //
     }
 
