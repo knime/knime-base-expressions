@@ -68,6 +68,7 @@ import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.scripting.editor.ScriptingService;
@@ -90,6 +91,8 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
 
     private InputTableCache m_inputTableCache;
 
+    private ExecutionContext m_exec;
+
     private final AtomicReference<BufferedDataTable> m_outputBufferTableReference;
 
     private final Runnable m_cleanUpTableViewDataService;
@@ -99,6 +102,8 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
         super(null, ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains);
         m_outputBufferTableReference = outputTableRef;
         m_cleanUpTableViewDataService = cleanUpTableViewDataService;
+        var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
+        m_exec = nodeContainer.createExecutionContext();
         m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0]);
     }
 
@@ -117,10 +122,18 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
 
     @Override
     public void onDeactivate() {
+        clearOutputTable();
         m_columnToType = null;
         if (m_inputTableCache != null) {
             m_inputTableCache.close();
             m_inputTableCache = null;
+        }
+    }
+
+    private void clearOutputTable() {
+        var previousTable = m_outputBufferTableReference.getAndSet(null);
+        if (previousTable != null) {
+            m_exec.clearTable(previousTable);
         }
     }
 
@@ -197,9 +210,6 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
-            var executionContext = nodeContainer.createExecutionContext();
-
             var warnings = new ExpressionDiagnostic[1];
 
             try {
@@ -208,7 +218,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                     script, //
                     inColTable, //
                     getSupportedFlowVariablesMap(), //
-                    executionContext, //
+                    m_exec, //
                     ExpressionDiagnostic.getSingleWarningMessageHandler(warnings) //
                 );
 
@@ -225,6 +235,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
         }
 
         private void updateTablePreview(final BufferedDataTable outputTable, final int numPreviewRows) {
+            clearOutputTable();
             m_outputBufferTableReference.set(outputTable);
             m_cleanUpTableViewDataService.run();
             updateOutputTable(numPreviewRows, m_inputTableCache.getFullRowCount());
