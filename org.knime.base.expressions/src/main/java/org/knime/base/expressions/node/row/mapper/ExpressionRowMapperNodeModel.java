@@ -100,12 +100,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
 
     public ExpressionRowMapperNodeModel() {
         super(1, 1);
-
-        // TODO(AP-23250) The `null` parameter sets the initial replacement flow variable in case the node
-        // replaces a flow variable. In the dialog the scripting service is set up where the initial replacement
-        // column/flow variable is correctly set but the frontend gets this setting here.
-
-        m_settings = new ExpressionRowMapperSettings(null);
+        m_settings = new ExpressionRowMapperSettings();
     }
 
     /** @return the typed Ast for the configured expression */
@@ -309,7 +304,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        new ExpressionRowMapperSettings(null).validate(settings);
+        new ExpressionRowMapperSettings().validate(settings);
     }
 
     @Override

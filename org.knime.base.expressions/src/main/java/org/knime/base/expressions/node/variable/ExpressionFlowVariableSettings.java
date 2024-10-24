@@ -103,6 +103,12 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
     static final String DEFAULT_CREATED_FLOW_VARIABLE = "New Flow Variable";
 
     /**
+     * The default value of the replacement variable option. An empty string means that nothing is selected, causing the
+     * auto-selection to be triggered.
+     */
+    static final String DEFAULT_REPLACEMENT_FLOW_VARIABLE = "";
+
+    /**
      * The default name of the return type of a flow variable expression In case of an expression returning an
      * expression language type `INTEGER` the user can configure the return type to be `Number (integer)` or `Number
      * (double)`
@@ -184,15 +190,10 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
 
     private ExpressionVersionSettings m_versionSettings;
 
-    /**
-     * Create a new ExpressionNodeSettings object with the default script.
-     *
-     * @param replacedFlowVariable the initial flow variable name to replace
-     *
-     */
-    ExpressionFlowVariableSettings(final String replacedFlowVariable) {
+    /** Create a new ExpressionNodeSettings object with the default script. */
+    ExpressionFlowVariableSettings() {
         this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_FLOW_VARIABLE, DEFAULT_FLOW_VARIABLE_RETURN_TYPE,
-            replacedFlowVariable);
+            DEFAULT_REPLACEMENT_FLOW_VARIABLE);
     }
 
     /**

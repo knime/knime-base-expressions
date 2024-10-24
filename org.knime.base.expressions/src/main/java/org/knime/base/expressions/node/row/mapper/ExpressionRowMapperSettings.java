@@ -105,6 +105,12 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
     static final String DEFAULT_CREATED_COLUMN = "New Column";
 
     /**
+     * The default value of the replacement column option. An empty string means that nothing is selected, causing the
+     * auto-selection to be triggered.
+     */
+    static final String DEFAULT_REPLACEMENT_COLUMN = "";
+
+    /**
      * The default output mode for the expression node.
      */
     static final InsertionMode DEFAULT_OUTPUT_MODE = InsertionMode.APPEND;
@@ -140,16 +146,9 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
 
     private List<String> m_scripts;
 
-    /**
-     * Create a new ExpressionNodeSettings object with the default script. The replacement column has to be specified so
-     * that the frontend can display the correct column name in the drop-down box for replacement columns, but if you
-     * don't anticipate it being used (e.g. because you're creating this for a node model, not a dialogue) then it can
-     * be null.
-     *
-     * @param defaultReplacementColumn
-     */
-    ExpressionRowMapperSettings(final String defaultReplacementColumn) {
-        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, defaultReplacementColumn);
+    /** Create a new ExpressionNodeSettings object with the default script. */
+    ExpressionRowMapperSettings() {
+        this(DEFAULT_SCRIPT, DEFAULT_OUTPUT_MODE, DEFAULT_CREATED_COLUMN, DEFAULT_REPLACEMENT_COLUMN);
     }
 
     /**

@@ -103,12 +103,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
 
     ExpressionFlowVariableNodeModel() {
         super(new PortType[]{FlowVariablePortObject.TYPE_OPTIONAL}, new PortType[]{FlowVariablePortObject.TYPE});
-
-        // TODO(AP-23250) The `null` parameter sets the initial replacement flow variable in case the node
-        // replaces a flow variable. In the dialog the scripting service is set up where the initial replacement
-        // column/flow variable is correctly set but the frontend gets this setting here.
-
-        m_settings = new ExpressionFlowVariableSettings(null);
+        m_settings = new ExpressionFlowVariableSettings();
     }
 
     /**
@@ -388,7 +383,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
 
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        new ExpressionFlowVariableSettings(null).validate(settings);
+        new ExpressionFlowVariableSettings().validate(settings);
     }
 
     @Override
