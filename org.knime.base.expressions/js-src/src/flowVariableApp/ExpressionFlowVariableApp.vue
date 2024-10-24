@@ -282,10 +282,6 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
           <MultiEditorContainer
             ref="multiEditorContainerRef"
             item-type="flow variable"
-            :default-replacement-item="
-              initialData?.flowVariables.subItems?.filter((c) => c.supported)[0]
-                .name ?? ''
-            "
             :default-append-item="'New Flow Variable'"
             :settings="
               initialSettings.scripts.map((script, index) => ({
