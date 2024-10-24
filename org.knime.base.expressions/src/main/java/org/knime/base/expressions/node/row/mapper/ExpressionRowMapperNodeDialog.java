@@ -60,7 +60,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.knime.base.expressions.node.ExpressionNodeDialogUtils;
 import org.knime.base.expressions.node.ExpressionNodeScriptingInputOutputModelUtils;
 import org.knime.base.expressions.node.FunctionCatalogData;
-import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.NodeContext;
@@ -121,11 +120,8 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
             .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN) //
             .addDataSupplier("columnNames", ExpressionNodeDialogUtils.getColumnNamesSupplier(workflowControl));
 
-        var spec = (DataTableSpec)workflowControl.getInputInfo()[0].portSpec();
-        var firstColumnName = spec != null && spec.getNumColumns() > 0 ? spec.getColumnNames()[0] : "";
-
         return new ScriptingNodeSettingsService( //
-            () -> new ExpressionRowMapperSettings(firstColumnName), //
+            ExpressionRowMapperSettings::new, //
             initialDataBuilder //
         );
     }

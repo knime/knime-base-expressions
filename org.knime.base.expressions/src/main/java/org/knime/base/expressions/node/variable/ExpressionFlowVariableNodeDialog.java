@@ -104,11 +104,8 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
             }) //
             .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN_NO_AGGREGATIONS);
 
-        var firstFlowVariable = workflowControl.getFlowObjectStack().getAllAvailableFlowVariables().keySet().stream()
-            .findFirst().orElse("no flow variable to replace");
-
         return new ScriptingNodeSettingsService( //
-            () -> new ExpressionFlowVariableSettings(firstFlowVariable), //
+            ExpressionFlowVariableSettings::new, //
             initialDataBuilder //
         );
     }
