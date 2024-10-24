@@ -101,7 +101,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         m_tablePreview = tablePreview;
         var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
         m_exec = nodeContainer.createExecutionContext();
-        m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0]);
+        m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0], m_exec);
     }
 
     /** Constructor for testing with a mocked workflow control */
