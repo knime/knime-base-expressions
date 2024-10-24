@@ -123,7 +123,7 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     }
 
     private static ExpressionNodeRpcService createService(final WorkflowControl workflowControl) {
-        return new ExpressionRowMapperNodeScriptingService(null, workflowControl).getJsonRpcService();
+        return new ExpressionRowMapperNodeScriptingService(workflowControl).getJsonRpcService();
     }
 
     @Test
@@ -163,8 +163,7 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     @Test
     void testSyntaxError() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
-        var result =
-            service.getRowMapperDiagnostics(new String[]{"($int - ) + $$int_flow_var"}, new String[]{"out"});
+        var result = service.getRowMapperDiagnostics(new String[]{"($int - ) + $$int_flow_var"}, new String[]{"out"});
 
         assertEquals(1, result.size(), "Expected diagnostics for one expression.");
         assertFalse(result.get(0).diagnostics().isEmpty(), "Expected syntax error in the expression.");
@@ -188,8 +187,7 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     @Test
     void testPrematureColumnAccess() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
-        var result =
-            service.getRowMapperDiagnostics(new String[]{"$out2 + $int", "100"}, new String[]{"out1", "out2"});
+        var result = service.getRowMapperDiagnostics(new String[]{"$out2 + $int", "100"}, new String[]{"out1", "out2"});
 
         assertEquals(2, result.size(), "Expected diagnostics for two expressions.");
         assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for premature column access.");

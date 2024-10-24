@@ -122,7 +122,7 @@ final class ExpressionRowFilterNodeScriptingDiagnosticsTest {
     }
 
     private static ExpressionNodeRpcService createService(final WorkflowControl workflowControl) {
-        return new ExpressionRowFilterNodeScriptingService(null, workflowControl).getJsonRpcService();
+        return new ExpressionRowFilterNodeScriptingService(workflowControl).getJsonRpcService();
     }
 
     @Test
