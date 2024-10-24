@@ -103,11 +103,10 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
         m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0], m_exec);
     }
 
-    ExpressionRowFilterNodeScriptingService(final OutputTablePreview tablePreview,
-        final WorkflowControl workflowControl) {
+    /** For testing with a mocked {@link WorkflowControl} only */
+    ExpressionRowFilterNodeScriptingService(final WorkflowControl workflowControl) {
         super(null, ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains, workflowControl);
-        m_tablePreview = tablePreview;
-        m_inputTableCache = new InputTableCache((BufferedDataTable)workflowControl.getInputData()[0]);
+        m_tablePreview = null;
     }
 
     @Override

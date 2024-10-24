@@ -104,12 +104,10 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0], m_exec);
     }
 
-    /** Constructor for testing with a mocked workflow control */
-    ExpressionRowMapperNodeScriptingService(final OutputTablePreview tablePreview,
-        final WorkflowControl workflowControl) {
+    /** For testing with a mocked {@link WorkflowControl} only */
+    ExpressionRowMapperNodeScriptingService(final WorkflowControl workflowControl) {
         super(null, ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES_SET::contains, workflowControl);
-        m_tablePreview = tablePreview;
-        m_inputTableCache = new InputTableCache((BufferedDataTable)workflowControl.getInputData()[0]);
+        m_tablePreview = null;
     }
 
     @Override
