@@ -60,8 +60,6 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.Node;
-import org.knime.core.node.workflow.NativeNodeContainer;
-import org.knime.core.node.workflow.NodeContext;
 
 /**
  * Cache for input tables that are used in expression dialogs. The cache stores a full table and creates a copy of the
@@ -90,12 +88,11 @@ public final class InputTableCache implements AutoCloseable {
      * Creates a new input table cache for the given full table.
      *
      * @param fullTable the full table to cache
+     * @param exec the execution context to create new cached tables with
      */
-    public InputTableCache(final BufferedDataTable fullTable) {
+    public InputTableCache(final BufferedDataTable fullTable, final ExecutionContext exec) {
         m_fullTable = fullTable;
-
-        var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
-        m_exec = nodeContainer.createExecutionContext();
+        m_exec = exec;
         m_dataRepository = Node.invokeGetDataRepository(m_exec);
         m_fileStoreHandler = new NotInWorkflowWriteFileStoreHandler(UUID.randomUUID(), m_dataRepository);
     }

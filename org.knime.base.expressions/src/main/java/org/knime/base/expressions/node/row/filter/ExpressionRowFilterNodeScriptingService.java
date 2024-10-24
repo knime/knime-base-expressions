@@ -100,7 +100,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
         m_tablePreview = tablePreview;
         var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
         m_exec = nodeContainer.createExecutionContext();
-        m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0]);
+        m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0], m_exec);
     }
 
     ExpressionRowFilterNodeScriptingService(final OutputTablePreview tablePreview,
