@@ -82,7 +82,6 @@ const props = defineProps<{
     initialOutputReturnType?: FlowVariableType;
   }[];
   replaceableItemsInInputTable: AllowedDropDownValue[];
-  defaultReplacementItem: string;
   defaultAppendItem: string;
   itemType: ItemType;
 }>();
@@ -210,7 +209,7 @@ const pushNewEditorState = ({
     selectorState: {
       outputMode: "APPEND",
       create: props.defaultAppendItem,
-      replace: props.defaultReplacementItem,
+      replace: "",
     },
     editorErrorState: { level: "OK" },
     selectorErrorState: { level: "OK" },

@@ -286,7 +286,6 @@ getRowMapperSettingsService().registerSettingsGetterForApply(
           <MultiEditorContainer
             ref="multiEditorContainerRef"
             item-type="column"
-            :default-replacement-item="initialData!.columnNames[0]"
             :default-append-item="'New Column'"
             :settings="
               initialSettings.scripts.map((script, index) => ({

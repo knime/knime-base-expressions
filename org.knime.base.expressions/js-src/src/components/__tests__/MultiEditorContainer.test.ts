@@ -22,7 +22,6 @@ const doMount = async () => {
   const wrapper = mount(MultiEditorContainer, {
     props: {
       defaultAppendItem: "defaultAppendItem",
-      defaultReplacementItem: "defaultReplacementItem",
       itemType: "column",
       replaceableItemsInInputTable: [
         {

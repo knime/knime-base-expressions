@@ -44,7 +44,7 @@ watch(
     // Set the initial value for the replace field if it has not been set by backend
     if (
       modelValue.value.outputMode === "REPLACE_EXISTING" &&
-      modelValue.value.replace === null
+      modelValue.value.replace === ""
     ) {
       modelValue.value.replace =
         props.allowedReplacementEntities?.[0]?.id ?? "";
