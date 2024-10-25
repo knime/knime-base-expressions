@@ -199,7 +199,13 @@ defineExpose<MultiEditorContainerExposes>({
   setActiveEditor,
 });
 
-const pushNewEditorState = (key: string) => {
+const pushNewEditorState = ({
+  key,
+  expandControls,
+}: {
+  key: string;
+  expandControls: boolean;
+}) => {
   const newState: EditorStateWithoutMonaco = {
     selectorState: {
       outputMode: "APPEND",
@@ -210,7 +216,7 @@ const pushNewEditorState = (key: string) => {
     selectorErrorState: { level: "OK" },
     expressionReturnType: "UNKNOWN",
   };
-  editorControlsExpanded.value[key] = true;
+  editorControlsExpanded.value[key] = expandControls;
   editorStates[key] = newState;
 };
 
@@ -274,7 +280,7 @@ const addNewEditorBelowExisting = async (keyAbove: string) => {
   const desiredInsertionIndex = orderedEditorKeys.indexOf(keyAbove) + 1;
   orderedEditorKeys.splice(desiredInsertionIndex, 0, latestKey);
 
-  pushNewEditorState(latestKey);
+  pushNewEditorState({ key: latestKey, expandControls: true });
 
   // wait for the editor to be added to the DOM
   await nextTick();
@@ -435,7 +441,9 @@ onMounted(async () => {
   for (let i = 0; i < props.settings.length; ++i) {
     const key = generateNewKey();
     orderedEditorKeys.push(key);
-    pushNewEditorState(key);
+
+    // Expand controls if there's only one editor, collapse otherwise
+    pushNewEditorState({ key, expandControls: props.settings.length === 1 });
   }
 
   await nextTick();
@@ -454,7 +462,6 @@ onMounted(async () => {
     editorStates[key].expressionReturnType = "UNKNOWN";
     editorStates[key].selectedFlowVariableOutputType =
       props.settings[i].initialOutputReturnType;
-    editorControlsExpanded.value[key] = false;
   }
 
   const register = await getSettingsService().registerSettings("model");
