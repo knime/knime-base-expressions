@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { DEFAULT_NUMBER_OF_ROWS_TO_RUN } from "@/common/constants";
-import { Button, SplitButton, SubMenu, Tooltip } from "@knime/components";
-import PlayIcon from "@knime/styles/img/icons/play.svg";
-import DropdownIcon from "@knime/styles/img/icons/arrow-dropdown.svg";
 import { computed } from "vue";
+
+import { Button, SplitButton, SubMenu, Tooltip } from "@knime/components";
+import DropdownIcon from "@knime/styles/img/icons/arrow-dropdown.svg";
+import PlayIcon from "@knime/styles/img/icons/play.svg";
+
+import { DEFAULT_NUMBER_OF_ROWS_TO_RUN } from "@/common/constants";
 
 interface PropType {
   runButtonDisabledErrorReason: string | null;

@@ -1,5 +1,6 @@
-import * as monaco from "monaco-editor";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import * as monaco from "monaco-editor";
+
 import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { BASE_INITIAL_DATA } from "../__mocks__/mock-data";
 

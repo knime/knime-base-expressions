@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import {
-  AlertingService,
-  ExtensionTypes,
-  JsonDataService,
-} from "@knime/ui-extension-service";
+
+import { getScriptingService } from "@knime/scripting-editor";
 import {
   type ExtensionConfig,
   ResourceTypes,
   UIExtension,
   type UIExtensionAPILayer,
 } from "@knime/ui-extension-renderer";
-import { getScriptingService } from "@knime/scripting-editor";
+import {
+  AlertingService,
+  ExtensionTypes,
+  JsonDataService,
+} from "@knime/ui-extension-service";
 
 const extensionConfig = ref<ExtensionConfig | null>(null);
 const resourceLocation = ref<string>("");

@@ -1,9 +1,11 @@
 import * as monaco from "monaco-editor";
+
+import type { SubItem } from "@knime/scripting-editor";
+
+import { LANGUAGE } from "@/common/constants";
+import { convertFunctionsToInsertionItems } from "@/components/convertFunctionsToInsertionItems";
 import { functionDataToMarkdown } from "@/components/function-catalog/functionDescriptionToMarkdown";
 import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
-import { convertFunctionsToInsertionItems } from "@/components/convertFunctionsToInsertionItems";
-import { LANGUAGE } from "@/common/constants";
-import type { SubItem } from "@knime/scripting-editor";
 
 export type CompletionItemWithType = {
   text: string;

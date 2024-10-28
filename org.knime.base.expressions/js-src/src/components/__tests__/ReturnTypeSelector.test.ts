@@ -1,6 +1,8 @@
-import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+
 import { Dropdown } from "@knime/components";
+
 import type { AllowedReturnTypes } from "@/components/ReturnTypeSelector.vue";
 import ReturnTypeSelector from "@/components/ReturnTypeSelector.vue";
 import { type FlowVariableType } from "@/flowVariableApp/flowVariableTypes";

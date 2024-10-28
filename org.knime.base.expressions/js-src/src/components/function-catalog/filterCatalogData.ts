@@ -1,6 +1,6 @@
+import type { SelectableItem } from "@/components/function-catalog/catalogTypes";
 import type { CatalogData } from "@/components/function-catalog/mapFunctionCatalogData";
 import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
-import type { SelectableItem } from "@/components/function-catalog/catalogTypes";
 
 const filterBySearchTerm = (
   datum: FunctionCatalogEntryData,

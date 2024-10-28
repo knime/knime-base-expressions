@@ -1,14 +1,15 @@
-import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
-import { createInitialDataServiceMock } from "@knime/scripting-editor/initial-data-service-browser-mock";
-import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
 import {
   getInitialDataService,
   getScriptingService,
   getSettingsService,
 } from "@knime/scripting-editor";
+import { createInitialDataServiceMock } from "@knime/scripting-editor/initial-data-service-browser-mock";
+import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
+import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
+
 import { ROW_FILTER_INITIAL_DATA } from "@/__mocks__/mock-data";
-import type { ExpressionRowFilterNodeSettings } from "@/expressionSettingsService";
 import { log } from "@/common/functions";
+import type { ExpressionRowFilterNodeSettings } from "@/expressionSettingsService";
 
 export const DEFAULT_ROW_FILTER_INITIAL_SETTINGS: ExpressionRowFilterNodeSettings =
   {

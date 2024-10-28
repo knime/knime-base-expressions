@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
 import { Button, Tooltip } from "@knime/components";
 import PlayIcon from "@knime/styles/img/icons/play.svg";
-import { computed } from "vue";
 
 interface PropType {
   runButtonDisabledErrorReason: string | null;

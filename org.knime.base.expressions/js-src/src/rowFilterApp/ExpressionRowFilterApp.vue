@@ -1,30 +1,29 @@
 <script setup lang="ts">
+import { computed, onMounted, ref, watch } from "vue";
+import { onKeyStroke } from "@vueuse/core";
+
 import {
-  consoleHandler,
-  getScriptingService,
   OutputTablePreview,
   ScriptingEditor,
+  consoleHandler,
+  getScriptingService,
+  getSettingsService,
   setActiveEditorStoreForAi,
   useReadonlyStore,
-  getSettingsService,
 } from "@knime/scripting-editor";
-import { onKeyStroke } from "@vueuse/core";
-import { computed, onMounted, ref, watch } from "vue";
-import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
-import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
-import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 
-import ExpressionEditorPane, {
-  type ExpressionEditorPaneExposes,
-} from "@/components/ExpressionEditorPane.vue";
-import { runRowFilterDiagnostics } from "@/rowFilterApp/expressionRowFilterDiagnostics";
 import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
 import {
   mapConnectionInfoToErrorMessage,
   registerInsertionListener,
 } from "@/common/functions";
-import RunButton from "@/components/RunButton.vue";
 import type { ExpressionVersion, RowFilterInitialData } from "@/common/types";
+import ExpressionEditorPane, {
+  type ExpressionEditorPaneExposes,
+} from "@/components/ExpressionEditorPane.vue";
+import RunButton from "@/components/RunButton.vue";
+import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
+import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 import { getRowFilterInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowFilterNodeSettings,
@@ -34,6 +33,8 @@ import type {
   EditorErrorState,
   ExpressionDiagnostic,
 } from "@/generalDiagnostics";
+import { runRowFilterDiagnostics } from "@/rowFilterApp/expressionRowFilterDiagnostics";
+import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 
 const editorRef = ref<Required<ExpressionEditorPaneExposes> | null>(null);
 

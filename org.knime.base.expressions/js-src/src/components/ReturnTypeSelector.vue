@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { ref, watch } from "vue";
+
 import { Dropdown } from "@knime/components";
 import { useReadonlyStore } from "@knime/scripting-editor";
+
 import { type FlowVariableType } from "@/flowVariableApp/flowVariableTypes";
-import { ref, watch } from "vue";
 
 export type AllowedReturnTypes = {
   id: FlowVariableType;

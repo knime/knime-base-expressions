@@ -1,11 +1,12 @@
-import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { nextTick } from "vue";
+import { flushPromises, mount } from "@vue/test-utils";
+
 import { ROW_MAPPER_INITIAL_DATA } from "@/__mocks__/mock-data";
+import type { Diagnostic } from "@/generalDiagnostics";
+import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import ExpressionRowMapperApp from "../ExpressionRowMapperApp.vue";
 import { DEFAULT_ROW_MAPPER_INITIAL_SETTINGS } from "../__mocks__/browser-mock-row-mapper-services";
-import type { Diagnostic } from "@/generalDiagnostics";
 
 vi.mock("@/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),

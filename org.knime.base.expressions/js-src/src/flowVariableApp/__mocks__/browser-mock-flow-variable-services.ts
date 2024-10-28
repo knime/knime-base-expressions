@@ -1,17 +1,18 @@
-import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
-import { createInitialDataServiceMock } from "@knime/scripting-editor/initial-data-service-browser-mock";
-import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
 import {
   getInitialDataService,
   getScriptingService,
   getSettingsService,
 } from "@knime/scripting-editor";
+import { createInitialDataServiceMock } from "@knime/scripting-editor/initial-data-service-browser-mock";
+import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
+import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
+
 import {
-  FLOW_VARIABLE_INITIAL_DATA,
   FLOW_VARIABLES,
+  FLOW_VARIABLE_INITIAL_DATA,
 } from "@/__mocks__/mock-data";
-import type { ExpressionFlowVariableNodeSettings } from "@/expressionSettingsService";
 import { log } from "@/common/functions";
+import type { ExpressionFlowVariableNodeSettings } from "@/expressionSettingsService";
 
 export const DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS: ExpressionFlowVariableNodeSettings =
   {

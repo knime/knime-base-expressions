@@ -1,14 +1,15 @@
-import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
-import { createInitialDataServiceMock } from "@knime/scripting-editor/initial-data-service-browser-mock";
-import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
 import {
   getInitialDataService,
   getScriptingService,
   getSettingsService,
 } from "@knime/scripting-editor";
-import { ROW_MAPPER_INITIAL_DATA, INPUT_OBJECTS } from "@/__mocks__/mock-data";
-import type { ExpressionRowMapperNodeSettings } from "@/expressionSettingsService";
+import { createInitialDataServiceMock } from "@knime/scripting-editor/initial-data-service-browser-mock";
+import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
+import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
+
+import { INPUT_OBJECTS, ROW_MAPPER_INITIAL_DATA } from "@/__mocks__/mock-data";
 import { log } from "@/common/functions";
+import type { ExpressionRowMapperNodeSettings } from "@/expressionSettingsService";
 
 export const DEFAULT_ROW_MAPPER_INITIAL_SETTINGS: ExpressionRowMapperNodeSettings =
   {

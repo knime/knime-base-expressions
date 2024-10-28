@@ -1,43 +1,45 @@
 <script setup lang="ts">
+import { onMounted, ref, shallowRef } from "vue";
+
+import { LoadingIcon } from "@knime/components";
 import {
-  consoleHandler,
-  getScriptingService,
   type InputOutputModel,
   InputOutputPane,
   OutputTablePreview,
   ScriptingEditor,
   type SubItem,
+  consoleHandler,
+  getScriptingService,
   useReadonlyStore,
 } from "@knime/scripting-editor";
-import { getRowMapperInitialDataService } from "@/expressionInitialDataService";
+
+import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
+import { mapConnectionInfoToErrorMessage } from "@/common/functions";
+import {
+  buildAppendedOutput,
+  replaceSubItems,
+} from "@/common/inputOutputUtils";
 import type { ExpressionVersion, RowMapperInitialData } from "@/common/types";
-import { LoadingIcon } from "@knime/components";
-import { onMounted, ref, shallowRef } from "vue";
-import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
-import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
-import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
+import type { IconRendererProps } from "@/components/IconRenderer.vue";
 import MultiEditorContainer, {
   type EditorState,
   type EditorStates,
 } from "@/components/MultiEditorContainer.vue";
-import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
-import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
-import { mapConnectionInfoToErrorMessage } from "@/common/functions";
+import type {
+  AllowedDropDownValue,
+  SelectorState,
+} from "@/components/OutputSelector.vue";
 import RunButton from "@/components/RunButton.vue";
+import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
+import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
+import { getRowMapperInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowMapperNodeSettings,
   getRowMapperSettingsService,
 } from "@/expressionSettingsService";
 import { runOutputDiagnostics } from "@/generalDiagnostics";
-import {
-  buildAppendedOutput,
-  replaceSubItems,
-} from "@/common/inputOutputUtils";
-import type {
-  AllowedDropDownValue,
-  SelectorState,
-} from "@/components/OutputSelector.vue";
-import type { IconRendererProps } from "@/components/IconRenderer.vue";
+import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
+import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 
 const initialData = shallowRef<RowMapperInitialData | null>(null);
 const initialSettings = ref<ExpressionRowMapperNodeSettings | null>(null);

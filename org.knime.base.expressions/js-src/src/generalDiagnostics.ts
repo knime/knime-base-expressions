@@ -1,5 +1,7 @@
-import type { UseCodeEditorReturn } from "@knime/scripting-editor";
 import { editor as MonacoEditor, Range } from "monaco-editor";
+
+import type { UseCodeEditorReturn } from "@knime/scripting-editor";
+
 import {
   DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY,
   EXPRESSION_MARKERS_OWNER,

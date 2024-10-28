@@ -1,7 +1,10 @@
 import type {
-  FunctionCatalogData,
-  FunctionCatalogEntryData,
-} from "@/components/functionCatalogTypes";
+  GenericNodeSettings,
+  InputOutputModel,
+  SubItem,
+} from "@knime/scripting-editor";
+import { DEFAULT_FLOW_VARIABLE_INPUTS } from "@knime/scripting-editor/initial-data-service-browser-mock";
+
 import type {
   FlowVariableInitialData,
   GenericExpressionInitialData,
@@ -9,11 +12,9 @@ import type {
   RowMapperInitialData,
 } from "@/common/types";
 import type {
-  GenericNodeSettings,
-  InputOutputModel,
-  SubItem,
-} from "@knime/scripting-editor";
-import { DEFAULT_FLOW_VARIABLE_INPUTS } from "@knime/scripting-editor/initial-data-service-browser-mock";
+  FunctionCatalogData,
+  FunctionCatalogEntryData,
+} from "@/components/functionCatalogTypes";
 
 export const INPUT_OBJECTS: InputOutputModel[] = [
   {

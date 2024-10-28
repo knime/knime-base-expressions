@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import type {
-  FunctionCatalogEntryData,
-  CategoryData,
-} from "@/components/functionCatalogTypes";
 import { computed } from "vue";
-import {
-  functionDataToHtml,
-  categoryDataToHtml,
-} from "@/components/function-catalog/functionDescriptionToMarkdown";
+
 import { Description } from "@knime/components";
+
+import {
+  categoryDataToHtml,
+  functionDataToHtml,
+} from "@/components/function-catalog/functionDescriptionToMarkdown";
+import type {
+  CategoryData,
+  FunctionCatalogEntryData,
+} from "@/components/functionCatalogTypes";
 
 type PropType =
   | {

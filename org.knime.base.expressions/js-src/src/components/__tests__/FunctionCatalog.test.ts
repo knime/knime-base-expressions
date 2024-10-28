@@ -1,18 +1,20 @@
-import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG } from "../function-catalog/contraints";
+import { ref } from "vue";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+import { useElementBounding } from "@vueuse/core";
+
+import { SearchInput } from "@knime/components";
+import { insertionEventHelper } from "@knime/scripting-editor";
+
 import FunctionCatalog, {
   FUNCTION_INSERTION_EVENT,
 } from "../function-catalog/FunctionCatalog.vue";
+import { MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG } from "../function-catalog/contraints";
 import type {
-  FunctionData,
   ConstantData,
   FunctionCatalogData,
+  FunctionData,
 } from "../functionCatalogTypes";
-import { useElementBounding } from "@vueuse/core";
-import { ref } from "vue";
-import { SearchInput } from "@knime/components";
-import { insertionEventHelper } from "@knime/scripting-editor";
 
 const mocks = vi.hoisted(() => {
   return {

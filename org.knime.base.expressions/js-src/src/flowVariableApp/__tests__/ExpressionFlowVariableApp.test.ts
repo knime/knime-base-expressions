@@ -1,12 +1,12 @@
-import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
 import { nextTick } from "vue";
-import { FLOW_VARIABLE_INITIAL_DATA } from "@/__mocks__/mock-data";
+import { flushPromises, mount } from "@vue/test-utils";
 
-import { DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS } from "../__mocks__/browser-mock-flow-variable-services";
-import ExpressionFlowVariableApp from "../ExpressionFlowVariableApp.vue";
+import { FLOW_VARIABLE_INITIAL_DATA } from "@/__mocks__/mock-data";
 import type { Diagnostic } from "@/generalDiagnostics";
+import registerKnimeExpressionLanguage from "@/registerKnimeExpressionLanguage";
+import ExpressionFlowVariableApp from "../ExpressionFlowVariableApp.vue";
+import { DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS } from "../__mocks__/browser-mock-flow-variable-services";
 
 vi.mock("@/registerKnimeExpressionLanguage", () => ({
   default: vi.fn(() => vi.fn()),

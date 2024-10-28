@@ -1,7 +1,9 @@
-import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import OutputSelector, { type SelectorState } from "../OutputSelector.vue";
+import { enableAutoUnmount, mount } from "@vue/test-utils";
+
 import { Dropdown, InputField, ValueSwitch } from "@knime/components";
+
+import OutputSelector, { type SelectorState } from "../OutputSelector.vue";
 
 describe("OutputSelector", () => {
   enableAutoUnmount(afterEach);

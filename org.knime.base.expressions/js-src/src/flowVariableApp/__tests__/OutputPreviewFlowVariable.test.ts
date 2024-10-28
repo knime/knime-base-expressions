@@ -1,7 +1,9 @@
-import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import OutputPreviewFlowVariable from "../OutputPreviewFlowVariable.vue";
+import { flushPromises, mount } from "@vue/test-utils";
+
 import { getScriptingService } from "@knime/scripting-editor";
+
+import OutputPreviewFlowVariable from "../OutputPreviewFlowVariable.vue";
 
 const mocks = vi.hoisted(() => {
   const dummyPath = "something/something/";

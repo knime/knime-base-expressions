@@ -1,11 +1,12 @@
-import { flushPromises, mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
+import { flushPromises, mount } from "@vue/test-utils";
+import { onKeyStroke } from "@vueuse/core";
+
+import type { ExpressionEditorPaneExposes } from "../ExpressionEditorPane.vue";
 import MultiEditorContainer, {
   type MultiEditorContainerExposes,
 } from "../MultiEditorContainer.vue";
-import { onKeyStroke } from "@vueuse/core";
-import { nextTick } from "vue";
-import type { ExpressionEditorPaneExposes } from "../ExpressionEditorPane.vue";
 
 vi.mock("@vueuse/core", async (importOriginal) => {
   const original = await importOriginal<typeof import("@vueuse/core")>();

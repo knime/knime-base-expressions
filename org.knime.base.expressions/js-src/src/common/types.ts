@@ -1,4 +1,5 @@
 import type { GenericInitialData } from "@knime/scripting-editor";
+
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 
 export type OutputInsertionMode = "APPEND" | "REPLACE_EXISTING";

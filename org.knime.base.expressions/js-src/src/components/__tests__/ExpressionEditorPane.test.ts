@@ -1,7 +1,9 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { onKeyStroke } from "@vueuse/core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { editor } from "@knime/scripting-editor";
+
 import ExpressionEditorPane from "../ExpressionEditorPane.vue";
 
 vi.mock("@vueuse/core", async (importOriginal) => {

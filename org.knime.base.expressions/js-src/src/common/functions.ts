@@ -1,13 +1,14 @@
 import { BrowserReporter, Consola, LogLevel } from "consola";
 
-import { FUNCTION_INSERTION_EVENT } from "@/components/function-catalog/FunctionCatalog.vue";
 import {
   COLUMN_INSERTION_EVENT,
   type InputConnectionInfo,
   type InsertionEvent,
   insertionEventHelper,
 } from "@knime/scripting-editor";
+
 import type { ExpressionEditorPaneExposes } from "@/components/ExpressionEditorPane.vue";
+import { FUNCTION_INSERTION_EVENT } from "@/components/function-catalog/FunctionCatalog.vue";
 
 export const setupConsola = () => {
   const consola = new Consola({

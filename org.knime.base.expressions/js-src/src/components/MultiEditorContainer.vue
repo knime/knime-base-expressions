@@ -1,16 +1,5 @@
 <script setup lang="ts">
 import {
-  consoleHandler,
-  getScriptingService,
-  getSettingsService,
-  setActiveEditorStoreForAi,
-  type UseCodeEditorReturn,
-  useReadonlyStore,
-} from "@knime/scripting-editor";
-import { FunctionButton } from "@knime/components";
-import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
-import { onKeyStroke } from "@vueuse/core";
-import {
   type ComponentPublicInstance,
   computed,
   nextTick,
@@ -19,29 +8,42 @@ import {
   ref,
   watch,
 } from "vue";
+import { onKeyStroke } from "@vueuse/core";
 import { v4 as uuidv4 } from "uuid";
+
+import { FunctionButton } from "@knime/components";
+import {
+  type UseCodeEditorReturn,
+  consoleHandler,
+  getScriptingService,
+  getSettingsService,
+  setActiveEditorStoreForAi,
+  useReadonlyStore,
+} from "@knime/scripting-editor";
+import NextIcon from "@knime/styles/img/icons/arrow-next.svg";
+import PlusIcon from "@knime/styles/img/icons/circle-plus.svg";
+import type { SettingState } from "@knime/ui-extension-service";
+
+import { LANGUAGE } from "@/common/constants";
+import { registerInsertionListener } from "@/common/functions";
 import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
 } from "@/components/ExpressionEditorPane.vue";
-import { LANGUAGE } from "@/common/constants";
-import { registerInsertionListener } from "@/common/functions";
 import OutputSelector, {
   type AllowedDropDownValue,
   type ItemType,
   type SelectorState,
 } from "@/components/OutputSelector.vue";
-import type {
-  EditorErrorState,
-  ExpressionDiagnostic,
-} from "@/generalDiagnostics";
 import ReturnTypeSelector from "@/components/ReturnTypeSelector.vue";
 import {
   type ExpressionReturnType,
   type FlowVariableType,
   getDropDownValuesForCurrentType,
 } from "@/flowVariableApp/flowVariableTypes";
-import NextIcon from "@knime/styles/img/icons/arrow-next.svg";
-import type { SettingState } from "@knime/ui-extension-service";
+import type {
+  EditorErrorState,
+  ExpressionDiagnostic,
+} from "@/generalDiagnostics";
 
 type EditorStateWithoutMonaco = {
   selectorState: SelectorState;

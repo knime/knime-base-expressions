@@ -1,6 +1,7 @@
-import type { ExpressionVersion, OutputInsertionMode } from "@/common/types";
 import type { GenericNodeSettings } from "@knime/scripting-editor";
 import { getSettingsService } from "@knime/scripting-editor";
+
+import type { ExpressionVersion, OutputInsertionMode } from "@/common/types";
 import type { FlowVariableType } from "@/flowVariableApp/flowVariableTypes";
 
 export type ExpressionRowFilterNodeSettings = ExpressionVersion & {

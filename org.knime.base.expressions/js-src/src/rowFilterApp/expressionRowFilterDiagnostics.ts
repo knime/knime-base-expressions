@@ -1,7 +1,8 @@
 import {
-  getScriptingService,
   type UseCodeEditorReturn,
+  getScriptingService,
 } from "@knime/scripting-editor";
+
 import {
   type EditorErrorState,
   type ExpressionDiagnostic,

@@ -1,31 +1,34 @@
 <script setup lang="ts">
 import {
-  editor,
-  type UseCodeEditorReturn,
-  useReadonlyStore,
-} from "@knime/scripting-editor";
-import { onKeyStroke } from "@vueuse/core";
-import {
-  computed,
   type FunctionalComponent,
+  type SVGAttributes,
+  computed,
   nextTick,
   onMounted,
   ref,
-  type SVGAttributes,
   watch,
 } from "vue";
+import { onKeyStroke } from "@vueuse/core";
+import { editor as monaco } from "monaco-editor";
+
+import { FunctionButton } from "@knime/components";
+import {
+  type UseCodeEditorReturn,
+  editor,
+  useReadonlyStore,
+} from "@knime/scripting-editor";
+import DownArrowIcon from "@knime/styles/img/icons/arrow-down.svg";
+import UpArrowIcon from "@knime/styles/img/icons/arrow-up.svg";
+import WarningIcon from "@knime/styles/img/icons/circle-warning.svg";
+import CopyIcon from "@knime/styles/img/icons/copy.svg";
+import TrashIcon from "@knime/styles/img/icons/trash.svg";
+
 import {
   resetDraggedFunctionStore,
   useDraggedFunctionStore,
 } from "@/draggedFunctionStore";
-import TrashIcon from "@knime/styles/img/icons/trash.svg";
-import UpArrowIcon from "@knime/styles/img/icons/arrow-up.svg";
-import DownArrowIcon from "@knime/styles/img/icons/arrow-down.svg";
-import CopyIcon from "@knime/styles/img/icons/copy.svg";
-import WarningIcon from "@knime/styles/img/icons/circle-warning.svg";
-import { FunctionButton } from "@knime/components";
 import type { EditorErrorState } from "@/generalDiagnostics";
-import { editor as monaco } from "monaco-editor";
+
 import EditorOption = monaco.EditorOption;
 
 export type ExpressionEditorPaneExposes = {

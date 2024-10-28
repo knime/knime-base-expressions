@@ -1,9 +1,10 @@
 import { getInitialDataService } from "@knime/scripting-editor";
+
 import type {
-  RowMapperInitialData,
   FlowVariableInitialData,
   GenericExpressionInitialData,
   RowFilterInitialData,
+  RowMapperInitialData,
 } from "@/common/types";
 
 const getExpressionInitialDataService = <

@@ -1,7 +1,9 @@
+import * as monaco from "monaco-editor";
+
 import type { CompletionItemWithType } from "@/registerKnimeExpressionLanguage";
+
 import { functionDataToMarkdown } from "./function-catalog/functionDescriptionToMarkdown";
 import type { FunctionCatalogEntryData } from "./functionCatalogTypes";
-import * as monaco from "monaco-editor";
 
 /**
  * Take the data from the function catalog returned by the scripting service, and convert it into

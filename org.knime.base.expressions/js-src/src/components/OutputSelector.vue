@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { watch } from "vue";
+
 import { Dropdown, InputField, ValueSwitch } from "@knime/components";
 import {
   useReadonlyStore,
   useShouldFocusBePainted,
 } from "@knime/scripting-editor";
+
 import type { OutputInsertionMode } from "@/common/types";
-import { watch } from "vue";
 
 export type SelectorState = {
   outputMode: OutputInsertionMode;

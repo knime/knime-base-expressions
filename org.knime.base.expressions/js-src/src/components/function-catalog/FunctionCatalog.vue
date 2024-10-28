@@ -3,35 +3,37 @@ export const FUNCTION_INSERTION_EVENT = "functionInsertion";
 </script>
 
 <script setup lang="ts">
-import { computed, ref, reactive, type ComponentPublicInstance } from "vue";
+import { type ComponentPublicInstance, computed, reactive, ref } from "vue";
+import { useElementBounding } from "@vueuse/core";
+
 import {
+  EMPTY_DRAG_IMAGE,
   SearchInput,
   createDragGhosts,
-  EMPTY_DRAG_IMAGE,
 } from "@knime/components";
+import {
+  insertionEventHelper,
+  useReadonlyStore,
+} from "@knime/scripting-editor";
 import NextIcon from "@knime/styles/img/icons/arrow-next.svg";
-import { useElementBounding } from "@vueuse/core";
+
+import FunctionCatalogDescription from "@/components/function-catalog/FunctionCatalogDescription.vue";
+import type {
+  SelectableFunction,
+  SelectableItem,
+} from "@/components/function-catalog/catalogTypes";
+import {
+  MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG,
+  MIN_WIDTH_FUNCTION_CATALOG,
+} from "@/components/function-catalog/contraints";
+import { filterCatalogData } from "@/components/function-catalog/filterCatalogData";
 import { mapFunctionCatalogData } from "@/components/function-catalog/mapFunctionCatalogData";
 import type {
   CategoryData,
   FunctionCatalogData,
   FunctionCatalogEntryData,
 } from "@/components/functionCatalogTypes";
-import { filterCatalogData } from "@/components/function-catalog/filterCatalogData";
-import type {
-  SelectableItem,
-  SelectableFunction,
-} from "@/components/function-catalog/catalogTypes";
 import { useDraggedFunctionStore } from "@/draggedFunctionStore";
-import FunctionCatalogDescription from "@/components/function-catalog/FunctionCatalogDescription.vue";
-import {
-  MIN_WIDTH_FOR_SIDE_BY_SIZE_DESC_FUNC_CATALOG,
-  MIN_WIDTH_FUNCTION_CATALOG,
-} from "@/components/function-catalog/contraints";
-import {
-  insertionEventHelper,
-  useReadonlyStore,
-} from "@knime/scripting-editor";
 
 const FUNCTION_CATALOG_WIDTH = `${MIN_WIDTH_FUNCTION_CATALOG}px`;
 

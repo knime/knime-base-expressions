@@ -1,44 +1,46 @@
 <script setup lang="ts">
+import { onMounted, ref, shallowRef } from "vue";
+
+import { LoadingIcon } from "@knime/components";
 import {
-  getScriptingService,
   type InputOutputModel,
   InputOutputPane,
   ScriptingEditor,
   type SubItem,
+  getScriptingService,
   useReadonlyStore,
 } from "@knime/scripting-editor";
-import MultiEditorContainer, {
-  type EditorState,
-  type EditorStates,
-} from "@/components/MultiEditorContainer.vue";
-import type {
-  ExpressionVersion,
-  FlowVariableInitialData,
-} from "@/common/types";
-import { LoadingIcon } from "@knime/components";
-import { onMounted, ref, shallowRef } from "vue";
-import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
-import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
-import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
+
 import { LANGUAGE } from "@/common/constants";
-import {
-  type ExpressionFlowVariableNodeSettings,
-  getFlowVariableSettingsService,
-} from "@/expressionSettingsService";
-import { getFlowVariableInitialDataService } from "@/expressionInitialDataService";
-import { runFlowVariableDiagnostics } from "@/flowVariableApp/expressionFlowVariableDiagnostics";
-import { runOutputDiagnostics } from "@/generalDiagnostics";
-import OutputPreviewFlowVariable from "@/flowVariableApp/OutputPreviewFlowVariable.vue";
-import SimpleRunButton from "@/components/SimpleRunButton.vue";
 import {
   buildAppendedOutput,
   replaceSubItems,
 } from "@/common/inputOutputUtils";
 import type {
+  ExpressionVersion,
+  FlowVariableInitialData,
+} from "@/common/types";
+import type { IconRendererProps } from "@/components/IconRenderer.vue";
+import MultiEditorContainer, {
+  type EditorState,
+  type EditorStates,
+} from "@/components/MultiEditorContainer.vue";
+import type {
   AllowedDropDownValue,
   SelectorState,
 } from "@/components/OutputSelector.vue";
-import type { IconRendererProps } from "@/components/IconRenderer.vue";
+import SimpleRunButton from "@/components/SimpleRunButton.vue";
+import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
+import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
+import { getFlowVariableInitialDataService } from "@/expressionInitialDataService";
+import {
+  type ExpressionFlowVariableNodeSettings,
+  getFlowVariableSettingsService,
+} from "@/expressionSettingsService";
+import OutputPreviewFlowVariable from "@/flowVariableApp/OutputPreviewFlowVariable.vue";
+import { runFlowVariableDiagnostics } from "@/flowVariableApp/expressionFlowVariableDiagnostics";
+import { runOutputDiagnostics } from "@/generalDiagnostics";
+import registerKnimeExpressionLanguage from "../registerKnimeExpressionLanguage";
 
 // Input flowVariables helpers
 const runButtonDisabledErrorReason = ref<string | null>(null);

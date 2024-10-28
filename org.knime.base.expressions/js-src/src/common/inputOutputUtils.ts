@@ -1,8 +1,10 @@
-import type { SelectorState } from "@/components/OutputSelector.vue";
-import type { InputOutputModel, SubItem } from "@knime/scripting-editor";
 import { shallowRef } from "vue";
+
+import type { InputOutputModel, SubItem } from "@knime/scripting-editor";
+
 import type { IconRendererProps } from "@/components/IconRenderer.vue";
 import IconRenderer from "@/components/IconRenderer.vue";
+import type { SelectorState } from "@/components/OutputSelector.vue";
 
 export type SubItemState = {
   selectorState: SelectorState;

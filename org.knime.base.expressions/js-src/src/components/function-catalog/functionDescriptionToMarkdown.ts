@@ -1,8 +1,9 @@
+import MarkdownIt from "markdown-it";
+
 import type {
   CategoryData,
   FunctionCatalogEntryData,
 } from "@/components/functionCatalogTypes";
-import MarkdownIt from "markdown-it";
 
 export const functionDataToMarkdown = (
   func: FunctionCatalogEntryData,
