@@ -135,7 +135,8 @@ const getState = () => {
         `${key} ${editorReferences[key].getEditorState().text.value}
     ${editorStates[key].selectorState.outputMode}
     ${editorStates[key].selectorState.create}
-    ${editorStates[key].selectorState.replace}`,
+    ${editorStates[key].selectorState.replace}
+    ${editorStates[key].selectedFlowVariableOutputType}`,
     )
     .join("\n");
 };
