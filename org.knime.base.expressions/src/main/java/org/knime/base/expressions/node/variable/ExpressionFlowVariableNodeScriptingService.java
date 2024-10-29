@@ -112,6 +112,7 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
         protected String getCodeSuggestion(final String userPrompt, final String currentCode) throws IOException {
             // NB: The AI button is disabled if the input is not available
             return ExpressionCodeAssistant.generateCode( //
+                ExpressionCodeAssistant.ExpressionType.VARIABLE, //
                 userPrompt, //
                 currentCode, //
                 getWorkflowControl().getInputSpec(), //

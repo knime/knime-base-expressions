@@ -78,8 +78,34 @@ public final class ExpressionCodeAssistant {
     }
 
     /**
+     * The type of expression for which we want AI code assistance
+     */
+    public enum ExpressionType {
+            /**
+             * The normal "row mapper" expression node
+             */
+            ROW("knime_expression"), //
+            /**
+             * The expression row filter
+             */
+            FILTER("knime_expression_filter"), //
+            /**
+             * The expression node working on variables only
+             */
+            VARIABLE("knime_expression_variable");
+
+        final String m_endpoint;
+
+        ExpressionType(final String endpoint) {
+            m_endpoint = endpoint;
+        }
+    }
+
+    /**
      * Query the AI to generate expressions for the given prompt
      *
+     * @param type The type of expression to generate, allowing to specialize for the node type (row, filter or
+     *            variable)
      * @param userPrompt The user prompt to instruct the AI what to do
      * @param oldCode The current code. Should not be null, but may be an empty string.
      * @param inputPortSpecs The input port configuration of the node
@@ -88,6 +114,7 @@ public final class ExpressionCodeAssistant {
      * @throws IOException
      */
     public static String generateCode( //
+        final ExpressionType type, //
         final String userPrompt, //
         final String oldCode, //
         final PortObjectSpec[] inputPortSpecs, //
@@ -104,7 +131,7 @@ public final class ExpressionCodeAssistant {
             EXPRESSION_CORE_PLUGIN_VERSION //
         );
 
-        return HubConnection.INSTANCE.sendRequest("/code_generation/knime_expression", request);
+        return HubConnection.INSTANCE.sendRequest("/code_generation/" + type.m_endpoint, request);
     }
 
     private static NameAndType[] toColumnNameTypeList(final DataColumnSpec... dataColumnSpecs) {

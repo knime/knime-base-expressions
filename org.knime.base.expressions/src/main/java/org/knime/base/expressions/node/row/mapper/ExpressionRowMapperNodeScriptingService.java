@@ -130,6 +130,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         protected String getCodeSuggestion(final String userPrompt, final String currentCode) throws IOException {
             // NB: The AI button is disabled if the input is not available
             return ExpressionCodeAssistant.generateCode( //
+                ExpressionCodeAssistant.ExpressionType.ROW, //
                 userPrompt, //
                 currentCode, //
                 getWorkflowControl().getInputSpec(), //
