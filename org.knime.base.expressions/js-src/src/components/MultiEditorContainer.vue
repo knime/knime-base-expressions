@@ -421,9 +421,10 @@ const getMostConcerningErrorStateForEditor = (
 
 const setWarningsHandler = (warnings: ExpressionDiagnostic[]) => {
   for (let i = 0; i < warnings.length; i++) {
-    if (warnings[i]) {
+    const warning = warnings[i];
+    if (warning) {
       editorStates[orderedEditorKeys[i]].editorErrorState = {
-        level: "WARNING",
+        level: warning.severity,
         message: warnings[i].message,
       };
     }

@@ -62,6 +62,7 @@ import org.knime.base.expressions.node.ExpressionCodeAssistant;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.ExpressionDiagnosticResult;
+import org.knime.base.expressions.node.variable.ExpressionFlowVariableNodeModel.ExpressionResultOutOfRangeException;
 import org.knime.base.expressions.node.variable.ExpressionFlowVariableSettings.FlowVariableTypeNames;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Expressions;
@@ -269,20 +270,26 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
 
             var warnings = new ExpressionDiagnostic[expressions.size()];
 
-            var resultVariables = ExpressionFlowVariableNodeModel.applyFlowVariableExpressions( //
-                expressions, //
-                newFlowVariableNames, //
-                outputReturnType.stream().map(FlowVariableTypeNames::getByTypeName).toList(), //
-                getSupportedFlowVariablesMap(), //
-                i -> {
-                }, // we do not show the progress
-                ExpressionDiagnostic.getWarningMessageHandler(warnings) //
-            );
-            m_outputFlowVariablesReference.set(resultVariables);
+            try {
+                var resultVariables = ExpressionFlowVariableNodeModel.applyFlowVariableExpressions( //
+                    expressions, //
+                    newFlowVariableNames, //
+                    outputReturnType.stream().map(FlowVariableTypeNames::getByTypeName).toList(), //
+                    getSupportedFlowVariablesMap(), //
+                    i -> {
+                    }, // we do not show the progress
+                    ExpressionDiagnostic.getWarningMessageHandler(warnings) //
+                );
+                m_outputFlowVariablesReference.set(resultVariables);
+
+            } catch (ExpressionResultOutOfRangeException e) { // NOSONAR - we send the message to the frontend
+                warnings[e.getExpressionIndex()] = ExpressionDiagnostic.withSameMessage(
+                    "Result " + e.getValue() + " is outside of the range of integer numbers. " + e.getResolution(),
+                    DiagnosticSeverity.ERROR, null);
+            }
 
             sendEvent("updatePreview", null);
             sendEvent("updateWarnings", warnings);
-
         }
 
         /**

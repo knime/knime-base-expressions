@@ -77,9 +77,11 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.KNIMEException;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.message.Message;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
@@ -204,17 +206,22 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         var names = m_settings.getActiveOutputFlowVariables();
 
         // Apply expressions to flow variables
-        var resultVariables = applyFlowVariableExpressions( //
-            m_settings.getScripts(), //
-            names, //
-            m_settings.getReturnTypes(), //
-            getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES), //
-            i -> exec.setProgress( //
-                1.0 * i / m_settings.getNumScripts(), //
-                () -> "Evaluating flow variable \"" + names.get(i) + "\" (" + (i + 1) + "/" + numScripts + ")." //
-            ), //
-            (i, warningMessage) -> messageBuilder.addTextIssue("Expression " + (i + 1) + ": " + warningMessage) //
-        );
+        List<FlowVariable> resultVariables;
+        try {
+            resultVariables = applyFlowVariableExpressions( //
+                m_settings.getScripts(), //
+                names, //
+                m_settings.getReturnTypes(), //
+                getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES), //
+                i -> exec.setProgress( //
+                    1.0 * i / m_settings.getNumScripts(), //
+                    () -> "Evaluating flow variable \"" + names.get(i) + "\" (" + (i + 1) + "/" + numScripts + ")." //
+                ), //
+                (i, warningMessage) -> messageBuilder.addTextIssue("Expression " + (i + 1) + ": " + warningMessage) //
+            );
+        } catch (ExpressionResultOutOfRangeException e) {
+            throw KNIMEException.of(Message.fromSummaryWithResolution(e.getMessage(), e.getResolution()), e);
+        }
 
         // Push flow variables in reverse, so they appear on the stack
         // in the same order as the expressions in the dialog
@@ -249,6 +256,8 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
      *            of the expression and the warning message
      * @return a list of output variables
      * @throws ExpressionCompileException if an expression cannot be compiled
+     * @throws ExpressionResultOutOfRangeException if the result of an expression is outside the range of integer
+     *             numbers
      */
     static List<FlowVariable> applyFlowVariableExpressions( //
         final List<String> expressions, //
@@ -257,7 +266,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         final Map<String, FlowVariable> existingVariables, //
         final IntConsumer updateProgress, //
         final BiConsumer<Integer, String> setWarning //
-    ) throws ExpressionCompileException {
+    ) throws ExpressionCompileException, ExpressionResultOutOfRangeException {
         var availableFlowVariables = new HashMap<String, FlowVariable>(existingVariables);
         var outputVariables = new ArrayList<FlowVariable>();
 
@@ -283,10 +292,13 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             );
 
             final var finalI = i;
-            var outputVariable = createFlowVariableFromComputer(name, //
+            var outputVariable = createFlowVariableFromComputer( //
+                finalI, //
+                name, //
                 resultComputer, //
                 returnTypes.get(finalI), //
-                warning -> setWarning.accept(finalI, warning));
+                warning -> setWarning.accept(finalI, warning) //
+            );
 
             availableFlowVariables.put(name, outputVariable);
             outputVariables.add(outputVariable);
@@ -295,11 +307,12 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         return deduplicateOutputVariables(outputVariables);
     }
 
-    private static FlowVariable createFlowVariableFromComputer(final String name, final Computer computer,
-        final FlowVariableTypeNames returnType, final EvaluationContext ctx) {
+    private static FlowVariable createFlowVariableFromComputer(final int index, final String name,
+        final Computer computer, final FlowVariableTypeNames returnType, final EvaluationContext ctx)
+        throws ExpressionResultOutOfRangeException {
 
         if (computer instanceof IntegerComputer c) {
-            return createFlowVariableFromIntegerComputer(name, c, returnType, ctx);
+            return createFlowVariableFromIntegerComputer(index, name, returnType, ctx, c);
         } else if (computer instanceof StringComputer c) {
             return new FlowVariable(name, StringType.INSTANCE, c.compute(ctx));
         } else if (computer instanceof FloatComputer c) {
@@ -311,23 +324,46 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         }
     }
 
-    private static FlowVariable createFlowVariableFromIntegerComputer(final String name, final IntegerComputer computer,
-        final FlowVariableTypeNames returnType, final EvaluationContext ctx) {
-        var computedValue = computer.compute(ctx);
+    private static FlowVariable createFlowVariableFromIntegerComputer(final int index, final String name,
+        final FlowVariableTypeNames returnType, final EvaluationContext ctx, final IntegerComputer c)
+        throws ExpressionResultOutOfRangeException {
+        var computedValue = c.compute(ctx);
 
         if (returnType == FlowVariableTypeNames.INTEGER) {
-            if (computedValue < Integer.MIN_VALUE) {
-                ctx.addWarning("The result " + computedValue + " is below the minimum value of integer numbers. "
-                    + "The result will be set to " + Integer.MIN_VALUE + ".");
-                return new FlowVariable(name, IntType.INSTANCE, Integer.MIN_VALUE);
-            } else if (computedValue > Integer.MAX_VALUE) {
-                ctx.addWarning("The result " + computedValue + " is above the maximum value of integer numbers. "
-                    + "The result will be set to " + Integer.MAX_VALUE + ".");
-                return new FlowVariable(name, IntType.INSTANCE, Integer.MAX_VALUE);
+            if (computedValue < Integer.MIN_VALUE || computedValue > Integer.MAX_VALUE) {
+                throw new ExpressionResultOutOfRangeException(computedValue, index);
             }
+
             return new FlowVariable(name, IntType.INSTANCE, (int)computedValue);
         } else {
             return new FlowVariable(name, LongType.INSTANCE, computedValue);
+        }
+    }
+
+    static class ExpressionResultOutOfRangeException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        private final long m_value;
+
+        private final int m_expressionIndex;
+
+        ExpressionResultOutOfRangeException(final long value, final int expressionIndex) {
+            super("The result " + value + " of expression " + (expressionIndex + 1)
+                + " is outside the range of integer numbers.");
+            m_value = value;
+            m_expressionIndex = expressionIndex;
+        }
+
+        long getValue() {
+            return m_value;
+        }
+
+        int getExpressionIndex() {
+            return m_expressionIndex;
+        }
+
+        String getResolution() {
+            return "Use the output type Long.";
         }
     }
 
