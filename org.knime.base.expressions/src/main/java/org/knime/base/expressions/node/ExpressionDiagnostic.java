@@ -156,9 +156,5 @@ public record ExpressionDiagnostic(String message, String shortMessage, Diagnost
             ERROR,
             /** The diagnostic represents a warning. */
             WARNING,
-            /** The diagnostic represents an information message. */
-            INFORMATION,
-            /** The diagnostic represents a hint. */
-            HINT;
     }
 }

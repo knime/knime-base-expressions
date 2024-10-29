@@ -20,7 +20,7 @@ export type EditorErrorState =
 export type ExpressionDiagnostic = {
   message: string;
   shortMessage: string;
-  severity: "ERROR" | "WARNING" | "INFO" | "HINT";
+  severity: "ERROR" | "WARNING";
   location: {
     start: number;
     stop: number;
