@@ -14,7 +14,6 @@ import { v4 as uuidv4 } from "uuid";
 import { FunctionButton } from "@knime/components";
 import {
   type UseCodeEditorReturn,
-  consoleHandler,
   getScriptingService,
   getSettingsService,
   setActiveEditorStoreForAi,
@@ -427,14 +426,6 @@ const setWarningsHandler = (warnings: ExpressionDiagnostic[]) => {
         level: "WARNING",
         message: warnings[i].message,
       };
-    }
-  }
-  for (const warning of warnings) {
-    // TODO(AP-23173) remove warnings from console
-    if (warning?.severity === "WARNING") {
-      consoleHandler.writeln({
-        warning: warning.message,
-      });
     }
   }
 };
