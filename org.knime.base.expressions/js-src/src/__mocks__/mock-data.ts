@@ -25,8 +25,8 @@ export const INPUT_OBJECTS: InputOutputModel[] = [
       { name: "Column 3", type: "int", supported: true },
       { name: "Column 4", type: "int", supported: true },
       { name: "Column 5", type: "something weird", supported: false },
-      { name: "Column 6", type: "string", supported: true },
-      { name: "Column 7", type: "boolean", supported: true },
+      { name: "Column_6", type: "string", supported: true },
+      { name: "Column_7", type: "boolean", supported: true },
       { name: "%<a&b>", type: "problem", supported: true },
       { name: 'b\\lah"blah', type: "problem", supported: true },
     ],
@@ -300,19 +300,19 @@ export const BASE_INITIAL_DATA: GenericExpressionInitialData = {
 
 const ROW_INFO_SUBITEMS: SubItem<Record<string, any>>[] = [
   {
-    name: "$[ROW_NUMBER]",
+    name: "ROW_NUMBER",
     type: "INTEGER",
     supported: true,
     insertionText: "$[ROW_NUMBER]",
   },
   {
-    name: "$[ROW_INDEX]",
+    name: "ROW_INDEX",
     type: "INTEGER",
     supported: true,
     insertionText: "$[ROW_INDEX]",
   },
   {
-    name: "$[ROW_ID]",
+    name: "ROW_ID",
     type: "STRING",
     supported: true,
     insertionText: "$[ROW_ID]",
