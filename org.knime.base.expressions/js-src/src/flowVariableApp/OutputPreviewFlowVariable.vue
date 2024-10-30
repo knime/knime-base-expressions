@@ -17,6 +17,7 @@ import {
 const extensionConfig = ref<ExtensionConfig | null>(null);
 const resourceLocation = ref<string>("");
 const dataAvailable = ref<boolean>(false);
+const noDataMessage = ref<string | null>(null);
 
 const emit = defineEmits(["output-preview-updated"]);
 
@@ -93,19 +94,26 @@ onMounted(async () => {
 
   await updateExtensionConfig(extensionConfigLoaded);
 
-  getScriptingService().registerEventHandler("updatePreview", async () => {
-    if (!extensionConfig.value) {
-      return;
-    }
+  getScriptingService().registerEventHandler(
+    "updatePreview",
+    async (errorMessage: null | string) => {
+      if (errorMessage) {
+        dataAvailable.value = false;
+        noDataMessage.value = errorMessage;
+        emit("output-preview-updated");
+        return;
+      }
 
-    if (!dataAvailable.value) {
+      if (!extensionConfig.value) {
+        return;
+      }
+
       dataAvailable.value = true;
-    }
-
-    emit("output-preview-updated");
-
-    await updateExtensionConfig(extensionConfigLoaded);
-  });
+      noDataMessage.value = null;
+      emit("output-preview-updated");
+      await updateExtensionConfig(extensionConfigLoaded);
+    },
+  );
 });
 </script>
 
@@ -125,6 +133,13 @@ onMounted(async () => {
         :shadow-app-style="{ height: '100%', width: '100%' }"
       />
     </div>
+  </div>
+  <div
+    v-else-if="noDataMessage !== null"
+    class="output-table-preview"
+    data-testid="no-data-placeholder"
+  >
+    {{ noDataMessage }}
   </div>
   <div v-else class="output-table-preview pre-evaluation-sign">
     To see the preview, evaluate the expression using the button above.

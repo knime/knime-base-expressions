@@ -281,14 +281,16 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                     ExpressionDiagnostic.getWarningMessageHandler(warnings) //
                 );
                 m_outputFlowVariablesReference.set(resultVariables);
+                sendEvent("updatePreview", null);
 
             } catch (ExpressionResultOutOfRangeException e) { // NOSONAR - we send the message to the frontend
                 warnings[e.getExpressionIndex()] = ExpressionDiagnostic.withSameMessage(
                     "Result " + e.getValue() + " is outside of the range of integer numbers. " + e.getResolution(),
                     DiagnosticSeverity.ERROR, null);
+                sendEvent("updatePreview",
+                    "Preview cannot be shown, because Expression " + (e.getExpressionIndex() + 1) + " is invalid.");
             }
 
-            sendEvent("updatePreview", null);
             sendEvent("updateWarnings", warnings);
         }
 

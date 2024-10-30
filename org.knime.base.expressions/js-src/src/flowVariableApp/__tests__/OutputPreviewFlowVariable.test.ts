@@ -101,7 +101,7 @@ describe("OutputPreviewFlowVariable", () => {
       getScriptingService().registerEventHandler,
     ).mock.calls[0][1];
 
-    callbackUpdatePreview({});
+    callbackUpdatePreview(null);
 
     await flushPromises();
 
@@ -119,7 +119,7 @@ describe("OutputPreviewFlowVariable", () => {
       getScriptingService().registerEventHandler,
     ).mock.calls[0][1];
 
-    callbackUpdatePreview({});
+    callbackUpdatePreview(null);
 
     await flushPromises();
 
@@ -136,5 +136,25 @@ describe("OutputPreviewFlowVariable", () => {
     expect(renderedUiExtensionStubContent).toContain(
       mocks.config.resourceInfo.baseUrl,
     );
+  });
+
+  it("shows no data placeholder if update called with text", async () => {
+    const { wrapper } = await doMount();
+
+    expect(getScriptingService().registerEventHandler).toHaveBeenCalledOnce();
+
+    const callbackUpdatePreview = vi.mocked(
+      getScriptingService().registerEventHandler,
+    ).mock.calls[0][1];
+
+    callbackUpdatePreview("No data to display");
+
+    await flushPromises();
+
+    const noDataPlaceholder = wrapper.find(
+      "[data-testid='no-data-placeholder']",
+    );
+    expect(noDataPlaceholder.exists()).toBe(true);
+    expect(noDataPlaceholder.text()).toContain("No data to display");
   });
 });
