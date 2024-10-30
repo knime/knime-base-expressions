@@ -7,6 +7,12 @@ import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes
 
 type StaticCompletionItem = Omit<monaco.languages.CompletionItem, "range">;
 
+/** A regex that matches text before a string and the starting quote */
+const INSIDE_DOUBLE_QUOTE_STRING_REGEX =
+  /^(?:[^"\\]|\\.|"(?:[^"\\]|\\.)*")*"([^"\\]|\\.)*$/;
+const INSIDE_SINGLE_QUOTE_STRING_REGEX =
+  /^(?:[^'\\]|\\.|'(?:[^'\\]|\\.)*')*'([^'\\]|\\.)*$/;
+
 /**
  * Convert the function catalog entries into a format that can be used by the
  * monaco editor for autocompletion.
@@ -217,24 +223,28 @@ export const registerCompletionItemProvider = ({
 
   return monaco.languages.registerCompletionItemProvider(languageName, {
     triggerCharacters: ["$", "[", '"', "'"],
-    provideCompletionItems: (model, position, { triggerCharacter }) => {
+    provideCompletionItems: (model, position) => {
       // We always provide the same items. Monaco does the filtering.
       // We only have to provide a reasonable range
+      const { range, quote } = getCompletionContext(model, position);
 
-      // If the completion was triggered by a quote, we should only provide completions
-      // if we are in the context of a column or flow variable
-      /* eslint-disable no-magic-numbers */
+      // Do not trigger the autocomplete if we are inside a string
+      const textUntilComplete = model.getValueInRange({
+        startLineNumber: 1,
+        startColumn: 1,
+        // We use the range here to not consider the text that would be overwritten
+        // by the completion. Effect: Do not trigger for `"$["`
+        endLineNumber: range.startLineNumber,
+        endColumn: range.startColumn,
+      });
       if (
-        (triggerCharacter === "'" &&
-          model.getValueInRange(relativeRange(position, 3)) !== "$['") ||
-        (triggerCharacter === '"' &&
-          model.getValueInRange(relativeRange(position, 3)) !== '$["')
+        INSIDE_DOUBLE_QUOTE_STRING_REGEX.test(textUntilComplete) ||
+        INSIDE_SINGLE_QUOTE_STRING_REGEX.test(textUntilComplete)
       ) {
         return null;
       }
-      /* eslint-enable no-magic-numbers */
 
-      const { range, quote } = getCompletionContext(model, position);
+      // Collect all the completion items using the quote from the context
       const items = [
         ...functionsConstantsCompletions,
         ...getColumnCompletions(quote),

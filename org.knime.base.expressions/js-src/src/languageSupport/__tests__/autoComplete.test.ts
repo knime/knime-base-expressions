@@ -194,26 +194,51 @@ describe("autoComplete", () => {
         value.substring(range.startColumn - 1, range.endColumn - 1),
     }) as monaco.editor.ITextModel;
 
-  describe("prevent trigger on string start", () => {
-    it.each(['"', "'"])("quote: %s", (quote) => {
-      registerCompletionItemProvider({
-        functionData: FUNCTIONS.map((name) => ({ name }) as any),
-        columnGetter: () => [...SPECIAL_COLUMNS_ITEMS, ...COLUMNS_ITEMS],
-        flowVariableGetter: () => FLOW_VARIABLES_ITEMS,
-        languageName: "knime-expressions",
-      });
-      const provideCompletionItems = getProvideCompletionItems();
-      const result = provideCompletionItems(
-        editorModelMock(`10 + ${quote}`),
-        { lineNumber: 1, column: 7 } as any,
-        {
-          triggerKind: monaco.languages.CompletionTriggerKind.TriggerCharacter,
-          triggerCharacter: quote,
-        },
-        {} as any,
-      );
-      expect(result).toBeNull();
-    });
+  describe("does not trigger suggestions", () => {
+    it.each([
+      // string start
+      { val: '10 + "', column: 7 },
+      { val: "10 + '", column: 7 },
+      // inside string
+      { val: '10 + "Hello"', column: 12 },
+      { val: "10 + 'foo'", column: 10 },
+      // with unrelated string before
+      { val: '"foo" + "', column: 10 },
+      { val: "'bar' + '", column: 10 },
+      { val: '"foo" + "bar" + "', column: 18 },
+      { val: "'bar' + 'foo' + '", column: 18 },
+      // with unrelated string with escaped quotes before
+      { val: '"a\\"" + "a', column: 11 },
+      { val: "'a\\'s' + 'b", column: 12 },
+      // with unrelated string with escaped \ before
+      { val: '"a\\\\" + "a', column: 11 },
+      { val: "'a\\\\' + 'b", column: 11 },
+      // column/flowvar access trigger inside string
+      { val: '1 + "$[', column: 8 },
+      { val: '1 + "$["', column: 9 },
+      { val: '1 + "$$["', column: 10 },
+      { val: "2 + '$[", column: 8 },
+      { val: "2 + '$['", column: 9 },
+      { val: "2 + '$$['", column: 10 },
+    ])(
+      "$val at position $column",
+      ({ val, column }: { val: string; column: number }) => {
+        registerCompletionItemProvider({
+          functionData: FUNCTIONS.map((name) => ({ name }) as any),
+          columnGetter: () => [...SPECIAL_COLUMNS_ITEMS, ...COLUMNS_ITEMS],
+          flowVariableGetter: () => FLOW_VARIABLES_ITEMS,
+          languageName: "knime-expressions",
+        });
+        const provideCompletionItems = getProvideCompletionItems();
+        const result = provideCompletionItems(
+          editorModelMock(val),
+          { lineNumber: 1, column } as any,
+          {} as any,
+          {} as any,
+        );
+        expect(result).toBeNull();
+      },
+    );
   });
 
   describe("provides correct completions", () => {
@@ -242,6 +267,24 @@ describe("autoComplete", () => {
         column: 2,
         expectedRangeText: "a",
         expectedItems: FUNCTIONS,
+        forbiddenItems: [
+          ...SINGLE_QUOTE_COLUMNS,
+          ...SINGLE_QUOTE_FLOW_VARIABLES,
+        ],
+      },
+      {
+        // Strings somewhere before (should have no effect)
+        val: "\"\\\"a\\\"\\\\\" + '\\'b\\'\\\\' + ", // raw: "\"a\"\\" + '\'b\'\\' +
+        column: 25,
+        expectedRangeText: "",
+        expectedItems: [
+          ...FUNCTIONS,
+          ...SPECIAL_COLUMNS,
+          ...SHORTHAND_COLUMNS,
+          ...DOUBLE_QUOTE_COLUMNS,
+          ...SHORTHAND_FLOW_VARIABLES,
+          ...DOUBLE_QUOTE_FLOW_VARIABLES,
+        ],
         forbiddenItems: [
           ...SINGLE_QUOTE_COLUMNS,
           ...SINGLE_QUOTE_FLOW_VARIABLES,
@@ -425,7 +468,7 @@ describe("autoComplete", () => {
         const result = provideCompletionItems(
           model,
           { lineNumber: 1, column } as any,
-          { triggerKind: monaco.languages.CompletionTriggerKind.Invoke },
+          {} as any,
           {} as any,
         ) as monaco.languages.CompletionList;
 
