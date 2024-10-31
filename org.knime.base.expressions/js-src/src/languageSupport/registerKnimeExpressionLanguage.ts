@@ -94,12 +94,12 @@ const register = ({
       ],
       stringBody: [
         [/[^\\']+/, "string"],
-        [/\\([bfnrt"']u[A-Za-z0-9]{4,8})/, "string.escape"],
+        [/\\./, "string.escape"],
         [/'/, "string.escape", "@popall"],
       ],
       dblStringBody: [
         [/[^\\"]+/, "string"],
-        [/\\([bfnrt"']|u[A-Za-z0-9]{4,8})/, "string.escape"],
+        [/\\./, "string.escape"],
         [/"/, "string.escape", "@popall"],
       ],
       columnAccess: [
@@ -129,7 +129,7 @@ const register = ({
       columnAccessBodySingleQuotes: [
         // seems like we have to make this a type of string in order to override bracket colouration
         [/[^\\']+/, "string.colname"],
-        [/\\([bfnrt"']|u[A-Za-z0-9]{4,8})/, "string.colname"],
+        [/\\./, "string.colname"],
         // Match an end quote iff it is followed by a comma, and jump to the column offset rule
         [/'(?=\s*,)/, "string.colname.escape", "@columnOffsetSeparator"],
         // Otherwise, match an end quote followed by a bracket
@@ -137,7 +137,7 @@ const register = ({
       ],
       columnAccessBodyDoubleQuotes: [
         [/[^\\"]+/, "string.colname"],
-        [/\\([bfnrt"']|u[A-Za-z0-9]{4,8})/, "string.colname"],
+        [/\\./, "string.colname"],
         // Match an end quote iff it is followed by a comma, and jump to the column offset rule
         [/"(?=\s*,)/, "string.colname.escape", "@columnOffsetSeparator"],
         // Otherwise, match an end quote followed by a bracket
