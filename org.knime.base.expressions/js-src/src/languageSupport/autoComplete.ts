@@ -22,21 +22,10 @@ const convertFunctionsToInsertionItems = (
 ): StaticCompletionItem[] =>
   entries.map((entry) => {
     if (entry.entryType === "function") {
-      // closest we can get to a list comprehension over a range in JS
-      const listOfIndices = [...Array(entry.arguments.length).keys()];
-
-      // This snippet syntax is used to allow for tabbing through the arguments
-      // when the function is inserted.
-      const argumentsWithSnippetSyntax = listOfIndices
-        .map((i) => `$\{${i + 1}:${entry.arguments[i].name}}`)
-        .join(", ");
-
-      const argumentsWithoutSnippetSyntax =
-        entry.arguments.length > 0 ? "..." : "";
-
+      const argumentsPlaceholder = entry.arguments.length > 0 ? "..." : "";
       return {
-        label: `${entry.name}(${argumentsWithoutSnippetSyntax})`,
-        insertText: `${entry.name}(${argumentsWithSnippetSyntax})`,
+        label: `${entry.name}(${argumentsPlaceholder})`,
+        insertText: `${entry.name}($0)`,
         kind: monaco.languages.CompletionItemKind.Function,
         documentation: { value: functionDataToMarkdown(entry) },
         insertTextRules:

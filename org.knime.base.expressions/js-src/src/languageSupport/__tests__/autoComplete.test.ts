@@ -10,7 +10,7 @@ const FUNCTION_ITEMS = [
     name: "foo",
     arguments: [{ name: "arg1", type: "string", description: "" }],
     // eslint-disable-next-line no-template-curly-in-string
-    expectedInsertionText: "foo(${1:arg1})",
+    expectedInsertionText: "foo($0)",
   },
   {
     entryType: "function",
@@ -20,7 +20,7 @@ const FUNCTION_ITEMS = [
       { name: "b", type: "number", description: "" },
     ],
     // eslint-disable-next-line no-template-curly-in-string
-    expectedInsertionText: "abcd(${1:a}, ${2:b})",
+    expectedInsertionText: "abcd($0)",
   },
   {
     entryType: "constant",
