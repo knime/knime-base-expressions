@@ -1,9 +1,11 @@
 import { BrowserReporter, Consola, LogLevel } from "consola";
+import { Selection } from "monaco-editor";
 
 import {
   COLUMN_INSERTION_EVENT,
   type InputConnectionInfo,
   type InsertionEvent,
+  type UseCodeEditorReturn,
   insertionEventHelper,
 } from "@knime/scripting-editor";
 
@@ -21,6 +23,43 @@ export const setupConsola = () => {
   globalObject.consola = consola;
 };
 
+export const insertFunctionCall = ({
+  editorState,
+  functionName,
+  functionArgs,
+}: {
+  editorState: UseCodeEditorReturn;
+  functionName: string;
+  functionArgs: string[] | null;
+}): boolean => {
+  const selection = editorState.editor.value?.getSelection();
+  const editor = editorState.editor.value;
+
+  if (selection && editor) {
+    if (functionArgs === null) {
+      // Insert without parentheses
+      return editor.executeEdits("function-insert", [
+        { range: selection, text: functionName },
+      ]);
+    } else {
+      // Insert with parentheses
+      return editor.executeEdits(
+        "function-insert",
+        [{ range: selection, text: `${functionName}()` }],
+        // Move the cursor between the parentheses
+        (editOperations) => [
+          Selection.fromPositions({
+            lineNumber: editOperations.at(0)!.range.endLineNumber,
+            column: editOperations.at(0)!.range.endColumn - 1,
+          }),
+        ],
+      );
+    }
+  } else {
+    return false;
+  }
+};
+
 export const registerInsertionListener = (
   getActiveEditor: () => ExpressionEditorPaneExposes | null,
 ) => {
@@ -32,11 +71,11 @@ export const registerInsertionListener = (
         return;
       }
       editorState.editor.value?.focus();
-
-      const functionArgs = insertionEvent.extraArgs?.functionArgs;
-      const functionName = insertionEvent.textToInsert;
-
-      editorState.insertFunctionReference(functionName, functionArgs);
+      insertFunctionCall({
+        editorState,
+        functionName: insertionEvent.textToInsert,
+        functionArgs: insertionEvent.extraArgs?.functionArgs ?? null,
+      });
     });
 
   insertionEventHelper

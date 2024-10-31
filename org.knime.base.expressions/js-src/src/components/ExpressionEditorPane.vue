@@ -23,6 +23,7 @@ import WarningIcon from "@knime/styles/img/icons/circle-warning.svg";
 import CopyIcon from "@knime/styles/img/icons/copy.svg";
 import TrashIcon from "@knime/styles/img/icons/trash.svg";
 
+import { insertFunctionCall } from "@/common/functions";
 import {
   resetDraggedFunctionStore,
   useDraggedFunctionStore,
@@ -150,15 +151,22 @@ const onDropEvent = (e: DragEvent) => {
     // here and then put the arguments in.
     const unwatch = watch(editorState.text, () => {
       if (draggedFunctionStore.draggedFunctionData) {
-        const functionArguments =
-          draggedFunctionStore.draggedFunctionData?.arguments;
+        // Pop the stack element inserting the function name
+        // insertFunction will push a new stack element to have
+        // a single undo step for the whole function insertion
+        editorState.editorModel.popStackElement();
 
-        // We pass an empty function name here, as the function name is
-        // inserted by the browser on drop. Hence we're only inserting
-        // the arguments, with monaco snippet behavior.
-        if (functionArguments !== null) {
-          editorState.insertFunctionReference("", functionArguments);
+        // Insert the arguments parenteces
+        const inserted = insertFunctionCall({
+          editorState,
+          functionName: "", // The function name is inserted by the drop event
+          functionArgs: draggedFunctionStore.draggedFunctionData?.arguments,
+        });
+        if (!inserted) {
+          // Add the undo stack element back if the insertion failed
+          editorState.editorModel.pushStackElement();
         }
+
         resetDraggedFunctionStore();
       }
 
