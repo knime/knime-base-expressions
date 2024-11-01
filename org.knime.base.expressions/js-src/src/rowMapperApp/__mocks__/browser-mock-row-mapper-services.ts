@@ -10,6 +10,7 @@ import { createSettingsServiceMock } from "@knime/scripting-editor/settings-serv
 import { INPUT_OBJECTS, ROW_MAPPER_INITIAL_DATA } from "@/__mocks__/mock-data";
 import { log } from "@/common/functions";
 import type { ExpressionRowMapperNodeSettings } from "@/expressionSettingsService";
+import type { ExpressionDiagnosticResult } from "@/generalDiagnostics";
 
 export const DEFAULT_ROW_MAPPER_INITIAL_SETTINGS: ExpressionRowMapperNodeSettings =
   {
@@ -29,7 +30,12 @@ if (import.meta.env.MODE === "development.browser") {
         log("runRowFilterExpression", options);
         return Promise.resolve();
       },
-      getRowMapperDiagnostics: () => Promise.resolve([]),
+      getRowMapperDiagnostics: (
+        options,
+      ): Promise<ExpressionDiagnosticResult[]> =>
+        Promise.resolve(
+          options![0].map(() => ({ diagnostics: [], returnType: "STRING" })),
+        ),
     },
   });
 
