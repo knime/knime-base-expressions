@@ -60,9 +60,13 @@ vi.mock("@knime/ui-extension-service", () => ({
     ),
   },
   DialogService: {
-    getInstance: vi.fn(() => ({
-      registerSettings: vi.fn(() => () => ({ setValue: vi.fn() })),
-      setApplyListener: vi.fn(),
-    })),
+    getInstance: vi.fn(() =>
+      Promise.resolve({
+        registerSettings: vi.fn(() => () => ({ setValue: vi.fn() })),
+        setApplyListener: vi.fn(),
+        getInitialDisplayMode: vi.fn(() => "large"),
+        addOnDisplayModeChangeCallback: vi.fn(),
+      }),
+    ),
   },
 }));
