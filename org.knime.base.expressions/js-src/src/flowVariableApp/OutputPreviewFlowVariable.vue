@@ -44,7 +44,7 @@ const makeExtensionConfig = async (
     resourceInfo: {
       id: "someId",
       type: ResourceTypes.SHADOW_APP,
-      path: `${baseUrl}uiext/flowvariableview/FlowVariableView.js`,
+      path: `${baseUrl}uiext/tableview/TableView.js`,
     },
     initialData,
   };
@@ -63,7 +63,7 @@ const apiLayer: UIExtensionAPILayer = {
   onApplied: noop,
   onDirtyStateChange: noop,
   publishData: noop,
-  sendAlert(alert) {
+  sendAlert: (alert) => {
     AlertingService.getInstance().then((service) => service.sendAlert(alert));
   },
   setControlsVisibility: noop,
@@ -74,7 +74,7 @@ const apiLayer: UIExtensionAPILayer = {
 
 const updateExtensionConfig = async (config: ExtensionConfig) => {
   // @ts-ignore
-  resourceLocation.value = `${config.resourceInfo.baseUrl}${config.resourceInfo.path.split("/").slice(0, -1).join("/")}/FlowVariableView.js`;
+  resourceLocation.value = `${config.resourceInfo.baseUrl}${config.resourceInfo.path.split("/").slice(0, -1).join("/")}/TableView.js`;
 
   extensionConfig.value = await makeExtensionConfig(
     config.nodeId,

@@ -52,10 +52,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.knime.base.expressions.node.ExpressionNodeDialogUtils;
 import org.knime.base.expressions.node.ExpressionNodeScriptingInputOutputModelUtils;
 import org.knime.base.expressions.node.FunctionCatalogData;
+import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.data.RpcDataService;
@@ -63,6 +65,8 @@ import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.view.flowvariable.FlowVariableViewUtil;
+import org.knime.core.webui.node.view.table.TableViewUtil;
+import org.knime.core.webui.node.view.table.TableViewViewSettings;
 import org.knime.core.webui.page.Page;
 import org.knime.scripting.editor.GenericInitialDataBuilder;
 import org.knime.scripting.editor.ScriptingNodeSettingsService;
@@ -80,8 +84,8 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
     public Page getPage() {
         return ExpressionNodeDialogUtils.expressionPageBuilder("flow-variable.html") //
             .addResource( //
-                ExpressionNodeDialogUtils::getFlowVariableViewResource, //
-                ExpressionNodeDialogUtils.FLOW_VARIABLE_VIEW_RESOURCE) //
+                ExpressionNodeDialogUtils::getTableViewResource, //
+                ExpressionNodeDialogUtils.TABLE_VIEW_RESOURCE) //
             .build();
     }
 
@@ -119,8 +123,14 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
         }
 
         public String getInitialData() {
-            return FlowVariableViewUtil.createInitialDataService(m_flowVariables.get()).getInitialData();
+            final Supplier<BufferedDataTable> bufferedTableSupplier = //
+                () -> FlowVariableViewUtil.getBufferedTable(m_flowVariables.get());
+            final Supplier<TableViewViewSettings> settingsSupplier = FlowVariableViewUtil::getSettings;
+            return TableViewUtil //
+                .createInitialDataService(settingsSupplier, bufferedTableSupplier, null, "flowvariableview") //
+                .getInitialData();
         }
+
     }
 
     @Override
@@ -142,4 +152,5 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
     public boolean canBeEnlarged() {
         return true;
     }
+
 }
