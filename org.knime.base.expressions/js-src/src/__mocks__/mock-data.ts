@@ -292,8 +292,7 @@ export const BASE_INITIAL_DATA: GenericExpressionInitialData = {
     ],
   },
   kAiConfig: {
-    codeAssistantEnabled: true,
-    codeAssistantInstalled: true,
+    isKaiEnabled: true,
     hubId: "mocked hub id",
   },
 };
