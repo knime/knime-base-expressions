@@ -171,6 +171,9 @@ const getCompletionContext = (
       range: relRange(2, textAfter(1) === "]" ? 1 : 0),
       quote: '"',
     };
+  } else if (textBefore(2) === "$$") {
+    // Started for flow variable
+    return { range: relRange(2), quote: '"' };
   } else if (textBefore(1) === "$") {
     // Started for column or flow variable
     return { range: relRange(1), quote: '"' };

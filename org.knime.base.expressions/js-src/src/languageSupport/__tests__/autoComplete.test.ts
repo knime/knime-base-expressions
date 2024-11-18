@@ -373,6 +373,17 @@ describe("autoComplete", () => {
           ...SINGLE_QUOTE_FLOW_VARIABLES,
         ],
       },
+      {
+        // Started with a flowvar access without quote or brackets
+        val: "o$$",
+        column: 4,
+        expectedRangeText: "$$",
+        expectedItems: DOUBLE_QUOTE_FLOW_VARIABLES,
+        forbiddenItems: [
+          ...SINGLE_QUOTE_COLUMNS,
+          ...SINGLE_QUOTE_FLOW_VARIABLES,
+        ],
+      },
 
       // --------- COLUMNS
 
