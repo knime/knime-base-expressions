@@ -140,8 +140,11 @@ public final class ExpressionCodeAssistant {
     }
 
     private static NameAndType[][] toTableSpecs(final PortObjectSpec... portObjects) {
-        return Arrays.stream(portObjects).filter(po -> po.getClass() == DataTableSpec.class)
-            .map(tableSpec -> toColumnNameTypeList(((DataTableSpec)tableSpec).stream().toArray(DataColumnSpec[]::new)))
+        return Arrays.stream(portObjects) //
+            .filter(DataTableSpec.class::isInstance) //
+            .map(tableSpec -> toColumnNameTypeList( //
+                ((DataTableSpec)tableSpec).stream().toArray(DataColumnSpec[]::new) //
+            )) //
             .toArray(NameAndType[][]::new);
     }
 
