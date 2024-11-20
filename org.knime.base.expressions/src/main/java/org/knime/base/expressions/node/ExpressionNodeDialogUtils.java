@@ -87,11 +87,6 @@ public final class ExpressionNodeDialogUtils {
     public static final String TABLE_VIEW_RESOURCE = "TableView.js";
 
     /**
-     * The resource name for the flow variable view.
-     */
-    public static final String FLOW_VARIABLE_VIEW_RESOURCE = "FlowVariableView.js";
-
-    /**
      * @param entryPoint the entry point of the expression node dialog
      * @return a page builder for the expression node dialog
      */
@@ -109,15 +104,6 @@ public final class ExpressionNodeDialogUtils {
      */
     public static InputStream getTableViewResource() {
         return getCoreUIResource(TABLE_VIEW_RESOURCE);
-    }
-
-    /**
-     * Convenience function to directly get the flow variable view resource.
-     *
-     * @return an input stream to the flow variable view resource
-     */
-    public static InputStream getFlowVariableViewResource() {
-        return getCoreUIResource(FLOW_VARIABLE_VIEW_RESOURCE);
     }
 
     /**

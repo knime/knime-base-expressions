@@ -123,9 +123,16 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
         }
 
         public String getInitialData() {
+            final Supplier<TableViewViewSettings> settingsSupplier = () -> {
+                var flowVariableViewSettings = FlowVariableViewUtil.getSettings();
+                // Needs to be enabled to disable lazy fetching of data, there are missing handlers is the DataService
+                // RCPDataService does not support named and unnamed handlers at the same time
+                // look 'TableViewDataService' for all missing methods that should be in the DataService
+                flowVariableViewSettings.m_enablePagination = true;
+                return flowVariableViewSettings;
+            };
             final Supplier<BufferedDataTable> bufferedTableSupplier = //
                 () -> FlowVariableViewUtil.getBufferedTable(m_flowVariables.get());
-            final Supplier<TableViewViewSettings> settingsSupplier = FlowVariableViewUtil::getSettings;
             return TableViewUtil //
                 .createInitialDataService(settingsSupplier, bufferedTableSupplier, null, "flowvariableview") //
                 .getInitialData();
