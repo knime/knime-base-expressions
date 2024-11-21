@@ -62,8 +62,8 @@ import org.eclipse.core.runtime.Platform;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.ui.CoreUIPlugin;
-import org.knime.core.webui.page.FromFilePageBuilder;
 import org.knime.core.webui.page.Page;
+import org.knime.core.webui.page.PageBuilder;
 import org.knime.scripting.editor.GenericInitialDataBuilder.DataSupplier;
 import org.knime.scripting.editor.WorkflowControl;
 import org.osgi.framework.Bundle;
@@ -82,28 +82,15 @@ public final class ExpressionNodeDialogUtils {
     }
 
     /**
-     * The resource name for the table view.
-     */
-    public static final String TABLE_VIEW_RESOURCE = "TableView.js";
-
-    /**
      * @param entryPoint the entry point of the expression node dialog
      * @return a page builder for the expression node dialog
      */
-    public static FromFilePageBuilder expressionPageBuilder(final String entryPoint) {
+    public static PageBuilder expressionPageBuilder(final String entryPoint) {
         return Page //
             .builder(ExpressionNodeDialogUtils.class, "js-src/dist", entryPoint) //
             .addResourceDirectory("assets") //
-            .addResourceDirectory("monacoeditorwork");
-    }
-
-    /**
-     * Convenience function to directly get the table view resource.
-     *
-     * @return an input stream to the table view resource
-     */
-    public static InputStream getTableViewResource() {
-        return getCoreUIResource(TABLE_VIEW_RESOURCE);
+            .addResourceDirectory("monacoeditorwork") //
+            .addResources(ExpressionNodeDialogUtils::getCoreUIResource, "core-ui", true);
     }
 
     /**
@@ -120,7 +107,12 @@ public final class ExpressionNodeDialogUtils {
             .orElseGet(() -> new String[0]);
     }
 
-    /** Get a resource from the js-src/dist folder of the core UI plugin. */
+    /**
+     * Get the resource with the given name from the js-src/dist folder of the core UI plugin.
+     *
+     * @param nameOfResource the file name of the resource
+     * @return a stream of the resource
+     */
     private static InputStream getCoreUIResource(final String nameOfResource) {
         try {
             return Files.newInputStream(ExpressionNodeDialogUtils.getAbsoluteBasePath(CoreUIPlugin.class, null,

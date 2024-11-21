@@ -85,11 +85,7 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
 
     @Override
     public Page getPage() {
-        return ExpressionNodeDialogUtils.expressionPageBuilder("flow-variable.html") //
-            .addResource( //
-                ExpressionNodeDialogUtils::getTableViewResource, //
-                ExpressionNodeDialogUtils.TABLE_VIEW_RESOURCE) //
-            .build();
+        return ExpressionNodeDialogUtils.expressionPageBuilder("flow-variable.html").build();
     }
 
     @Override

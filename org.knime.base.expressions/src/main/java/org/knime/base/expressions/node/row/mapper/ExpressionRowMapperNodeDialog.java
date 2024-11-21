@@ -56,7 +56,6 @@ import org.knime.base.expressions.node.ExpressionNodeDialogUtils;
 import org.knime.base.expressions.node.ExpressionNodeScriptingInputOutputModelUtils;
 import org.knime.base.expressions.node.FunctionCatalogData;
 import org.knime.base.expressions.node.row.OutputTablePreview;
-import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
@@ -77,11 +76,7 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
 
     @Override
     public Page getPage() {
-        return ExpressionNodeDialogUtils.expressionPageBuilder("row-mapper.html") //
-            .addResource( //
-                ExpressionNodeDialogUtils::getTableViewResource, //
-                ExpressionNodeDialogUtils.TABLE_VIEW_RESOURCE) //
-            .build();
+        return ExpressionNodeDialogUtils.expressionPageBuilder("row-mapper.html").build();
     }
 
     @Override
