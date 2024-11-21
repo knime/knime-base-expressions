@@ -48,6 +48,7 @@
  */
 package org.knime.base.expressions.node.variable;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -60,6 +61,7 @@ import org.knime.base.expressions.node.FunctionCatalogData;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.webui.data.DataService;
 import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
@@ -67,6 +69,7 @@ import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.view.flowvariable.FlowVariableViewUtil;
 import org.knime.core.webui.node.view.table.TableViewUtil;
 import org.knime.core.webui.node.view.table.TableViewViewSettings;
+import org.knime.core.webui.node.view.table.data.TableViewDataService;
 import org.knime.core.webui.page.Page;
 import org.knime.scripting.editor.GenericInitialDataBuilder;
 import org.knime.scripting.editor.ScriptingNodeSettingsService;
@@ -123,19 +126,28 @@ final class ExpressionFlowVariableNodeDialog implements NodeDialog {
         }
 
         public String getInitialData() {
-            final Supplier<TableViewViewSettings> settingsSupplier = () -> {
-                var flowVariableViewSettings = FlowVariableViewUtil.getSettings();
-                // Needs to be enabled to disable lazy fetching of data, there are missing handlers is the DataService
-                // RCPDataService does not support named and unnamed handlers at the same time
-                // look 'TableViewDataService' for all missing methods that should be in the DataService
-                flowVariableViewSettings.m_enablePagination = true;
-                return flowVariableViewSettings;
-            };
-            final Supplier<BufferedDataTable> bufferedTableSupplier = //
-                () -> FlowVariableViewUtil.getBufferedTable(m_flowVariables.get());
+            final var settingsSupplier = getSettingsSupplier();
+            final var bufferedTableSupplier = getBufferedTableSupplier(m_flowVariables.get());
             return TableViewUtil //
                 .createInitialDataService(settingsSupplier, bufferedTableSupplier, null, "flowvariableview") //
                 .getInitialData();
+        }
+
+        /**
+         * {@link TableViewViewSettings#m_enablePagination} needs to be enabled to disable lazy fetching of data. There
+         * are missing handlers in the {@link DataService}. {@link RpcDataService} does not support named and unnamed
+         * handlers at the same time. Look {@link TableViewDataService} for all missing methods that should be in the
+         * {@link DataService}.
+         */
+        private static Supplier<TableViewViewSettings> getSettingsSupplier() {
+            var flowVariableViewSettings = FlowVariableViewUtil.getSettings();
+            flowVariableViewSettings.m_enablePagination = true;
+            return () -> flowVariableViewSettings;
+        }
+
+        private static Supplier<BufferedDataTable>
+            getBufferedTableSupplier(final Collection<FlowVariable> flowVariables) {
+            return () -> FlowVariableViewUtil.getBufferedTable(flowVariables);
         }
 
     }
