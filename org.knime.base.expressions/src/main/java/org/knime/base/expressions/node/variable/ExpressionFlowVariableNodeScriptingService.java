@@ -242,7 +242,8 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                     if (inferredType.isOptional()) {
                         // Show an error if the full expression might evaluate to MISSING; this is not supported
                         diagnosticsForThisExpression.add(ExpressionDiagnostic.withSameMessage( //
-                            "The full expression must not evaluate to MISSING.", //
+                            "The expression evaluates to a type that can be MISSING. "
+                                + "Use the missing coalescing operator '??' to define a default value.", //
                             DiagnosticSeverity.ERROR, //
                             Expressions.getTextLocation(ast) //
                         ));

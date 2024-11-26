@@ -225,7 +225,8 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
         assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
             "Expected error severity for expression evaluating to MISSING.");
         assertEquals( //
-            "The full expression must not evaluate to MISSING.", //
+            "The expression evaluates to a type that can be MISSING. "
+                + "Use the missing coalescing operator '??' to define a default value.", //
             result.get(0).diagnostics().get(0).message(), //
             "Expected MISSING evaluation error message." //
         );
