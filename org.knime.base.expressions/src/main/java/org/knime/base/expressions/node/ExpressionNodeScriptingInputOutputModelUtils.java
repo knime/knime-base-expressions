@@ -142,11 +142,4 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
             );
         }
     }
-
-    /**
-     * @return a list of {@link InputOutputModel} for the output objects
-     */
-    public static List<InputOutputModel> getOutputObjects() {
-        return List.of(InputOutputModel.table().name("Output table").build());
-    }
 }
