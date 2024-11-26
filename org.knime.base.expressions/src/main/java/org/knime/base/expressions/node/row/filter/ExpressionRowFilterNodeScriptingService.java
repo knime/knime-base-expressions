@@ -179,10 +179,18 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                 var inferredType = Expressions.getInferredType(ast);
 
                 if (!ValueType.BOOLEAN.equals(inferredType)) {
-                    diagnostics.add(ExpressionDiagnostic.withSameMessage(
-                        "The full expression must return the value type BOOLEAN "
-                            + "in order to filter out rows for which the filter expression evaluates to false.",
-                        DiagnosticSeverity.ERROR, Expressions.getTextLocation(ast)));
+                    String message;
+                    if (ValueType.OPT_BOOLEAN.equals(inferredType)) {
+                        message = "The expression evaluates to BOOLEAN | MISSING. "
+                            + "Use the missing coalescing operator '??' to define if rows that evaluate to MISSING "
+                            + "should be included or excluded.";
+                    } else {
+                        message = "The expression evaluates to " + inferredType.name() + ". "
+                            + "It should evaluate to BOOLEAN in order to filter out rows for which the "
+                            + "filter expression evaluates to false.";
+                    }
+                    diagnostics.add(ExpressionDiagnostic.withSameMessage(message, DiagnosticSeverity.ERROR,
+                        Expressions.getTextLocation(ast)));
                 }
             } catch (ExpressionCompileException ex) {
                 diagnostics.addAll(ExpressionDiagnostic.fromException(ex));

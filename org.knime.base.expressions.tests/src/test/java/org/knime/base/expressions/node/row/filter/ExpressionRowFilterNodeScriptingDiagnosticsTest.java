@@ -186,7 +186,7 @@ final class ExpressionRowFilterNodeScriptingDiagnosticsTest {
     }
 
     @Test
-    void testExpressionEvaluatesToNotBoolean() {
+    void testExpressionEvaluatesToInt() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
         var diagnostics = service.getRowFilterDiagnostics("$int + 1");
 
@@ -195,8 +195,27 @@ final class ExpressionRowFilterNodeScriptingDiagnosticsTest {
         assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).severity(),
             "Expected error severity for expression evaluating to MISSING.");
         assertEquals( //
-            "The full expression must return the value type BOOLEAN in order to "
-                + "filter out rows for which the filter expression evaluates to false.", //
+            "The expression evaluates to INTEGER| MISSING. "
+                + "It should evaluate to BOOLEAN in order to filter out rows for which the filter expression "
+                + "evaluates to false.", //
+            diagnostics.get(0).message(), //
+            "Expected MISSING evaluation error message." //
+        );
+    }
+
+    @Test
+    void testExpressionEvaluatesToOptBoolean() {
+        var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
+        var diagnostics = service.getRowFilterDiagnostics("if(TRUE, TRUE, MISSING)");
+
+        assertFalse(diagnostics.isEmpty(), "Expected error for expression evaluating to MISSING.");
+        assertEquals(1, diagnostics.size(), "Expected exactly one diagnostic.");
+        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).severity(),
+            "Expected error severity for expression evaluating to MISSING.");
+        assertEquals( //
+            "The expression evaluates to BOOLEAN | MISSING. "
+                + "Use the missing coalescing operator '??' to define if rows that evaluate to MISSING "
+                + "should be included or excluded.", //
             diagnostics.get(0).message(), //
             "Expected MISSING evaluation error message." //
         );

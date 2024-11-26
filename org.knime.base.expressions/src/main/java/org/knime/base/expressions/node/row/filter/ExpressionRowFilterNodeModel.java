@@ -115,9 +115,15 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
             var ast = getPreparedExpression(m_settings.getScript(), inputSpec,
                 getAvailableInputFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES));
             var outputType = Expressions.getInferredType(ast);
-            if (!ValueType.BOOLEAN.equals(outputType)) {
-                throw new InvalidSettingsException("The full expression must return the value type BOOLEAN "
-                    + "in order to filter out rows for which the filter expression evaluates to false.");
+
+            if (ValueType.OPT_BOOLEAN.equals(outputType)) {
+                throw new InvalidSettingsException("The expression evaluates to BOOLEAN | MISSING. "
+                    + "Use the missing coalescing operator '??' to define if rows that evaluate to MISSING "
+                    + "should be included or excluded. ");
+            } else if (!ValueType.BOOLEAN.equals(outputType)) {
+                throw new InvalidSettingsException("The expression evaluates to " + outputType.name() + ". "
+                    + "It should evaluate to BOOLEAN in order to filter out rows for which the "
+                    + "filter expression evaluates to false.");
             }
         } catch (final ExpressionCompileException e) {
             throw new InvalidSettingsException("Error in Expression: %s".formatted(e.getMessage()), e);
