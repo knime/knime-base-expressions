@@ -107,7 +107,7 @@ const refreshInputOutputItems = (
       statesUntilActiveWithReturnTypes,
       focusEditorActionBuilder,
       {
-        name: "f(X) appended flow variables",
+        name: "appended flow variables",
         portType: "flowVariable",
         subItemCodeAliasTemplate:
           currentInputOutputItems.value[0].subItemCodeAliasTemplate,

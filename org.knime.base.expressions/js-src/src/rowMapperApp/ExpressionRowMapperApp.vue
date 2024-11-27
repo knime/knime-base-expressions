@@ -109,7 +109,7 @@ const refreshInputOutputItems = (
       statesUntilActiveWithReturnTypes,
       focusEditorActionBuilder,
       {
-        name: "f(X) appended columns",
+        name: "appended columns",
         portType: "table",
         subItemCodeAliasTemplate:
           currentInputOutputItems.value[0].subItemCodeAliasTemplate,
