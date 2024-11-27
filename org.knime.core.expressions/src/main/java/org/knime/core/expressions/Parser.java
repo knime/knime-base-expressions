@@ -197,30 +197,33 @@ final class Parser {
         @Override
         public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line,
             final int charPositionInLine, final String msg, final RecognitionException e) {
-            var detailedMsg = msg;
+            var charPosTextRange = textRangeFromLineAndCharPos(line - 1, charPositionInLine);
+            var error = ExpressionCompileError.syntaxError(msg, charPosTextRange);
 
             if (offendingSymbol instanceof Token) {
                 var offendingToken = (Token)offendingSymbol;
                 var precedingToken = getPrecedingToken(offendingToken);
                 if (offendingToken.getType() == KnimeExpressionLexer.INTEGER && precedingToken.isPresent()
                     && precedingToken.get().startsWith("0")) {
-                    detailedMsg = "Leading zeros are not allowed in integers.";
+                    error = ExpressionCompileError.syntaxError("Leading zeros are not allowed in integers.",
+                        charPosTextRange);
                 }
             }
 
             // recognizer can be the parser or the lexer
             // if it is the parser, we can check if the expression is empty,
             // There are no errors yet so the following should work and should not throw false positives
-            if (recognizer instanceof KnimeExpressionParser parser && e instanceof InputMismatchException
-                && m_errors.isEmpty()) {
+            if (recognizer instanceof KnimeExpressionParser parser //
+                && e instanceof InputMismatchException //
+                && m_errors.isEmpty() //
+            ) {
                 var tokens = parser.getTokenStream();
                 if (tokens.size() == 1 && tokens.get(0).getType() == Recognizer.EOF) {
-                    detailedMsg = "No expression present. Enter an expression.";
+                    error = ExpressionCompileError.emptyExpressionError(charPosTextRange);
                 }
             }
 
-            m_errors.add(ExpressionCompileError.syntaxError(detailedMsg,
-                textRangeFromLineAndCharPos(line - 1, charPositionInLine)));
+            m_errors.add(error);
         }
     }
 

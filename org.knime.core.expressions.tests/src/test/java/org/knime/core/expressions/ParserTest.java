@@ -367,9 +367,9 @@ final class ParserTest {
 
     enum InvalidExpr {
             // no expression present
-            EMPTY("", "no expression present"), //
-            EMPTY_WITH_WHITESPACE(" ", "no expression present"), //
-            EMPTY_WITH_COMMENTS("# comment", "no expression present"), //
+            EMPTY("", "The expression is empty"), //
+            EMPTY_WITH_WHITESPACE(" ", "The expression is empty"), //
+            EMPTY_WITH_COMMENTS("# comment", "The expression is empty"), //
 
             // Column access
             COL_ACCESS_INVALID_SHORTHAND("$foo@bar", "token", "recognition", "error"), //

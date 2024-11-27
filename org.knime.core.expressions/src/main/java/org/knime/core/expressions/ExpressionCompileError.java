@@ -112,8 +112,16 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
         return aggregationNotImplemented(node.aggregation().name(), Parser.getTextLocation(node));
     }
 
+    static ExpressionCompileError emptyExpressionError(final TextRange location) {
+        return new ExpressionCompileError("The expression is empty. Enter an expression that evaluates to a value.",
+            CompileErrorType.EXPRESSION_EMPTY, location);
+    }
+
     /** Types of compile errors */
     public enum CompileErrorType {
+
+            /** Indicates that the expression is empty (only comments or whitespace) */
+            EXPRESSION_EMPTY("Empty expression error"),
 
             /** Indicates that the expression could not be parsed because of an invalid syntax */
             SYNTAX("Syntax error"),
