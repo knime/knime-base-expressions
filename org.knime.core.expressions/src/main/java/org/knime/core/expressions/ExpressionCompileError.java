@@ -57,7 +57,7 @@ import org.knime.core.expressions.Ast.FlowVarAccess;
  *
  * @param message a descriptive message of the error
  * @param type the type of the error
- * @param location the text location in the expression (can be <code>null<code> if unknown)
+ * @param location the text location in the expression (can be <code>null</code> if unknown)
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
@@ -124,7 +124,7 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
             /** Indicates that the expression tries to access a column that does not exist */
             MISSING_COLUMN("Missing column error"),
 
-            /** Indicates that the expression tries to access a column that does not exist */
+            /** Indicates that the expression tries to access a flow variable that does not exist */
             MISSING_FLOW_VARIABLE("Missing flow variable error"),
 
             /**
