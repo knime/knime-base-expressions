@@ -215,14 +215,24 @@ onMounted(() => {
   updateEditorHeight();
   editorState.editor.value?.onDidChangeModelContent(updateEditorHeight);
 });
+
+// TODO(AP-23655) This is a workaround. Empty expressions are currently errors with this message.
+// However, we want to display them differenetly. This should be handled properly in the future.
+const isEmptyExpr = computed(
+  () =>
+    props.errorState.level === "ERROR" &&
+    props.errorState.message ===
+      "The expression is empty. Enter an expression that evaluates to a value.",
+);
 </script>
 
 <template>
   <div
     class="editor-and-controls-container"
     :class="{
-      'has-error': errorState.level === 'ERROR',
+      'has-error': errorState.level === 'ERROR' && !isEmptyExpr,
       'has-warning': errorState.level === 'WARNING',
+      'is-empty-expr': isEmptyExpr,
       active: props.orderingOptions.isActive,
     }"
     @focusin="onFocus"
@@ -288,15 +298,27 @@ onMounted(() => {
     --error-text-colour: var(--knime-carrot);
   }
 
+  /* TODO(AP-23655) remove the is-empty-expr class and handle empty expressions properly */
+  &.is-empty-expr {
+    --error-text-colour: var(--knime-masala);
+  }
+
   &.has-warning,
-  &.has-error {
+  &.has-error,
+  &.is-empty-expr {
     & .everything-except-error::after {
       position: absolute;
       content: "";
-      border: 1px solid var(--border-colour);
       pointer-events: none;
       z-index: 1;
       inset: -1px;
+    }
+  }
+
+  &.has-warning,
+  &.has-error {
+    & .everything-except-error::after {
+      border: 1px solid var(--border-colour);
     }
   }
 
