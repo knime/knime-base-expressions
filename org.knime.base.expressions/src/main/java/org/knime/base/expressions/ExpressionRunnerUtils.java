@@ -73,6 +73,7 @@ import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
+import org.knime.core.data.DataValue;
 import org.knime.core.data.DoubleValue;
 import org.knime.core.data.IDataRepository;
 import org.knime.core.data.LongValue;
@@ -85,6 +86,10 @@ import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTables;
 import org.knime.core.data.container.DataContainerSettings;
 import org.knime.core.data.filestore.internal.IWriteFileStoreHandler;
+import org.knime.core.data.time.localdate.LocalDateValue;
+import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
+import org.knime.core.data.time.localtime.LocalTimeValue;
+import org.knime.core.data.time.zoneddatetime.ZonedDateTimeValue;
 import org.knime.core.data.v2.schema.ValueSchema;
 import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.expressions.Ast;
@@ -245,6 +250,8 @@ public final class ExpressionRunnerUtils {
             return ReferenceTables.createReferenceTable(uuid, table);
         } catch (VirtualTableIncompatibleException ex) {
 
+            System.out.println("Incompatible table, so using row fallback");
+
             // Fallback for the row-based backend
             LOGGER.debug("Copying table to columnar format to be compatible with expressions", ex);
 
@@ -277,6 +284,7 @@ public final class ExpressionRunnerUtils {
     public static BufferedDataTable copyToColumnarTable(final BufferedDataTable table, final long maxRowsToConvert,
         final ExecutionContext exec, final IDataRepository dataRepository, final IWriteFileStoreHandler fsHandler)
         throws CanceledExecutionException {
+
         var containerSettings = DataContainerSettings.builder() //
             .withInitializedDomain(true) //
             .withCheckDuplicateRowKeys(false) //
@@ -608,6 +616,16 @@ public final class ExpressionRunnerUtils {
                 "Columns of the type '" + type + "' are not supported in expressions."));
     }
 
+    private static final Map<Class<? extends DataValue>, ValueType> DATA_TYPES_TO_VALUE_TYPES = Map.of( //
+        BooleanValue.class, ValueType.BOOLEAN, //
+        LongValue.class, ValueType.INTEGER, //
+        DoubleValue.class, ValueType.FLOAT, //
+        LocalDateValue.class, ValueType.LOCAL_DATE, //
+        LocalTimeValue.class, ValueType.LOCAL_TIME, //
+        LocalDateTimeValue.class, ValueType.LOCAL_DATE_TIME, //
+        ZonedDateTimeValue.class, ValueType.ZONED_DATE_TIME //
+    );
+
     /**
      * Map a {@link DataType} to the {@link ValueType} which is used for it in expressions.
      *
@@ -615,20 +633,19 @@ public final class ExpressionRunnerUtils {
      * @return the {@link ValueType} or {@code null} if the type is not supported
      */
     public static ValueType mapDataTypeToValueType(final DataType type) {
-        if (type.isCompatible(BooleanValue.class)) {
-            return ValueType.OPT_BOOLEAN;
-        } else if (type.isCompatible(LongValue.class)) {
-            // Note that IntCell is compatible with LongValue
-            return ValueType.OPT_INTEGER;
-        } else if (type.isCompatible(DoubleValue.class)) {
-            return ValueType.OPT_FLOAT;
-        } else if (type.getPreferredValueClass().equals(StringValue.class)) {
-            // Note that we do not use isCompatible because many types are compatible with StringValue
-            // but we do not want to represent them as Strings (e.g. JSON, XML, Date and Time)
-            return ValueType.OPT_STRING;
-        } else {
-            return null;
+        for (var entry : DATA_TYPES_TO_VALUE_TYPES.entrySet()) {
+            if (type.isCompatible(entry.getKey())) {
+                return entry.getValue();
+            }
         }
+
+        // Note that we do not use isCompatible because many types are compatible with StringValue
+        // but we do not want to represent them as Strings (e.g. JSON, XML)
+        if (type.getPreferredValueClass().equals(StringValue.class)) {
+            return ValueType.STRING;
+        }
+
+        return null;
     }
 
     /**
