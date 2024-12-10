@@ -61,9 +61,11 @@ import org.knime.core.data.def.BooleanCell;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.data.def.StringCell;
+import org.knime.core.data.time.localdate.LocalDateCellFactory;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.schema.ValueSchema;
 import org.knime.core.data.v2.schema.ValueSchemaUtils;
+import org.knime.core.data.v2.time.LocalDateValueFactory;
 import org.knime.core.data.v2.value.BooleanValueFactory;
 import org.knime.core.data.v2.value.DoubleValueFactory;
 import org.knime.core.data.v2.value.LongValueFactory;
@@ -79,6 +81,7 @@ import org.knime.core.table.schema.BooleanDataSpec;
 import org.knime.core.table.schema.ColumnarSchema;
 import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
+import org.knime.core.table.schema.LocalDateDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
 import org.knime.core.table.virtual.expression.Exec;
@@ -176,6 +179,8 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
             return DoubleValueFactory.INSTANCE;
         } else if (spec instanceof StringDataSpec) {
             return StringValueFactory.INSTANCE;
+        } else if (spec instanceof LocalDateDataSpec) {
+            return LocalDateValueFactory.INSTANCE;
         }
         throw new IllegalArgumentException("Cannot convert " + spec + " to ValueFactory");
     }
@@ -198,6 +203,8 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
             type = DoubleCell.TYPE;
         } else if (spec instanceof StringDataSpec) {
             type = StringCell.TYPE;
+        } else if (spec instanceof LocalDateDataSpec) {
+            type = LocalDateCellFactory.TYPE;
         } else {
             throw new IllegalArgumentException("Cannot convert " + spec + " to DataColumnSpec");
         }
