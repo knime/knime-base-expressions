@@ -98,11 +98,15 @@ public final class BuiltInFunctions {
         ControlFlowFunctions.CATEGORY //
     );
 
+    /** List of all date and time categories */
+    public static final List<OperatorCategory> META_CATEGORY_DATE_TIME = List.of( //
+        DateTimeFunctions.CATEGORY_GENERAL //
+    );
+
     /** All built-in function categories */
     public static final List<OperatorCategory> BUILT_IN_CATEGORIES = Stream.concat( //
-        Stream.concat( //
-            META_CATEGORY_MATH.stream(), META_CATEGORY_STRING.stream()), //
-        META_CATEGORY_CONTROL.stream() //
+        Stream.concat(META_CATEGORY_MATH.stream(), META_CATEGORY_STRING.stream()), //
+        Stream.concat(META_CATEGORY_CONTROL.stream(), META_CATEGORY_DATE_TIME.stream()) //
     ).collect(Collectors.toUnmodifiableList());
 
     /** Built-in functions */
@@ -206,7 +210,9 @@ public final class BuiltInFunctions {
         // String – Encode
         StringFunctions.XML_ENCODE, //
         StringFunctions.URL_ENCODE, //
-        StringFunctions.URL_DECODE //
+        StringFunctions.URL_DECODE, //
+        // Date&Time – General
+        DateTimeFunctions.PARSE_TIME //
     );
 
     /** Built-in functions as map */

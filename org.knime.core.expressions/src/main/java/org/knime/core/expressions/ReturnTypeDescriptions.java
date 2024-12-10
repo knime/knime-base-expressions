@@ -69,6 +69,9 @@ public final class ReturnTypeDescriptions {
     /** Return type description for function returning non-optional float */
     public static final String RETURN_FLOAT = "FLOAT";
 
+    /** Return type description for function returning non-optional float */
+    public static final String RETURN_LOCAL_TIME = "LOCAL_TIME";
+
     /** Return type description for function returning non-optional numeric type */
     public static final String RETURN_INTEGER_FLOAT = "INTEGER | FLOAT";
 

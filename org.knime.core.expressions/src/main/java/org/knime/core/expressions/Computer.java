@@ -54,6 +54,12 @@ import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.STRING;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.Period;
+import java.util.function.Function;
+
 /**
  * A supplier of computation results for expressions.
  *
@@ -269,6 +275,171 @@ public interface Computer {
 
                 @Override
                 public String compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#LOCAL_DATE} and {@link ValueType#OPT_LOCAL_DATE}. */
+    interface LocalDateComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         */
+        LocalDate compute(EvaluationContext ctx);
+
+        /**
+         * Helper method to create a {@link LocalDateComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link LocalDateComputer}
+         */
+        static LocalDateComputer of(final Function<EvaluationContext, LocalDate> value,
+            final ToBooleanFunction<EvaluationContext> missing) {
+
+            return new LocalDateComputer() {
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public LocalDate compute(final EvaluationContext ctx) {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#LOCAL_TIME} and {@link ValueType#OPT_LOCAL_TIME}. */
+    interface LocalTimeComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         */
+        LocalTime compute(EvaluationContext ctx);
+
+        /**
+         * Helper method to create a {@link LocalTimeComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link LocalTimeComputer}
+         */
+        static LocalTimeComputer of(final Function<EvaluationContext, LocalTime> value,
+            final ToBooleanFunction<EvaluationContext> missing) {
+
+            return new LocalTimeComputer() {
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public LocalTime compute(final EvaluationContext ctx) {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#LOCAL_DATE_TIME} and {@link ValueType#OPT_LOCAL_DATE_TIME}. */
+    interface LocalDateTimeComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         */
+        LocalDate compute(EvaluationContext ctx);
+
+        /**
+         * Helper method to create a {@link LocalDateTimeComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link LocalDateTimeComputer}
+         */
+        static LocalDateTimeComputer of(final Function<EvaluationContext, LocalDate> value,
+            final ToBooleanFunction<EvaluationContext> missing) {
+
+            return new LocalDateTimeComputer() {
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public LocalDate compute(final EvaluationContext ctx) {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#DURATION} and {@link ValueType#OPT_DURATION}. */
+    interface DurationComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         */
+        Duration compute(EvaluationContext ctx);
+
+        /**
+         * Helper method to create a {@link DurationComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link DurationComputer}
+         */
+        static DurationComputer of(final Function<EvaluationContext, Duration> value,
+            final ToBooleanFunction<EvaluationContext> missing) {
+
+            return new DurationComputer() {
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public Duration compute(final EvaluationContext ctx) {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#PERIOD} and {@link ValueType#OPT_PERIOD}. */
+    interface PeriodComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         */
+        Period compute(EvaluationContext ctx);
+
+        /**
+         * Helper method to create a {@link PeriodComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link PeriodComputer}
+         */
+        static PeriodComputer of(final Function<EvaluationContext, Period> value,
+            final ToBooleanFunction<EvaluationContext> missing) {
+
+            return new PeriodComputer() {
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public Period compute(final EvaluationContext ctx) {
                     return value.apply(ctx);
                 }
             };

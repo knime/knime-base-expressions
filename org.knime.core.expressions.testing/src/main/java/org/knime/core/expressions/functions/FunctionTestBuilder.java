@@ -56,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,7 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.LocalTimeComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionEvaluationException;
@@ -492,6 +494,36 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final String expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final LocalTime expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(LocalTimeComputer.class, c, m_function.name() + " should eval to LOCAL_TIME");
+            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+            positionalArgs.forEach(TestingArgument::resetAccessed);
+            namedArgs.values().forEach(TestingArgument::resetAccessed);
+            assertEquals(expected, ((LocalTimeComputer)c).compute(DUMMY_WML),
+                m_function.name() + " should eval correctly");
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final LocalTime expected) {
         return impl(name, positionalArgs, Map.of(), expected);
     }
 

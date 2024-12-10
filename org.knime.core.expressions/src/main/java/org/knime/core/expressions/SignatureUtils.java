@@ -163,6 +163,33 @@ public final class SignatureUtils {
         return hasBaseType(ValueType.BOOLEAN);
     }
 
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#DATE} */
+    public static ArgMatcher isTemporal() {
+        return isOneOfTypes(ValueType.LOCAL_DATE, ValueType.LOCAL_DATE_TIME, ValueType.LOCAL_TIME,
+            ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#DATE} and {@link ValueType#OPT_LOCAL_DATE} */
+    public static ArgMatcher isTemporalOrOpt() {
+        return isOneOfBaseTypes(ValueType.LOCAL_DATE, ValueType.LOCAL_DATE_TIME, ValueType.LOCAL_TIME,
+            ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches non-optional Temporal that contains a date. */
+    public static ArgMatcher hasDatePart() {
+        return isOneOfTypes(ValueType.LOCAL_DATE, ValueType.LOCAL_DATE_TIME, ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches optional Temporal that contains a date */
+    public static ArgMatcher hasDatePartOrIsOpt() {
+        return isOneOfBaseTypes(ValueType.LOCAL_DATE, ValueType.LOCAL_DATE_TIME, ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches optional Temporal that contains a time */
+    public static ArgMatcher hasTimePartOrIsOpt() {
+        return isOneOfBaseTypes(ValueType.LOCAL_DATE_TIME, ValueType.LOCAL_TIME, ValueType.ZONED_DATE_TIME);
+    }
+
     /** @return an {@link ArgMatcher} that matches any type (missing or otherwise) */
     public static ArgMatcher isAnything() {
         return new ArgMatcherImpl("ANYTHING", arg -> true);
