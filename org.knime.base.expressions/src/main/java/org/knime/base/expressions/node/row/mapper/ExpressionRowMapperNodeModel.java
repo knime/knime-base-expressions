@@ -54,6 +54,7 @@ import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForT
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -249,6 +250,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         final ExecutionContext exec, //
         final BiConsumer<Integer, String> setWarning //
     ) throws ExpressionCompileException, CanceledExecutionException, VirtualTableIncompatibleException {
+        System.out.println("Input table spec = " + inputTable.getSpec().getColumnSpec(0).getType().getName());
         var exprContext = new NodeExpressionMapperContext(availableFlowVariables);
         var numberOfExpressions = expressions.size();
         var nextInputTable = inputTable;
@@ -266,6 +268,13 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
             // Create a reference table for the input table
             var inRefTable =
                 ExpressionRunnerUtils.createReferenceTable(nextInputTable, subExec.createSubExecutionContext(0.33));
+
+            System.out
+                .println("inRefTable spec = " + inRefTable.getSchema().specStream().map(x -> x.toString()).toList());
+            System.out.println("inRefTable sourceSpec = "
+                + inRefTable.getSchema().getSourceSpec().stream().map(x -> x.getType().getName()).toList());
+            System.out.println(
+                "inRefTable colNames = " + Arrays.toString(inRefTable.getBufferedTable().getSpec().getColumnNames()));
 
             // Pre-evaluate the aggregations
             // NB: We use the inRefTable because it is guaranteed to be a columnar table
