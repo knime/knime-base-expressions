@@ -11,6 +11,7 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.any
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
 
+import java.time.Duration;
 import java.time.LocalTime;
 import java.time.chrono.Chronology;
 import java.time.format.DateTimeFormatter;
@@ -109,16 +110,29 @@ public final class DateTimeFunctions {
 
     private static Computer roundTime(final Arguments<Computer> args) {
         var timeArgument = args.get("time");
+        var strategyComputer = toString(args.get("strategy", defaultTimeRoundStrategyComputer));
+        var precisionComputer = toDuration(args.get("precision", zeroDurationComputer));
+
         if (timeArgument instanceof LocalTimeComputer timeComputer) {
             return LocalTimeComputer.of(ctx -> {
                 var timeToRound = timeComputer.compute(ctx);
-                var strategyString = toString(args.get("strategy")).compute(ctx);
-                var strategy
-                return TimeRoundingUtil.roundTimeBasedTemporal(timeToRound,
-                    toDuration(args.get("precision")).compute(ctx), toString(args.get("strategy")).compute(ctx));
-            }, ctx -> false);
+                var strategy = TimeRoundingUtil.TimeRoundingStrategy.valueOf(strategyComputer.compute(ctx));
+                var precision = precisionComputer.compute(ctx);
+
+                return (LocalTime)TimeRoundingUtil.roundTimeBasedTemporal(timeToRound, strategy, precision);
+            }, ctx -> {
+
+                try {
+                    TimeRoundingUtil.TimeRoundingStrategy.valueOf(strategyComputer.compute(ctx));
+                    return false;
+                } catch (IllegalArgumentException e) {
+                    return true;
+                }
+
+            });
         }
 
+        return ctx -> true;
     }
 
     // ======================= UTILITIES ==============================
@@ -151,4 +165,9 @@ public final class DateTimeFunctions {
         }
         throw FunctionUtils.calledWithIllegalArgs();
     }
+
+    private static Computer defaultTimeRoundStrategyComputer =
+        StringComputer.of(ctx -> TimeRoundingUtil.TimeRoundingStrategy.NEAREST_POINT_IN_TIME.name(), ctx -> false);
+
+    private static Computer zeroDurationComputer = DurationComputer.of(ctx -> Duration.ZERO, ctx -> false);
 }
