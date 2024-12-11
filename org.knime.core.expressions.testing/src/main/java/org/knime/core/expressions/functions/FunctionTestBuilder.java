@@ -56,9 +56,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -73,11 +75,13 @@ import org.junit.jupiter.api.TestFactory;
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
+import org.knime.core.expressions.Computer.DurationComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.LocalDateComputer;
 import org.knime.core.expressions.Computer.LocalDateTimeComputer;
 import org.knime.core.expressions.Computer.LocalTimeComputer;
+import org.knime.core.expressions.Computer.PeriodComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.EvaluationContext;
@@ -175,6 +179,10 @@ public final class FunctionTestBuilder {
                 return LocalDateTimeComputer.of(ctx -> ((LocalDateTime)getValue()), this::isMissing);
             } else if (m_value instanceof ZonedDateTime) {
                 return ZonedDateTimeComputer.of(ctx -> ((ZonedDateTime)getValue()), this::isMissing);
+            } else if (m_value instanceof Period) {
+                return PeriodComputer.of(ctx -> ((Period)getValue()), this::isMissing);
+            } else if (m_value instanceof Duration) {
+                return DurationComputer.of(ctx -> ((Duration)getValue()), this::isMissing);
             } else {
                 return ctx -> isMissing();
             }
@@ -245,6 +253,22 @@ public final class FunctionTestBuilder {
         return new TestingArgument(value, false);
     }
 
+    /**
+     * @param value
+     * @return a PERIOD {@link TestingArgument}
+     */
+    public static TestingArgument arg(final Period value) {
+        return new TestingArgument(value, false);
+    }
+
+    /**
+     * @param value
+     * @return a DURATION {@link TestingArgument}
+     */
+    public static TestingArgument arg(final Duration value) {
+        return new TestingArgument(value, false);
+    }
+
     /** @return a MISSING {@link TestingArgument} */
     public static TestingArgument mis() {
         return new TestingArgument(null, true);
@@ -288,6 +312,16 @@ public final class FunctionTestBuilder {
     /** @return a ZONED_DATE_TIME {@link TestingArgument} that is missing */
     public static TestingArgument misZonedDateTime() {
         return new TestingArgument(ZonedDateTime.of(LocalDate.EPOCH, LocalTime.MIDNIGHT, ZoneId.of("UTC")), true);
+    }
+
+    /** @return a PERIOD {@link TestingArgument} that is missing */
+    public static TestingArgument misPeriod() {
+        return new TestingArgument(Period.ZERO, true);
+    }
+
+    /** @return a DURATION {@link TestingArgument} that is missing */
+    public static TestingArgument misDuration() {
+        return new TestingArgument(Duration.ZERO, true);
     }
 
     // ====
@@ -596,7 +630,6 @@ public final class FunctionTestBuilder {
 
     /**
      * @param name
-     * @param name
      * @param positionalArgs
      * @param namedArgs
      * @param expected
@@ -682,6 +715,66 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final ZonedDateTime expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final Period expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(PeriodComputer.class, c, m_function.name() + " should eval to PERIOD");
+            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+            positionalArgs.forEach(TestingArgument::resetAccessed);
+            namedArgs.values().forEach(TestingArgument::resetAccessed);
+            assertEquals(expected, ((PeriodComputer)c).compute(DUMMY_WML),
+                m_function.name() + " should eval correctly");
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Period expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final Duration expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(DurationComputer.class, c, m_function.name() + " should eval to DURATION");
+            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+            positionalArgs.forEach(TestingArgument::resetAccessed);
+            namedArgs.values().forEach(TestingArgument::resetAccessed);
+            assertEquals(expected, ((DurationComputer)c).compute(DUMMY_WML),
+                m_function.name() + " should eval correctly");
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Duration expected) {
         return impl(name, positionalArgs, Map.of(), expected);
     }
 
