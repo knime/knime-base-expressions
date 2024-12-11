@@ -87,6 +87,7 @@ public record FunctionCatalogData(List<OperatorCategory> categories, List<Operat
         return operators;
     }
 
+    // TODO: BUILT_IN_FUNCTIONS should provide its categories
     private static List<OperatorCategory> getBuiltInCategories() {
         var categories = new ArrayList<OperatorCategory>();
 
@@ -97,6 +98,8 @@ public record FunctionCatalogData(List<OperatorCategory> categories, List<Operat
         categories.addAll(BuiltInAggregations.BUILT_IN_CATEGORIES);
 
         categories.addAll(BuiltInFunctions.META_CATEGORY_STRING);
+
+        categories.addAll(BuiltInFunctions.META_CATEGORY_DATE_TIME);
 
         return categories;
     }
