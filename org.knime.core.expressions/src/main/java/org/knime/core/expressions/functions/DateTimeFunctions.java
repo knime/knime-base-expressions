@@ -17,10 +17,15 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.any
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.time.chrono.Chronology;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.Temporal;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
@@ -28,14 +33,19 @@ import java.util.function.Function;
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.DurationComputer;
+import org.knime.core.expressions.Computer.LocalDateTimeComputer;
 import org.knime.core.expressions.Computer.LocalTimeComputer;
 import org.knime.core.expressions.Computer.PeriodComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.DateInterval;
 import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.Interval;
 import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.TimeInterval;
+import org.knime.time.node.manipulate.datetimeround.DateRoundNodeSettings;
+import org.knime.time.node.manipulate.datetimeround.DateRoundNodeSettings.RoundDatePrecision;
+import org.knime.time.node.manipulate.datetimeround.TimeRoundNodeSettings;
 import org.knime.time.node.manipulate.datetimeround.TimeRoundingUtil;
 import org.knime.time.util.DurationPeriodFormatUtils;
 
@@ -113,29 +123,144 @@ public final class DateTimeFunctions {
         .category(CATEGORY_GENERAL) //
         .args( //
             arg("time", "Time to round", hasTimePartOrIsOpt()), //
-            arg("precision", "Precision to round to", isDurationOrOpt()), //
-            arg("strategy", "Rounding strategy: 'FIRST', 'NEAREST', 'LAST'", isStringOrOpt()) //)
+            optarg("precision", "Precision to round to", isDurationOrOpt()), //
+            optarg("strategy", "Rounding strategy: 'FIRST', 'NEAREST', 'LAST'", isStringOrOpt()) //
         ) //
-        .returnType("A local time", RETURN_LOCAL_TIME, args -> LOCAL_TIME(false))//
+        .returnType("A local time", RETURN_LOCAL_TIME, args -> LOCAL_TIME(anyOptional(args)))//
         .impl(DateTimeFunctions::roundTime) //
         .build();
 
     private static Computer roundTime(final Arguments<Computer> args) {
-        var timeArgument = args.get("time");
+        var timeComputer = args.get("time");
+
+        if (timeComputer instanceof LocalTimeComputer) {
+            return LocalTimeComputer.of( //
+                ctx -> (LocalTime)roundTimeBasedTemporal(args, "time", ctx), //
+                ctx -> roundTemporalIsMissing(args, "time", ctx) //
+            );
+        } else if (timeComputer instanceof LocalDateTimeComputer) {
+            return LocalDateTimeComputer.of( //
+                ctx -> (LocalDateTime)roundTimeBasedTemporal(args, "time", ctx), //
+                ctx -> roundTemporalIsMissing(args, "time", ctx) //
+            );
+        } else if (timeComputer instanceof ZonedDateTimeComputer) {
+            return ZonedDateTimeComputer.of( //
+                ctx -> (ZonedDateTime)roundTimeBasedTemporal(args, "time", ctx), //
+                ctx -> roundTemporalIsMissing(args, "time", ctx) //
+            );
+        } else {
+            throw FunctionUtils.calledWithIllegalArgs();
+        }
+    }
+
+    /**
+     * Helper function to round time-based temporal values. Assumption: The arguments 'strategy' and 'precision' are
+     * present, where precision is a Duration.
+     *
+     * @param args arguments to the function
+     * @param temporalArgumentName name of the temporal argument to round
+     * @param ctx evaluation context
+     * @return the rounded temporal value
+     */
+    private static final Temporal roundTimeBasedTemporal(final Arguments<Computer> args,
+        final String temporalArgumentName, final EvaluationContext ctx) {
+        var temporalComputer = args.get(temporalArgumentName);
         var strategyComputer = toString(args.get("strategy", defaultTimeRoundStrategyComputer));
-        var precisionComputer = toDuration(args.get("precision", zeroDurationComputer));
+        var precisionComputer = toDuration(args.get("precision", oneHourDurationComputer));
 
-        if (timeArgument instanceof LocalTimeComputer timeComputer) {
+        var timeToRound = Computer.computeTemporal(temporalComputer, ctx);
+        var strategy = TimeRoundNodeSettings.TimeRoundingStrategy.valueOf(strategyComputer.compute(ctx));
+        var precision = precisionComputer.compute(ctx);
+
+        return TimeRoundingUtil.roundTimeBasedTemporal(timeToRound, strategy, precision);
+    }
+
+    /**
+     * Helper function to round time-based temporal values. Assumption: The arguments 'strategy' and 'precision' are
+     * present, where precision is a Period.
+     *
+     * @param args arguments to the function
+     * @param temporalArgumentName name of the temporal argument to round
+     * @param ctx evaluation context
+     * @return true if the temporal argument is missing or if the strategy or precision is missing
+     */
+    private static final Temporal roundDateBasedTemporal(final Arguments<Computer> args,
+        final String temporalArgumentName, final EvaluationContext ctx) {
+        var temporalComputer = args.get(temporalArgumentName);
+        var strategyComputer = toString(args.get("strategy", defaultDateRoundStrategyComputer));
+        var precisionComputer = toPeriod(args.get("precision", oneDayPeriodComputer));
+        var shiftModeComputer = toString(args.get("shift_mode", defaultTimeShiftModeComputer));
+
+        var timeToRound = Computer.computeTemporal(temporalComputer, ctx);
+        var strategy = DateRoundNodeSettings.DateRoundingStrategy.valueOf(strategyComputer.compute(ctx));
+        var precision = precisionComputer.compute(ctx);
+        var shiftMode = DateRoundNodeSettings.ShiftMode.valueOf(shiftModeComputer.compute(ctx));
+
+        return LocalDate.now();
+    }
+
+    /**
+     * Helper function to determine if the temporal argument is missing or if the strategy or precision is missing.
+     *
+     * @param args arguments to the function
+     * @param temporalArgumentName name of the temporal argument to round
+     * @param ctx evaluation context
+     * @return true if the temporal argument is missing or if the strategy or precision is missing
+     */
+    private static final boolean roundTemporalIsMissing(final Arguments<Computer> args,
+        final String temporalArgumentName, final EvaluationContext ctx) {
+        if (args.get(temporalArgumentName).isMissing(ctx)) {
+            return true;
+        }
+
+        if (args.has("strategy") && args.get("strategy").isMissing(ctx)) {
+            return true;
+        }
+
+        if (args.has("precision") && args.get("precision").isMissing(ctx)) {
+            return true;
+        }
+        return false;
+    }
+
+    public static final ExpressionFunction ROUND_DATE = functionBuilder() //
+        .name("round_date") //
+        .description("""
+                The node rounds Date values to the nearest unit.
+                """) //
+        .examples("""
+                * `round_date(date("2021-01-01"), "MONTHS")` returns LocalDate(2021-01-01)
+                """) //
+        .keywords("round", "date") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("date", "Date to round", hasTimePartOrIsOpt()), //
+            optarg("precision", "Precision to round to: " + RoundDatePrecision.values(), isStringOrOpt()), //
+            optarg("strategy", "Rounding strategy: 'FIRST', 'NEAREST', 'LAST'", isStringOrOpt()), //
+            optarg("shift_mode", "Shift mode: 'PREVIOUS','THIS', 'NEXT'", isStringOrOpt()) //
+        ) //
+        .returnType("A local date", RETURN_LOCAL_TIME, args -> LOCAL_TIME(anyOptional(args)))//
+        .impl(DateTimeFunctions::roundDate) //
+        .build();
+
+    private static Computer roundDate(final Arguments<Computer> args) {
+        var dateArgument = args.get("date");
+        var strategyComputer = toString(args.get("strategy", defaultTimeRoundStrategyComputer));
+        var precisionComputer = toString(args.get("precision", oneDayPeriodComputer));
+        var shiftModeComputer = toString(args.get("shift_mode", defaultTimeRoundStrategyComputer));
+
+        if (dateArgument instanceof LocalTimeComputer dateComputer) {
             return LocalTimeComputer.of(ctx -> {
-                var timeToRound = timeComputer.compute(ctx);
-                var strategy = TimeRoundingUtil.TimeRoundingStrategy.valueOf(strategyComputer.compute(ctx));
+                var dateToRound = dateComputer.compute(ctx);
+                var strategy = TimeRoundNodeSettings.TimeRoundingStrategy.valueOf(strategyComputer.compute(ctx));
                 var precision = precisionComputer.compute(ctx);
+                var shiftMode = DateRoundNodeSettings.ShiftMode.valueOf(shiftModeComputer.compute(ctx));
 
-                return (LocalTime)TimeRoundingUtil.roundTimeBasedTemporal(timeToRound, strategy, precision);
+                return LocalTime.now();
             }, ctx -> {
 
                 try {
-                    TimeRoundingUtil.TimeRoundingStrategy.valueOf(strategyComputer.compute(ctx));
+                    TimeRoundNodeSettings.TimeRoundingStrategy.valueOf(strategyComputer.compute(ctx));
                     return false;
                 } catch (IllegalArgumentException e) {
                     return true;
@@ -145,6 +270,7 @@ public final class DateTimeFunctions {
         }
 
         return ctx -> true;
+
     }
 
     public static final ExpressionFunction PARSE_PERIOD = functionBuilder() //
@@ -357,7 +483,17 @@ public final class DateTimeFunctions {
     }
 
     private static Computer defaultTimeRoundStrategyComputer =
-        StringComputer.of(ctx -> TimeRoundingUtil.TimeRoundingStrategy.NEAREST_POINT_IN_TIME.name(), ctx -> false);
+        StringComputer.of(ctx -> TimeRoundNodeSettings.TimeRoundingStrategy.FIRST_POINT_IN_TIME.name(), ctx -> false);
+
+    private static Computer defaultDateRoundStrategyComputer =
+        StringComputer.of(ctx -> DateRoundNodeSettings.DateRoundingStrategy.FIRST.name(), ctx -> false);
+
+    private static Computer defaultTimeShiftModeComputer =
+        StringComputer.of(ctx -> DateRoundNodeSettings.ShiftMode.THIS.name(), ctx -> false);
 
     private static Computer zeroDurationComputer = DurationComputer.of(ctx -> Duration.ZERO, ctx -> false);
+
+    private static Computer oneHourDurationComputer = DurationComputer.of(ctx -> Duration.ofHours(1), ctx -> false);
+
+    private static Computer oneDayPeriodComputer = PeriodComputer.of(ctx -> Period.ofDays(1), ctx -> false);
 }

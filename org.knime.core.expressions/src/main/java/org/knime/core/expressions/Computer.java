@@ -60,6 +60,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
 import java.util.function.Function;
 
 /**
@@ -549,5 +550,27 @@ public interface Computer {
         }
         throw new IllegalArgumentException(
             "Cannot cast computer to FLOAT: " + computer + ". This in an implementation error.");
+    }
+
+    /**
+     * Helper method to compute a Temporal from a {@link LocalTimeComputer}, {@link LocalDateComputer},
+     * {@link LocalDateTimeComputer} or {@link ZonedDateTimeComputer}.
+     *
+     * @param computer the computer to compute the Temporal
+     * @param ctx evaluation context
+     * @return the computed Temporal
+     */
+    public static Temporal computeTemporal(final Computer computer, final EvaluationContext ctx) {
+        if (computer instanceof LocalTimeComputer c) {
+            return c.compute(ctx);
+        } else if (computer instanceof LocalDateComputer c) {
+            return c.compute(ctx);
+        } else if (computer instanceof LocalDateTimeComputer c) {
+            return c.compute(ctx);
+        } else if (computer instanceof ZonedDateTimeComputer c) {
+            return c.compute(ctx);
+        }
+        throw new IllegalArgumentException(
+            "Cannot evaluate computer to Temporal: " + computer + ". This in an implementation error.");
     }
 }

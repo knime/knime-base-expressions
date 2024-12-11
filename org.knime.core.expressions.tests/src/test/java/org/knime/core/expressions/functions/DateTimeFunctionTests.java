@@ -158,4 +158,20 @@ final class DateTimeFunctionTests {
             .impl("MISSING", List.of(misDuration())) //
             .tests();
     }
+
+    @TestFactory
+    List<DynamicNode> roundTime() {
+        return new FunctionTestBuilder(DateTimeFunctions.ROUND_TIME) //
+            .typing("LOCAL_TIME", List.of(LOCAL_TIME), LOCAL_TIME) //
+            .typing("LOCAL_TIME?", List.of(OPT_LOCAL_TIME), OPT_LOCAL_TIME) //
+            .illegalArgs("FLOAT", List.of(FLOAT)) //
+            .illegalArgs("INTEGER", List.of(INTEGER)) //
+            .illegalArgs("MISSING", List.of(MISSING)) //
+            .impl("round to full hour", List.of(arg(LocalTime.of(12, 34)), arg(Duration.ofHours(1))),
+                LocalTime.of(13, 0)) //
+            .impl("round to full minute", List.of(arg(LocalTime.of(12, 34, 56)), arg("M")), LocalTime.of(12, 35)) //
+            .impl("round to full second", List.of(arg(LocalTime.of(12, 34, 56)), arg("S")), LocalTime.of(12, 34, 56)) //
+            .impl("MISSING", List.of(misString())) //
+            .tests();
+    }
 }
