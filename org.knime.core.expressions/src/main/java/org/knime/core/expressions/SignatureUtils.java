@@ -200,6 +200,16 @@ public final class SignatureUtils {
         return hasBaseType(ValueType.DURATION);
     }
 
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#DURATION} and {@link ValueType#OPT_DURATION} */
+    public static ArgMatcher isPeriod() {
+        return hasType(ValueType.PERIOD);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#DURATION} and {@link ValueType#OPT_DURATION} */
+    public static ArgMatcher isPeriodOrOpt() {
+        return hasBaseType(ValueType.PERIOD);
+    }
+
     /** @return an {@link ArgMatcher} that matches any type (missing or otherwise) */
     public static ArgMatcher isAnything() {
         return new ArgMatcherImpl("ANYTHING", arg -> true);

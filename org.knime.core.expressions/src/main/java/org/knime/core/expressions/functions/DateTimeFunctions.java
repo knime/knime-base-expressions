@@ -4,11 +4,14 @@ import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_TIM
 import static org.knime.core.expressions.SignatureUtils.arg;
 import static org.knime.core.expressions.SignatureUtils.hasTimePartOrIsOpt;
 import static org.knime.core.expressions.SignatureUtils.isDurationOrOpt;
+import static org.knime.core.expressions.SignatureUtils.isPeriodOrOpt;
+import static org.knime.core.expressions.SignatureUtils.isString;
 import static org.knime.core.expressions.SignatureUtils.isStringOrOpt;
 import static org.knime.core.expressions.SignatureUtils.optarg;
 import static org.knime.core.expressions.ValueType.DURATION;
 import static org.knime.core.expressions.ValueType.LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.PERIOD;
+import static org.knime.core.expressions.ValueType.STRING;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
@@ -18,6 +21,7 @@ import java.time.LocalTime;
 import java.time.chrono.Chronology;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 
@@ -33,6 +37,7 @@ import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.DateInter
 import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.Interval;
 import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.TimeInterval;
 import org.knime.time.node.manipulate.datetimeround.TimeRoundingUtil;
+import org.knime.time.util.DurationPeriodFormatUtils;
 
 /**
  * Implementation of built-in functions that manipulate date and times.
@@ -142,6 +147,45 @@ public final class DateTimeFunctions {
         return ctx -> true;
     }
 
+    public static final ExpressionFunction PARSE_PERIOD = functionBuilder() //
+        .name("parse_period") //
+        .description("""
+                The node parses String values into Period values.
+                """) //
+        .examples("""
+                * `period("P1Y2M3D")` returns Period.of(1, 2, 3)
+                """) //
+        .keywords("") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("string", "String to parse to a period", isStringOrOpt()) //
+        ) //
+        .returnType("A period", "Period", args -> PERIOD(anyOptional(args)))//
+        .impl(DateTimeFunctions::parsePeriod) //
+        .build();
+
+    private static Computer parsePeriod(final Arguments<Computer> args) {
+        var string = toString(args.get("string"));
+
+        return PeriodComputer.of( //
+            ctx -> {
+                var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
+                return ((DateInterval)parsedInterval).asPeriod();
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                try {
+                    var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
+                    return !(parsedInterval instanceof DateInterval);
+                } catch (IllegalArgumentException e) {
+                    return true;
+                }
+            });
+    }
+
     public static final ExpressionFunction PARSE_DURATION = functionBuilder() //
         .name("parse_duration") //
         .description("""
@@ -182,43 +226,96 @@ public final class DateTimeFunctions {
             });
     }
 
-    public static final ExpressionFunction PARSE_PERIOD = functionBuilder() //
-        .name("parse_period") //
+    public static final ExpressionFunction FORMAT_PERIOD = functionBuilder() //
+        .name("format_period") //
         .description("""
-                The node parses String values into Period values.
+                The node formats Period values into String values.
                 """) //
         .examples("""
-                * `period("P1Y2M3D")` returns Period.of(1, 2, 3)
+                * `format_period(period("P1Y2M3D"))` returns "P1Y2M3D"
                 """) //
         .keywords("") //
         .category(CATEGORY_GENERAL) //
         .args( //
-            arg("string", "String to parse to a period", isStringOrOpt()) //
+            arg("period", "Period to format", isPeriodOrOpt()), //
+            optarg("format", "Format of the period string. If not specified, use ISO.", isString()) //
         ) //
-        .returnType("A period", "Period", args -> PERIOD(anyOptional(args)))//
-        .impl(DateTimeFunctions::parsePeriod) //
+        .returnType("A string", "String", args -> STRING(anyOptional(args)))//
+        .impl(DateTimeFunctions::formatPeriod) //
         .build();
 
-    private static Computer parsePeriod(final Arguments<Computer> args) {
-        var string = toString(args.get("string"));
+    private static Computer formatPeriod(final Arguments<Computer> args) {
+        var period = toPeriod(args.get("period"));
 
-        return PeriodComputer.of( //
+        return StringComputer.of( //
             ctx -> {
-                var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
-                return ((DateInterval)parsedInterval).asPeriod();
+                var format = args.has("format") //
+                    ? toString(args.get("format")).compute(ctx) //
+                    : "iso";
+
+                return switch (format) {
+                    case "iso" -> period.compute(ctx).toString();
+                    case "short" -> DurationPeriodFormatUtils.formatPeriodShort(period.compute(ctx));
+                    case "long" -> DurationPeriodFormatUtils.formatPeriodLong(period.compute(ctx));
+                    default -> throw new IllegalStateException(
+                        "Unknown format: " + format + ". This should never happen.");
+                };
             }, //
             ctx -> {
                 if (anyMissing(args).applyAsBoolean(ctx)) {
                     return true;
                 }
 
-                try {
-                    var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
-                    return !(parsedInterval instanceof DateInterval);
-                } catch (IllegalArgumentException e) {
-                    return true;
-                }
+                var format = args.has("format") //
+                    ? toString(args.get("format")).compute(ctx) //
+                    : "iso";
+
+                return !List.of("iso", "short", "long").contains(format);
             });
+    }
+
+    public static final ExpressionFunction FORMAT_DURATION = functionBuilder().name("format_duration") //
+        .description("""
+                The node formats Duration values into String values.
+                """) //
+        .examples("""
+                * `format_duration(duration("PT12H"))` returns "PT12H"
+                """) //
+        .keywords("") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("duration", "Duration to format", isDurationOrOpt()), //
+            optarg("format", "Format of the duration string. If not specified, use ISO.", isString()) //
+        ) //
+        .returnType("A string", "String", args -> STRING(anyOptional(args))) //
+        .impl(DateTimeFunctions::formatDuration) //
+        .build();
+
+    private static Computer formatDuration(final Arguments<Computer> args) {
+        var duration = toDuration(args.get("duration"));
+
+        return StringComputer.of(ctx -> {
+            var format = args.has("format") //
+                ? toString(args.get("format")).compute(ctx) //
+                : "iso";
+
+            return switch (format) {
+                case "iso" -> duration.compute(ctx).toString();
+                case "short" -> DurationPeriodFormatUtils.formatDurationShort(duration.compute(ctx));
+                case "long" -> DurationPeriodFormatUtils.formatDurationLong(duration.compute(ctx));
+                default -> throw new IllegalStateException("Unknown format: " + format + ". This should never happen.");
+            };
+        }, ctx -> {
+            if (anyMissing(args).applyAsBoolean(ctx)) {
+                return true;
+            }
+
+            var format = args.has("format") //
+                ? toString(args.get("format")).compute(ctx) //
+                : "iso";
+
+            return !List.of("iso", "short", "long").contains(format);
+        });
     }
 
     // ======================= UTILITIES ==============================
@@ -248,6 +345,13 @@ public final class DateTimeFunctions {
     private static DurationComputer toDuration(final Computer c) {
         if (c instanceof DurationComputer dc) {
             return dc;
+        }
+        throw FunctionUtils.calledWithIllegalArgs();
+    }
+
+    private static PeriodComputer toPeriod(final Computer c) {
+        if (c instanceof PeriodComputer pc) {
+            return pc;
         }
         throw FunctionUtils.calledWithIllegalArgs();
     }

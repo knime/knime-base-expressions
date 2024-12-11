@@ -60,6 +60,8 @@ import static org.knime.core.expressions.ValueType.OPT_STRING;
 import static org.knime.core.expressions.ValueType.PERIOD;
 import static org.knime.core.expressions.ValueType.STRING;
 import static org.knime.core.expressions.functions.FunctionTestBuilder.arg;
+import static org.knime.core.expressions.functions.FunctionTestBuilder.misDuration;
+import static org.knime.core.expressions.functions.FunctionTestBuilder.misPeriod;
 import static org.knime.core.expressions.functions.FunctionTestBuilder.misString;
 
 import java.time.Duration;
@@ -119,6 +121,41 @@ final class DateTimeFunctionTests {
             .impl("human readable (long)", List.of(arg("1 hour 2 minutes 3.04 seconds")), Duration.ofMillis(3723040)) //
             .impl("MISSING", List.of(misString())) //
             .impl("parse period", List.of(arg("P1Y2M3W4D"))) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> formatPeriod() {
+        return new FunctionTestBuilder(DateTimeFunctions.FORMAT_PERIOD) //
+            .typing("PERIOD", List.of(PERIOD), STRING) //
+            .typing("PERIOD?", List.of(OPT_PERIOD), OPT_STRING) //
+            .illegalArgs("FLOAT", List.of(FLOAT)) //
+            .illegalArgs("INTEGER", List.of(INTEGER)) //
+            .illegalArgs("MISSING", List.of(MISSING)) //
+            .impl("Default should be ISO", List.of(arg(Period.ofWeeks(3).plus(Period.of(1, 2, 4)))), "P1Y2M25D") //
+            .impl("ISO", List.of(arg(Period.ofWeeks(3).plus(Period.of(1, 2, 4))), arg("iso")), "P1Y2M25D") //
+            .impl("human readable (short)", List.of(arg(Period.ofWeeks(3).plus(Period.of(1, 2, 4))), arg("short")),
+                "1y 2M 25d") //
+            .impl("human readable (long)", List.of(arg(Period.ofWeeks(3).plus(Period.of(1, 2, 4))), arg("long")),
+                "1 year 2 months 25 days") //
+            .impl("MISSING", List.of(misPeriod())) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> formatDuration() {
+        return new FunctionTestBuilder(DateTimeFunctions.FORMAT_DURATION) //
+            .typing("DURATION", List.of(DURATION), STRING) //
+            .typing("DURATION?", List.of(OPT_DURATION), OPT_STRING) //
+            .illegalArgs("FLOAT", List.of(FLOAT)) //
+            .illegalArgs("INTEGER", List.of(INTEGER)) //
+            .illegalArgs("MISSING", List.of(MISSING)) //
+            .impl("Default should be ISO", List.of(arg(Duration.ofMillis(3723400))), "PT1H2M3.4S") //
+            .impl("ISO", List.of(arg(Duration.ofMillis(3723400)), arg("iso")), "PT1H2M3.4S") //
+            .impl("human readable (short)", List.of(arg(Duration.ofMillis(3723400)), arg("short")), "1H 2m 3.4s") //
+            .impl("human readable (long)", List.of(arg(Duration.ofMillis(3723400)), arg("long")),
+                "1 hour 2 minutes 3.4 seconds") //
+            .impl("MISSING", List.of(misDuration())) //
             .tests();
     }
 }
