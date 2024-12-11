@@ -201,6 +201,26 @@ public interface ValueType {
     }
 
     /**
+     * Helper to create {@link #PERIOD} or {@link #OPT_PERIOD} types.
+     *
+     * @param optional if the resulting type should permit "MISSING" values
+     * @return {@link #PERIOD} or {@link #OPT_PERIOD}
+     */
+    static ValueType PERIOD(final boolean optional) { // NOSONAR - naming this utility the same is useful
+        return optional ? OPT_PERIOD : PERIOD;
+    }
+
+    /**
+     * Helper to create {@link #DURATION} or {@link #OPT_DURATION} types.
+     *
+     * @param optional if the resulting type should permit "MISSING" values
+     * @return {@link #DURATION} or {@link #OPT_DURATION}
+     */
+    static ValueType DURATION(final boolean optional) { // NOSONAR - naming this utility the same is useful
+        return optional ? OPT_DURATION : DURATION;
+    }
+
+    /**
      * Helper to check equality of two types, including optional types.
      *
      * @param type1 type 1

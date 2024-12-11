@@ -6,7 +6,9 @@ import static org.knime.core.expressions.SignatureUtils.hasTimePartOrIsOpt;
 import static org.knime.core.expressions.SignatureUtils.isDurationOrOpt;
 import static org.knime.core.expressions.SignatureUtils.isStringOrOpt;
 import static org.knime.core.expressions.SignatureUtils.optarg;
+import static org.knime.core.expressions.ValueType.DURATION;
 import static org.knime.core.expressions.ValueType.LOCAL_TIME;
+import static org.knime.core.expressions.ValueType.PERIOD;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
@@ -23,15 +25,20 @@ import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.DurationComputer;
 import org.knime.core.expressions.Computer.LocalTimeComputer;
+import org.knime.core.expressions.Computer.PeriodComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorCategory;
+import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.DateInterval;
+import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.Interval;
+import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.TimeInterval;
 import org.knime.time.node.manipulate.datetimeround.TimeRoundingUtil;
 
 /**
  * Implementation of built-in functions that manipulate date and times.
  *
- * @author Tobias Kampmann, TNG
+ * @author Tobias Kampmann, TNG Technology Consulting GmbH
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
 @SuppressWarnings("javadoc")
 public final class DateTimeFunctions {
@@ -133,6 +140,85 @@ public final class DateTimeFunctions {
         }
 
         return ctx -> true;
+    }
+
+    public static final ExpressionFunction PARSE_DURATION = functionBuilder() //
+        .name("parse_duration") //
+        .description("""
+                The node parses String values into Duration values.
+                """) //
+        .examples("""
+                * `duration("PT12H")` returns Duration.ofHours(12)
+                """) //
+        .keywords("") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("string", "String to parse to a duration", isStringOrOpt()) //
+        ) //
+        .returnType("A duration", "Duration", args -> DURATION(anyOptional(args)))//
+        .impl(DateTimeFunctions::parseDuration) //
+        .build();
+
+    private static Computer parseDuration(final Arguments<Computer> args) {
+        var string = toString(args.get("string"));
+
+        return DurationComputer.of( //
+            ctx -> {
+                var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
+                return ((TimeInterval)parsedInterval).asDuration();
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                try {
+                    var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
+                    return !(parsedInterval instanceof TimeInterval);
+                } catch (IllegalArgumentException e) {
+                    e.printStackTrace();
+                    return true;
+                }
+            });
+    }
+
+    public static final ExpressionFunction PARSE_PERIOD = functionBuilder() //
+        .name("parse_period") //
+        .description("""
+                The node parses String values into Period values.
+                """) //
+        .examples("""
+                * `period("P1Y2M3D")` returns Period.of(1, 2, 3)
+                """) //
+        .keywords("") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("string", "String to parse to a period", isStringOrOpt()) //
+        ) //
+        .returnType("A period", "Period", args -> PERIOD(anyOptional(args)))//
+        .impl(DateTimeFunctions::parsePeriod) //
+        .build();
+
+    private static Computer parsePeriod(final Arguments<Computer> args) {
+        var string = toString(args.get("string"));
+
+        return PeriodComputer.of( //
+            ctx -> {
+                var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
+                return ((DateInterval)parsedInterval).asPeriod();
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                try {
+                    var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
+                    return !(parsedInterval instanceof DateInterval);
+                } catch (IllegalArgumentException e) {
+                    return true;
+                }
+            });
     }
 
     // ======================= UTILITIES ==============================
