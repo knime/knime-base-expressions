@@ -56,7 +56,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -71,8 +75,11 @@ import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.LocalDateComputer;
+import org.knime.core.expressions.Computer.LocalDateTimeComputer;
 import org.knime.core.expressions.Computer.LocalTimeComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.TestUtils;
@@ -86,7 +93,7 @@ import org.knime.core.expressions.ValueType;
  */
 public final class FunctionTestBuilder {
 
-    private final EvaluationContext DUMMY_WML = w -> {
+    private static final EvaluationContext DUMMY_WML = w -> {
     };
 
     // == Arguments for testing functions ==
@@ -151,7 +158,7 @@ public final class FunctionTestBuilder {
             }
         }
 
-        private Computer computer() {
+        private Computer computer() { // NOSONAR
             if (m_value instanceof Boolean) {
                 return BooleanComputer.of(ctx -> (Boolean)getValue(), this::isMissing);
             } else if (m_value instanceof Long) {
@@ -160,6 +167,14 @@ public final class FunctionTestBuilder {
                 return FloatComputer.of(ctx -> (Double)getValue(), this::isMissing);
             } else if (m_value instanceof String) {
                 return StringComputer.of(ctx -> (String)getValue(), this::isMissing);
+            } else if (m_value instanceof LocalTime) {
+                return LocalTimeComputer.of(ctx -> (LocalTime)getValue(), this::isMissing);
+            } else if (m_value instanceof LocalDate) {
+                return LocalDateComputer.of(ctx -> ((LocalDate)getValue()), this::isMissing);
+            } else if (m_value instanceof LocalDateTime) {
+                return LocalDateTimeComputer.of(ctx -> ((LocalDateTime)getValue()), this::isMissing);
+            } else if (m_value instanceof ZonedDateTime) {
+                return ZonedDateTimeComputer.of(ctx -> ((ZonedDateTime)getValue()), this::isMissing);
             } else {
                 return ctx -> isMissing();
             }
@@ -198,6 +213,38 @@ public final class FunctionTestBuilder {
         return new TestingArgument(value, false);
     }
 
+    /**
+     * @param value
+     * @return a LOCAL_TIME {@link TestingArgument}
+     */
+    public static TestingArgument arg(final LocalTime value) {
+        return new TestingArgument(value, false);
+    }
+
+    /**
+     * @param value
+     * @return a LOCAL_DATE {@link TestingArgument}
+     */
+    public static TestingArgument arg(final LocalDate value) {
+        return new TestingArgument(value, false);
+    }
+
+    /**
+     * @param value
+     * @return a LOCAL_DATE_TIME {@link TestingArgument}
+     */
+    public static TestingArgument arg(final LocalDateTime value) {
+        return new TestingArgument(value, false);
+    }
+
+    /**
+     * @param value
+     * @return a ZONED_DATE_TIME {@link TestingArgument}
+     */
+    public static TestingArgument arg(final ZonedDateTime value) {
+        return new TestingArgument(value, false);
+    }
+
     /** @return a MISSING {@link TestingArgument} */
     public static TestingArgument mis() {
         return new TestingArgument(null, true);
@@ -221,6 +268,26 @@ public final class FunctionTestBuilder {
     /** @return a STRING {@link TestingArgument} that is missing */
     public static TestingArgument misString() {
         return new TestingArgument("", true);
+    }
+
+    /** @return a LOCAL_TIME {@link TestingArgument} that is missing */
+    public static TestingArgument misLocalTime() {
+        return new TestingArgument(LocalTime.MIDNIGHT, true);
+    }
+
+    /** @return a LOCAL_DATE {@link TestingArgument} that is missing */
+    public static TestingArgument misLocalDate() {
+        return new TestingArgument(LocalDate.EPOCH, true);
+    }
+
+    /** @return a LOCAL_DATE_TIME {@link TestingArgument} that is missing */
+    public static TestingArgument misLocalDateTime() {
+        return new TestingArgument(LocalDateTime.of(LocalDate.EPOCH, LocalTime.MIDNIGHT), true);
+    }
+
+    /** @return a ZONED_DATE_TIME {@link TestingArgument} that is missing */
+    public static TestingArgument misZonedDateTime() {
+        return new TestingArgument(ZonedDateTime.of(LocalDate.EPOCH, LocalTime.MIDNIGHT, ZoneId.of("UTC")), true);
     }
 
     // ====
@@ -524,6 +591,97 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final LocalTime expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final LocalDate expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(LocalDateComputer.class, c, m_function.name() + " should eval to LOCAL_DATE");
+            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+            positionalArgs.forEach(TestingArgument::resetAccessed);
+            namedArgs.values().forEach(TestingArgument::resetAccessed);
+            assertEquals(expected, ((LocalDateComputer)c).compute(DUMMY_WML),
+                m_function.name() + " should eval correctly");
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final LocalDate expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final LocalDateTime expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(LocalDateTimeComputer.class, c, m_function.name() + " should eval to LOCAL_DATE_TIME");
+            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+            positionalArgs.forEach(TestingArgument::resetAccessed);
+            namedArgs.values().forEach(TestingArgument::resetAccessed);
+            assertEquals(expected, ((LocalDateTimeComputer)c).compute(DUMMY_WML),
+                m_function.name() + " should eval correctly");
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final LocalDateTime expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final ZonedDateTime expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(ZonedDateTimeComputer.class, c, m_function.name() + " should eval to ZONED_DATE_TIME");
+            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+            positionalArgs.forEach(TestingArgument::resetAccessed);
+            namedArgs.values().forEach(TestingArgument::resetAccessed);
+            assertEquals(expected, ((ZonedDateTimeComputer)c).compute(DUMMY_WML),
+                m_function.name() + " should eval correctly");
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final ZonedDateTime expected) {
         return impl(name, positionalArgs, Map.of(), expected);
     }
 

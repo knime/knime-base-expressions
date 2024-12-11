@@ -56,8 +56,10 @@ import static org.knime.core.expressions.ValueType.STRING;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.function.Function;
 
 /**
@@ -354,7 +356,7 @@ public interface Computer {
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
          */
-        LocalDate compute(EvaluationContext ctx);
+        LocalDateTime compute(EvaluationContext ctx);
 
         /**
          * Helper method to create a {@link LocalDateTimeComputer}.
@@ -363,7 +365,7 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link LocalDateTimeComputer}
          */
-        static LocalDateTimeComputer of(final Function<EvaluationContext, LocalDate> value,
+        static LocalDateTimeComputer of(final Function<EvaluationContext, LocalDateTime> value,
             final ToBooleanFunction<EvaluationContext> missing) {
 
             return new LocalDateTimeComputer() {
@@ -373,7 +375,40 @@ public interface Computer {
                 }
 
                 @Override
-                public LocalDate compute(final EvaluationContext ctx) {
+                public LocalDateTime compute(final EvaluationContext ctx) {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#ZONED_DATE_TIME} and {@link ValueType#OPT_ZONED_DATE_TIME}. */
+    interface ZonedDateTimeComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         */
+        ZonedDateTime compute(EvaluationContext ctx);
+
+        /**
+         * Helper method to create a {@link ZonedDateTimeComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link ZonedDateTimeComputer}
+         */
+        static ZonedDateTimeComputer of(final Function<EvaluationContext, ZonedDateTime> value,
+            final ToBooleanFunction<EvaluationContext> missing) {
+
+            return new ZonedDateTimeComputer() {
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public ZonedDateTime compute(final EvaluationContext ctx) {
                     return value.apply(ctx);
                 }
             };
