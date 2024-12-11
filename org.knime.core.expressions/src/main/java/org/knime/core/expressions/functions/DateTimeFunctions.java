@@ -3,6 +3,7 @@ package org.knime.core.expressions.functions;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_TIME;
 import static org.knime.core.expressions.SignatureUtils.arg;
 import static org.knime.core.expressions.SignatureUtils.hasTimePartOrIsOpt;
+import static org.knime.core.expressions.SignatureUtils.isDurationOrOpt;
 import static org.knime.core.expressions.SignatureUtils.isStringOrOpt;
 import static org.knime.core.expressions.SignatureUtils.optarg;
 import static org.knime.core.expressions.ValueType.LOCAL_TIME;
@@ -19,10 +20,12 @@ import java.util.function.Function;
 
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.DurationComputer;
 import org.knime.core.expressions.Computer.LocalTimeComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorCategory;
+import org.knime.time.node.manipulate.datetimeround.TimeRoundingUtil;
 
 /**
  * Implementation of built-in functions that manipulate date and times.
@@ -97,14 +100,25 @@ public final class DateTimeFunctions {
         .category(CATEGORY_GENERAL) //
         .args( //
             arg("time", "Time to round", hasTimePartOrIsOpt()), //
-            arg("unit", "Unit to round to", isStringOrOpt()) //
+            arg("precision", "Precision to round to", isDurationOrOpt()), //
+            arg("strategy", "Rounding strategy: 'FIRST', 'NEAREST', 'LAST'", isStringOrOpt()) //)
         ) //
         .returnType("A local time", RETURN_LOCAL_TIME, args -> LOCAL_TIME(false))//
         .impl(DateTimeFunctions::roundTime) //
         .build();
 
     private static Computer roundTime(final Arguments<Computer> args) {
-        return ctx -> true;
+        var timeArgument = args.get("time");
+        if (timeArgument instanceof LocalTimeComputer timeComputer) {
+            return LocalTimeComputer.of(ctx -> {
+                var timeToRound = timeComputer.compute(ctx);
+                var strategyString = toString(args.get("strategy")).compute(ctx);
+                var strategy
+                return TimeRoundingUtil.roundTimeBasedTemporal(timeToRound,
+                    toDuration(args.get("precision")).compute(ctx), toString(args.get("strategy")).compute(ctx));
+            }, ctx -> false);
+        }
+
     }
 
     // ======================= UTILITIES ==============================
@@ -128,7 +142,13 @@ public final class DateTimeFunctions {
         if (c instanceof StringComputer sc) {
             return sc;
         }
+        throw FunctionUtils.calledWithIllegalArgs();
+    }
 
+    private static DurationComputer toDuration(final Computer c) {
+        if (c instanceof DurationComputer dc) {
+            return dc;
+        }
         throw FunctionUtils.calledWithIllegalArgs();
     }
 }

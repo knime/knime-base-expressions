@@ -190,6 +190,16 @@ public final class SignatureUtils {
         return isOneOfBaseTypes(ValueType.LOCAL_DATE_TIME, ValueType.LOCAL_TIME, ValueType.ZONED_DATE_TIME);
     }
 
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#DURATION} */
+    public static ArgMatcher isDuration() {
+        return hasType(ValueType.DURATION);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#DURATION} and {@link ValueType#OPT_DURATION} */
+    public static ArgMatcher isDurationOrOpt() {
+        return hasBaseType(ValueType.DURATION);
+    }
+
     /** @return an {@link ArgMatcher} that matches any type (missing or otherwise) */
     public static ArgMatcher isAnything() {
         return new ArgMatcherImpl("ANYTHING", arg -> true);
