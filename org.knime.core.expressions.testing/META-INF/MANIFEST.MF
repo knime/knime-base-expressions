@@ -7,7 +7,7 @@ Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Require-Bundle: 
- org.knime.core.expressions;bundle-version="[5.4.0,6.0.0)",
+ org.knime.core.expressions;bundle-version="[5.5.0,6.0.0)",
  junit-jupiter-api;bundle-version="[5.9.2,6.0.0)",
  junit-jupiter-params;bundle-version="[5.9.2,6.0.0)"
 Export-Package: org.knime.core.expressions;x-friends:="org.knime.core.expressions.tests,org.knime.base.expressions.tests",
