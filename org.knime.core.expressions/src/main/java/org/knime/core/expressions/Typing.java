@@ -49,10 +49,13 @@
 package org.knime.core.expressions;
 
 import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.DURATION;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.OPT_FLOAT;
+import static org.knime.core.expressions.ValueType.PERIOD;
 import static org.knime.core.expressions.ValueType.STRING;
 
 import java.util.List;
@@ -186,6 +189,22 @@ final class Typing {
                 return BOOLEAN(t1.isOptional() || t2.isOptional());
             } else if (op == BinaryOperator.MISSING_FALLBACK) {
                 return missingFallbackTypes(node, t1, t2);
+            } else if ((op == BinaryOperator.PLUS || op == BinaryOperator.MINUS) && hasTimePart(t1)
+                && DURATION.equals(t2)) {
+                // if first one has a time part and one is a duration, we can add/subtract them
+                return t2.isOptional() ? t1.optionalType() : t1;
+            } else if ((op == BinaryOperator.PLUS || op == BinaryOperator.MINUS) && LOCAL_DATE.equals(t1.baseType())
+                && PERIOD.equals(t2)) {
+                // if first one is a date and the second one is a period, we can add/subtract them
+                return t2.isOptional() ? t1.optionalType() : t1;
+            } else if (hasTimePart(t1) && hasTimePart(t2) && op == BinaryOperator.MINUS
+                && t1.baseType() == t2.baseType()) {
+                // if both are timelike objects of the same type, we can subtract them to get a duration
+                return DURATION(t1.isOptional() || t2.isOptional());
+            } else if (LOCAL_DATE.equals(t1.baseType()) && LOCAL_DATE.equals(t2.baseType())
+                && op == BinaryOperator.MINUS) {
+                // if both are localdates, we can subtract them to get a period
+                return PERIOD(t1.isOptional() || t2.isOptional());
             } else {
                 return ErrorValueType.binaryOpNotApplicable(node, t1, t2);
             }
@@ -196,7 +215,7 @@ final class Typing {
             var op = node.op();
             var type = getType(node.arg());
 
-            if (op == UnaryOperator.MINUS && isNumeric(type)) {
+            if (op == UnaryOperator.MINUS && (isNumeric(type) || isInterval(type))) {
                 return type;
             } else if (op == UnaryOperator.NOT && BOOLEAN.equals(type.baseType())) {
                 return type;
@@ -297,6 +316,10 @@ final class Typing {
             return INTEGER.equals(baseType) || FLOAT.equals(baseType);
         }
 
+        private static boolean isInterval(final ValueType type) {
+            return type == PERIOD || type == DURATION;
+        }
+
         private static boolean isAnyString(final ValueType typeA, final ValueType typeB) {
             return STRING.equals(typeA.baseType()) || STRING.equals(typeB.baseType());
         }
@@ -311,6 +334,10 @@ final class Typing {
 
         private static boolean isAnyMissing(final ValueType t1, final ValueType t2) {
             return MISSING.equals(t1) || MISSING.equals(t2);
+        }
+
+        private static boolean hasTimePart(final ValueType t) {
+            return t == ValueType.LOCAL_TIME || t == ValueType.LOCAL_DATE_TIME || t == ValueType.ZONED_DATE_TIME;
         }
     }
 

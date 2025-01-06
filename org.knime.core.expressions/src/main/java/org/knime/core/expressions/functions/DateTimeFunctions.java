@@ -1,37 +1,65 @@
 package org.knime.core.expressions.functions;
 
-import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_TIME;
+import static org.knime.core.expressions.Computer.createConstantComputer;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_DURATION_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_FLOAT_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_HAS_DATE_PART_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_HAS_TIME_PART_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_INTEGER_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_DATE_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_TIME_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_PERIOD_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_ZONED_DATE_TIME_MISSING;
 import static org.knime.core.expressions.SignatureUtils.arg;
+import static org.knime.core.expressions.SignatureUtils.hasBaseType;
+import static org.knime.core.expressions.SignatureUtils.hasDatePartOrIsOpt;
 import static org.knime.core.expressions.SignatureUtils.hasTimePartOrIsOpt;
 import static org.knime.core.expressions.SignatureUtils.isDurationOrOpt;
-import static org.knime.core.expressions.SignatureUtils.isPeriodOrOpt;
+import static org.knime.core.expressions.SignatureUtils.isIntegerOrOpt;
+import static org.knime.core.expressions.SignatureUtils.isIntervalOrOpt;
 import static org.knime.core.expressions.SignatureUtils.isString;
 import static org.knime.core.expressions.SignatureUtils.isStringOrOpt;
 import static org.knime.core.expressions.SignatureUtils.optarg;
 import static org.knime.core.expressions.ValueType.DURATION;
+import static org.knime.core.expressions.ValueType.FLOAT;
+import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE_TIME;
 import static org.knime.core.expressions.ValueType.LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.PERIOD;
 import static org.knime.core.expressions.ValueType.STRING;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
 
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.chrono.Chronology;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.function.Function;
 
+import org.knime.core.data.time.duration.DurationCellFactory;
+import org.knime.core.data.time.period.PeriodCellFactory;
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.DurationComputer;
+import org.knime.core.expressions.Computer.FloatComputer;
+import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.LocalDateComputer;
 import org.knime.core.expressions.Computer.LocalDateTimeComputer;
 import org.knime.core.expressions.Computer.LocalTimeComputer;
@@ -40,15 +68,20 @@ import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.OperatorCategory;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.DateInterval;
 import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.Interval;
 import org.knime.core.webui.node.dialog.defaultdialog.setting.interval.TimeInterval;
-import org.knime.time.node.manipulate.datetimeround.DateRoundNodeSettings;
-import org.knime.time.node.manipulate.datetimeround.DateRoundNodeSettings.RoundDatePrecision;
-import org.knime.time.node.manipulate.datetimeround.DateRoundingUtil;
-import org.knime.time.node.manipulate.datetimeround.TimeRoundNodeSettings;
-import org.knime.time.node.manipulate.datetimeround.TimeRoundingUtil;
+import org.knime.time.util.AllowedUnitForDurationConversion;
+import org.knime.time.util.DateRoundingUtil;
+import org.knime.time.util.DateRoundingUtil.DateRoundingStrategy;
+import org.knime.time.util.DateRoundingUtil.DayOrWeekday;
+import org.knime.time.util.DateRoundingUtil.RoundDatePrecision;
 import org.knime.time.util.DurationPeriodFormatUtils;
+import org.knime.time.util.ExtractableIntervalField;
+import org.knime.time.util.ShiftMode;
+import org.knime.time.util.TimeRoundingUtil;
+import org.knime.time.util.TimeRoundingUtil.TimeRoundingStrategy;
 
 /**
  * Implementation of built-in functions that manipulate date and times.
@@ -56,7 +89,7 @@ import org.knime.time.util.DurationPeriodFormatUtils;
  * @author Tobias Kampmann, TNG Technology Consulting GmbH
  * @author David Hickey, TNG Technology Consulting GmbH
  */
-@SuppressWarnings("javadoc")
+@SuppressWarnings({"javadoc", "restriction"})
 public final class DateTimeFunctions {
 
     private DateTimeFunctions() {
@@ -71,10 +104,87 @@ public final class DateTimeFunctions {
                 converting Date&Time data.
                 """);
 
+    /* ============================= *
+     * PARSE/CREATE/FORMAT FUNCTIONS *
+     * ============================= */
+
+    public static final ExpressionFunction PARSE_DATE = functionBuilder() //
+        .name("parse_date") //
+        .description("""
+                Parse String values into Date values.
+                """) //
+        .examples("""
+                * `date("2021-01-01")` returns LocalDate(2021-01-01)
+                """) //
+        .keywords("match", "equals") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("string", "String to parse to a date", isStringOrOpt()), //
+            optarg("format", "Format of the date string", isStringOrOpt()) //
+        ) //
+        .returnType("A local date", RETURN_LOCAL_DATE_MISSING, args -> LOCAL_DATE(anyOptional(args)))//
+        .impl(DateTimeFunctions::parseDate) //
+        .build();
+
+    public static final ExpressionFunction CREATE_DATE = functionBuilder() //
+        .name("create_date") //
+        .description("""
+                Create a Date value from the given year, month and day.
+                """) //
+        .examples("""
+                * `create_date(2021, 1, 1)` returns LocalDate(2021-01-01)
+                """) //
+        .keywords("create", "date") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("year", "Year of the date", isIntegerOrOpt()), //
+            arg("month", "Month of the date", isIntegerOrOpt()), //
+            arg("day", "Day of the date", isIntegerOrOpt()) //
+        ) //
+        .returnType("A local date", RETURN_LOCAL_DATE_MISSING, args -> LOCAL_DATE(anyOptional(args)))//
+        .impl(DateTimeFunctions::createDate) //
+        .build();
+
+    private static Computer createDate(final Arguments<Computer> args) {
+        var year = args.get("year");
+        var month = args.get("month");
+        var day = args.get("day");
+
+        return LocalDateComputer.of( //
+            ctx -> LocalDate.of( //
+                (int)toInteger(year).compute(ctx), //
+                (int)toInteger(month).compute(ctx), //
+                (int)toInteger(day).compute(ctx)), //
+            ctx -> anyMissing(args).applyAsBoolean(ctx));
+    }
+
+    private static Computer parseDate(final Arguments<Computer> args) {
+        var string = toString(args.get("string"));
+
+        return LocalDateComputer.of( //
+            ctx -> {
+                var formatter = createFormatter(args, DateTimeFormatter.ISO_LOCAL_DATE).apply(ctx);
+                return formatter.parse(string.compute(ctx), LocalDate::from);
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                try {
+                    var formatter = createFormatter(args, DateTimeFormatter.ISO_LOCAL_DATE).apply(ctx);
+                    formatter.parse(string.compute(ctx), LocalDate::from);
+                    return false;
+                } catch (DateTimeParseException | IllegalArgumentException e) {
+                    return true;
+                }
+            });
+    }
+
     public static final ExpressionFunction PARSE_TIME = functionBuilder() //
         .name("parse_time") //
         .description("""
-                The node parses String values into Time values.
+                Parse String values into Time values.
                 """) //
         .examples("""
                 * `time("12:12")` returns LocalTime(12, 12)
@@ -85,7 +195,7 @@ public final class DateTimeFunctions {
             arg("string", "String to parse to a time", isStringOrOpt()), //
             optarg("format", "Format of the time string", isStringOrOpt()) //
         ) //
-        .returnType("A local time", RETURN_LOCAL_TIME, args -> LOCAL_TIME(anyOptional(args)))//
+        .returnType("A local time", RETURN_LOCAL_TIME_MISSING, args -> LOCAL_TIME(anyOptional(args)))//
         .impl(DateTimeFunctions::parseTime) //
         .build();
 
@@ -112,6 +222,572 @@ public final class DateTimeFunctions {
             });
     }
 
+    public static final ExpressionFunction CREATE_TIME = functionBuilder() //
+        .name("create_time") //
+        .description("""
+                Creates a Time value from the given hour, minute, second and nanosecond.
+                """) //
+        .examples("""
+                * `create_time(12, 12, 12, 12)` returns LocalTime(12, 12, 12, 12)
+                """) //
+        .keywords("create", "time") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("hour", "Hour of the time", isIntegerOrOpt()), //
+            arg("minute", "Minute of the time", isIntegerOrOpt()), //
+            optarg("second", "Second of the time (0 if not given)", isIntegerOrOpt()), //
+            optarg("nano", "Nanosecond of the time (0 if not given)", isIntegerOrOpt()) //
+        ) //
+        .returnType("A local time", RETURN_LOCAL_TIME_MISSING, args -> LOCAL_TIME(anyOptional(args)))//
+        .impl(DateTimeFunctions::createTime) //
+        .build();
+
+    private static Computer createTime(final Arguments<Computer> args) {
+        var hour = args.get("hour");
+        var minute = args.get("minute");
+        var second = args.get("second", ZERO_INTEGER_COMPUTER);
+        var nano = args.get("nano", ZERO_INTEGER_COMPUTER);
+
+        return LocalTimeComputer.of( //
+            ctx -> LocalTime.of( //
+                (int)toInteger(hour).compute(ctx), //
+                (int)toInteger(minute).compute(ctx), //
+                (int)toInteger(second).compute(ctx), //
+                (int)toInteger(nano).compute(ctx)), //
+            ctx -> anyMissing(args).applyAsBoolean(ctx));
+    }
+
+    public static final ExpressionFunction PARSE_DATE_TIME = functionBuilder() //
+        .name("parse_date_time") //
+        .description("""
+                Parse String values into DateTime values.
+                """) //
+        .examples("""
+                * `date_time("2021-01-01T12:12")` returns LocalDateTime("2021-01-01T12:12")
+                """) //
+        .keywords("match", "equals") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("string", "String to parse to a date time", isStringOrOpt()), //
+            optarg("format", "Format of the date time string", isStringOrOpt()) //
+        ) //
+        .returnType("A local date time", "LocalDateTime", args -> LOCAL_DATE_TIME(anyOptional(args)))//
+        .impl(DateTimeFunctions::parseDateTime) //
+        .build();
+
+    private static Computer parseDateTime(final Arguments<Computer> args) {
+        var string = toString(args.get("string"));
+
+        return LocalDateTimeComputer.of( //
+            ctx -> {
+                var formatter = createFormatter(args, DateTimeFormatter.ISO_LOCAL_DATE_TIME).apply(ctx);
+                return formatter.parse(string.compute(ctx), LocalDateTime::from);
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                try {
+                    var formatter = createFormatter(args, DateTimeFormatter.ISO_LOCAL_DATE_TIME).apply(ctx);
+                    formatter.parse(string.compute(ctx), LocalDateTime::from);
+                    return false;
+                } catch (DateTimeParseException | IllegalArgumentException e) {
+                    return true;
+                }
+            });
+    }
+
+    public static final ExpressionFunction CREATE_DATE_TIME = functionBuilder() //
+        .name("create_date_time") //
+        .description("""
+                Create a DateTime value from the given Date and Time.
+                """) //
+        .examples("""
+                * `create_date_time(date("2021-01-01"), time("12:12"))` returns LocalDateTime("2021-01-01T12:12")
+                """) //
+        .keywords("create", "datetime") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("date", "Date part of the DateTime", hasBaseType(LOCAL_DATE)), //
+            arg("time", "Time part of the DateTime", hasBaseType(LOCAL_TIME)) //
+        ) //
+        .returnType("A local date time", "LocalDateTime", args -> LOCAL_DATE_TIME(anyOptional(args))) //
+        .impl(DateTimeFunctions::createDateTime) //
+        .build();
+
+    private static Computer createDateTime(final Arguments<Computer> args) {
+        var date = args.get("date");
+        var time = args.get("time");
+
+        return LocalDateTimeComputer.of( //
+            ctx -> LocalDateTime.of( //
+                (LocalDate)Computer.computeTemporal(date, ctx), //
+                (LocalTime)Computer.computeTemporal(time, ctx)), //
+            ctx -> anyMissing(args).applyAsBoolean(ctx));
+    }
+
+    public static final ExpressionFunction PARSE_ZONED_DATE_TIME = functionBuilder() //
+        .name("parse_zoned_date_time") //
+        .description("""
+                Parse String values into ZonedDateTime values.
+                """) //
+        .examples(
+            """
+                    * `zoned_date_time("2021-01-01T12:12+01:00[Europe/Berlin]")` returns ZonedDateTime("2021-01-01T12:12+01:00[Europe/Berlin]")
+                    """) //
+        .keywords("match", "equals") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("string", "String to parse to a zoned date time", isStringOrOpt()), //
+            optarg("format", "Format of the zoned date time string", isStringOrOpt()) //
+        ) //
+        .returnType("A zoned date time", "ZonedDateTime", args -> LOCAL_DATE_TIME(anyOptional(args)))//
+        .impl(DateTimeFunctions::parseZonedDateTime) //
+        .build();
+
+    private static Computer parseZonedDateTime(final Arguments<Computer> args) {
+        var string = toString(args.get("string"));
+
+        return ZonedDateTimeComputer.of( //
+            ctx -> {
+                var formatter = createFormatter(args, DateTimeFormatter.ISO_ZONED_DATE_TIME).apply(ctx);
+                return formatter.parse(string.compute(ctx), ZonedDateTime::from);
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                try {
+                    var formatter = createFormatter(args, DateTimeFormatter.ISO_ZONED_DATE_TIME).apply(ctx);
+                    formatter.parse(string.compute(ctx), ZonedDateTime::from);
+                    return false;
+                } catch (DateTimeParseException | IllegalArgumentException e) {
+                    return true;
+                }
+            });
+    }
+
+    public static final ExpressionFunction CREATE_ZONED_DATE_TIME = functionBuilder() //
+        .name("create_zoned_date_time") //
+        .description("""
+                Create a ZonedDateTime value from the given LocalDateTime and ZoneId.
+                """) //
+        .examples("""
+                * `TODO` \
+                  returns ZonedDateTime("2021-01-01T12:12+01:00[Europe/Berlin]")
+                """) //
+        .keywords("create", "datetime") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("local_date_time", "LocalDateTime part of the ZonedDateTime", hasBaseType(LOCAL_DATE_TIME)), //
+            arg("zone_id", "ZoneId part of the ZonedDateTime", isStringOrOpt()) //
+        ) //
+        .returnType("A zoned date time", "ZonedDateTime", args -> LOCAL_DATE_TIME(anyOptional(args))) //
+        .impl(DateTimeFunctions::createZonedDateTime) //
+        .build();
+
+    private static Computer createZonedDateTime(final Arguments<Computer> args) {
+        var localDateTime = args.get("local_date_time");
+        var zoneId = toString(args.get("zone_id"));
+
+        return ZonedDateTimeComputer.of( //
+            ctx -> ZonedDateTime.of( //
+                (LocalDateTime)Computer.computeTemporal(localDateTime, ctx), //
+                ZoneId.of(zoneId.compute(ctx))), //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                try {
+                    ZoneId.of(zoneId.compute(ctx));
+                    return false;
+                } catch (DateTimeException e) {
+                    return true;
+                }
+            });
+    }
+
+    public static final ExpressionFunction FORMAT_TEMPORAL = functionBuilder() //
+        .name("format_temporal") //
+        .description("""
+                The node formats Temporal values into String values.
+                """) //
+        .examples("""
+                * `format_temporal(time("12:12"))` returns "12:12"
+                """) //
+        .keywords("") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("temporal", "Temporal value to format", hasTimePartOrIsOpt()), //
+            optarg("format", "Format of the temporal string", isStringOrOpt()) //
+        ) //
+        .returnType("A string", "String", args -> STRING(anyOptional(args)))//
+        .impl(DateTimeFunctions::formatTemporal) //
+        .build();
+
+    private static Computer formatTemporal(final Arguments<Computer> args) {
+        var temporal = args.get("temporal");
+
+        DateTimeFormatter fallbackFormatter = fromTemporalComputer(temporal);
+
+        return StringComputer.of( //
+            ctx -> {
+                var formatter = createFormatter(args, fallbackFormatter).apply(ctx);
+                return formatter.format(Computer.computeTemporal(temporal, ctx));
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                try {
+                    var formatter = createFormatter(args, DateTimeFormatter.ISO_LOCAL_TIME).apply(ctx);
+                    formatter.format(Computer.computeTemporal(temporal, ctx));
+                    return false;
+                } catch (DateTimeParseException | IllegalArgumentException e) {
+                    return true;
+                }
+            });
+    }
+
+    public static final ExpressionFunction CREATE_PERIOD = functionBuilder() //
+        .name("create_period") //
+        .description("""
+                Create a Period value from the given years, months and days.
+                """) //
+        .examples("""
+                * `create_period(1, 2, 3)` returns Period.of(1, 2, 3)
+                """) //
+        .keywords("create", "period") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            optarg("years", "Years of the period", isIntegerOrOpt()), //
+            optarg("months", "Months of the period", isIntegerOrOpt()), //
+            optarg("days", "Days of the period", isIntegerOrOpt()) //
+        ) //
+        .returnType("A period", RETURN_PERIOD_MISSING, args -> PERIOD(anyOptional(args)))//
+        .impl(DateTimeFunctions::createPeriod) //
+        .build();
+
+    private static Computer createPeriod(final Arguments<Computer> args) {
+        var years = toInteger(args.get("years", ZERO_INTEGER_COMPUTER));
+        var months = toInteger(args.get("months", ZERO_INTEGER_COMPUTER));
+        var days = toInteger(args.get("days", ZERO_INTEGER_COMPUTER));
+
+        return PeriodComputer.of( //
+            ctx -> Period.of( //
+                (int)toInteger(years).compute(ctx), //
+                (int)toInteger(months).compute(ctx), //
+                (int)toInteger(days).compute(ctx)), //
+            anyMissing(args));
+    }
+
+    public static final ExpressionFunction PARSE_PERIOD = functionBuilder() //
+        .name("parse_period") //
+        .description("""
+                The node parses String values into Period values.
+                """) //
+        .examples("""
+                * `period("P1Y2M3D")` returns Period.of(1, 2, 3)
+                """) //
+        .keywords("") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("string", "String to parse to a period", isStringOrOpt()) //
+        ) //
+        .returnType("A period", "Period", args -> PERIOD(anyOptional(args)))//
+        .impl(DateTimeFunctions::parsePeriod) //
+        .build();
+
+    private static Computer parsePeriod(final Arguments<Computer> args) {
+        var string = toString(args.get("string"));
+
+        return PeriodComputer.of( //
+            ctx -> {
+                var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
+                return ((DateInterval)parsedInterval).asPeriod();
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                try {
+                    var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
+                    return !(parsedInterval instanceof DateInterval);
+                } catch (IllegalArgumentException e) {
+                    return true;
+                }
+            });
+    }
+
+    public static final ExpressionFunction CREATE_DURATION = functionBuilder() //
+        .name("create_duration") //
+        .description("""
+                Create a Duration value from the given hours, minutes, seconds and nanoseconds.
+                """) //
+        .examples("""
+                * `create_duration(1, 2, 3, 4)` returns TODO
+                """).keywords("create", "duration") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            optarg("hours", "Hours of the duration (0 if not given)", isIntegerOrOpt()), //
+            optarg("minutes", "Minutes of the duration (0 if not given)", isIntegerOrOpt()), //
+            optarg("seconds", "Seconds of the duration (0 if not given)", isIntegerOrOpt()), //
+            optarg("nanos", "Nanoseconds of the duration (0 if not given)", isIntegerOrOpt()) //
+        ) //
+        .returnType("A duration", RETURN_DURATION_MISSING, args -> DURATION(anyOptional(args))) //
+        .impl(DateTimeFunctions::createDuration) //
+        .build();
+
+    private static Computer createDuration(final Arguments<Computer> args) {
+        var hours = args.get("hours", ZERO_INTEGER_COMPUTER);
+        var minutes = args.get("minutes", ZERO_INTEGER_COMPUTER);
+        var seconds = args.get("seconds", ZERO_INTEGER_COMPUTER);
+        var nanos = args.get("nanos", ZERO_INTEGER_COMPUTER);
+
+        return DurationComputer.of( //
+            ctx -> Duration.ofHours(toInteger(hours).compute(ctx)) //
+                .plusMinutes(toInteger(minutes).compute(ctx)) //
+                .plusSeconds(toInteger(seconds).compute(ctx)) //
+                .plusNanos(toInteger(nanos).compute(ctx)), //
+            anyMissing(args));
+    }
+
+    public static final ExpressionFunction PARSE_DURATION = functionBuilder() //
+        .name("parse_duration") //
+        .description("""
+                The node parses String values into Duration values.
+                """) //
+        .examples("""
+                * `duration("PT12H")` returns Duration.ofHours(12)
+                """) //
+        .keywords("") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("string", "String to parse to a duration", isStringOrOpt()) //
+        ) //
+        .returnType("A duration", RETURN_DURATION_MISSING, args -> DURATION(anyOptional(args))) //
+        .impl(DateTimeFunctions::parseDuration) //
+        .build();
+
+    private static Computer parseDuration(final Arguments<Computer> args) {
+        var string = toString(args.get("string"));
+
+        return DurationComputer.of( //
+            ctx -> {
+                var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
+                return ((TimeInterval)parsedInterval).asDuration();
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                try {
+                    var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
+                    return !(parsedInterval instanceof TimeInterval);
+                } catch (IllegalArgumentException e) {
+                    return true;
+                }
+            } //
+        );
+    }
+
+    public static final ExpressionFunction FORMAT_INTERVAL = functionBuilder() //
+        .name("format_interval") //
+        .description("""
+                Format Period/Duration values into String values.
+                """) //
+        .examples("""
+                * `format_period(period("P1Y2M3D"))` returns "P1Y2M3D"
+                """) //
+        .keywords("") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("interval", "Interval to format", isIntervalOrOpt()), //
+            optarg("format", "Format of the inteveral string: either 'iso', 'short', or 'long'. Defaults to iso.",
+                isString()) //
+        ) //
+        .returnType("A string", "STRING", args -> STRING(anyOptional(args)))//
+        .impl(DateTimeFunctions::formatInterval) //
+        .build();
+
+    private static Computer formatInterval(final Arguments<Computer> args) {
+        var intervalComputer = args.get("interval");
+
+        return StringComputer.of( //
+            ctx -> {
+                var temporalAmount = toTemporalAmount(intervalComputer, ctx);
+
+                var format = args.has("format") //
+                    ? toString(args.get("format")).compute(ctx) //
+                    : "iso";
+
+                return switch (format) {
+                    case "iso" -> temporalAmount.toString();
+                    case "short" -> DurationPeriodFormatUtils.formatTemporalAmountShort(temporalAmount);
+                    case "long" -> DurationPeriodFormatUtils.formatTemporalAmountLong(temporalAmount);
+                    default -> throw new IllegalStateException(
+                        "Unknown format: " + format + ". This should never happen.");
+                };
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                var format = args.has("format") //
+                    ? toString(args.get("format")).compute(ctx) //
+                    : "iso";
+
+                return !List.of("iso", "short", "long").contains(format);
+            } //
+        );
+    }
+
+    /* ========================= *
+     * PART EXTRACTION FUNCTIONS *
+     * ========================= */
+
+    public static final ExpressionFunction EXTRACT_INTERVAL_PART = functionBuilder() //
+        .name("extract_interval_part") //
+        .description("""
+                Extracts a part of an interval value.
+                """) //
+        .examples("""
+                * `extract_interval_part(duration("PT12H"), "HOURS")` returns 12
+                """) //
+        .keywords("extract", "duration", "period", "interval", "part") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("interval", "Interval to extract part from", hasBaseType(DURATION)), //
+            arg("part", "Part of the interval to extract", isString()) //
+        ) //
+        .returnType("The extracted part of the duration", RETURN_INTEGER_MISSING, args -> INTEGER(anyOptional(args))) //
+        .impl(DateTimeFunctions::extractIntervalPart) //
+        .build();
+
+    private static Computer extractIntervalPart(final Arguments<Computer> args) {
+        var interval = args.get("interval");
+        var part = toString(args.get("part"));
+
+        return IntegerComputer.of( //
+            ctx -> {
+                var temporalAmount = toTemporalAmount(interval, ctx);
+                return ExtractableIntervalField.valueOf(part.compute(ctx)).extractFieldFrom(temporalAmount);
+            }, //
+            ctx -> {
+                if (anyMissing(args).applyAsBoolean(ctx)) {
+                    return true;
+                }
+
+                ExtractableIntervalField field;
+                try {
+                    field = ExtractableIntervalField.valueOf(part.compute(ctx));
+                } catch (IllegalArgumentException e) {
+                    return true;
+                }
+
+                var inputDataType = interval instanceof DurationComputer //
+                    ? DurationCellFactory.TYPE //
+                    : PeriodCellFactory.TYPE;
+
+                return !field.isCompatibleWith(inputDataType);
+            });
+    }
+
+    /* ==================== *
+     * CONVERSION FUNCTIONS *
+     * ==================== */
+
+    public static final ExpressionFunction DURATION_TO_DOUBLE = functionBuilder() //
+        .name("duration_to_double") //
+        .description("""
+                Converts a Duration value to a number of the specified unit.
+                """) //
+        .examples("""
+                * `duration_to_double(duration("PT12H30M", "HOURS"))` returns 12.5
+                """) //
+        .keywords("convert", "duration", "number", "double") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("duration", "Duration to convert", hasBaseType(DURATION)), //
+            arg("unit", "Unit to convert to", isString()) //
+        ) //
+        .returnType("The duration as a number of the specified unit", RETURN_FLOAT_MISSING,
+            args -> FLOAT(anyOptional(args))) //
+        .impl(DateTimeFunctions::durationToDouble) //
+        .build();
+
+    private static Computer durationToDouble(final Arguments<Computer> args) {
+        var duration = toDuration(args.get("duration"));
+        var unit = toString(args.get("unit"));
+
+        return FloatComputer.of( //
+            ctx -> {
+                var temporalAmount = duration.compute(ctx);
+                var unitThing = AllowedUnitForDurationConversion.valueOf(unit.compute(ctx));
+
+                return unitThing.getConversionExact(temporalAmount);
+            }, //
+            anyMissing(args));
+    }
+
+    public static final ExpressionFunction DURATION_TO_INTEGER = functionBuilder() //
+        .name("duration_to_integer") //
+        .description("""
+                Converts a Duration value to a number of the specified unit.
+                """) //
+        .examples("""
+                * `duration_to_integer(duration("PT12H", "SECONDS"))` returns 43200
+                """) //
+        .keywords("convert", "duration", "number", "integer", "long") //
+        .category(CATEGORY_GENERAL) //
+        .args( //
+            arg("duration", "Duration to convert", hasBaseType(DURATION)), //
+            arg("unit", "Unit to convert to", isString()) //
+        ) //
+        .returnType("The duration as a number of the specified unit", RETURN_INTEGER_MISSING,
+            args -> INTEGER(anyOptional(args))) //
+        .impl(DateTimeFunctions::durationToInteger) //
+        .build();
+
+    private static Computer durationToInteger(final Arguments<Computer> args) {
+        var duration = toDuration(args.get("duration"));
+        var unit = toString(args.get("unit"));
+
+        return IntegerComputer.of( //
+            ctx -> {
+                var temporalAmount = duration.compute(ctx);
+                var unitThing = AllowedUnitForDurationConversion.valueOf(unit.compute(ctx));
+
+                return unitThing.getConversionFloored(temporalAmount);
+            }, //
+            anyMissing(args));
+    }
+
+    private static DateTimeFormatter fromTemporalComputer(final Computer c) {
+        if (c instanceof LocalTimeComputer) {
+            return DateTimeFormatter.ISO_LOCAL_TIME;
+        } else if (c instanceof LocalDateComputer) {
+            return DateTimeFormatter.ISO_LOCAL_DATE;
+        } else if (c instanceof LocalDateTimeComputer) {
+            return DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        } else if (c instanceof ZonedDateTimeComputer) {
+            return DateTimeFormatter.ISO_ZONED_DATE_TIME;
+        } else {
+            throw FunctionUtils.calledWithIllegalArgs();
+        }
+    }
+
+    /* ================== *
+     * ROUNDING FUNCTIONS *
+     * ================== */
+
     public static final ExpressionFunction ROUND_TIME = functionBuilder() //
         .name("round_time") //
         .description("""
@@ -127,7 +803,8 @@ public final class DateTimeFunctions {
             optarg("precision", "Precision to round to", isDurationOrOpt()), //
             optarg("strategy", "Rounding strategy: 'FIRST', 'NEAREST', 'LAST'", isStringOrOpt()) //
         ) //
-        .returnType("A local time", RETURN_LOCAL_TIME, args -> LOCAL_TIME(anyOptional(args)))//
+        .returnType("The input with the time part rounded", RETURN_HAS_TIME_PART_MISSING,
+            createReturnTypeSupplierWithSameBaseTypeAsArg("time")) //
         .impl(DateTimeFunctions::roundTime) //
         .build();
 
@@ -171,7 +848,8 @@ public final class DateTimeFunctions {
             optarg("shift_mode", "Shift mode: 'PREVIOUS','THIS', 'NEXT'", isStringOrOpt()), //
             optarg("dayOrWeekday", "If set to weekday rounding will exclude weekends", isStringOrOpt()) //
         ) //
-        .returnType("A local date", RETURN_LOCAL_TIME, args -> LOCAL_TIME(anyOptional(args)))//
+        .returnType("The input type with the date part rounded", RETURN_HAS_DATE_PART_MISSING,
+            createReturnTypeSupplierWithSameBaseTypeAsArg("date")) //
         .impl(DateTimeFunctions::roundDate) //
         .build();
 
@@ -198,175 +876,140 @@ public final class DateTimeFunctions {
         }
     }
 
-    public static final ExpressionFunction PARSE_PERIOD = functionBuilder() //
-        .name("parse_period") //
+    /* ====================== *
+     * MODIFY PARTS FUNCTIONS *
+     * ====================== */
+
+    public static final ExpressionFunction MODIFY_DATE = functionBuilder() //
+        .name("modify_date") //
         .description("""
-                The node parses String values into Period values.
+                Modify the date part of a date-time by setting some of its fields
                 """) //
         .examples("""
-                * `period("P1Y2M3D")` returns Period.of(1, 2, 3)
+                * `modify_date(date("2021-01-01"), year=2022)` returns LocalDate(2022-01-01)
                 """) //
-        .keywords("") //
+        .keywords("modify", "date") //
         .category(CATEGORY_GENERAL) //
         .args( //
-            arg("string", "String to parse to a period", isStringOrOpt()) //
+            arg("date", "Date to modify", hasDatePartOrIsOpt()), //
+            optarg("year", "Year to set", isIntegerOrOpt()), //
+            optarg("month", "Month to set", isIntegerOrOpt()), //
+            optarg("day", "Day to set", isIntegerOrOpt()) //
         ) //
-        .returnType("A period", "Period", args -> PERIOD(anyOptional(args)))//
-        .impl(DateTimeFunctions::parsePeriod) //
+        .returnType("The input type with the date part modified", RETURN_HAS_DATE_PART_MISSING,
+            createReturnTypeSupplierWithSameBaseTypeAsArg("date")) //
+        .impl(DateTimeFunctions::modifyDate) //
         .build();
 
-    private static Computer parsePeriod(final Arguments<Computer> args) {
-        var string = toString(args.get("string"));
+    private static Computer modifyDate(final Arguments<Computer> args) {
+        var dateComputer = args.get("date");
 
-        return PeriodComputer.of( //
-            ctx -> {
-                var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
-                return ((DateInterval)parsedInterval).asPeriod();
-            }, //
-            ctx -> {
-                if (anyMissing(args).applyAsBoolean(ctx)) {
-                    return true;
-                }
+        Function<EvaluationContext, Temporal> valueSupplier = ctx -> {
+            var date = Computer.computeTemporal(dateComputer, ctx);
+            var year = Optional.ofNullable(args.has("year") ? toInteger(args.get("year")).compute(ctx) : null);
+            var month = Optional.ofNullable(args.has("month") ? toInteger(args.get("month")).compute(ctx) : null);
+            var day = Optional.ofNullable(args.has("day") ? toInteger(args.get("day")).compute(ctx) : null);
 
-                try {
-                    var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
-                    return !(parsedInterval instanceof DateInterval);
-                } catch (IllegalArgumentException e) {
-                    return true;
-                }
-            });
+            date = date.with(ChronoField.YEAR, year.orElse((long)date.get(ChronoField.YEAR)));
+            date = date.with(ChronoField.MONTH_OF_YEAR, month.orElse((long)date.get(ChronoField.MONTH_OF_YEAR)));
+            date = date.with(ChronoField.DAY_OF_MONTH, day.orElse((long)date.get(ChronoField.DAY_OF_MONTH)));
+
+            return date;
+        };
+
+        if (dateComputer instanceof LocalDateComputer) {
+            return LocalDateComputer.of(valueSupplier.andThen(LocalDate.class::cast), anyMissing(args));
+        } else if (dateComputer instanceof LocalDateTimeComputer) {
+            return LocalDateTimeComputer.of(valueSupplier.andThen(LocalDateTime.class::cast), anyMissing(args));
+        } else if (dateComputer instanceof ZonedDateTimeComputer) {
+            return ZonedDateTimeComputer.of(valueSupplier.andThen(ZonedDateTime.class::cast), anyMissing(args));
+        } else {
+            throw FunctionUtils.calledWithIllegalArgs();
+        }
     }
 
-    public static final ExpressionFunction PARSE_DURATION = functionBuilder() //
-        .name("parse_duration") //
+    public static final ExpressionFunction MODIFY_TIME = functionBuilder() //
+        .name("modify_time") //
         .description("""
-                The node parses String values into Duration values.
+                Modify the time part of a date-time by setting some of its fields
                 """) //
         .examples("""
-                * `duration("PT12H")` returns Duration.ofHours(12)
+                * `modify_time(time("12:12"), hour=13)` returns LocalTime(13:12)
                 """) //
-        .keywords("") //
+        .keywords("modify", "time") //
         .category(CATEGORY_GENERAL) //
         .args( //
-            arg("string", "String to parse to a duration", isStringOrOpt()) //
+            arg("time", "Time to modify", hasTimePartOrIsOpt()), //
+            optarg("hour", "Hour to set", isIntegerOrOpt()), //
+            optarg("minute", "Minute to set", isIntegerOrOpt()), //
+            optarg("second", "Second to set", isIntegerOrOpt()), //
+            optarg("nano", "Nanosecond to set", isIntegerOrOpt()) //
         ) //
-        .returnType("A duration", "Duration", args -> DURATION(anyOptional(args)))//
-        .impl(DateTimeFunctions::parseDuration) //
+        .returnType("The input type with the time part modified", RETURN_HAS_TIME_PART_MISSING,
+            createReturnTypeSupplierWithSameBaseTypeAsArg("time")) //
+        .impl(DateTimeFunctions::modifyTime) //
         .build();
 
-    private static Computer parseDuration(final Arguments<Computer> args) {
-        var string = toString(args.get("string"));
+    private static Computer modifyTime(final Arguments<Computer> args) {
+        var timeComputer = args.get("time");
 
-        return DurationComputer.of( //
-            ctx -> {
-                var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
-                return ((TimeInterval)parsedInterval).asDuration();
-            }, //
-            ctx -> {
-                if (anyMissing(args).applyAsBoolean(ctx)) {
-                    return true;
-                }
+        Function<EvaluationContext, Temporal> valueSupplier = ctx -> {
+            var time = Computer.computeTemporal(timeComputer, ctx);
+            var hour = Optional.ofNullable(args.has("hour") ? toInteger(args.get("hour")).compute(ctx) : null);
+            var minute = Optional.ofNullable(args.has("minute") ? toInteger(args.get("minute")).compute(ctx) : null);
+            var second = Optional.ofNullable(args.has("second") ? toInteger(args.get("second")).compute(ctx) : null);
+            var nano = Optional.ofNullable(args.has("nano") ? toInteger(args.get("nano")).compute(ctx) : null);
 
-                try {
-                    var parsedInterval = Interval.parseHumanReadableOrIso(string.compute(ctx));
-                    return !(parsedInterval instanceof TimeInterval);
-                } catch (IllegalArgumentException e) {
-                    e.printStackTrace();
-                    return true;
-                }
-            });
+            time = time.with(ChronoField.HOUR_OF_DAY, hour.orElse((long)time.get(ChronoField.HOUR_OF_DAY)));
+            time = time.with(ChronoField.MINUTE_OF_HOUR, minute.orElse((long)time.get(ChronoField.MINUTE_OF_HOUR)));
+            time = time.with(ChronoField.SECOND_OF_MINUTE, second.orElse((long)time.get(ChronoField.SECOND_OF_MINUTE)));
+            time = time.with(ChronoField.NANO_OF_SECOND, nano.orElse((long)time.get(ChronoField.NANO_OF_SECOND)));
+
+            return time;
+        };
+
+        if (timeComputer instanceof LocalTimeComputer) {
+            return LocalTimeComputer.of(valueSupplier.andThen(LocalTime.class::cast), anyMissing(args));
+        } else if (timeComputer instanceof LocalDateTimeComputer) {
+            return LocalDateTimeComputer.of(valueSupplier.andThen(LocalDateTime.class::cast), anyMissing(args));
+        } else if (timeComputer instanceof ZonedDateTimeComputer) {
+            return ZonedDateTimeComputer.of(valueSupplier.andThen(ZonedDateTime.class::cast), anyMissing(args));
+        } else {
+            throw FunctionUtils.calledWithIllegalArgs();
+        }
     }
 
-    public static final ExpressionFunction FORMAT_PERIOD = functionBuilder() //
-        .name("format_period") //
+    public static final ExpressionFunction MODIFY_TIME_ZONE = functionBuilder() //
+        .name("modify_time_zone") //
         .description("""
-                The node formats Period values into String values.
+                Modify the time zone part of a ZonedDateTime
                 """) //
-        .examples("""
-                * `format_period(period("P1Y2M3D"))` returns "P1Y2M3D"
-                """) //
-        .keywords("") //
+        .examples(
+            """
+                    * `modify_time_zone(zoned_date_time("2021-01-01T12:12+01:00[Europe/Berlin]"), "Europe/Paris")` returns ZonedDateTime("2021-01-01T12:12+01:00[Europe/Paris]")
+                    """) //
+        .keywords("modify", "time", "zone") //
         .category(CATEGORY_GENERAL) //
         .args( //
-            arg("period", "Period to format", isPeriodOrOpt()), //
-            optarg("format", "Format of the period string. If not specified, use ISO.", isString()) //
+            arg("zoned_date_time", "ZonedDateTime to modify", hasBaseType(ZONED_DATE_TIME)), //
+            arg("zone_id", "ZoneId to set", isStringOrOpt()) //
         ) //
-        .returnType("A string", "String", args -> STRING(anyOptional(args)))//
-        .impl(DateTimeFunctions::formatPeriod) //
+        .returnType("The input type with the time zone part modified", RETURN_ZONED_DATE_TIME_MISSING,
+            args -> ZONED_DATE_TIME(anyOptional(args))) //
+        .impl(DateTimeFunctions::modifyTimeZone) //
         .build();
 
-    private static Computer formatPeriod(final Arguments<Computer> args) {
-        var period = toPeriod(args.get("period"));
+    private static Computer modifyTimeZone(final Arguments<Computer> args) {
+        var zonedDateTimeComputer = args.get("zoned_date_time");
+        var zoneIdComputer = toString(args.get("zone_id"));
 
-        return StringComputer.of( //
+        return ZonedDateTimeComputer.of( //
             ctx -> {
-                var format = args.has("format") //
-                    ? toString(args.get("format")).compute(ctx) //
-                    : "iso";
-
-                return switch (format) {
-                    case "iso" -> period.compute(ctx).toString();
-                    case "short" -> DurationPeriodFormatUtils.formatPeriodShort(period.compute(ctx));
-                    case "long" -> DurationPeriodFormatUtils.formatPeriodLong(period.compute(ctx));
-                    default -> throw new IllegalStateException(
-                        "Unknown format: " + format + ". This should never happen.");
-                };
+                var zonedDateTime = (ZonedDateTime)Computer.computeTemporal(zonedDateTimeComputer, ctx);
+                var zoneId = zoneIdComputer.compute(ctx);
+                return zonedDateTime.withZoneSameLocal(ZoneId.of(zoneId));
             }, //
-            ctx -> {
-                if (anyMissing(args).applyAsBoolean(ctx)) {
-                    return true;
-                }
-
-                var format = args.has("format") //
-                    ? toString(args.get("format")).compute(ctx) //
-                    : "iso";
-
-                return !List.of("iso", "short", "long").contains(format);
-            });
-    }
-
-    public static final ExpressionFunction FORMAT_DURATION = functionBuilder().name("format_duration") //
-        .description("""
-                The node formats Duration values into String values.
-                """) //
-        .examples("""
-                * `format_duration(duration("PT12H"))` returns "PT12H"
-                """) //
-        .keywords("") //
-        .category(CATEGORY_GENERAL) //
-        .args( //
-            arg("duration", "Duration to format", isDurationOrOpt()), //
-            optarg("format", "Format of the duration string. If not specified, use ISO.", isString()) //
-        ) //
-        .returnType("A string", "String", args -> STRING(anyOptional(args))) //
-        .impl(DateTimeFunctions::formatDuration) //
-        .build();
-
-    private static Computer formatDuration(final Arguments<Computer> args) {
-        var duration = toDuration(args.get("duration"));
-
-        return StringComputer.of(ctx -> {
-            var format = args.has("format") //
-                ? toString(args.get("format")).compute(ctx) //
-                : "iso";
-
-            return switch (format) {
-                case "iso" -> duration.compute(ctx).toString();
-                case "short" -> DurationPeriodFormatUtils.formatDurationShort(duration.compute(ctx));
-                case "long" -> DurationPeriodFormatUtils.formatDurationLong(duration.compute(ctx));
-                default -> throw new IllegalStateException("Unknown format: " + format + ". This should never happen.");
-            };
-        }, ctx -> {
-            if (anyMissing(args).applyAsBoolean(ctx)) {
-                return true;
-            }
-
-            var format = args.has("format") //
-                ? toString(args.get("format")).compute(ctx) //
-                : "iso";
-
-            return !List.of("iso", "short", "long").contains(format);
-        });
+            anyMissing(args));
     }
 
     // ======================= UTILITIES ==============================
@@ -383,6 +1026,14 @@ public final class DateTimeFunctions {
             } else {
                 return defaultFormatter.withLocale(locale);
             }
+        };
+    }
+
+    private static Function<Arguments<ValueType>, ValueType>
+        createReturnTypeSupplierWithSameBaseTypeAsArg(final String argThatDeterminesBaseType) {
+        return args -> {
+            var baseType = args.get(argThatDeterminesBaseType).baseType();
+            return anyOptional(args) ? baseType.optionalType() : baseType;
         };
     }
 
@@ -407,24 +1058,24 @@ public final class DateTimeFunctions {
         throw FunctionUtils.calledWithIllegalArgs();
     }
 
-    private static Computer defaultTimeRoundStrategyComputer =
-        StringComputer.of(ctx -> TimeRoundNodeSettings.TimeRoundingStrategy.FIRST_POINT_IN_TIME.name(), ctx -> false);
+    private static final Computer defaultTimeRoundStrategyComputer =
+        createConstantComputer(TimeRoundingStrategy.FIRST_POINT_IN_TIME.name());
 
-    private static Computer defaultDateRoundStrategyComputer =
-        StringComputer.of(ctx -> DateRoundNodeSettings.DateRoundingStrategy.FIRST.name(), ctx -> false);
+    private static final Computer defaultDateRoundStrategyComputer =
+        createConstantComputer(DateRoundingStrategy.FIRST.name());
 
-    private static Computer defaultTimeShiftModeComputer =
-        StringComputer.of(ctx -> DateRoundNodeSettings.ShiftMode.THIS.name(), ctx -> false);
+    private static final Computer defaultTimeShiftModeComputer = createConstantComputer(ShiftMode.THIS.name());
 
-    private static Computer defaultDayOrWWeekdayComputer =
-        StringComputer.of(ctx -> DateRoundNodeSettings.DayOrWeekday.DAY.name(), ctx -> false);
+    private static final Computer defaultDayOrWWeekdayComputer = createConstantComputer(DayOrWeekday.DAY.name());
 
-    private static Computer zeroDurationComputer = DurationComputer.of(ctx -> Duration.ZERO, ctx -> false);
+    private static final Computer zeroDurationComputer = createConstantComputer(Duration.ZERO);
 
-    private static Computer oneHourDurationComputer = DurationComputer.of(ctx -> Duration.ofHours(1), ctx -> false);
+    private static final Computer ZERO_INTEGER_COMPUTER = createConstantComputer(0);
 
-    private static Computer defaultDatePrecisionComputer =
-        StringComputer.of(ctx -> RoundDatePrecision.MONTH.name(), ctx -> false);
+    private static final Computer oneHourDurationComputer = createConstantComputer(Duration.ofHours(1));
+
+    private static final Computer defaultDatePrecisionComputer =
+        createConstantComputer(RoundDatePrecision.MONTH.name());
 
     /**
      * Helper function to round time-based temporal values. Assumption: The arguments 'strategy' and 'precision' are
@@ -435,14 +1086,14 @@ public final class DateTimeFunctions {
      * @param ctx evaluation context
      * @return the rounded temporal value
      */
-    private static final Temporal roundTimeBasedTemporal(final Arguments<Computer> args,
-        final String temporalArgumentName, final EvaluationContext ctx) {
+    private static Temporal roundTimeBasedTemporal(final Arguments<Computer> args, final String temporalArgumentName,
+        final EvaluationContext ctx) {
         var temporalComputer = args.get(temporalArgumentName);
         var strategyComputer = toString(args.get("strategy", defaultTimeRoundStrategyComputer));
         var precisionComputer = toDuration(args.get("precision", oneHourDurationComputer));
 
         var timeToRound = Computer.computeTemporal(temporalComputer, ctx);
-        var strategy = TimeRoundNodeSettings.TimeRoundingStrategy.valueOf(strategyComputer.compute(ctx));
+        var strategy = TimeRoundingStrategy.valueOf(strategyComputer.compute(ctx));
         var precision = precisionComputer.compute(ctx);
 
         return TimeRoundingUtil.roundTimeBasedTemporal(timeToRound, strategy, precision);
@@ -457,8 +1108,8 @@ public final class DateTimeFunctions {
      * @param ctx evaluation context
      * @return true if the temporal argument is missing or if the strategy or precision is missing
      */
-    private static final Temporal roundDateBasedTemporal(final Arguments<Computer> args,
-        final String temporalArgumentName, final EvaluationContext ctx) {
+    private static Temporal roundDateBasedTemporal(final Arguments<Computer> args, final String temporalArgumentName,
+        final EvaluationContext ctx) {
 
         var temporalComputer = args.get(temporalArgumentName);
         var strategyComputer = toString(args.get("strategy", defaultDateRoundStrategyComputer));
@@ -467,10 +1118,10 @@ public final class DateTimeFunctions {
         var dayOrWeekdayComputer = toString(args.get("dayOrWeekday", defaultDayOrWWeekdayComputer));
 
         var dateToRound = Computer.computeTemporal(temporalComputer, ctx);
-        var strategy = DateRoundNodeSettings.DateRoundingStrategy.valueOf(strategyComputer.compute(ctx));
-        var precision = DateRoundNodeSettings.RoundDatePrecision.valueOf(precisionComputer.compute(ctx));
-        var shiftMode = DateRoundNodeSettings.ShiftMode.valueOf(shiftModeComputer.compute(ctx));
-        var dayOrWeekday = DateRoundNodeSettings.DayOrWeekday.valueOf(dayOrWeekdayComputer.compute(ctx));
+        var strategy = DateRoundingStrategy.valueOf(strategyComputer.compute(ctx));
+        var precision = RoundDatePrecision.valueOf(precisionComputer.compute(ctx));
+        var shiftMode = ShiftMode.valueOf(shiftModeComputer.compute(ctx));
+        var dayOrWeekday = DayOrWeekday.valueOf(dayOrWeekdayComputer.compute(ctx));
 
         return DateRoundingUtil.roundDateBasedTemporal(dateToRound, strategy, precision, shiftMode, dayOrWeekday);
     }
@@ -483,8 +1134,8 @@ public final class DateTimeFunctions {
      * @param ctx evaluation context
      * @return true if the temporal argument is missing or if the strategy or precision is missing
      */
-    private static final boolean roundTemporalIsMissing(final Arguments<Computer> args,
-        final String temporalArgumentName, final EvaluationContext ctx) {
+    private static boolean roundTemporalIsMissing(final Arguments<Computer> args, final String temporalArgumentName,
+        final EvaluationContext ctx) {
         if (args.get(temporalArgumentName).isMissing(ctx)) {
             return true;
         }
@@ -496,6 +1147,30 @@ public final class DateTimeFunctions {
         if (args.has("precision") && args.get("precision").isMissing(ctx)) {
             return true;
         }
+
         return false;
+    }
+
+    private static IntegerComputer toInteger(final Computer computer) {
+        if (computer instanceof IntegerComputer i) {
+            return i;
+        }
+        throw FunctionUtils.calledWithIllegalArgs();
+    }
+
+    private static BooleanComputer toBoolean(final Computer computer) {
+        if (computer instanceof BooleanComputer b) {
+            return b;
+        }
+        throw FunctionUtils.calledWithIllegalArgs();
+    }
+
+    private static TemporalAmount toTemporalAmount(final Computer computer, final EvaluationContext ctx) {
+        if (computer instanceof DurationComputer dc) {
+            return dc.compute(ctx);
+        } else if (computer instanceof PeriodComputer pc) {
+            return pc.compute(ctx);
+        }
+        throw FunctionUtils.calledWithIllegalArgs();
     }
 }

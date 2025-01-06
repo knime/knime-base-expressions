@@ -69,8 +69,35 @@ public final class ReturnTypeDescriptions {
     /** Return type description for function returning non-optional float */
     public static final String RETURN_FLOAT = "FLOAT";
 
-    /** Return type description for function returning non-optional float */
+    /** Return type description for function returning non-optional local time */
     public static final String RETURN_LOCAL_TIME = "LOCAL_TIME";
+
+    /** Return type description for function returning optional local time */
+    public static final String RETURN_LOCAL_TIME_MISSING = RETURN_LOCAL_TIME + " | MISSING";
+
+    /** Return type description for function returning non-optional date-time types with a time part */
+    public static final String RETURN_HAS_TIME_PART = "LOCAL_TIME | LOCAL_DATE_TIME | ZONED_DATE_TIME";
+
+    /** Return type description for function returning optional date-time types with a time part */
+    public static final String RETURN_HAS_TIME_PART_MISSING = RETURN_HAS_TIME_PART + " | MISSING";
+
+    /** Return type description for function returning non-optional date-time types with a date part */
+    public static final String RETURN_HAS_DATE_PART = "LOCAL_DATE | LOCAL_DATE_TIME | ZONED_DATE_TIME";
+
+    /** Return type description for function returning optional date-time types with a date part */
+    public static final String RETURN_HAS_DATE_PART_MISSING = RETURN_HAS_DATE_PART + " | MISSING";
+
+    /** Return type description for function returning non-optional local date */
+    public static final String RETURN_LOCAL_DATE = "LOCAL_DATE";
+
+    /** Return type description for function returning optional local date */
+    public static final String RETURN_LOCAL_DATE_MISSING = RETURN_LOCAL_DATE + " | MISSING";
+
+    /** Return type description for function returning non-optional zoned date-time */
+    public static final String RETURN_ZONED_DATE_TIME = "ZONED_DATE_TIME";
+
+    /** Return type description for function returning optional zoned date-time */
+    public static final String RETURN_ZONED_DATE_TIME_MISSING = RETURN_ZONED_DATE_TIME + " | MISSING";
 
     /** Return type description for function returning non-optional numeric type */
     public static final String RETURN_INTEGER_FLOAT = "INTEGER | FLOAT";
@@ -88,6 +115,24 @@ public final class ReturnTypeDescriptions {
     public static final String RETURN_STRING_MISSING = "STRING | MISSING";
 
     /** Return type description for function returning optional numeric type */
-    public static final String RETURN_INTEGER_FLOAT_MISSING = "INTEGER | FLOAT | MISSING";
+    public static final String RETURN_NUMERIC_MISSING = "INTEGER | FLOAT | MISSING";
+
+    /** Return type description for function returning non-optional duration type */
+    public static final String RETURN_DURATION = "DURATION";
+
+    /** Return type description for function returning optional duration type */
+    public static final String RETURN_DURATION_MISSING = "DURATION | MISSING";
+
+    /** Return type description for function returning non-optional period type */
+    public static final String RETURN_PERIOD = "PERIOD";
+
+    /** Return type description for function returning optional period type */
+    public static final String RETURN_PERIOD_MISSING = "PERIOD | MISSING";
+
+    /** Return type description for function returning non-optional interval type */
+    public static final String RETURN_INTERVAL = "PERIOD | DURATION";
+
+    /** Return type description for function returning optional interval type */
+    public static final String RETURN_INTERVAL_MISSING = RETURN_INTERVAL + " | MISSING";
 
 }

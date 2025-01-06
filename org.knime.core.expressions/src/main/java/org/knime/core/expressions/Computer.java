@@ -560,7 +560,7 @@ public interface Computer {
      * @param ctx evaluation context
      * @return the computed Temporal
      */
-    public static Temporal computeTemporal(final Computer computer, final EvaluationContext ctx) {
+    static Temporal computeTemporal(final Computer computer, final EvaluationContext ctx) {
         if (computer instanceof LocalTimeComputer c) {
             return c.compute(ctx);
         } else if (computer instanceof LocalDateComputer c) {
@@ -572,5 +572,49 @@ public interface Computer {
         }
         throw new IllegalArgumentException(
             "Cannot evaluate computer to Temporal: " + computer + ". This in an implementation error.");
+    }
+
+    static StringComputer createConstantComputer(final String s) {
+        return StringComputer.of(ctx -> s, ctx -> false);
+    }
+
+    static IntegerComputer createConstantComputer(final long i) {
+        return IntegerComputer.of(ctx -> i, ctx -> false);
+    }
+
+    static FloatComputer createConstantComputer(final double f) {
+        return FloatComputer.of(ctx -> f, ctx -> false);
+    }
+
+    static BooleanComputer createConstantComputer(final boolean b) {
+        return BooleanComputer.of(ctx -> b, ctx -> false);
+    }
+
+    static LocalDateComputer createConstantComputer(final LocalDate d) {
+        return LocalDateComputer.of(ctx -> d, ctx -> false);
+    }
+
+    static LocalTimeComputer createConstantComputer(final LocalTime t) {
+        return LocalTimeComputer.of(ctx -> t, ctx -> false);
+    }
+
+    static LocalDateTimeComputer createConstantComputer(final LocalDateTime dt) {
+        return LocalDateTimeComputer.of(ctx -> dt, ctx -> false);
+    }
+
+    static ZonedDateTimeComputer createConstantComputer(final ZonedDateTime zdt) {
+        return ZonedDateTimeComputer.of(ctx -> zdt, ctx -> false);
+    }
+
+    static DurationComputer createConstantComputer(final Duration d) {
+        return DurationComputer.of(ctx -> d, ctx -> false);
+    }
+
+    static PeriodComputer createConstantComputer(final Period p) {
+        return PeriodComputer.of(ctx -> p, ctx -> false);
+    }
+
+    static Computer createMissingComputer() {
+        return ctx -> true;
     }
 }

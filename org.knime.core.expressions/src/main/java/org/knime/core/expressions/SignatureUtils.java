@@ -120,7 +120,7 @@ public final class SignatureUtils {
 
     /** @return an {@link ArgMatcher} that matches all numeric types (optional or not) */
     public static ArgMatcher isNumericOrOpt() {
-        return new ArgMatcherImpl(ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING, ValueType::isNumericOrOpt);
+        return new ArgMatcherImpl(ReturnTypeDescriptions.RETURN_NUMERIC_MISSING, ValueType::isNumericOrOpt);
     }
 
     /** @return an {@link ArgMatcher} that matches {@link ValueType#INTEGER} */
@@ -208,6 +208,19 @@ public final class SignatureUtils {
     /** @return an {@link ArgMatcher} that matches {@link ValueType#DURATION} and {@link ValueType#OPT_DURATION} */
     public static ArgMatcher isPeriodOrOpt() {
         return hasBaseType(ValueType.PERIOD);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#DURATION} and {@link ValueType#PERIOD} */
+    public static ArgMatcher isInterval() {
+        return isOneOfTypes(ValueType.DURATION, ValueType.PERIOD);
+    }
+
+    /**
+     * @return an {@link ArgMatcher} that matches {@link ValueType#DURATION} and {@link ValueType#PERIOD}, plus their
+     *         optional variants
+     */
+    public static ArgMatcher isIntervalOrOpt() {
+        return isOneOfBaseTypes(ValueType.DURATION, ValueType.PERIOD);
     }
 
     /** @return an {@link ArgMatcher} that matches any type (missing or otherwise) */

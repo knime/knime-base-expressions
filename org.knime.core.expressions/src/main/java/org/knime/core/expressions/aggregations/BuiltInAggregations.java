@@ -147,7 +147,7 @@ public final class BuiltInAggregations {
         .keywords("maximum", "max") //
         .category(AGGREGATION_CATEGORY) //
         .args(COLUMN_ARG, IGNORE_NAN_ARG) //
-        .returnType("The maximum value of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("The maximum value of the column", ReturnTypeDescriptions.RETURN_NUMERIC_MISSING,
             BuiltInAggregations::maxReturnType) //
         .build();
 
@@ -189,7 +189,7 @@ public final class BuiltInAggregations {
         .keywords("minimum") //
         .category(AGGREGATION_CATEGORY) //
         .args(COLUMN_ARG, IGNORE_NAN_ARG) //
-        .returnType("The minimum value of the column", ReturnTypeDescriptions.RETURN_INTEGER_FLOAT_MISSING,
+        .returnType("The minimum value of the column", ReturnTypeDescriptions.RETURN_NUMERIC_MISSING,
             BuiltInAggregations::minReturnType) //
         .build();
 
