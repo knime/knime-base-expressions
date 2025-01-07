@@ -59,7 +59,13 @@
 				characters nor spaces.
 			</p>
 			<p>
-				<b>Operators :</b>
+				<b>Multiple Expressions: </b>
+				When multiple expressions are added to the node, subsequent expressions can use the output of previous expressions.
+				For instance, if an expression changes the value of a column or appends a new column, subsequent expressions can
+				access and use these modified or newly appended columns.
+			</p>
+			<p>
+				<b>Operators: </b>
 				The expression language supports basic operators, namely arithmetic
 				(
 				<tt>+</tt>
