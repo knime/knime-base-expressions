@@ -4,19 +4,19 @@
    <extension
    		point="org.knime.workbench.repository.nodes">
       	<node
-        	category-path="/manipulation"
+        	category-path="/manipulation/column"
             deprecated="false"
             factory-class="org.knime.base.expressions.node.row.mapper.ExpressionRowMapperNodeFactory"
             hidden="false">
       	</node>
       	<node
-      		category-path="/manipulation"
+      		category-path="/manipulation/row/row-filter"
       		factory-class="org.knime.base.expressions.node.row.filter.ExpressionRowFilterNodeFactory"
       		deprecated="false"
       		hidden="false">
       	</node>
       	<node
-      		category-path="/manipulation"
+      		category-path="/flowcontrol/variables"
       		factory-class="org.knime.base.expressions.node.variable.ExpressionFlowVariableNodeFactory"
       		deprecated="false"
       		hidden="false">
