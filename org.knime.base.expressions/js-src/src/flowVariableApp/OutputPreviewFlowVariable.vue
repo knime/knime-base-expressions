@@ -4,15 +4,10 @@ import { onMounted, ref } from "vue";
 import { getScriptingService } from "@knime/scripting-editor";
 import {
   type ExtensionConfig,
-  ResourceTypes,
   UIExtension,
   type UIExtensionAPILayer,
-} from "@knime/ui-extension-renderer";
-import {
-  AlertingService,
-  ExtensionTypes,
-  JsonDataService,
-} from "@knime/ui-extension-service";
+} from "@knime/ui-extension-renderer/vue";
+import { AlertingService, JsonDataService } from "@knime/ui-extension-service";
 
 const extensionConfig = ref<ExtensionConfig | null>(null);
 const resourceLocation = ref<string>("");
@@ -37,13 +32,13 @@ const makeExtensionConfig = async (
 
   return {
     nodeId,
-    extensionType: ExtensionTypes.DIALOG,
+    extensionType: "dialog",
     projectId,
     workflowId,
     hasNodeView: false,
     resourceInfo: {
       id: "someId",
-      type: ResourceTypes.SHADOW_APP,
+      type: "SHADOW_APP",
       path: `${baseUrl}uiext/tableview/TableView.js`,
     },
     initialData,
