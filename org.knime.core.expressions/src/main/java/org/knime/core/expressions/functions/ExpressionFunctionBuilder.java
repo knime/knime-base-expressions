@@ -56,13 +56,12 @@ import java.util.regex.Pattern;
 
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.OperatorDescription;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.SignatureUtils;
 import org.knime.core.expressions.SignatureUtils.Arg;
-import org.knime.core.expressions.ToBooleanFunction;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -96,7 +95,7 @@ public final class ExpressionFunctionBuilder {
      * @return <code>true</code> if at least one type is optional
      */
     public static boolean anyOptional(final Arguments<ValueType> types) {
-        return types.anyMatch(ValueType::isOptional);
+        return types.anyMatch(v -> v.isOptional());
     }
 
     /**
@@ -106,7 +105,7 @@ public final class ExpressionFunctionBuilder {
      * @param values
      * @return the predicate
      */
-    public static ToBooleanFunction<EvaluationContext> anyMissing(final Arguments<Computer> values) {
+    public static BooleanComputerResultSupplier anyMissing(final Arguments<Computer> values) {
         return ctx -> values.anyMatch(c -> c.isMissing(ctx));
     }
 

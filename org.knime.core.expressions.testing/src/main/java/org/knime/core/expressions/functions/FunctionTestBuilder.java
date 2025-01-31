@@ -70,6 +70,7 @@ import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.TestUtils;
 import org.knime.core.expressions.ValueType;
 
@@ -323,7 +324,12 @@ public final class FunctionTestBuilder {
         final Map<String, TestingArgument> namedArgs) {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(Computer.class, c, m_function.name() + " should eval to Computer");
-            assertTrue(c.isMissing(DUMMY_WML), m_function.name() + " should be missing");
+            try {
+                assertTrue(c.isMissing(DUMMY_WML), m_function.name() + " should be missing");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 
@@ -349,11 +355,16 @@ public final class FunctionTestBuilder {
         final Map<String, TestingArgument> namedArgs, final boolean expected) {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(BooleanComputer.class, c, m_function.name() + " should eval to BOOLEAN");
-            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            positionalArgs.forEach(TestingArgument::resetAccessed);
-            namedArgs.values().forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((BooleanComputer)c).compute(DUMMY_WML),
-                m_function.name() + " should eval correctly");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((BooleanComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 
@@ -381,11 +392,16 @@ public final class FunctionTestBuilder {
         final Map<String, TestingArgument> namedArgs, final long expected) {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(IntegerComputer.class, c, m_function.name() + " should eval to INTEGER");
-            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            positionalArgs.forEach(TestingArgument::resetAccessed);
-            namedArgs.values().forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((IntegerComputer)c).compute(DUMMY_WML),
-                m_function.name() + " should eval correctly");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((IntegerComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 
@@ -413,10 +429,16 @@ public final class FunctionTestBuilder {
         final Map<String, TestingArgument> namedArgs, final double expected) {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(FloatComputer.class, c, m_function.name() + " should eval to FLOAT");
-            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            positionalArgs.forEach(TestingArgument::resetAccessed);
-            namedArgs.values().forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((FloatComputer)c).compute(DUMMY_WML), m_function.name() + " should eval correctly");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((FloatComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 
@@ -444,11 +466,16 @@ public final class FunctionTestBuilder {
         final Map<String, TestingArgument> namedArgs, final String expected) {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(StringComputer.class, c, m_function.name() + " should eval to STRING");
-            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            positionalArgs.forEach(TestingArgument::resetAccessed);
-            namedArgs.values().forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((StringComputer)c).compute(DUMMY_WML),
-                m_function.name() + " should eval correctly");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((StringComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 

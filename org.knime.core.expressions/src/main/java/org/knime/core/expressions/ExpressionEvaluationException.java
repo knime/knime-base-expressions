@@ -44,27 +44,24 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Jul 12, 2024 (david): created
+ *   Jan 31, 2025 (benjamin): created
  */
 package org.knime.core.expressions;
 
-import java.util.function.ToLongFunction;
-
 /**
- * The equivalent of {@link ToLongFunction} for boolean values.
+ * Exception that is thrown when an expression cannot be evaluated on the current input data.
  *
- * @param <T> the type of the input to the function
- * @author David Hickey, TNG Technology Consulting GmbH
+ * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@FunctionalInterface
-public interface ToBooleanFunction<T> {
+public final class ExpressionEvaluationException extends ExpressionException {
+    private static final long serialVersionUID = 1L;
 
     /**
-     * Applies this function to the given argument.
+     * Creates a new exception with the given message.
      *
-     * @param value the function argument
-     * @return the function result
+     * @param message a user-friendly message describing the issue to the expression author
      */
-    boolean applyAsBoolean(T value);
-
+    public ExpressionEvaluationException(final String message) {
+        super(message);
+    }
 }

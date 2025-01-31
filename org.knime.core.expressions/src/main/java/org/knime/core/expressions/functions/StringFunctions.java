@@ -75,9 +75,6 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.OptionalInt;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -88,9 +85,12 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.ComputerResultSupplier;
+import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
+import org.knime.core.expressions.Computer.IntegerComputerResultSupplier;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.OperatorCategory;
-import org.knime.core.expressions.ToBooleanFunction;
 import org.knime.core.expressions.ValueType;
 
 /**
@@ -215,12 +215,12 @@ public final class StringFunctions {
         var c1 = toString(args.get("string"));
         var c2 = toString(args.get("search"));
 
-        final Predicate<EvaluationContext> ignoreCase = args.has("modifiers") //
+        final BooleanComputerResultSupplier ignoreCase = args.has("modifiers") //
             ? (ctx -> ((StringComputer)args.get("modifiers")).compute(ctx).contains("i")) //
             : ctx -> false;
 
         return BooleanComputer.of(ctx -> {
-            if (ignoreCase.test(ctx)) {
+            if (ignoreCase.applyAsBoolean(ctx)) {
                 return c1.compute(ctx).toLowerCase(Locale.ROOT).contains(c2.compute(ctx).toLowerCase(Locale.ROOT));
             } else {
                 return c1.compute(ctx).contains(c2.compute(ctx));
@@ -368,7 +368,7 @@ public final class StringFunctions {
         var c1 = toString(args.get("string"));
         var c2 = toString(args.get("pattern"));
 
-        ToBooleanFunction<EvaluationContext> value = ctx -> {
+        BooleanComputerResultSupplier value = ctx -> {
             String escapedPattern = c2.compute(ctx);
             String toMatch = c1.compute(ctx);
 
@@ -501,12 +501,12 @@ public final class StringFunctions {
         var c2 = toString(args.get("pattern"));
         var c3 = toInteger(args.get("group"));
 
-        ToBooleanFunction<EvaluationContext> isMissing = ctx -> anyMissing(args).applyAsBoolean(ctx) //
+        BooleanComputerResultSupplier isMissing = ctx -> anyMissing(args).applyAsBoolean(ctx) //
             || extractGroupOrReturnNull(c1.compute(ctx), c2.compute(ctx), (int)c3.compute(ctx),
                 computeIgnoreCase(args, ctx)) == null;
 
-        Function<EvaluationContext, String> value = ctx -> extractGroupOrReturnNull(c1.compute(ctx), c2.compute(ctx),
-            (int)c3.compute(ctx), computeIgnoreCase(args, ctx));
+        ComputerResultSupplier<String> value = ctx -> extractGroupOrReturnNull(c1.compute(ctx),
+            c2.compute(ctx), (int)c3.compute(ctx), computeIgnoreCase(args, ctx));
 
         return StringComputer.of(value, isMissing);
     }
@@ -550,7 +550,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer regexReplaceImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
 
             var str = toString(args.get("string")).compute(ctx);
             var search = toString(args.get("pattern")).compute(ctx);
@@ -598,7 +598,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer replaceImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             var str = toString(args.get("string")).compute(ctx);
             var search = toString(args.get("pattern")).compute(ctx);
             var replacement = toString(args.get("replace")).compute(ctx);
@@ -657,7 +657,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer replaceCharsImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             var str = toString(args.get("string")).compute(ctx);
             var oldChars = toString(args.get("old_chars")).compute(ctx).toCharArray();
             var newChars = toString(args.get("new_chars")).compute(ctx).toCharArray();
@@ -727,7 +727,7 @@ public final class StringFunctions {
         var umlauts = "äüö";
         var umlautReplacements = "auo";
 
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             var str = toString(args.get("string")).compute(ctx);
             boolean noE = toBoolean(args.get("no_e")).compute(ctx);
 
@@ -785,7 +785,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer replaceDiacriticsImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             var str = toString(args.get("string")).compute(ctx);
             str = Normalizer.normalize(str, Normalizer.Form.NFKD);
             str = str.replaceAll("\\p{M}", "");
@@ -879,7 +879,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer titleCaseImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             String str = toString(args.get("string")).compute(ctx).toLowerCase(Locale.ROOT);
             var output = new StringBuilder(str.length());
 
@@ -943,7 +943,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer padEndImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
             int targetLength = (int)toInteger(args.get("length")).compute(ctx);
 
@@ -1003,7 +1003,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer padStartImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
 
             String str = toString(args.get("string")).compute(ctx);
             int targetLength = (int)toInteger(args.get("length")).compute(ctx);
@@ -1051,7 +1051,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer joinImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             String sep = toString(args.get("seperator")).compute(ctx);
 
             ArrayList<String> strings = new ArrayList<>();
@@ -1111,7 +1111,7 @@ public final class StringFunctions {
 
     private static Computer substrImpl(final Arguments<Computer> args) {
 
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
 
             var startingIndex = 1;
@@ -1175,7 +1175,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer firstCharsImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
             int numChars = (int)toInteger(args.get("n")).compute(ctx);
 
@@ -1219,7 +1219,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer lastCharsImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
             int numChars = (int)toInteger(args.get("n")).compute(ctx);
 
@@ -1263,7 +1263,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer removeCharsImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
 
             String str = toString(args.get("string")).compute(ctx);
             String toRemove = toString(args.get("chars")).compute(ctx);
@@ -1575,7 +1575,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer countImpl(final Arguments<Computer> args) {
-        ToLongFunction<EvaluationContext> value = ctx -> {
+        IntegerComputerResultSupplier value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
             String search = toString(args.get("search")).compute(ctx);
 
@@ -1647,7 +1647,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer countCharsImpl(final Arguments<Computer> args) {
-        ToLongFunction<EvaluationContext> value = ctx -> {
+        IntegerComputerResultSupplier value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
             String searchChars = toString(args.get("search")).compute(ctx);
 
@@ -1713,7 +1713,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer findImpl(final Arguments<Computer> args) {
-        ToLongFunction<EvaluationContext> indexSupplier = ctx -> {
+        IntegerComputerResultSupplier indexSupplier = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
             String search = toString(args.get("search")).compute(ctx);
 
@@ -1745,7 +1745,7 @@ public final class StringFunctions {
             }
         };
 
-        ToBooleanFunction<EvaluationContext> isMissing =
+        BooleanComputerResultSupplier isMissing =
             ctx -> anyMissing(args).applyAsBoolean(ctx) || indexSupplier.applyAsLong(ctx) == -1;
 
         return IntegerComputer.of( //
@@ -1798,7 +1798,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer findCharsImpl(final Arguments<Computer> args) {
-        ToLongFunction<EvaluationContext> value = ctx -> {
+        IntegerComputerResultSupplier value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
             String search = toString(args.get("chars")).compute(ctx);
 
@@ -1862,7 +1862,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer xmlEncodeImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> toString(args.get("string")) //
+        ComputerResultSupplier<String> value = ctx -> toString(args.get("string")) //
             .compute(ctx) //
             .replace("&", "&amp;") //
             .replace("<", "&lt;") //
@@ -1970,7 +1970,7 @@ public final class StringFunctions {
         .build();
 
     private static Computer toStringImpl(final Arguments<Computer> args) {
-        Function<EvaluationContext, String> value = ctx -> {
+        ComputerResultSupplier<String> value = ctx -> {
             var c = args.get("input");
 
             if (c.isMissing(ctx)) {
@@ -2163,7 +2163,8 @@ public final class StringFunctions {
      *  Looks up the 'modifier' argument in args and if its present
      *  and contains an "i" it returns true and false otherwise
      */
-    private static boolean computeIgnoreCase(final Arguments<Computer> args, final EvaluationContext ctx) {
+    private static boolean computeIgnoreCase(final Arguments<Computer> args, final EvaluationContext ctx)
+        throws ExpressionEvaluationException {
 
         return args.has("modifiers") && toString(args.get("modifiers")).compute(ctx).contains("i");
     }

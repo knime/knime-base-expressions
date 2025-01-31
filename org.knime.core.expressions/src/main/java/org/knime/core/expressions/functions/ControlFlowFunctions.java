@@ -66,6 +66,7 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.OperatorDescription;
 import org.knime.core.expressions.OperatorDescription.Argument;
@@ -205,7 +206,7 @@ public final class ControlFlowFunctions {
         }
 
         private static Computer computeMatchingBranchIf(final Arguments<Computer> arguments,
-            final EvaluationContext ctx) {
+            final EvaluationContext ctx) throws ExpressionEvaluationException {
             var args = arguments.getVariableArgument();
             for (int i = 0; i < args.size() - 1; i += 2) {
                 if (!args.get(i).isMissing(ctx) && ((BooleanComputer)args.get(i)).compute(ctx)) {
@@ -336,7 +337,7 @@ public final class ControlFlowFunctions {
         }
 
         private static Computer computeMatchingCaseSwitch(final Arguments<Computer> arguments,
-            final EvaluationContext ctx) {
+            final EvaluationContext ctx) throws ExpressionEvaluationException {
 
             Computer switchExpression = arguments.get(SWITCH_EXPRESSION);
             var cases = arguments.getVariableArgument();

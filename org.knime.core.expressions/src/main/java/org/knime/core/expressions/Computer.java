@@ -54,10 +54,6 @@ import static org.knime.core.expressions.ValueType.INTEGER;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.STRING;
 
-import java.util.function.Function;
-import java.util.function.ToDoubleFunction;
-import java.util.function.ToLongFunction;
-
 /**
  * A supplier of computation results for expressions.
  *
@@ -69,8 +65,76 @@ public interface Computer {
     /**
      * @param ctx a {@link EvaluationContext} to report warnings
      * @return <code>true</code> if the result is "MISSING"
+     * @throws ExpressionEvaluationException if the expression could not be evaluated
      */
-    boolean isMissing(EvaluationContext ctx);
+    boolean isMissing(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+    /**
+     * A supplier for the boolean result of an expression. Used to write down the implementation of
+     * {@link BooleanComputer#compute(EvaluationContext)} and {@link Computer#isMissing(EvaluationContext)} as a lambda
+     * function.
+     */
+    @FunctionalInterface
+    interface BooleanComputerResultSupplier {
+        /**
+         * Applies the computer with the given context.
+         *
+         * @param ctx the evaluation context
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        boolean applyAsBoolean(EvaluationContext ctx) throws ExpressionEvaluationException;
+    }
+
+    /**
+     * A supplier for the integer result of an expression. Used to write down the implementation of the method
+     * {@link IntegerComputer#compute(EvaluationContext)} as a lambda function.
+     */
+    @FunctionalInterface
+    interface IntegerComputerResultSupplier {
+        /**
+         * Applies the computer with the given context.
+         *
+         * @param ctx the evaluation context
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        long applyAsLong(EvaluationContext ctx) throws ExpressionEvaluationException;
+    }
+
+    /**
+     * A supplier for the float result of an expression. Used to write down the implementation of the method
+     * {@link FloatComputer#compute(EvaluationContext)} as a lambda function.
+     */
+    @FunctionalInterface
+    interface FloatComputerResultSupplier {
+        /**
+         * Applies the computer with the given context.
+         *
+         * @param ctx the evaluation context
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        double applyAsDouble(EvaluationContext ctx) throws ExpressionEvaluationException;
+    }
+
+    /**
+     * A supplier for the result of an expression. Used to write down the implementation of the method
+     * {@link StringComputer#compute(EvaluationContext)} as a lambda function.
+     *
+     * @param <O> the type of the result
+     */
+    @FunctionalInterface
+    interface ComputerResultSupplier<O> {
+        /**
+         * Applies the computer with the given context.
+         *
+         * @param ctx the evaluation context
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        O apply(EvaluationContext ctx) throws ExpressionEvaluationException;
+    }
 
     /** {@link Computer} for {@link ValueType#BOOLEAN} and {@link ValueType#OPT_BOOLEAN} */
     interface BooleanComputer extends Computer {
@@ -78,8 +142,9 @@ public interface Computer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        boolean compute(EvaluationContext ctx);
+        boolean compute(EvaluationContext ctx) throws ExpressionEvaluationException;
 
         /**
          * Helper method to create a {@link BooleanComputer}.
@@ -88,18 +153,18 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link BooleanComputer}
          */
-        static BooleanComputer of(final ToBooleanFunction<EvaluationContext> value,
-            final ToBooleanFunction<EvaluationContext> missing) {
+        static BooleanComputer of(final BooleanComputerResultSupplier value,
+            final BooleanComputerResultSupplier missing) {
 
             return new BooleanComputer() {
 
                 @Override
-                public boolean isMissing(final EvaluationContext ctx) {
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
-                public boolean compute(final EvaluationContext ctx) {
+                public boolean compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return value.applyAsBoolean(ctx);
                 }
             };
@@ -112,8 +177,9 @@ public interface Computer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        long compute(EvaluationContext ctx);
+        long compute(EvaluationContext ctx) throws ExpressionEvaluationException;
 
         /**
          * Helper method to create an {@link IntegerComputer}.
@@ -122,18 +188,18 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return an {@link IntegerComputer}
          */
-        static IntegerComputer of(final ToLongFunction<EvaluationContext> value,
-            final ToBooleanFunction<EvaluationContext> missing) {
+        static IntegerComputer of(final IntegerComputerResultSupplier value,
+            final BooleanComputerResultSupplier missing) {
 
             return new IntegerComputer() {
 
                 @Override
-                public boolean isMissing(final EvaluationContext ctx) {
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
-                public long compute(final EvaluationContext ctx) {
+                public long compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return value.applyAsLong(ctx);
                 }
             };
@@ -146,8 +212,9 @@ public interface Computer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        double compute(EvaluationContext ctx);
+        double compute(EvaluationContext ctx) throws ExpressionEvaluationException;
 
         /**
          * Helper method to create a {@link FloatComputer}.
@@ -156,18 +223,17 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link FloatComputer}
          */
-        static FloatComputer of(final ToDoubleFunction<EvaluationContext> value,
-            final ToBooleanFunction<EvaluationContext> missing) {
+        static FloatComputer of(final FloatComputerResultSupplier value, final BooleanComputerResultSupplier missing) {
 
             return new FloatComputer() {
 
                 @Override
-                public boolean isMissing(final EvaluationContext ctx) {
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
-                public double compute(final EvaluationContext ctx) {
+                public double compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return value.applyAsDouble(ctx);
                 }
             };
@@ -180,8 +246,9 @@ public interface Computer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        String compute(EvaluationContext ctx);
+        String compute(EvaluationContext ctx) throws ExpressionEvaluationException;
 
         /**
          * Helper method to create a {@link StringComputer}.
@@ -190,18 +257,18 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link StringComputer}
          */
-        static StringComputer of(final Function<EvaluationContext, String> value,
-            final ToBooleanFunction<EvaluationContext> missing) {
+        static StringComputer of(final ComputerResultSupplier<String> value,
+            final BooleanComputerResultSupplier missing) {
 
             return new StringComputer() {
 
                 @Override
-                public boolean isMissing(final EvaluationContext ctx) {
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
-                public String compute(final EvaluationContext ctx) {
+                public String compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return value.apply(ctx);
                 }
             };
@@ -236,10 +303,10 @@ public interface Computer {
      * @param returnType the intended return type of the computer; will be cast to the baseType if necessary
      * @return a {@link Computer} of the {@link ValueType} of return type
      */
-    static Computer createTypedResultComputer(final Function<EvaluationContext, Computer> computerSupplier,
+    static Computer createTypedResultComputer(final ComputerResultSupplier<Computer> computerSupplier,
         final ValueType returnType) {
 
-        ToBooleanFunction<EvaluationContext> isMissing = ctx -> computerSupplier.apply(ctx).isMissing(ctx);
+        BooleanComputerResultSupplier isMissing = ctx -> computerSupplier.apply(ctx).isMissing(ctx);
 
         if (returnType.baseType() == BOOLEAN) {
             return BooleanComputer.of(ctx -> ((BooleanComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR  - method reference is not possible due to delayed computation

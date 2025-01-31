@@ -70,20 +70,22 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.fun
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.IntBinaryOperator;
-import java.util.function.ToDoubleFunction;
-import java.util.function.ToLongFunction;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
+import org.knime.core.expressions.Computer.FloatComputerResultSupplier;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.IntegerComputerResultSupplier;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.ValueType;
 
@@ -177,14 +179,15 @@ public final class MathFunctions {
         boolean allArgsAreIntegers = args.allMatch(IntegerComputer.class::isInstance);
 
         if (allArgsAreIntegers) {
+            var intArgs = args.map(c -> toInteger(c));
             return IntegerComputer.of( //
-                ctx -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(ctx)).max().getAsLong(), //
+                ctx -> argsToLongStream(intArgs, ctx).max().getAsLong(), //
                 anyMissing(args) //
             );
         } else {
             var floatArgs = args.map(c -> toFloat(c));
             return FloatComputer.of( //
-                ctx -> floatArgs.stream().mapToDouble(c -> c.compute(ctx)).max().getAsDouble(), //
+                ctx -> argsToDoubleStream(floatArgs, ctx).max().getAsDouble(), //
                 anyMissing(args) //
             );
         }
@@ -226,14 +229,15 @@ public final class MathFunctions {
         boolean allArgsAreIntegers = args.allMatch(IntegerComputer.class::isInstance);
 
         if (allArgsAreIntegers) {
+            var intArgs = args.map(MathFunctions::toInteger);
             return IntegerComputer.of( //
-                ctx -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(ctx)).min().getAsLong(), //
+                ctx -> argsToLongStream(intArgs, ctx).min().getAsLong(), //
                 anyMissing(args) //
             );
         } else {
-            var floatArgs = args.map(c -> toFloat(c));
+            var floatArgs = args.map(Computer::toFloat);
             return FloatComputer.of( //
-                ctx -> floatArgs.stream().mapToDouble(c -> c.compute(ctx)).min().getAsDouble(), //
+                ctx -> argsToDoubleStream(floatArgs, ctx).min().getAsDouble(), //
                 anyMissing(args) //
             );
         }
@@ -274,7 +278,7 @@ public final class MathFunctions {
     private static Computer argmaxImpl(final Arguments<Computer> args) {
         boolean allArgsAreIntegers = args.allMatch(IntegerComputer.class::isInstance);
 
-        ToLongFunction<EvaluationContext> supplier;
+        IntegerComputerResultSupplier supplier;
 
         if (allArgsAreIntegers) {
             supplier = ctx -> {
@@ -339,7 +343,7 @@ public final class MathFunctions {
     private static Computer argminImpl(final Arguments<Computer> args) {
         boolean allArgsAreIntegers = args.allMatch(IntegerComputer.class::isInstance);
 
-        ToLongFunction<EvaluationContext> supplier;
+        IntegerComputerResultSupplier supplier;
 
         if (allArgsAreIntegers) {
             supplier = ctx -> {
@@ -748,7 +752,7 @@ public final class MathFunctions {
     private static Computer asinhImpl(final Arguments<Computer> args) {
         var c = toFloat(args.get("x"));
 
-        ToDoubleFunction<EvaluationContext> value = ctx -> {
+        FloatComputerResultSupplier value = ctx -> {
             var cC = c.compute(ctx);
 
             return Math.log(cC + Math.sqrt(cC * cC + 1));
@@ -785,7 +789,7 @@ public final class MathFunctions {
     private static Computer acoshImpl(final Arguments<Computer> args) {
         var c = toFloat(args.get("x"));
 
-        ToDoubleFunction<EvaluationContext> value = ctx -> {
+        FloatComputerResultSupplier value = ctx -> {
             var cC = c.compute(ctx);
 
             if (cC < 1) {
@@ -827,7 +831,7 @@ public final class MathFunctions {
     private static Computer atanhImpl(final Arguments<Computer> args) {
         var c = toFloat(args.get("x"));
 
-        ToDoubleFunction<EvaluationContext> value = ctx -> {
+        FloatComputerResultSupplier value = ctx -> {
             var cC = c.compute(ctx);
 
             if (isNear(Math.abs(cC), 1)) {
@@ -1015,7 +1019,7 @@ public final class MathFunctions {
         var c = toFloat(args.get("x"));
         var b = toFloat(args.get("base"));
 
-        ToDoubleFunction<EvaluationContext> value = ctx -> {
+        FloatComputerResultSupplier value = ctx -> {
             var base = b.compute(ctx);
             var number = c.compute(ctx);
 
@@ -1731,9 +1735,8 @@ public final class MathFunctions {
         .build();
 
     private static Computer averageImpl(final Arguments<Computer> args) {
-        ToDoubleFunction<EvaluationContext> value = ctx -> args.stream() //
-            .map(c -> toFloat(c).compute(ctx)) //
-            .mapToDouble(Double::valueOf) //
+        var floatArgs = args.map(Computer::toFloat);
+        FloatComputerResultSupplier value = ctx -> argsToDoubleStream(floatArgs, ctx) //
             .average() //
             .getAsDouble();
 
@@ -1773,12 +1776,12 @@ public final class MathFunctions {
         .build();
 
     private static Computer medianImpl(final Arguments<Computer> args) {
-        ToDoubleFunction<EvaluationContext> value = ctx -> {
+        var floatArgs = args.map(Computer::toFloat);
+        FloatComputerResultSupplier value = ctx -> {
             // Because we use ::compute we need to do this inside the DoubleSupplier
-            var sortedFloatArgs = args.stream() //
-                .map(c -> toFloat(c).compute(ctx)) //
+            var sortedFloatArgs = argsToDoubleStream(floatArgs, ctx) //
                 .sorted() //
-                .toArray(Double[]::new); //
+                .toArray();
 
             if (Double.isNaN(sortedFloatArgs[sortedFloatArgs.length - 1])) {
                 // This can only run if we have an array with at least one NaN value and
@@ -1833,27 +1836,28 @@ public final class MathFunctions {
         boolean allArgsAreIntegers = args.allMatch(IntegerComputer.class::isInstance);
 
         if (allArgsAreIntegers) {
+            var intArgs = args.map(MathFunctions::toInteger);
             return IntegerComputer.of( //
-                ctx -> args.stream().mapToLong(c -> ((IntegerComputer)c).compute(ctx)).sum(), //
+                ctx -> argsToLongStream(intArgs, ctx).sum(), //
                 anyMissing(args) //
             );
         } else {
-            var floatArgs = args.stream().map(c -> toFloat(c)).toArray(FloatComputer[]::new);
+            var floatArgs = args.map(Computer::toFloat);
             return FloatComputer.of( //
-                ctx -> Arrays.stream(floatArgs).mapToDouble(c -> c.compute(ctx)).sum(), //
+                ctx -> argsToDoubleStream(floatArgs, ctx).sum(), //
                 anyMissing(args) //
             );
         }
     }
 
-    private static double variance(final Collection<Double> values) {
+    private static double variance(final double[] values) {
         double sum = 0;
         double sumSq = 0;
         for (double value : values) {
             sum += value;
             sumSq += value * value;
         }
-        return (sumSq - sum * sum / values.size()) / values.size();
+        return (sumSq - sum * sum / values.length) / values.length;
     }
 
     /** The variance of multiple numbers */
@@ -1882,15 +1886,11 @@ public final class MathFunctions {
         .build();
 
     private static Computer varianceImpl(final Arguments<Computer> args) {
-        ToDoubleFunction<EvaluationContext> value = ctx -> {
-            var floatArgs = args.stream() //
-                .map(c -> toFloat(c).compute(ctx)) //
-                .toArray(Double[]::new); //
-
-            return variance(Arrays.asList(floatArgs));
-        };
-
-        return FloatComputer.of(value, anyMissing(args));
+        var floatArgs = args.map(Computer::toFloat);
+        return FloatComputer.of( //
+            ctx -> variance(argsToDoubles(floatArgs, ctx)), //
+            anyMissing(args) //
+        );
     }
 
     /** The standard deviation of multiple numbers */
@@ -1919,15 +1919,11 @@ public final class MathFunctions {
         .build();
 
     private static Computer stddevImpl(final Arguments<Computer> args) {
-        ToDoubleFunction<EvaluationContext> value = ctx -> {
-            var floatArgs = args.stream() //
-                .map(c -> toFloat(c).compute(ctx)) //
-                .toArray(Double[]::new); //
-
-            return Math.sqrt(variance(Arrays.asList(floatArgs)));
-        };
-
-        return FloatComputer.of(value, anyMissing(args));
+        var floatArgs = args.map(Computer::toFloat);
+        return FloatComputer.of( //
+            ctx -> Math.sqrt(variance(argsToDoubles(floatArgs, ctx))), //
+            anyMissing(args) //
+        );
     }
 
     /** Binomial coefficient nCr of two numbers */
@@ -1968,7 +1964,7 @@ public final class MathFunctions {
         .build();
 
     private static Computer binomialImpl(final Arguments<Computer> args) {
-        ToLongFunction<EvaluationContext> value = ctx -> {
+        IntegerComputerResultSupplier value = ctx -> {
             long n = toInteger(args.get("n")).compute(ctx);
             long r = toInteger(args.get("r")).compute(ctx);
 
@@ -2247,6 +2243,38 @@ public final class MathFunctions {
 
     private enum ExtremumType {
             MAXIMUM, MINIMUM
+    }
+
+    private static long[] argsToLongs(final Arguments<IntegerComputer> args, final EvaluationContext ctx)
+        throws ExpressionEvaluationException {
+        var numArgs = args.getNumberOfArguments();
+        var argsList = args.toList();
+        var values = new long[numArgs];
+        for (int i = 0; i < numArgs; i++) {
+            values[i] = argsList.get(i).compute(ctx);
+        }
+        return values;
+    }
+
+    private static LongStream argsToLongStream(final Arguments<IntegerComputer> args, final EvaluationContext ctx)
+        throws ExpressionEvaluationException {
+        return Arrays.stream(argsToLongs(args, ctx));
+    }
+
+    private static double[] argsToDoubles(final Arguments<FloatComputer> args, final EvaluationContext ctx)
+        throws ExpressionEvaluationException {
+        var numArgs = args.getNumberOfArguments();
+        var argsList = args.toList();
+        var values = new double[numArgs];
+        for (int i = 0; i < numArgs; i++) {
+            values[i] = argsList.get(i).compute(ctx);
+        }
+        return values;
+    }
+
+    private static DoubleStream argsToDoubleStream(final Arguments<FloatComputer> args, final EvaluationContext ctx)
+        throws ExpressionEvaluationException {
+        return Arrays.stream(argsToDoubles(args, ctx));
     }
 
     /**

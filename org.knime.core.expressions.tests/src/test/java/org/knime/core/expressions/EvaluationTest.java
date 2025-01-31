@@ -83,8 +83,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.ToDoubleFunction;
-import java.util.function.ToLongFunction;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Assertions;
@@ -95,6 +93,10 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.ComputerResultSupplier;
+import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
+import org.knime.core.expressions.Computer.FloatComputerResultSupplier;
+import org.knime.core.expressions.Computer.IntegerComputerResultSupplier;
 import org.knime.core.expressions.SignatureUtils.Arg;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
@@ -409,19 +411,19 @@ final class EvaluationTest {
     private static final Function<String, Optional<TestFlowVariable>> FIND_TEST_FLOW_VARIABLE =
         TestUtils.enumFinderAsFunction(TestFlowVariable.values());
 
-    private static final ToBooleanFunction<EvaluationContext> THROWING_BOOL_SUPPLIER = ctx -> {
+    private static final BooleanComputerResultSupplier THROWING_BOOL_SUPPLIER = ctx -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final ToLongFunction<EvaluationContext> THROWING_LONG_SUPPLIER = ctx -> {
+    private static final IntegerComputerResultSupplier THROWING_LONG_SUPPLIER = ctx -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final ToDoubleFunction<EvaluationContext> THROWING_DOUBLE_SUPPLIER = ctx -> {
+    private static final FloatComputerResultSupplier THROWING_DOUBLE_SUPPLIER = ctx -> {
         throw new AssertionError("should not call compute on missing values");
     };
 
-    private static final Function<EvaluationContext, String> THROWING_STRING_SUPPLIER = ctx -> {
+    private static final ComputerResultSupplier<String> THROWING_STRING_SUPPLIER = ctx -> {
         throw new AssertionError("should not call compute on missing values");
     };
 

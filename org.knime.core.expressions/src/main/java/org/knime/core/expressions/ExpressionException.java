@@ -53,7 +53,8 @@ package org.knime.core.expressions;
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public abstract sealed class ExpressionException extends Exception permits ExpressionCompileException {
+public abstract sealed class ExpressionException extends Exception
+    permits ExpressionCompileException, ExpressionEvaluationException {
 
     private static final long serialVersionUID = 1L;
 
