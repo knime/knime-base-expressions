@@ -53,7 +53,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.knime.core.expressions.ExpressionCompileError;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
+import org.knime.core.expressions.ExpressionCompileException;
 import org.knime.core.expressions.TextRange;
 
 /**
