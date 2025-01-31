@@ -203,7 +203,7 @@ final class Evaluation {
         @Override
         public Computer visit(final FunctionCall node) throws ExpressionCompileException {
             var argComputers = node.args().map(arg -> arg.accept(this));
-            return node.function().apply(argComputers);
+            return node.function().apply(argComputers, new AstContext(Parser.getTextLocation(node)));
         }
 
         @Override
