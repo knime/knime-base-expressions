@@ -86,7 +86,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.knime.core.expressions.Ast.UnaryOperator;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 import org.knime.core.expressions.functions.MathFunctions;
 import org.knime.core.expressions.functions.StringFunctions;

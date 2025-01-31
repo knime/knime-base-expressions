@@ -89,7 +89,6 @@ import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Ast.FloatConstant;
 import org.knime.core.expressions.Ast.IntegerConstant;
 import org.knime.core.expressions.Ast.UnaryOperator;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.antlr.KnimeExpressionBaseVisitor;

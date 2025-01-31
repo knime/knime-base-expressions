@@ -98,7 +98,6 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.SignatureUtils.Arg;
 import org.knime.core.expressions.functions.ExpressionFunction;
 

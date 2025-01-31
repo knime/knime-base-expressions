@@ -78,7 +78,6 @@ import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
 
 /**
  * Implementation of expression evaluation based on {@link Computer}.

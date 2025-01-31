@@ -60,8 +60,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.ExpressionCompileException;
 import org.knime.core.expressions.Expressions;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 

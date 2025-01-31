@@ -44,57 +44,44 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Feb 15, 2024 (benjamin): created
+ *   Jan 31, 2025 (benjamin): created
  */
 package org.knime.core.expressions;
 
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.function.Function;
-
-import org.knime.core.expressions.Ast.ColumnAccess;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Utilities for mapping column names to column indices in an Expression {@link Ast}.
+ * Exception thrown when parsing or typing expressions.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-final class ColumnIdxResolve {
+public final class ExpressionCompileException extends ExpressionException {
 
-    private static final String COLUMN_IDX_DATA_KEY = "colIdx";
+    private static final long serialVersionUID = 1L;
 
-    private ColumnIdxResolve() {
+    private final List<ExpressionCompileError> m_errors;
+
+    ExpressionCompileException(final ExpressionCompileError error) {
+        this(List.of(error));
     }
 
-    /**
-     * Resolve column indices for the given Expression {@link Ast}. Adds the field "colIdx" to all
-     * {@link Ast.ColumnAccess} nodes.
-     *
-     * @param columnNameToIdx map a column name to the index. Should return {@link OptionalInt#empty()} for column names
-     *            that do not exist in the table.
-     */
-    static void resolveColumnAccessIndices(final Ast root,
-        final Function<Ast.ColumnAccess, OptionalInt> columnNameToIdx) throws ExpressionCompileException {
-
-        Ast.putDataRecursive(root, COLUMN_IDX_DATA_KEY, new ColumnIdxVisitor(columnNameToIdx));
+    ExpressionCompileException(final List<ExpressionCompileError> errors) {
+        super(constructMessage(errors));
+        m_errors = errors;
     }
 
-    static int getColumnIdx(final ColumnAccess node) {
-        return (Integer)node.data(COLUMN_IDX_DATA_KEY);
+    /** @return the list of compile errors */
+    public List<ExpressionCompileError> getErrors() {
+        return m_errors;
     }
 
-    private static final class ColumnIdxVisitor extends Ast.OptionalAstVisitor<Integer, ExpressionCompileException> {
-
-        private final Function<Ast.ColumnAccess, OptionalInt> m_colIdx;
-
-        public ColumnIdxVisitor(final Function<Ast.ColumnAccess, OptionalInt> colIdx) {
-            m_colIdx = colIdx;
-        }
-
-        @Override
-        public Optional<Integer> visit(final ColumnAccess node) throws ExpressionCompileException {
-            return Optional.of(m_colIdx.apply(node)
-                .orElseThrow(() -> new ExpressionCompileException(ExpressionCompileError.missingColumnError(node))));
+    private static String constructMessage(final List<ExpressionCompileError> errors) {
+        if (errors.size() == 1) {
+            return errors.get(0).createLongMessage();
+        } else {
+            return "Multiple errors: "
+                + errors.stream().map(ExpressionCompileError::createLongMessage).collect(Collectors.joining("; "));
         }
     }
 }

@@ -71,7 +71,6 @@ import org.knime.core.expressions.Ast.MissingConstant;
 import org.knime.core.expressions.Ast.StringConstant;
 import org.knime.core.expressions.Ast.UnaryOp;
 import org.knime.core.expressions.Ast.UnaryOperator;
-import org.knime.core.expressions.Expressions.ExpressionCompileException;
 
 /**
  * Algorithm to infer types of an {@link Ast}.
@@ -346,8 +345,7 @@ final class Typing {
 
         static ErrorValueType functionNotApplicable(final String message, final FunctionCall node) {
             return new ErrorValueType(List.of(ExpressionCompileError.typingError(
-                "In function '" + node.function().name() + "': " + message,
-                Parser.getTextLocation(node))));
+                "In function '" + node.function().name() + "': " + message, Parser.getTextLocation(node))));
         }
 
         static ErrorValueType aggregationNotApplicable(final String message, final AggregationCall node) {

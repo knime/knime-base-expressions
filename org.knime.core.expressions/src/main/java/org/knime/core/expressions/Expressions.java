@@ -56,7 +56,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Ast.ColumnAccess;
@@ -228,48 +227,5 @@ public final class Expressions {
      */
     public static TextRange getTextLocation(final Ast node) {
         return Parser.getTextLocation(node);
-    }
-
-    // EXCEPTIONS
-
-    /** Base class for exceptions that happen when working with expressions. */
-    public abstract static sealed class ExpressionException extends Exception {
-
-        private static final long serialVersionUID = 1L;
-
-        ExpressionException(final String message) {
-            super(message);
-        }
-    }
-
-    /** Exception thrown when parsing or typing expressions. */
-    public static final class ExpressionCompileException extends ExpressionException {
-
-        private static final long serialVersionUID = 1L;
-
-        private final List<ExpressionCompileError> m_errors;
-
-        ExpressionCompileException(final ExpressionCompileError error) {
-            this(List.of(error));
-        }
-
-        ExpressionCompileException(final List<ExpressionCompileError> errors) {
-            super(constructMessage(errors));
-            m_errors = errors;
-        }
-
-        /** @return the list of compile errors */
-        public List<ExpressionCompileError> getErrors() {
-            return m_errors;
-        }
-
-        private static String constructMessage(final List<ExpressionCompileError> errors) {
-            if (errors.size() == 1) {
-                return errors.get(0).createLongMessage();
-            } else {
-                return "Multiple errors: "
-                    + errors.stream().map(ExpressionCompileError::createLongMessage).collect(Collectors.joining("; "));
-            }
-        }
     }
 }
