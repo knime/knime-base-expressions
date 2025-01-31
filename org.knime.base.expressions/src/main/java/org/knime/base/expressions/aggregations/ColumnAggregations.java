@@ -52,8 +52,7 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.v2.RowRead;
 import org.knime.core.expressions.Ast.AggregationCall;
 import org.knime.core.expressions.Computer;
-import org.knime.core.expressions.EvaluationContext;
-import org.knime.core.expressions.ToBooleanFunction;
+import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 
 /**
@@ -115,7 +114,7 @@ public final class ColumnAggregations {
      * @param warning the warning text
      * @return a function that always returns {@code true}
      */
-    public static ToBooleanFunction<EvaluationContext> missingWithWarning(final String warning) {
+    public static BooleanComputerResultSupplier missingWithWarning(final String warning) {
         return ctx -> {
             ctx.addWarning(warning);
             return true;
