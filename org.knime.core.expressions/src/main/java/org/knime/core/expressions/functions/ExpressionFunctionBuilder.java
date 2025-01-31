@@ -50,11 +50,13 @@ package org.knime.core.expressions.functions;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import org.knime.core.expressions.Arguments;
+import org.knime.core.expressions.AstContext;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
 import org.knime.core.expressions.OperatorCategory;
@@ -186,13 +188,17 @@ public final class ExpressionFunctionBuilder {
          * @param impl the implementation of the function ({@link ExpressionFunction#apply(Arguments)}
          * @return the next stage of the builder
          */
-        FinalStage impl(Function<Arguments<Computer>, Computer> impl);
+        default FinalStage impl(final Function<Arguments<Computer>, Computer> impl) {
+            return implWithContext((args, ctx) -> impl.apply(args));
+        }
+
+        FinalStage implWithContext(BiFunction<Arguments<Computer>, AstContext, Computer> impl);
     }
 
     record FinalStage( // NOSONAR - equals and hashCode are not important for this record
         String name, String description, String examples, String[] keywords, OperatorCategory category, Arg[] args,
         String returnDesc, String returnType, Function<Arguments<ValueType>, ValueType> returnTypeMapping,
-        Function<Arguments<Computer>, Computer> impl) {
+        BiFunction<Arguments<Computer>, AstContext, Computer> impl) {
 
         public ExpressionFunction build() {
             // Check that the name is snake_case
@@ -229,11 +235,11 @@ public final class ExpressionFunctionBuilder {
 
         private final Function<Arguments<ValueType>, ReturnResult<ValueType>> m_typeMapping;
 
-        private final Function<Arguments<Computer>, Computer> m_impl;
+        private final BiFunction<Arguments<Computer>, AstContext, Computer> m_impl;
 
         FunctionImpl(final String name, final OperatorDescription description, final List<Arg> signature,
             final Function<Arguments<ValueType>, ReturnResult<ValueType>> typeMapping,
-            final Function<Arguments<Computer>, Computer> impl) {
+            final BiFunction<Arguments<Computer>, AstContext, Computer> impl) {
             m_name = name;
             m_description = description;
             m_signature = signature;
@@ -263,8 +269,8 @@ public final class ExpressionFunctionBuilder {
         }
 
         @Override
-        public Computer apply(final Arguments<Computer> args) {
-            return m_impl.apply(args);
+        public Computer apply(final Arguments<Computer> args, final AstContext context) {
+            return m_impl.apply(args, context);
         }
     }
 }
