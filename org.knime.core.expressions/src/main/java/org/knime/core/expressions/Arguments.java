@@ -56,7 +56,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -163,21 +162,35 @@ public class Arguments<T> {
     /**
      * Check if any argument matches the predicate.
      *
+     * @param <E> the type of the exception if the predicate throws an exception
      * @param predicate the predicate to test
      * @return true if any argument matches, false otherwise
+     * @throws E if the predicate throws an exception while testing the arguments
      */
-    public boolean anyMatch(final Predicate<? super T> predicate) {
-        return this.stream().anyMatch(predicate);
+    public <E extends Exception> boolean anyMatch(final PredicateWithException<? super T, E> predicate) throws E {
+        for (T t : toList()) {
+            if (predicate.test(t)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
      * Check if all arguments match the predicate
      *
-     * @param predicate
+     * @param <E> the type of the exception if the predicate throws an exception
+     * @param predicate the predicate to test
      * @return true if all arguments match the predicate, false otherwise
+     * @throws E if the predicate throws an exception while testing the arguments
      */
-    public boolean allMatch(final Predicate<? super T> predicate) {
-        return this.stream().allMatch(predicate);
+    public <E extends Exception> boolean allMatch(final PredicateWithException<? super T, E> predicate) throws E {
+        for (T t : toList()) {
+            if (!predicate.test(t)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -202,21 +215,6 @@ public class Arguments<T> {
         return new Arguments<>(mappedNamedArguments, mappedVarArgument);
     }
 
-    /**
-     * @param <T> the type of the parameter
-     * @param <O> the type of the mapped parameter
-     * @param <E> the type of the exception
-     */
-    @FunctionalInterface
-    public interface FunctionWithException<T, O, E extends Exception> {
-        /**
-         * @param t the input argument
-         * @return the result of the function
-         * @throws E
-         */
-        O apply(T t) throws E;
-    }
-
     @Override
     public String toString() {
         return "Arguments[named=" + m_namedArguments + ", var=" + m_varArgument + "]";
@@ -233,5 +231,38 @@ public class Arguments<T> {
     @Override
     public int hashCode() {
         return Objects.hash(m_namedArguments, m_varArgument);
+    }
+
+    /**
+     * A function that can throw an exception.
+     *
+     * @param <T> the type of the parameter
+     * @param <O> the type of the mapped parameter
+     * @param <E> the type of the exception
+     */
+    @FunctionalInterface
+    public interface FunctionWithException<T, O, E extends Exception> {
+        /**
+         * @param t the input argument
+         * @return the result of the function
+         * @throws E
+         */
+        O apply(T t) throws E;
+    }
+
+    /**
+     * A predicate that can throw an exception.
+     *
+     * @param <T> the type of the parameter
+     * @param <E> the type of the exception
+     */
+    @FunctionalInterface
+    public interface PredicateWithException<T, E extends Exception> {
+        /**
+         * @param t the input argument
+         * @return {@code true} if the input argument matches the predicate,
+         * @throws E
+         */
+        boolean test(T t) throws E;
     }
 }

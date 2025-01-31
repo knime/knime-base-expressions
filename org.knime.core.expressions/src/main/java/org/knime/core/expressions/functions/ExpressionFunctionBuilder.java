@@ -118,7 +118,7 @@ public final class ExpressionFunctionBuilder {
      * @return <code>true</code> if the {@link ValueType#baseType()} of all arguments match the predicate
      */
     public static boolean allBaseTypesMatch(final Predicate<ValueType> matcher, final Arguments<ValueType> types) {
-        return types.map(ValueType::baseType).allMatch(matcher);
+        return types.map(ValueType::baseType).allMatch(matcher::test);
     }
 
     // ====================== BUILDER ===========================
