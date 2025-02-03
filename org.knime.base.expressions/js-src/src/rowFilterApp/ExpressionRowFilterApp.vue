@@ -95,12 +95,9 @@ onMounted(async () => {
     (warning: ExpressionDiagnostic) => {
       if (warning) {
         errorState.value = {
-          level: "WARNING",
+          level: warning.severity,
           message: warning.message,
         };
-        consoleHandler.writeln({
-          warning: warning.message,
-        });
       }
     },
   );
