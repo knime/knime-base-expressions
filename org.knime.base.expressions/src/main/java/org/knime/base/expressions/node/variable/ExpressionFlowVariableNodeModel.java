@@ -61,6 +61,7 @@ import java.util.function.IntConsumer;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.InsertionMode;
+import org.knime.base.expressions.node.WithIndexExpressionException;
 import org.knime.base.expressions.node.variable.ExpressionFlowVariableSettings.FlowVariableTypeNames;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Computer;
@@ -70,6 +71,7 @@ import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileException;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
@@ -77,11 +79,9 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.KNIMEException;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.message.Message;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.port.PortType;
@@ -219,8 +219,8 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                 ), //
                 (i, warningMessage) -> messageBuilder.addTextIssue("Expression " + (i + 1) + ": " + warningMessage) //
             );
-        } catch (ExpressionResultOutOfRangeException e) {
-            throw KNIMEException.of(Message.fromSummaryWithResolution(e.getMessage(), e.getResolution()), e);
+        } catch (WithIndexExpressionException e) {
+            throw e.toKNIMEException();
         }
 
         // Push flow variables in reverse, so they appear on the stack
@@ -256,8 +256,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
      *            of the expression and the warning message
      * @return a list of output variables
      * @throws ExpressionCompileException if an expression cannot be compiled
-     * @throws ExpressionResultOutOfRangeException if the result of an expression is outside the range of integer
-     *             numbers
+     * @throws WithIndexExpressionException
      */
     static List<FlowVariable> applyFlowVariableExpressions( //
         final List<String> expressions, //
@@ -266,7 +265,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         final Map<String, FlowVariable> existingVariables, //
         final IntConsumer updateProgress, //
         final BiConsumer<Integer, String> setWarning //
-    ) throws ExpressionCompileException, ExpressionResultOutOfRangeException {
+    ) throws ExpressionCompileException, WithIndexExpressionException {
         var availableFlowVariables = new HashMap<String, FlowVariable>(existingVariables);
         var outputVariables = new ArrayList<FlowVariable>();
 
@@ -309,61 +308,38 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
 
     private static FlowVariable createFlowVariableFromComputer(final int index, final String name,
         final Computer computer, final FlowVariableTypeNames returnType, final EvaluationContext ctx)
-        throws ExpressionResultOutOfRangeException {
+        throws WithIndexExpressionException {
 
-        if (computer instanceof IntegerComputer c) {
-            return createFlowVariableFromIntegerComputer(index, name, returnType, ctx, c);
-        } else if (computer instanceof StringComputer c) {
-            return new FlowVariable(name, StringType.INSTANCE, c.compute(ctx));
-        } else if (computer instanceof FloatComputer c) {
-            return new FlowVariable(name, DoubleType.INSTANCE, c.compute(ctx));
-        } else if (computer instanceof BooleanComputer c) {
-            return new FlowVariable(name, BooleanType.INSTANCE, c.compute(ctx));
-        } else {
-            throw new IllegalStateException("Unexpected computer type: " + computer);
+        try {
+            if (computer instanceof IntegerComputer c) {
+                return createFlowVariableFromIntegerComputer(index, name, returnType, ctx, c);
+            } else if (computer instanceof StringComputer c) {
+                return new FlowVariable(name, StringType.INSTANCE, c.compute(ctx));
+            } else if (computer instanceof FloatComputer c) {
+                return new FlowVariable(name, DoubleType.INSTANCE, c.compute(ctx));
+            } else if (computer instanceof BooleanComputer c) {
+                return new FlowVariable(name, BooleanType.INSTANCE, c.compute(ctx));
+            } else {
+                throw new IllegalStateException("Unexpected computer type: " + computer);
+            }
+        } catch (ExpressionEvaluationException e) {
+            throw WithIndexExpressionException.forEvaluationException(index, e);
         }
     }
 
     private static FlowVariable createFlowVariableFromIntegerComputer(final int index, final String name,
         final FlowVariableTypeNames returnType, final EvaluationContext ctx, final IntegerComputer c)
-        throws ExpressionResultOutOfRangeException {
+        throws ExpressionEvaluationException, WithIndexExpressionException {
         var computedValue = c.compute(ctx);
 
         if (returnType == FlowVariableTypeNames.INTEGER) {
             if (computedValue < Integer.MIN_VALUE || computedValue > Integer.MAX_VALUE) {
-                throw new ExpressionResultOutOfRangeException(computedValue, index);
+                throw WithIndexExpressionException.forResultOutOfRange(computedValue, index);
             }
 
             return new FlowVariable(name, IntType.INSTANCE, (int)computedValue);
         } else {
             return new FlowVariable(name, LongType.INSTANCE, computedValue);
-        }
-    }
-
-    static class ExpressionResultOutOfRangeException extends Exception {
-        private static final long serialVersionUID = 1L;
-
-        private final long m_value;
-
-        private final int m_expressionIndex;
-
-        ExpressionResultOutOfRangeException(final long value, final int expressionIndex) {
-            super("The result " + value + " of expression " + (expressionIndex + 1)
-                + " is outside the range of integer numbers.");
-            m_value = value;
-            m_expressionIndex = expressionIndex;
-        }
-
-        long getValue() {
-            return m_value;
-        }
-
-        int getExpressionIndex() {
-            return m_expressionIndex;
-        }
-
-        String getResolution() {
-            return "Use the output type Long.";
         }
     }
 

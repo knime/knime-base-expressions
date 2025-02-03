@@ -62,7 +62,7 @@ import org.knime.base.expressions.node.ExpressionCodeAssistant;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.ExpressionDiagnosticResult;
-import org.knime.base.expressions.node.variable.ExpressionFlowVariableNodeModel.ExpressionResultOutOfRangeException;
+import org.knime.base.expressions.node.WithIndexExpressionException;
 import org.knime.base.expressions.node.variable.ExpressionFlowVariableSettings.FlowVariableTypeNames;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.ExpressionCompileException;
@@ -284,12 +284,11 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                 m_outputFlowVariablesReference.set(resultVariables);
                 sendEvent("updatePreview", null);
 
-            } catch (ExpressionResultOutOfRangeException e) { // NOSONAR - we send the message to the frontend
-                warnings[e.getExpressionIndex()] = ExpressionDiagnostic.withSameMessage(
-                    "Result " + e.getValue() + " is outside of the range of integer numbers. " + e.getResolution(),
-                    DiagnosticSeverity.ERROR, null);
-                sendEvent("updatePreview",
-                    "Preview cannot be shown, because Expression " + (e.getExpressionIndex() + 1) + " is invalid.");
+            } catch (WithIndexExpressionException e) { // NOSONAR - we send the message to the frontend
+                warnings[e.getExpressionIndex()] =
+                    ExpressionDiagnostic.withSameMessage(e.getUIMessage(), DiagnosticSeverity.ERROR, null);
+                sendEvent("updatePreview", "Preview cannot be shown, because Expression " + (e.getExpressionIndex() + 1)
+                    + " could not be evaluated.");
             }
 
             sendEvent("updateWarnings", warnings);

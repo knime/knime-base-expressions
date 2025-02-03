@@ -63,6 +63,7 @@ import org.knime.base.expressions.node.ExpressionCodeAssistant;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.ExpressionDiagnosticResult;
+import org.knime.base.expressions.node.WithIndexExpressionException;
 import org.knime.base.expressions.node.row.InputTableCache;
 import org.knime.base.expressions.node.row.OutputTablePreview;
 import org.knime.core.data.DataTableSpec;
@@ -306,6 +307,9 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
                 sendEvent("updateWarnings", warnings);
 
+            } catch (WithIndexExpressionException e) {
+                // TODO(AP-23937) - update the frontend to show the error
+                throw new IllegalStateException(e.getMessage(), e);
             } catch (CanceledExecutionException e) {
                 throw new IllegalStateException("This is an implementation error. Must not happen "
                     + "because canceling the execution should not be possible.", e);

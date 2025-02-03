@@ -63,6 +63,7 @@ import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.ExpressionCompileException;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
@@ -75,6 +76,7 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.table.virtual.expression.Exec.ExpressionEvaluationRuntimeException;
 
 /**
  * The node model for the row filter expression node.
@@ -170,6 +172,7 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
      * @throws ExpressionCompileException if the expression could not be compiled
      * @throws CanceledExecutionException if the execution was cancelled
      * @throws VirtualTableIncompatibleException
+     * @throws ExpressionEvaluationException
      */
     public static BufferedDataTable applyFilterExpression( //
         final String expression, //
@@ -177,7 +180,8 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
         final Map<String, FlowVariable> availableFlowVariables, //
         final ExecutionContext exec, //
         final Consumer<String> setWarning //
-    ) throws ExpressionCompileException, CanceledExecutionException, VirtualTableIncompatibleException {
+    ) throws ExpressionCompileException, CanceledExecutionException, VirtualTableIncompatibleException,
+        ExpressionEvaluationException {
         var numRows = inputTable.size();
         exec.setProgress(0, "Evaluating expression");
 
@@ -198,16 +202,20 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
             inputTable.size(), setWarning::accept, exprContext);
 
         var materializeProgress = exec.createSubProgress(0.34);
-        return ColumnarVirtualTableMaterializer.materializer() //
-            .sources(inRefTable.getSources()) //
-            .materializeRowKey(true) //
-            .progress((rowIndex, rowKey) -> materializeProgress.setProgress(rowIndex / (double)numRows, //
-                () -> "Evaluating expression (row %d of %s)".formatted(rowIndex + 1, numRows)) //
-            ) //
-            .executionContext(exec) //
-            .tableIdSupplier(Node.invokeGetDataRepository(exec)::generateNewID) //
-            .materialize(filteredTable) //
-            .getBufferedTable();
+        try {
+            return ColumnarVirtualTableMaterializer.materializer() //
+                .sources(inRefTable.getSources()) //
+                .materializeRowKey(true) //
+                .progress((rowIndex, rowKey) -> materializeProgress.setProgress(rowIndex / (double)numRows, //
+                    () -> "Evaluating expression (row %d of %s)".formatted(rowIndex + 1, numRows)) //
+                ) //
+                .executionContext(exec) //
+                .tableIdSupplier(Node.invokeGetDataRepository(exec)::generateNewID) //
+                .materialize(filteredTable) //
+                .getBufferedTable();
+        } catch (ExpressionEvaluationRuntimeException e) { // NOSONAR - throwing only the cause is intended
+            throw e.getCause();
+        }
     }
 
     @Override

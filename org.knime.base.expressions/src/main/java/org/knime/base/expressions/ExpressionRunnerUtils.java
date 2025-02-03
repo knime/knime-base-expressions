@@ -95,6 +95,7 @@ import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileException;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
@@ -108,6 +109,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.table.access.ReadAccess;
 import org.knime.core.table.virtual.expression.Exec;
+import org.knime.core.table.virtual.expression.Exec.ExpressionEvaluationRuntimeException;
 
 /**
  * Utility methods to work with expressions on Columnar virtual tables.
@@ -568,6 +570,7 @@ public final class ExpressionRunnerUtils {
      * @return the materialized result of the expression
      * @throws CanceledExecutionException if the execution was canceled
      * @throws VirtualTableIncompatibleException if the input table is not compatible with the expression
+     * @throws ExpressionEvaluationException
      */
     public static ReferenceTable applyAndMaterializeExpression( //
         final ReferenceTable refTable, //
@@ -577,20 +580,24 @@ public final class ExpressionRunnerUtils {
         final ExecutionMonitor progress, //
         final ExpressionMapperContext exprContext, //
         final EvaluationContext ctx //
-    ) throws CanceledExecutionException, VirtualTableIncompatibleException {
+    ) throws CanceledExecutionException, VirtualTableIncompatibleException, ExpressionEvaluationException {
         var numRows = refTable.getBufferedTable().size();
         var expressionResultVirtual =
             applyExpression(refTable.getVirtualTable(), numRows, expression, outputColumnName, exprContext, ctx);
-        return ColumnarVirtualTableMaterializer.materializer() //
-            .sources(refTable.getSources()) //
-            .materializeRowKey(false) //
-            .progress( //
-                (rowIndex, rowKey) -> progress.setProgress(rowIndex / (double)numRows, //
-                    () -> "Evaluating expression (row %d of %s)".formatted(rowIndex + 1, numRows)) //
-            ) //
-            .executionContext(exec) //
-            .tableIdSupplier(Node.invokeGetDataRepository(exec)::generateNewID) //
-            .materialize(expressionResultVirtual);
+        try {
+            return ColumnarVirtualTableMaterializer.materializer() //
+                .sources(refTable.getSources()) //
+                .materializeRowKey(false) //
+                .progress( //
+                    (rowIndex, rowKey) -> progress.setProgress(rowIndex / (double)numRows, //
+                        () -> "Evaluating expression (row %d of %s)".formatted(rowIndex + 1, numRows)) //
+                ) //
+                .executionContext(exec) //
+                .tableIdSupplier(Node.invokeGetDataRepository(exec)::generateNewID) //
+                .materialize(expressionResultVirtual);
+        } catch (ExpressionEvaluationRuntimeException e) { // NOSONAR - throwing only the cause is intended
+            throw e.getCause();
+        }
     }
 
     /**

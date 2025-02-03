@@ -63,6 +63,7 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.ExpressionCompileException;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
@@ -225,6 +226,9 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                     sendEvent("updateWarning", warnings[0]);
                 }
 
+            } catch (ExpressionEvaluationException e) {
+                // TODO(AP-23937) - update the frontend to show the error
+                throw new IllegalStateException(e.getMessage(), e);
             } catch (CanceledExecutionException e) {
                 throw new IllegalStateException("This is an implementation error. Must not happen "
                     + "because canceling the execution should not be possible.", e);

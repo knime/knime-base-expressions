@@ -64,6 +64,7 @@ import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils.NewColumnPosition;
 import org.knime.base.expressions.InsertionMode;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
+import org.knime.base.expressions.node.WithIndexExpressionException;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
 import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
@@ -73,6 +74,7 @@ import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileException;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
@@ -203,13 +205,18 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         throws Exception {
         var messageBuilder = createMessageBuilder();
 
-        var outputTables = applyMapperExpressions(m_settings.getScripts(), //
-            getColumnPositions(m_settings.getColumnInsertionModes(), m_settings.getActiveOutputColumns()), //
-            inData[0], //
-            getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES), //
-            exec, //
-            (i, warningMessage) -> messageBuilder.addTextIssue("Expression " + (i + 1) + ": " + warningMessage) //
-        );
+        List<BufferedDataTable> outputTables;
+        try {
+            outputTables = applyMapperExpressions(m_settings.getScripts(), //
+                getColumnPositions(m_settings.getColumnInsertionModes(), m_settings.getActiveOutputColumns()), //
+                inData[0], //
+                getAvailableFlowVariables(ExpressionRunnerUtils.SUPPORTED_FLOW_VARIABLE_TYPES), //
+                exec, //
+                (i, warningMessage) -> messageBuilder.addTextIssue("Expression " + (i + 1) + ": " + warningMessage) //
+            );
+        } catch (WithIndexExpressionException e) {
+            throw e.toKNIMEException();
+        }
 
         // Set warning message if there are any issues
         var issueCount = messageBuilder.getIssueCount();
@@ -240,6 +247,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
      * @throws ExpressionCompileException if an expression cannot be compiled
      * @throws CanceledExecutionException if the execution is canceled
      * @throws VirtualTableIncompatibleException
+     * @throws WithIndexExpressionException
      */
     static List<BufferedDataTable> applyMapperExpressions( //
         final List<String> expressions, //
@@ -248,7 +256,8 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         final Map<String, FlowVariable> availableFlowVariables, //
         final ExecutionContext exec, //
         final BiConsumer<Integer, String> setWarning //
-    ) throws ExpressionCompileException, CanceledExecutionException, VirtualTableIncompatibleException {
+    ) throws ExpressionCompileException, CanceledExecutionException, VirtualTableIncompatibleException,
+        WithIndexExpressionException {
         var exprContext = new NodeExpressionMapperContext(availableFlowVariables);
         var numberOfExpressions = expressions.size();
         var nextInputTable = inputTable;
@@ -275,8 +284,13 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
             // Evaluate the expression and materialize the result
             final var finalI = i;
             EvaluationContext ctx = warning -> setWarning.accept(finalI, warning);
-            var expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
-                newColumnPosition.columnName(), exec, subExec.createSubProgress(0.34), exprContext, ctx);
+            ReferenceTable expressionResult;
+            try {
+                expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
+                    newColumnPosition.columnName(), exec, subExec.createSubProgress(0.34), exprContext, ctx);
+            } catch (ExpressionEvaluationException e) {
+                throw WithIndexExpressionException.forEvaluationException(i, e);
+            }
 
             // We must avoid using inRefTable.getVirtualTable() directly. Doing so would result in building upon the
             // transformation of the input table, instead of initiating a new fragment. This leads to complications

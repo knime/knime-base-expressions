@@ -82,6 +82,7 @@ import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.aggregations.TestColumnAggregationArgumentSource;
 
@@ -901,7 +902,7 @@ public class AggregationTestUtils {
          * @param c the computer
          * @return the result of the computer's compute method
          */
-        private static Object computeGenericComputer(final Computer c) {
+        private static Object computeGenericComputer(final Computer c) throws ExpressionEvaluationException {
             return computeGenericComputer(c, DUMMY_WML);
         }
 
@@ -913,7 +914,8 @@ public class AggregationTestUtils {
          * @param ctx the evaluation context
          * @return the result of the computer's compute method
          */
-        private static Object computeGenericComputer(final Computer c, final EvaluationContext ctx) {
+        private static Object computeGenericComputer(final Computer c, final EvaluationContext ctx)
+            throws ExpressionEvaluationException {
             if (c instanceof IntegerComputer ic) {
                 return ic.compute(ctx);
             } else if (c instanceof FloatComputer fc) {
