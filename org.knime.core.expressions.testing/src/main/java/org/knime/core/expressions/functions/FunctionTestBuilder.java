@@ -48,9 +48,11 @@
  */
 package org.knime.core.expressions.functions;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -231,6 +233,8 @@ public final class FunctionTestBuilder {
 
     private final List<DynamicTest> m_warningTests;
 
+    private final List<DynamicTest> m_evaluationErrorTests;
+
     /** @param function the function that should be tested */
     public FunctionTestBuilder(final ExpressionFunction function) {
         m_function = function;
@@ -238,6 +242,7 @@ public final class FunctionTestBuilder {
         m_illegalArgsTests = new ArrayList<>();
         m_implTests = new ArrayList<>();
         m_warningTests = new ArrayList<>();
+        m_evaluationErrorTests = new ArrayList<>();
     }
 
     /**
@@ -623,6 +628,69 @@ public final class FunctionTestBuilder {
         return warns(name, positionalArgs, Map.of());
     }
 
+    /**
+     * A test that checks that evaluating the given arguments produces an error. The arguments must not result in
+     * MISSING.
+     *
+     * @param name display name of the test
+     * @param positionalArgs
+     * @param expectedErrorPattern a pattern that the error message should match
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder errors(final String name, final List<TestingArgument> positionalArgs,
+        final String expectedErrorPattern) {
+        return errors(name, positionalArgs, Map.of(), expectedErrorPattern);
+    }
+
+    /**
+     * A test that checks that evaluating the given arguments produces an error. The arguments must not result in
+     * MISSING.
+     *
+     * @param name display name of the test
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expectedErrorPattern a pattern that the error message should match
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder errors(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final String expectedErrorPattern) {
+        m_evaluationErrorTests.add(DynamicTest.dynamicTest("errors - " + name, () -> {
+
+            var args = m_function.signature(positionalArgs, namedArgs)
+                .orElseThrow(cause -> new IllegalStateException("Arguments should match signature: " + cause));
+
+            var result = m_function.apply(args.map(TestingArgument::computer));
+            args.stream().forEach(TestingArgument::setOpen);
+
+            ExpressionEvaluationException exception;
+            try {
+                assertFalse(result.isMissing(DUMMY_WML), "expected error but was missing");
+                if (result instanceof IntegerComputer ic) {
+                    exception = assertThrows(ExpressionEvaluationException.class, () -> ic.compute(DUMMY_WML),
+                        "evaluation should throw an error");
+                } else if (result instanceof FloatComputer fc) {
+                    exception = assertThrows(ExpressionEvaluationException.class, () -> fc.compute(DUMMY_WML),
+                        "evaluation should throw an error");
+                } else if (result instanceof BooleanComputer bc) {
+                    exception = assertThrows(ExpressionEvaluationException.class, () -> bc.compute(DUMMY_WML),
+                        "evaluation should throw an error");
+                } else if (result instanceof StringComputer sc) {
+                    exception = assertThrows(ExpressionEvaluationException.class, () -> sc.compute(DUMMY_WML),
+                        "evaluation should throw an error");
+                } else {
+                    fail("unexpected computer type");
+                    return;
+                }
+            } catch (ExpressionEvaluationException ex) {
+                // if isMissing is throwing the exception, this is okay but not necessary
+                exception = ex;
+            }
+            assertThat(exception).hasMessageMatching(expectedErrorPattern);
+        }));
+
+        return this;
+    }
+
     /** @return the dynamic tests */
     public List<DynamicNode> tests() {
         List<DynamicNode> tests = new ArrayList<>();
@@ -637,6 +705,9 @@ public final class FunctionTestBuilder {
         }
         if (!m_warningTests.isEmpty()) {
             tests.add(DynamicContainer.dynamicContainer("warns", m_warningTests));
+        }
+        if (!m_evaluationErrorTests.isEmpty()) {
+            tests.add(DynamicContainer.dynamicContainer("errors", m_evaluationErrorTests));
         }
         return tests;
     }
