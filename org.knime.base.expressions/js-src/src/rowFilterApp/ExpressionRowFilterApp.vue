@@ -91,12 +91,12 @@ onMounted(async () => {
   setActiveEditorStoreForAi(editorReference.getEditorState());
 
   getScriptingService().registerEventHandler(
-    "updateWarning",
-    (warning: ExpressionDiagnostic) => {
-      if (warning) {
+    "updateDiagnostics",
+    (diagnostic: ExpressionDiagnostic) => {
+      if (diagnostic) {
         errorState.value = {
-          level: warning.severity,
-          message: warning.message,
+          level: diagnostic.severity,
+          message: diagnostic.message,
         };
       }
     },

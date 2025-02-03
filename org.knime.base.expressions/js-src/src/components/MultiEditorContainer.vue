@@ -419,13 +419,13 @@ const getMostConcerningErrorStateForEditor = (
   return editorState?.editorErrorState;
 };
 
-const setWarningsHandler = (warnings: ExpressionDiagnostic[]) => {
-  for (let i = 0; i < warnings.length; i++) {
-    const warning = warnings[i];
-    if (warning) {
+const setDiagnosticsHandler = (diagnostics: ExpressionDiagnostic[]) => {
+  for (let i = 0; i < diagnostics.length; i++) {
+    const diagnostic = diagnostics[i];
+    if (diagnostic) {
       editorStates[orderedEditorKeys[i]].editorErrorState = {
-        level: warning.severity,
-        message: warnings[i].message,
+        level: diagnostic.severity,
+        message: diagnostics[i].message,
       };
     }
   }
@@ -443,8 +443,8 @@ onMounted(async () => {
   await nextTick();
 
   getScriptingService().registerEventHandler(
-    "updateWarnings",
-    setWarningsHandler,
+    "updateDiagnostics",
+    setDiagnosticsHandler,
   );
 
   for (let i = 0; i < orderedEditorKeys.length; ++i) {

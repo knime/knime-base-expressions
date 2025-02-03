@@ -207,7 +207,8 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            var warnings = new ExpressionDiagnostic[1];
+            // warning and evaluation error
+            var diagnostics = new ExpressionDiagnostic[1];
 
             try {
                 var inColTable = m_inputTableCache.getTable(numPreviewRows);
@@ -216,14 +217,14 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                     inColTable, //
                     getSupportedFlowVariablesMap(), //
                     m_exec, //
-                    ExpressionDiagnostic.getSingleWarningMessageHandler(warnings) //
+                    ExpressionDiagnostic.getSingleWarningMessageHandler(diagnostics) //
                 );
 
                 m_tablePreview.updateTables(List.of(outputTable), m_exec);
                 updateOutputTable((int)m_tablePreview.numRows(), m_inputTableCache.getFullRowCount());
             } catch (ExpressionEvaluationException e) {
                 // TODO this is not shown as an error!!
-                warnings[0] = ExpressionDiagnostic.withSameMessage(e.getMessage(), DiagnosticSeverity.ERROR, null);
+                diagnostics[0] = ExpressionDiagnostic.withSameMessage(e.getMessage(), DiagnosticSeverity.ERROR, null);
                 // TODO Update the preview with the error message
                 // sendEvent("updatePreview", "Preview cannot be shown, because Expression " + (e.getExpressionIndex() + 1)
                 //    + " could not be evaluated.");
@@ -232,8 +233,8 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                     + "because canceling the execution should not be possible.", e);
             }
 
-            if (warnings[0] != null) {
-                sendEvent("updateWarning", warnings[0]);
+            if (diagnostics[0] != null) {
+                sendEvent("updateDiagnostics", diagnostics[0]);
             }
         }
     }

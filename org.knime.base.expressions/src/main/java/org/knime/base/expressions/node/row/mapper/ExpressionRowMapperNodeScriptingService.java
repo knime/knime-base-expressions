@@ -286,7 +286,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            var warnings = new ExpressionDiagnostic[scripts.size()];
+            // warnings and evaluation errors
+            var diagnostics = new ExpressionDiagnostic[scripts.size()];
 
             try {
                 var inColTable = m_inputTableCache.getTable(numPreviewRows);
@@ -299,14 +300,14 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     inColTable, //
                     getSupportedFlowVariablesMap(), //
                     m_exec, //
-                    ExpressionDiagnostic.getWarningMessageHandler(warnings) //
+                    ExpressionDiagnostic.getWarningMessageHandler(diagnostics) //
                 );
 
                 m_tablePreview.updateTables(outputTables, m_exec);
                 updateOutputTable((int)m_tablePreview.numRows(), m_inputTableCache.getFullRowCount());
 
             } catch (WithIndexExpressionException e) {
-                warnings[e.getExpressionIndex()] =
+                diagnostics[e.getExpressionIndex()] =
                     ExpressionDiagnostic.withSameMessage(e.getUIMessage(), DiagnosticSeverity.ERROR, null);
                 // TODO Update the preview with the error message
                 // sendEvent("updatePreview", "Preview cannot be shown, because Expression " + (e.getExpressionIndex() + 1)
@@ -316,7 +317,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     + "because canceling the execution should not be possible.", e);
             }
 
-            sendEvent("updateWarnings", warnings);
+            sendEvent("updateDiagnostics", diagnostics);
         }
     }
 }
