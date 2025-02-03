@@ -269,7 +269,8 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
         public void runFlowVariableExpression(final List<String> expressions, final List<String> newFlowVariableNames,
             final List<String> outputReturnType) throws ExpressionCompileException {
 
-            var warnings = new ExpressionDiagnostic[expressions.size()];
+            // warnings and evaluation errors
+            var diagnostics = new ExpressionDiagnostic[expressions.size()];
 
             try {
                 var resultVariables = ExpressionFlowVariableNodeModel.applyFlowVariableExpressions( //
@@ -279,19 +280,19 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                     getSupportedFlowVariablesMap(), //
                     i -> {
                     }, // we do not show the progress
-                    ExpressionDiagnostic.getWarningMessageHandler(warnings) //
+                    ExpressionDiagnostic.getWarningMessageHandler(diagnostics) //
                 );
                 m_outputFlowVariablesReference.set(resultVariables);
                 sendEvent("updatePreview", null);
 
             } catch (WithIndexExpressionException e) { // NOSONAR - we send the message to the frontend
-                warnings[e.getExpressionIndex()] =
+                diagnostics[e.getExpressionIndex()] =
                     ExpressionDiagnostic.withSameMessage(e.getUIMessage(), DiagnosticSeverity.ERROR, null);
                 sendEvent("updatePreview", "Preview cannot be shown, because Expression " + (e.getExpressionIndex() + 1)
                     + " could not be evaluated.");
             }
 
-            sendEvent("updateWarnings", warnings);
+            sendEvent("updateDiagnostics", diagnostics);
         }
 
         /**

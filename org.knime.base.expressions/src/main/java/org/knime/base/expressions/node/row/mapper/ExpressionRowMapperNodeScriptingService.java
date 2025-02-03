@@ -286,7 +286,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 throw new IllegalArgumentException("Number of preview rows must be at most 1000");
             }
 
-            var warnings = new ExpressionDiagnostic[scripts.size()];
+            // warnings and evaluation errors
+            var diagnostics = new ExpressionDiagnostic[scripts.size()];
 
             try {
                 var inColTable = m_inputTableCache.getTable(numPreviewRows);
@@ -299,21 +300,24 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                     inColTable, //
                     getSupportedFlowVariablesMap(), //
                     m_exec, //
-                    ExpressionDiagnostic.getWarningMessageHandler(warnings) //
+                    ExpressionDiagnostic.getWarningMessageHandler(diagnostics) //
                 );
 
                 m_tablePreview.updateTables(outputTables, m_exec);
                 updateOutputTable((int)m_tablePreview.numRows(), m_inputTableCache.getFullRowCount());
 
-                sendEvent("updateWarnings", warnings);
-
             } catch (WithIndexExpressionException e) {
-                // TODO(AP-23937) - update the frontend to show the error
-                throw new IllegalStateException(e.getMessage(), e);
+                diagnostics[e.getExpressionIndex()] =
+                    ExpressionDiagnostic.withSameMessage(e.getUIMessage(), DiagnosticSeverity.ERROR, null);
+                // TODO Update the preview with the error message
+                // sendEvent("updatePreview", "Preview cannot be shown, because Expression " + (e.getExpressionIndex() + 1)
+                //    + " could not be evaluated.");
             } catch (CanceledExecutionException e) {
                 throw new IllegalStateException("This is an implementation error. Must not happen "
                     + "because canceling the execution should not be possible.", e);
             }
+
+            sendEvent("updateDiagnostics", diagnostics);
         }
     }
 }
