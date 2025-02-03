@@ -63,6 +63,7 @@ import org.knime.base.expressions.node.ExpressionCodeAssistant;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.ExpressionDiagnosticResult;
+import org.knime.base.expressions.node.WithIndexExpressionException;
 import org.knime.base.expressions.node.row.InputTableCache;
 import org.knime.base.expressions.node.row.OutputTablePreview;
 import org.knime.core.data.DataTableSpec;
@@ -304,12 +305,18 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 m_tablePreview.updateTables(outputTables, m_exec);
                 updateOutputTable((int)m_tablePreview.numRows(), m_inputTableCache.getFullRowCount());
 
-                sendEvent("updateWarnings", warnings);
-
+            } catch (WithIndexExpressionException e) {
+                warnings[e.getExpressionIndex()] =
+                    ExpressionDiagnostic.withSameMessage(e.getUIMessage(), DiagnosticSeverity.ERROR, null);
+                // TODO Update the preview with the error message
+                // sendEvent("updatePreview", "Preview cannot be shown, because Expression " + (e.getExpressionIndex() + 1)
+                //    + " could not be evaluated.");
             } catch (CanceledExecutionException e) {
                 throw new IllegalStateException("This is an implementation error. Must not happen "
                     + "because canceling the execution should not be possible.", e);
             }
+
+            sendEvent("updateWarnings", warnings);
         }
     }
 }

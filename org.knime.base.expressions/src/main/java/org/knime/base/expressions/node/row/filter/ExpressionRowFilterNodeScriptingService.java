@@ -63,6 +63,7 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.ExpressionCompileException;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
@@ -220,14 +221,19 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
 
                 m_tablePreview.updateTables(List.of(outputTable), m_exec);
                 updateOutputTable((int)m_tablePreview.numRows(), m_inputTableCache.getFullRowCount());
-
-                if (warnings[0] != null) {
-                    sendEvent("updateWarning", warnings[0]);
-                }
-
+            } catch (ExpressionEvaluationException e) {
+                // TODO this is not shown as an error!!
+                warnings[0] = ExpressionDiagnostic.withSameMessage(e.getMessage(), DiagnosticSeverity.ERROR, null);
+                // TODO Update the preview with the error message
+                // sendEvent("updatePreview", "Preview cannot be shown, because Expression " + (e.getExpressionIndex() + 1)
+                //    + " could not be evaluated.");
             } catch (CanceledExecutionException e) {
                 throw new IllegalStateException("This is an implementation error. Must not happen "
                     + "because canceling the execution should not be possible.", e);
+            }
+
+            if (warnings[0] != null) {
+                sendEvent("updateWarning", warnings[0]);
             }
         }
     }
