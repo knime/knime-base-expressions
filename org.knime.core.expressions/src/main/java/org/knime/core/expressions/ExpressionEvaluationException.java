@@ -64,4 +64,14 @@ public final class ExpressionEvaluationException extends ExpressionException {
     public ExpressionEvaluationException(final String message) {
         super(message);
     }
+
+    /**
+     * Creates a new exception with the given message and cause.
+     *
+     * @param message a user-friendly message describing the issue to the expression author
+     * @param cause the cause of the exception
+     */
+    public ExpressionEvaluationException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

@@ -185,6 +185,8 @@ final class StringFunctionTests {
             .impl("literal", List.of(arg("foo"), arg("foo")), true) //
             .impl("case insensitive", List.of(arg("HELLO"), arg("hello"), arg("i")), true) //
             .impl("missing STRING", List.of(misString(), arg("foo"))) //
+            .errors("invalid pattern", List.of(arg("foo"), arg("(1")),
+                "Invalid regex pattern '\\(1'\\. Unclosed group near index 2\\.") //
             .tests();
     }
 
@@ -207,6 +209,8 @@ final class StringFunctionTests {
             .impl("regex doesn't match", List.of(arg("14a"), arg("q"), arg(0))) //
             .impl("case insensitive", List.of(arg("HELLO"), arg("h(el)lo"), arg(1), arg("i")), "EL") //
             .impl("missing STRING", List.of(misString(), arg("foo"), arg(0))) //
+            .errors("invalid pattern", List.of(arg("foo"), arg("1)"), arg(0)),
+                "Invalid regex pattern '1\\)'\\. Unmatched closing '\\)'\\.") //
             .tests();
     }
 
@@ -224,6 +228,8 @@ final class StringFunctionTests {
             .impl("multiple replacements", List.of(arg("quick quicker"), arg("quick(er)?"), arg("slow")), "slow slow") //
             .impl("groups", List.of(arg("abc-123-456-xyz"), arg("([0-9]+)-([0-9]+)"), arg("$2-$1")), "abc-456-123-xyz") //
             .impl("noop", List.of(arg("a"), arg("A"), arg("b")), "a") //
+            .errors("invalid pattern", List.of(arg("foo"), arg("(?R)"), arg("bar")),
+                "Invalid regex pattern '\\(\\?R\\)'\\. Unknown inline modifier near index 2\\.") //
             .tests();
     }
 
@@ -378,25 +384,25 @@ final class StringFunctionTests {
             .typing("STRING + start + len", List.of(STRING, INTEGER, INTEGER), STRING) //
             .typing("optional length", List.of(STRING, INTEGER, OPT_INTEGER), STRING) //
             .typing("Optional start and length", List.of(STRING, OPT_INTEGER, OPT_INTEGER), STRING) //
-            .typing("only STRING", List.of(STRING), STRING)
+            .typing("only STRING", List.of(STRING), STRING) //
             .illegalArgs("Integer instead of string", List.of(INTEGER)) //
-            .illegalArgs("only optional length", List.of(),Map.of("length", INTEGER)) //)
-            .warns("negative length",  List.of(arg("abcdefg"), arg(1), arg(-1))) //
-            .warns("non-positive start",    List.of(arg("abcdefg"), arg(0), arg(3))) //
+            .illegalArgs("only optional length", List.of(), Map.of("length", INTEGER)) //)
+            .warns("negative length", List.of(arg("abcdefg"), arg(1), arg(-1))) //
+            .warns("non-positive start", List.of(arg("abcdefg"), arg(0), arg(3))) //
             .impl("substr", List.of(arg("abcdefg"), arg(2), arg(3)), "bcd") //
-            .impl("length is MISSING",List.of(arg("abcdefg"), arg(0), misInteger()), "abcdefg") //))
-            .impl("length is negative",List.of(arg("abcdefg"), arg(1), arg(-1)), "") //
+            .impl("length is MISSING", List.of(arg("abcdefg"), arg(0), misInteger()), "abcdefg") //))
+            .impl("length is negative", List.of(arg("abcdefg"), arg(1), arg(-1)), "") //
             .impl("start is negative", List.of(arg("abcdefg"), arg(-1), arg(1)), "a") //
             .impl("noop", List.of(arg("abcdefg"), arg(1), arg(100)), "abcdefg") //
             .impl("last char", List.of(arg("abc"), arg(3), arg(1)), "c") //
-            .impl("start after last char",  List.of(arg("abc"), arg(4), arg(1)), "") //
-            .impl("empty string1",  List.of(arg(""), arg(0), arg(0)), "") //
-            .impl("empty string2",  List.of(arg(""), arg(1), arg(3)), "") //
+            .impl("start after last char", List.of(arg("abc"), arg(4), arg(1)), "") //
+            .impl("empty string1", List.of(arg(""), arg(0), arg(0)), "") //
+            .impl("empty string2", List.of(arg(""), arg(1), arg(3)), "") //
             .impl("string is missing", List.of(misString(), arg(1), arg(3))) //
-            .impl("start and length is missing", List.of(arg("abc"), misInteger(), misInteger()),"abc") //
-            .impl("start is missing", List.of(arg("abc"), misInteger(), arg(3)),"abc") //
-            .impl("length is negative", List.of(arg("abc"), misInteger(), arg(-1)),"") //
-            .impl("length is very large", List.of(arg("abc"), misInteger(), arg(Integer.MAX_VALUE)),"abc") //
+            .impl("start and length is missing", List.of(arg("abc"), misInteger(), misInteger()), "abc") //
+            .impl("start is missing", List.of(arg("abc"), misInteger(), arg(3)), "abc") //
+            .impl("length is negative", List.of(arg("abc"), misInteger(), arg(-1)), "") //
+            .impl("length is very large", List.of(arg("abc"), misInteger(), arg(Integer.MAX_VALUE)), "abc") //
             .tests();
     }
 

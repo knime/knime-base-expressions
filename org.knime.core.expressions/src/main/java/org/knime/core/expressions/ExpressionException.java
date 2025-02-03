@@ -61,4 +61,8 @@ public abstract sealed class ExpressionException extends Exception
     ExpressionException(final String message) {
         super(message);
     }
+
+    ExpressionException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

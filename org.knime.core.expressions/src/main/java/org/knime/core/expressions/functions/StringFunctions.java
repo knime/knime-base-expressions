@@ -77,17 +77,18 @@ import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.IntStream;
 
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
+import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
+import org.knime.core.expressions.Computer.ComputerResultSupplier;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
-import org.knime.core.expressions.Computer.StringComputer;
-import org.knime.core.expressions.Computer.ComputerResultSupplier;
-import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
 import org.knime.core.expressions.Computer.IntegerComputerResultSupplier;
+import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.OperatorCategory;
@@ -441,9 +442,14 @@ public final class StringFunctions {
                 String str = c1.compute(ctx);
                 String patternString = c2.compute(ctx);
 
-                return Pattern.compile(patternString, computeIgnoreCase(args, ctx) ? Pattern.CASE_INSENSITIVE : 0) //
-                    .matcher(str) //
-                    .matches();
+                Pattern compiledPattern;
+                try {
+                    compiledPattern =
+                        Pattern.compile(patternString, computeIgnoreCase(args, ctx) ? Pattern.CASE_INSENSITIVE : 0);
+                } catch (PatternSyntaxException ex) {
+                    throw evalErrorFromInvalidPattern(ex);
+                }
+                return compiledPattern.matcher(str).matches();
             }, //
             anyMissing(args) //
         );
@@ -484,9 +490,14 @@ public final class StringFunctions {
         .build();
 
     private static String extractGroupOrReturnNull(final String toMatch, final String pattern, final int group,
-        final boolean ignoreCase) {
-
-        var matcher = Pattern.compile(pattern, ignoreCase ? Pattern.CASE_INSENSITIVE : 0).matcher(toMatch);
+        final boolean ignoreCase) throws ExpressionEvaluationException {
+        Pattern compiledPattern;
+        try {
+            compiledPattern = Pattern.compile(pattern, ignoreCase ? Pattern.CASE_INSENSITIVE : 0);
+        } catch (PatternSyntaxException ex) {
+            throw evalErrorFromInvalidPattern(ex);
+        }
+        var matcher = compiledPattern.matcher(toMatch);
 
         if (!matcher.find() || group < 0 || group > matcher.groupCount()) {
             return null;
@@ -505,8 +516,8 @@ public final class StringFunctions {
             || extractGroupOrReturnNull(c1.compute(ctx), c2.compute(ctx), (int)c3.compute(ctx),
                 computeIgnoreCase(args, ctx)) == null;
 
-        ComputerResultSupplier<String> value = ctx -> extractGroupOrReturnNull(c1.compute(ctx),
-            c2.compute(ctx), (int)c3.compute(ctx), computeIgnoreCase(args, ctx));
+        ComputerResultSupplier<String> value = ctx -> extractGroupOrReturnNull(c1.compute(ctx), c2.compute(ctx),
+            (int)c3.compute(ctx), computeIgnoreCase(args, ctx));
 
         return StringComputer.of(value, isMissing);
     }
@@ -553,11 +564,16 @@ public final class StringFunctions {
         ComputerResultSupplier<String> value = ctx -> {
 
             var str = toString(args.get("string")).compute(ctx);
-            var search = toString(args.get("pattern")).compute(ctx);
+            var pattern = toString(args.get("pattern")).compute(ctx);
             var replacement = toString(args.get("replace")).compute(ctx);
 
-            var pattern = Pattern.compile(search, computeIgnoreCase(args, ctx) ? Pattern.CASE_INSENSITIVE : 0);
-            return pattern.matcher(str).replaceAll(replacement);
+            Pattern compiledPattern;
+            try {
+                compiledPattern = Pattern.compile(pattern, computeIgnoreCase(args, ctx) ? Pattern.CASE_INSENSITIVE : 0);
+            } catch (PatternSyntaxException ex) {
+                throw evalErrorFromInvalidPattern(ex);
+            }
+            return compiledPattern.matcher(str).replaceAll(replacement);
         };
 
         return StringComputer.of(value, anyMissing(args));
@@ -2167,5 +2183,24 @@ public final class StringFunctions {
         throws ExpressionEvaluationException {
 
         return args.has("modifiers") && toString(args.get("modifiers")).compute(ctx).contains("i");
+    }
+
+    /** Construct an error message from the PatternSyntaxException */
+    private static ExpressionEvaluationException evalErrorFromInvalidPattern(final PatternSyntaxException ex) {
+        // NB: ex.getMessage() is a multi-line message that includes a marker to show where the error occurred.
+        //     This is an unexpected format for the ExpressionEvaluationException
+
+        var sb = new StringBuilder();
+        sb.append("Invalid regex pattern ");
+        sb.append("'" + ex.getPattern() + "'");
+        sb.append(". ");
+        sb.append(ex.getDescription());
+        if (ex.getIndex() > 0) {
+            sb.append(" near index ");
+            sb.append(ex.getIndex());
+        }
+        sb.append(".");
+
+        return new ExpressionEvaluationException(sb.toString(), ex);
     }
 }
