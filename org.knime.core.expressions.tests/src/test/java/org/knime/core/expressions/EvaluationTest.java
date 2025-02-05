@@ -45,7 +45,11 @@
  */
 package org.knime.core.expressions;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.knime.core.expressions.Ast.BinaryOperator.CONDITIONAL_AND;
 import static org.knime.core.expressions.Ast.BinaryOperator.CONDITIONAL_OR;
 import static org.knime.core.expressions.Ast.BinaryOperator.DIVIDE;
@@ -86,17 +90,18 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Computer.BooleanComputer;
-import org.knime.core.expressions.Computer.FloatComputer;
-import org.knime.core.expressions.Computer.IntegerComputer;
-import org.knime.core.expressions.Computer.StringComputer;
-import org.knime.core.expressions.Computer.ComputerResultSupplier;
 import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
+import org.knime.core.expressions.Computer.ComputerResultSupplier;
+import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.FloatComputerResultSupplier;
+import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.IntegerComputerResultSupplier;
+import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.SignatureUtils.Arg;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
@@ -127,6 +132,28 @@ final class EvaluationTest {
             TestAggregations.TEST_AGGREGATIONS_COMPUTER);
         assertNotNull(result, "should output result");
         params.m_resultChecker.accept(result);
+    }
+
+    @Test
+    void testErroringFn() throws Exception {
+        var ast = FUN(TestFunctions.ERRORING_FN, STR("foo bar message"));
+        Typing.inferTypes(ast, //
+            c -> ReturnResult.failure("no columns"), //
+            f -> ReturnResult.failure("no flow variables") //
+        );
+        var result = Evaluation.evaluate(ast, //
+            c -> fail("should not call column computer"), //
+            f -> fail("should not call flow variable computer"), //
+            a -> fail("should not call aggregation computer") //
+        );
+
+        assertNotNull(result, "should output result");
+        EvaluationContext ctx = c -> fail("should not warn");
+        Assertions.assertFalse(result.isMissing(ctx));
+
+        var intResult = assertInstanceOf(IntegerComputer.class, result);
+        var exception = assertThrows(ExpressionEvaluationException.class, () -> intResult.compute(ctx));
+        assertEquals("foo bar message", exception.getMessage());
     }
 
     private static enum ExecutionTest {
@@ -489,7 +516,11 @@ final class EvaluationTest {
 
     private static enum TestFunctions implements ExpressionFunction {
             PLUS_100_FN(List.of(ValueType.INTEGER), ValueType.INTEGER,
-                c -> IntegerComputer.of(ctx -> ((IntegerComputer)c.get("arg0")).compute(ctx) + 100, ctx -> false)), //
+                args -> IntegerComputer.of(ctx -> ((IntegerComputer)args.get("arg0")).compute(ctx) + 100,
+                    ctx -> false)), //
+            ERRORING_FN(List.of(ValueType.STRING), ValueType.INTEGER, args -> IntegerComputer.of(ctx -> {
+                throw new ExpressionEvaluationException(((StringComputer)args.get("arg0")).compute(ctx));
+            }, ctx -> false)), //
         ;
 
         private final ValueType m_returnType;
@@ -505,9 +536,7 @@ final class EvaluationTest {
             m_returnType = returnType;
 
             m_signature = IntStream.range(0, args.size())
-                .mapToObj(
-                    i -> SignatureUtils.arg("arg" + i, "", SignatureUtils.hasType(args.get(i))))
-                .toList();
+                .mapToObj(i -> SignatureUtils.arg("arg" + i, "", SignatureUtils.hasType(args.get(i)))).toList();
         }
 
         @Override
@@ -528,7 +557,7 @@ final class EvaluationTest {
 
         @Override
         public OperatorDescription description() {
-            return Assertions.fail("Should not be called in evaluation tests");
+            return fail("Should not be called in evaluation tests");
         }
     }
 }
