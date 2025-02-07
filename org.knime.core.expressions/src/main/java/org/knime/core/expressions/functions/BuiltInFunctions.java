@@ -212,7 +212,20 @@ public final class BuiltInFunctions {
         StringFunctions.URL_ENCODE, //
         StringFunctions.URL_DECODE, //
         // Date&Time – General
-        DateTimeFunctions.PARSE_TIME //
+        DateTimeFunctions.PARSE_DATE, //
+        DateTimeFunctions.CREATE_DATE, //
+        DateTimeFunctions.PARSE_TIME, //
+        DateTimeFunctions.CREATE_TIME, //
+        DateTimeFunctions.PARSE_DATE_TIME, //
+        DateTimeFunctions.CREATE_DATE_TIME, //
+        DateTimeFunctions.PARSE_ZONED_DATE_TIME, //
+        DateTimeFunctions.CREATE_ZONED_DATE_TIME, //
+        DateTimeFunctions.FORMAT_TEMPORAL, //
+        DateTimeFunctions.CREATE_PERIOD, //
+        DateTimeFunctions.CREATE_DURATION, //
+        DateTimeFunctions.MODIFY_DATE, //
+        DateTimeFunctions.MODIFY_TIME, //
+        DateTimeFunctions.MODIFY_TIME_ZONE //
     );
 
     /** Built-in functions as map */
