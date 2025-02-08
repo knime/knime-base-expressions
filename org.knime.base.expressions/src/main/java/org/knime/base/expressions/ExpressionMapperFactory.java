@@ -49,9 +49,9 @@
 package org.knime.base.expressions;
 
 import org.knime.base.expressions.ColumnInputUtils.RequiredColumns;
-import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable.ColumnarMapperFactory;
 import org.knime.core.data.v2.schema.ValueSchema;
+import org.knime.core.data.v2.schema.ValueSchema.ValueSchemaColumn;
 import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Computer;
@@ -147,9 +147,8 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
     @Override
     public ValueSchema getOutputSchema() {
         var outputValueType = Expressions.getInferredType(m_ast);
-        var tableSpec =
-            new DataTableSpec(ColumnOutputUtils.valueTypeToDataColumnSpec(outputValueType, m_outputColumnName));
+        var colSpec = ColumnOutputUtils.valueTypeToDataColumnSpec(outputValueType, m_outputColumnName);
         var valueFactory = ColumnOutputUtils.valueTypeToValueFactory(outputValueType);
-        return ValueSchemaUtils.create(tableSpec, valueFactory);
+        return ValueSchemaUtils.create(new ValueSchemaColumn(colSpec, valueFactory));
     }
 }
