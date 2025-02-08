@@ -168,7 +168,7 @@ public final class ExpressionRunnerUtils {
         final ColumnarVirtualTable expressionResult, final NewColumnPosition columnInsertionMode) {
 
         if (columnInsertionMode.mode() == InsertionMode.APPEND) {
-            return inputTable.append(expressionResult);
+            return inputTable.append(expressionResult.dropColumns(0));
         } else {
             var inputSpec = inputTable.getSchema().getSourceSpec();
             var matchingColumnIndices = inputSpec.columnsToIndices(columnInsertionMode.columnName());
@@ -185,7 +185,7 @@ public final class ExpressionRunnerUtils {
             columnIndicesWithoutOldColumn.remove(replacedColIdx + 1); // +1 to skip RowID
             var tableWithAppendedResult =
                 inputTable.selectColumns(columnIndicesWithoutOldColumn.stream().mapToInt(i -> i).toArray())
-                    .append(expressionResult);
+                    .append(expressionResult.dropColumns(0));
 
             // move appended (=last) column to the position of the column to replace
             // init with column indices of input (without the removed column)
@@ -417,9 +417,11 @@ public final class ExpressionRunnerUtils {
         var resolvedInput = resolveColumns(expression, input, numRows);
 
         var expressionMapperFactory =
-            new ExpressionMapperFactory(expression, resolvedInput.getSchema(), outputColumnName, additionalInputs, ctx);
-        return input.selectColumns(0)
-            .append(resolvedInput.map(expressionMapperFactory, expressionMapperFactory.getInputColumnIndices()));
+                new ExpressionMapperFactory(expression, resolvedInput.getSchema(), outputColumnName, additionalInputs, ctx);
+
+        return resolvedInput//
+                .appendMap(expressionMapperFactory, expressionMapperFactory.getInputColumnIndices())//
+                .dropColumns(IntStream.range(1, resolvedInput.getSchema().numColumns()).toArray());
     }
 
     /**
@@ -463,8 +465,8 @@ public final class ExpressionRunnerUtils {
             // These are wrong and will be fixed below.
             final Function<ColumnId, OptionalInt> columnIdToIndex = columnId -> switch (columnId.type()) {
                 case NAMED -> {
-                    var colIdx = inputTableSchema.getSourceSpec().findColumnIndex(columnId.name());
-                    yield colIdx == -1 ? OptionalInt.empty() : OptionalInt.of(colIdx + 1);
+                    var colIdx = inputTableSchema.findColumnIndex(columnId.name());
+                    yield colIdx == -1 ? OptionalInt.empty() : OptionalInt.of(colIdx);
                 }
                 case ROW_ID -> OptionalInt.of(0);
                 case ROW_INDEX -> rowIndexColIdx;
@@ -495,8 +497,8 @@ public final class ExpressionRunnerUtils {
                 // TODO (TP) Offsets further than the numRows() in either direction will always be completely missing.
                 //           That case should be handled with a simple MissingColumn.
                 if (offset > 0) {
-                    modifiedInputTable = modifiedInputTable
-                        .append(input.selectColumns(columnIndices).renameToRandomColumnNames().slice(offset, numRows));
+                    modifiedInputTable =
+                        modifiedInputTable.append(input.selectColumns(columnIndices).slice(offset, numRows));
                 } else {
                     ColumnarVirtualTable appendedTable = input.selectColumns(0)
                         .appendMissingValueColumns(ValueSchemaUtils.selectColumns(input.getSchema(), columnIndices))
@@ -505,8 +507,7 @@ public final class ExpressionRunnerUtils {
                     modifiedInputTable = modifiedInputTable.append( //
                         appendedTable.slice(0, -offset).concatenate( //
                             input.selectColumns(columnIndices).slice(0, numRows + offset) //
-                        ).renameToRandomColumnNames() //
-                    );
+                        ));
                 }
 
                 // Record appended column indices into Map<ColumnId, OptionalInt>
