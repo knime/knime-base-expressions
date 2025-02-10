@@ -47,6 +47,7 @@ import java.util.function.Function;
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
+import org.knime.core.expressions.Computer.ComputerResultSupplier;
 import org.knime.core.expressions.Computer.DurationComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.LocalDateComputer;
@@ -56,6 +57,7 @@ import org.knime.core.expressions.Computer.PeriodComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.ValueType;
 
@@ -879,7 +881,7 @@ public final class DateTimeFunctions {
     private static Computer modifyDate(final Arguments<Computer> args) {
         var dateComputer = args.get("date");
 
-        Function<EvaluationContext, Temporal> valueSupplier = ctx -> {
+        ComputerResultSupplier<Temporal> valueSupplier = ctx -> {
             var date = Computer.computeTemporal(dateComputer, ctx);
             var year = Optional.ofNullable(args.has("year") ? toInteger(args.get("year")).compute(ctx) : null);
             var month = Optional.ofNullable(args.has("month") ? toInteger(args.get("month")).compute(ctx) : null);
@@ -928,7 +930,7 @@ public final class DateTimeFunctions {
     private static Computer modifyTime(final Arguments<Computer> args) {
         var timeComputer = args.get("time");
 
-        Function<EvaluationContext, Temporal> valueSupplier = ctx -> {
+        ComputerResultSupplier<Temporal> valueSupplier = ctx -> {
             var time = Computer.computeTemporal(timeComputer, ctx);
             var hour = Optional.ofNullable(args.has("hour") ? toInteger(args.get("hour")).compute(ctx) : null);
             var minute = Optional.ofNullable(args.has("minute") ? toInteger(args.get("minute")).compute(ctx) : null);
@@ -989,7 +991,7 @@ public final class DateTimeFunctions {
 
     // ======================= UTILITIES ==============================
 
-    private static Function<EvaluationContext, DateTimeFormatter> createFormatter(final Arguments<Computer> args,
+    private static ComputerResultSupplier<DateTimeFormatter> createFormatter(final Arguments<Computer> args,
         final DateTimeFormatter defaultFormatter) {
         return ctx -> {
             var locale = args.has("locale") //
@@ -1108,9 +1110,10 @@ public final class DateTimeFunctions {
      * @param temporalArgumentName name of the temporal argument to round
      * @param ctx evaluation context
      * @return true if the temporal argument is missing or if the strategy or precision is missing
+     * @throws ExpressionEvaluationException
      */
     private static boolean roundTemporalIsMissing(final Arguments<Computer> args, final String temporalArgumentName,
-        final EvaluationContext ctx) {
+        final EvaluationContext ctx) throws ExpressionEvaluationException {
         if (args.get(temporalArgumentName).isMissing(ctx)) {
             return true;
         }
@@ -1140,7 +1143,8 @@ public final class DateTimeFunctions {
         throw FunctionUtils.calledWithIllegalArgs();
     }
 
-    private static TemporalAmount toTemporalAmount(final Computer computer, final EvaluationContext ctx) {
+    private static TemporalAmount toTemporalAmount(final Computer computer, final EvaluationContext ctx)
+        throws ExpressionEvaluationException {
         if (computer instanceof DurationComputer dc) {
             return dc.compute(ctx);
         } else if (computer instanceof PeriodComputer pc) {

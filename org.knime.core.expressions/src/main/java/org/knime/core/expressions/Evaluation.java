@@ -462,7 +462,7 @@ final class Evaluation {
     private static class Durations {
 
         static DurationComputer unary(final UnaryOperator op, final DurationComputer arg) {
-            Function<EvaluationContext, Duration> value = switch (op) {
+            ComputerResultSupplier<Duration> value = switch (op) {
                 case MINUS -> ctx -> arg.compute(ctx).negated();
                 default -> throw unsupportedOutputForOpError(op, DURATION);
             };
@@ -471,7 +471,7 @@ final class Evaluation {
 
         private static DurationComputer binary(final BinaryOperator op, final DurationComputer arg1,
             final DurationComputer arg2) {
-            Function<EvaluationContext, Duration> value = switch (op) {
+            ComputerResultSupplier<Duration> value = switch (op) {
                 case PLUS -> ctx -> arg1.compute(ctx).plus(arg2.compute(ctx));
                 case MINUS -> ctx -> arg1.compute(ctx).minus(arg2.compute(ctx));
                 default -> throw unsupportedOutputForOpError(op, DURATION);
@@ -481,7 +481,7 @@ final class Evaluation {
 
         private static DurationComputer binary(final BinaryOperator op, final LocalTimeComputer arg1,
             final LocalTimeComputer arg2) {
-            Function<EvaluationContext, Duration> value = switch (op) {
+            ComputerResultSupplier<Duration> value = switch (op) {
                 case MINUS -> ctx -> Duration.between(arg2.compute(ctx), arg1.compute(ctx));
                 default -> throw unsupportedOutputForOpError(op, DURATION);
             };
@@ -490,7 +490,7 @@ final class Evaluation {
 
         private static DurationComputer binary(final BinaryOperator op, final LocalDateTimeComputer arg1,
             final LocalDateTimeComputer arg2) {
-            Function<EvaluationContext, Duration> value = switch (op) {
+            ComputerResultSupplier<Duration> value = switch (op) {
                 case MINUS -> ctx -> Duration.between(arg2.compute(ctx), arg1.compute(ctx));
                 default -> throw unsupportedOutputForOpError(op, DURATION);
             };
@@ -499,7 +499,7 @@ final class Evaluation {
 
         private static DurationComputer binary(final BinaryOperator op, final ZonedDateTimeComputer arg1,
             final ZonedDateTimeComputer arg2) {
-            Function<EvaluationContext, Duration> value = switch (op) {
+            ComputerResultSupplier<Duration> value = switch (op) {
                 case MINUS -> ctx -> Duration.between(arg2.compute(ctx), arg1.compute(ctx));
                 default -> throw unsupportedOutputForOpError(op, DURATION);
             };
@@ -527,7 +527,7 @@ final class Evaluation {
         private static LocalTimeComputer binary(final BinaryOperator op, final LocalTimeComputer arg1,
             final DurationComputer arg2) {
 
-            Function<EvaluationContext, LocalTime> vaue = switch (op) {
+            ComputerResultSupplier<LocalTime> vaue = switch (op) {
                 case PLUS -> ctx -> arg1.compute(ctx).plus(arg2.compute(ctx));
                 case MINUS -> ctx -> arg1.compute(ctx).minus(arg2.compute(ctx));
                 default -> throw unsupportedOutputForOpError(op, DURATION);
@@ -549,7 +549,7 @@ final class Evaluation {
 
         private static LocalDateComputer binary(final BinaryOperator op, final LocalDateComputer arg1,
             final PeriodComputer arg2) {
-            Function<EvaluationContext, LocalDate> value = switch (op) {
+            ComputerResultSupplier<LocalDate> value = switch (op) {
                 case PLUS -> ctx -> arg1.compute(ctx).plus(arg2.compute(ctx));
                 case MINUS -> ctx -> arg1.compute(ctx).minus(arg2.compute(ctx));
                 default -> throw unsupportedOutputForOpError(op, PERIOD);
@@ -572,7 +572,7 @@ final class Evaluation {
 
         private static LocalDateTimeComputer binary(final BinaryOperator op, final LocalDateTimeComputer arg1,
             final DurationComputer arg2) {
-            Function<EvaluationContext, LocalDateTime> value = switch (op) {
+            ComputerResultSupplier<LocalDateTime> value = switch (op) {
                 case PLUS -> ctx -> arg1.compute(ctx).plus(arg2.compute(ctx));
                 case MINUS -> ctx -> arg1.compute(ctx).minus(arg2.compute(ctx));
                 default -> throw unsupportedOutputForOpError(op, DURATION);
@@ -594,7 +594,7 @@ final class Evaluation {
 
         private static ZonedDateTimeComputer binary(final BinaryOperator op, final ZonedDateTimeComputer arg1,
             final DurationComputer arg2) {
-            Function<EvaluationContext, ZonedDateTime> value = switch (op) {
+            ComputerResultSupplier<ZonedDateTime> value = switch (op) {
                 case PLUS -> ctx -> arg1.compute(ctx).plus(arg2.compute(ctx));
                 case MINUS -> ctx -> arg1.compute(ctx).minus(arg2.compute(ctx));
                 default -> throw unsupportedOutputForOpError(op, DURATION);
@@ -615,7 +615,7 @@ final class Evaluation {
     private static class Periods {
 
         static PeriodComputer unary(final UnaryOperator op, final PeriodComputer arg) {
-            Function<EvaluationContext, Period> value = switch (op) {
+            ComputerResultSupplier<Period> value = switch (op) {
                 case MINUS -> ctx -> arg.compute(ctx).negated();
                 default -> throw unsupportedOutputForOpError(op, PERIOD);
             };
@@ -624,7 +624,7 @@ final class Evaluation {
 
         private static PeriodComputer binary(final BinaryOperator op, final PeriodComputer arg1,
             final PeriodComputer arg2) {
-            Function<EvaluationContext, Period> value = switch (op) {
+            ComputerResultSupplier<Period> value = switch (op) {
                 case PLUS -> ctx -> arg1.compute(ctx).plus(arg2.compute(ctx));
                 case MINUS -> ctx -> arg1.compute(ctx).minus(arg2.compute(ctx));
                 default -> throw unsupportedOutputForOpError(op, PERIOD);
@@ -634,7 +634,7 @@ final class Evaluation {
 
         private static PeriodComputer binary(final BinaryOperator op, final LocalDateComputer arg1,
             final LocalDateComputer arg2) {
-            Function<EvaluationContext, Period> value = switch (op) {
+            ComputerResultSupplier<Period> value = switch (op) {
                 case MINUS -> ctx -> Period.between(arg2.compute(ctx), arg1.compute(ctx));
                 default -> throw unsupportedOutputForOpError(op, PERIOD);
             };

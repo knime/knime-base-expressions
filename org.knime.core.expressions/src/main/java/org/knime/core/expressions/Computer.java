@@ -61,6 +61,7 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -143,6 +144,19 @@ public interface Computer {
          * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
         O apply(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Returns a composed function that first applies this function to its input, and then applies the {@code after}
+         * function to the result.
+         *
+         * @param <V> the type of the result of the {@code after} function
+         * @param after the function to apply after this function
+         * @return a composed function that first applies this function and then applies the {@code after} function
+         */
+        default <V> ComputerResultSupplier<V> andThen(final Function<O, V> after) {
+            Objects.requireNonNull(after);
+            return ctx -> after.apply(this.apply(ctx));
+        }
     }
 
     /** {@link Computer} for {@link ValueType#BOOLEAN} and {@link ValueType#OPT_BOOLEAN} */
@@ -290,8 +304,9 @@ public interface Computer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        LocalDate compute(EvaluationContext ctx);
+        LocalDate compute(EvaluationContext ctx) throws ExpressionEvaluationException;
 
         /**
          * Helper method to create a {@link LocalDateComputer}.
@@ -300,17 +315,17 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link LocalDateComputer}
          */
-        static LocalDateComputer of(final Function<EvaluationContext, LocalDate> value,
-            final ToBooleanFunction<EvaluationContext> missing) {
+        static LocalDateComputer of(final ComputerResultSupplier<LocalDate> value,
+            final BooleanComputerResultSupplier missing) {
 
             return new LocalDateComputer() {
                 @Override
-                public boolean isMissing(final EvaluationContext ctx) {
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
-                public LocalDate compute(final EvaluationContext ctx) {
+                public LocalDate compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return value.apply(ctx);
                 }
             };
@@ -323,8 +338,9 @@ public interface Computer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        LocalTime compute(EvaluationContext ctx);
+        LocalTime compute(EvaluationContext ctx) throws ExpressionEvaluationException;
 
         /**
          * Helper method to create a {@link LocalTimeComputer}.
@@ -333,17 +349,17 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link LocalTimeComputer}
          */
-        static LocalTimeComputer of(final Function<EvaluationContext, LocalTime> value,
-            final ToBooleanFunction<EvaluationContext> missing) {
+        static LocalTimeComputer of(final ComputerResultSupplier<LocalTime> value,
+            final BooleanComputerResultSupplier missing) {
 
             return new LocalTimeComputer() {
                 @Override
-                public boolean isMissing(final EvaluationContext ctx) {
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
-                public LocalTime compute(final EvaluationContext ctx) {
+                public LocalTime compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return value.apply(ctx);
                 }
             };
@@ -356,8 +372,9 @@ public interface Computer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        LocalDateTime compute(EvaluationContext ctx);
+        LocalDateTime compute(EvaluationContext ctx) throws ExpressionEvaluationException;
 
         /**
          * Helper method to create a {@link LocalDateTimeComputer}.
@@ -366,17 +383,17 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link LocalDateTimeComputer}
          */
-        static LocalDateTimeComputer of(final Function<EvaluationContext, LocalDateTime> value,
-            final ToBooleanFunction<EvaluationContext> missing) {
+        static LocalDateTimeComputer of(final ComputerResultSupplier<LocalDateTime> value,
+            final BooleanComputerResultSupplier missing) {
 
             return new LocalDateTimeComputer() {
                 @Override
-                public boolean isMissing(final EvaluationContext ctx) {
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
-                public LocalDateTime compute(final EvaluationContext ctx) {
+                public LocalDateTime compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return value.apply(ctx);
                 }
             };
@@ -389,8 +406,9 @@ public interface Computer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        ZonedDateTime compute(EvaluationContext ctx);
+        ZonedDateTime compute(EvaluationContext ctx) throws ExpressionEvaluationException;
 
         /**
          * Helper method to create a {@link ZonedDateTimeComputer}.
@@ -399,17 +417,17 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link ZonedDateTimeComputer}
          */
-        static ZonedDateTimeComputer of(final Function<EvaluationContext, ZonedDateTime> value,
-            final ToBooleanFunction<EvaluationContext> missing) {
+        static ZonedDateTimeComputer of(final ComputerResultSupplier<ZonedDateTime> value,
+            final BooleanComputerResultSupplier missing) {
 
             return new ZonedDateTimeComputer() {
                 @Override
-                public boolean isMissing(final EvaluationContext ctx) {
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
-                public ZonedDateTime compute(final EvaluationContext ctx) {
+                public ZonedDateTime compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return value.apply(ctx);
                 }
             };
@@ -422,8 +440,9 @@ public interface Computer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        Duration compute(EvaluationContext ctx);
+        Duration compute(EvaluationContext ctx) throws ExpressionEvaluationException;
 
         /**
          * Helper method to create a {@link DurationComputer}.
@@ -432,17 +451,17 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link DurationComputer}
          */
-        static DurationComputer of(final Function<EvaluationContext, Duration> value,
-            final ToBooleanFunction<EvaluationContext> missing) {
+        static DurationComputer of(final ComputerResultSupplier<Duration> value,
+            final BooleanComputerResultSupplier missing) {
 
             return new DurationComputer() {
                 @Override
-                public boolean isMissing(final EvaluationContext ctx) {
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
-                public Duration compute(final EvaluationContext ctx) {
+                public Duration compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return value.apply(ctx);
                 }
             };
@@ -455,8 +474,9 @@ public interface Computer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        Period compute(EvaluationContext ctx);
+        Period compute(EvaluationContext ctx) throws ExpressionEvaluationException;
 
         /**
          * Helper method to create a {@link PeriodComputer}.
@@ -465,17 +485,17 @@ public interface Computer {
          * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
          * @return a {@link PeriodComputer}
          */
-        static PeriodComputer of(final Function<EvaluationContext, Period> value,
-            final ToBooleanFunction<EvaluationContext> missing) {
+        static PeriodComputer of(final ComputerResultSupplier<Period> value,
+            final BooleanComputerResultSupplier missing) {
 
             return new PeriodComputer() {
                 @Override
-                public boolean isMissing(final EvaluationContext ctx) {
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return missing.applyAsBoolean(ctx);
                 }
 
                 @Override
-                public Period compute(final EvaluationContext ctx) {
+                public Period compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
                     return value.apply(ctx);
                 }
             };
@@ -559,8 +579,10 @@ public interface Computer {
      * @param computer the computer to compute the Temporal
      * @param ctx evaluation context
      * @return the computed Temporal
+     * @throws ExpressionEvaluationException if the expression could not be evaluated
      */
-    static Temporal computeTemporal(final Computer computer, final EvaluationContext ctx) {
+    static Temporal computeTemporal(final Computer computer, final EvaluationContext ctx)
+        throws ExpressionEvaluationException {
         if (computer instanceof LocalTimeComputer c) {
             return c.compute(ctx);
         } else if (computer instanceof LocalDateComputer c) {

@@ -608,12 +608,17 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final LocalTime expected) {
         return impl(name, positionalArgs, namedArgs, c -> {
-            assertInstanceOf(LocalTimeComputer.class, c, m_function.name() + " should eval to LOCAL_TIME");
-            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            positionalArgs.forEach(TestingArgument::resetAccessed);
-            namedArgs.values().forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((LocalTimeComputer)c).compute(DUMMY_WML),
-                m_function.name() + " should eval correctly");
+            try {
+                assertInstanceOf(LocalTimeComputer.class, c, m_function.name() + " should eval to LOCAL_TIME");
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((LocalTimeComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 
@@ -638,12 +643,17 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final LocalDate expected) {
         return impl(name, positionalArgs, namedArgs, c -> {
-            assertInstanceOf(LocalDateComputer.class, c, m_function.name() + " should eval to LOCAL_DATE");
-            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            positionalArgs.forEach(TestingArgument::resetAccessed);
-            namedArgs.values().forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((LocalDateComputer)c).compute(DUMMY_WML),
-                m_function.name() + " should eval correctly");
+            try {
+                assertInstanceOf(LocalDateComputer.class, c, m_function.name() + " should eval to LOCAL_DATE");
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((LocalDateComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 
@@ -668,12 +678,17 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final LocalDateTime expected) {
         return impl(name, positionalArgs, namedArgs, c -> {
-            assertInstanceOf(LocalDateTimeComputer.class, c, m_function.name() + " should eval to LOCAL_DATE_TIME");
-            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            positionalArgs.forEach(TestingArgument::resetAccessed);
-            namedArgs.values().forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((LocalDateTimeComputer)c).compute(DUMMY_WML),
-                m_function.name() + " should eval correctly");
+            try {
+                assertInstanceOf(LocalDateTimeComputer.class, c, m_function.name() + " should eval to LOCAL_DATE_TIME");
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((LocalDateTimeComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 
@@ -698,12 +713,17 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final ZonedDateTime expected) {
         return impl(name, positionalArgs, namedArgs, c -> {
-            assertInstanceOf(ZonedDateTimeComputer.class, c, m_function.name() + " should eval to ZONED_DATE_TIME");
-            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            positionalArgs.forEach(TestingArgument::resetAccessed);
-            namedArgs.values().forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((ZonedDateTimeComputer)c).compute(DUMMY_WML),
-                m_function.name() + " should eval correctly");
+            try {
+                assertInstanceOf(ZonedDateTimeComputer.class, c, m_function.name() + " should eval to ZONED_DATE_TIME");
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((ZonedDateTimeComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 
@@ -728,12 +748,17 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final Period expected) {
         return impl(name, positionalArgs, namedArgs, c -> {
-            assertInstanceOf(PeriodComputer.class, c, m_function.name() + " should eval to PERIOD");
-            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            positionalArgs.forEach(TestingArgument::resetAccessed);
-            namedArgs.values().forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((PeriodComputer)c).compute(DUMMY_WML),
-                m_function.name() + " should eval correctly");
+            try {
+                assertInstanceOf(PeriodComputer.class, c, m_function.name() + " should eval to PERIOD");
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((PeriodComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 
@@ -758,12 +783,17 @@ public final class FunctionTestBuilder {
     public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
         final Map<String, TestingArgument> namedArgs, final Duration expected) {
         return impl(name, positionalArgs, namedArgs, c -> {
-            assertInstanceOf(DurationComputer.class, c, m_function.name() + " should eval to DURATION");
-            assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
-            positionalArgs.forEach(TestingArgument::resetAccessed);
-            namedArgs.values().forEach(TestingArgument::resetAccessed);
-            assertEquals(expected, ((DurationComputer)c).compute(DUMMY_WML),
-                m_function.name() + " should eval correctly");
+            try {
+                assertInstanceOf(DurationComputer.class, c, m_function.name() + " should eval to DURATION");
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((DurationComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
         });
     }
 
