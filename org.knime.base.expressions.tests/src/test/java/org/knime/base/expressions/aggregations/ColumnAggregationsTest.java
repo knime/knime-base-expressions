@@ -52,12 +52,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.knime.base.expressions.Exec;
 import org.knime.base.expressions.ExpressionMapperFactory;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.aggregations.TestColumnAggregationArgumentSource;
-import org.knime.core.table.virtual.expression.Exec;
 
 /**
  * Tests the collection of column aggregations {@link ColumnAggregations}.

@@ -59,6 +59,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
+import org.knime.base.expressions.Exec;
 import org.knime.base.expressions.ExpressionMapperFactory;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils.NewColumnPosition;
@@ -87,7 +88,6 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.table.virtual.expression.Exec;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
 /**

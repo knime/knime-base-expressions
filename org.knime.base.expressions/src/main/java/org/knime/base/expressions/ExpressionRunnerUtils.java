@@ -66,6 +66,7 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.knime.base.expressions.Exec.ExpressionEvaluationRuntimeException;
 import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContext;
 import org.knime.base.expressions.aggregations.ColumnAggregations;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
@@ -108,8 +109,6 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.virtual.expression.Exec;
-import org.knime.core.table.virtual.expression.Exec.ExpressionEvaluationRuntimeException;
 
 /**
  * Utility methods to work with expressions on Columnar virtual tables.

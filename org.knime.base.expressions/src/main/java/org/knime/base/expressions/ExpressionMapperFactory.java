@@ -81,7 +81,6 @@ import org.knime.core.table.schema.DataSpec;
 import org.knime.core.table.schema.DoubleDataSpec;
 import org.knime.core.table.schema.LongDataSpec;
 import org.knime.core.table.schema.StringDataSpec;
-import org.knime.core.table.virtual.expression.Exec;
 import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
 
 /**

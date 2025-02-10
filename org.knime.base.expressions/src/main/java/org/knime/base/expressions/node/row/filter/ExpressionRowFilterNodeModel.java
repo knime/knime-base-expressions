@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
+import org.knime.base.expressions.Exec.ExpressionEvaluationRuntimeException;
 import org.knime.base.expressions.node.NodeExpressionMapperContext;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
@@ -76,7 +77,6 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.table.virtual.expression.Exec.ExpressionEvaluationRuntimeException;
 
 /**
  * The node model for the row filter expression node.
