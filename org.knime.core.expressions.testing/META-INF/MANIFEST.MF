@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KNIME Expressions Testing Utilities
+Bundle-SymbolicName: org.knime.core.expressions.testing;singleton:=true
+Bundle-Version: 5.5.0.qualifier
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-ActivationPolicy: lazy
+Require-Bundle: 
+ org.knime.core.expressions;bundle-version="[5.5.0,6.0.0)",
+ junit-jupiter-api;bundle-version="[5.9.2,6.0.0)",
+ junit-jupiter-params;bundle-version="[5.9.2,6.0.0)",
+ assertj-core;bundle-version="[3.24.0,4.0.0)"
+Export-Package: org.knime.core.expressions;x-friends:="org.knime.core.expressions.tests,org.knime.base.expressions.tests",
+ org.knime.core.expressions.aggregations;x-friends:="org.knime.core.expressions.tests,org.knime.base.expressions.tests",
+ org.knime.core.expressions.functions;x-friends:="org.knime.core.expressions.tests,org.knime.base.expressions.tests"
+Automatic-Module-Name: org.knime.core.expressions.testing
