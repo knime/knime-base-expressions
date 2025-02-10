@@ -167,38 +167,21 @@ public final class ExpressionRunnerUtils {
     public static ColumnarVirtualTable constructOutputTable(final ColumnarVirtualTable inputTable,
         final ColumnarVirtualTable expressionResult, final NewColumnPosition columnInsertionMode) {
 
-        if (columnInsertionMode.mode() == InsertionMode.APPEND) {
-            return inputTable.append(expressionResult.dropColumns(0));
-        } else {
-            var inputSpec = inputTable.getSchema().getSourceSpec();
-            var matchingColumnIndices = inputSpec.columnsToIndices(columnInsertionMode.columnName());
-            if (matchingColumnIndices.length == 0) {
+        var outputTable = inputTable.append(expressionResult.dropColumns(0));
+        if (columnInsertionMode.mode() == InsertionMode.REPLACE_EXISTING) {
+            final var inputSchema = inputTable.getSchema();
+            final int replacedColIdx = inputSchema.findColumnIndex(columnInsertionMode.columnName());
+            if (replacedColIdx < 0) {
                 throw new IllegalStateException("Cannot replace column with name '" + columnInsertionMode.columnName()
                     + "', no such column available.");
             }
-            int replacedColIdx = matchingColumnIndices[0];
-            // +1 for RowID
-            List<Integer> allColumnIndices = rangeList(inputSpec.getNumColumns() + 1);
-
-            // keep all but replaced, append new column at the end
-            List<Integer> columnIndicesWithoutOldColumn = rangeList(allColumnIndices.size());
-            columnIndicesWithoutOldColumn.remove(replacedColIdx + 1); // +1 to skip RowID
-            var tableWithAppendedResult =
-                inputTable.selectColumns(columnIndicesWithoutOldColumn.stream().mapToInt(i -> i).toArray())
-                    .append(expressionResult.dropColumns(0));
 
             // move appended (=last) column to the position of the column to replace
-            // init with column indices of input (without the removed column)
-            List<Integer> columnIndicesWithNewColumnAtPositionOfOld = rangeList(allColumnIndices.size() - 1);
-            // +1 to skip RowID
-            columnIndicesWithNewColumnAtPositionOfOld.add(replacedColIdx + 1, columnIndicesWithoutOldColumn.size());
-            return tableWithAppendedResult
-                .selectColumns(columnIndicesWithNewColumnAtPositionOfOld.stream().mapToInt(i -> i).toArray());
+            final int[] selection = IntStream.range(0, inputSchema.numColumns()).toArray();
+            selection[replacedColIdx] = selection.length;
+            outputTable = outputTable.selectColumns(selection);
         }
-    }
-
-    private static List<Integer> rangeList(final int endExclusive) {
-        return new ArrayList<>(IntStream.range(0, endExclusive).boxed().toList());
+        return outputTable;
     }
 
     /**
