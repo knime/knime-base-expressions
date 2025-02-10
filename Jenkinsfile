@@ -5,9 +5,7 @@ def BN = (BRANCH_NAME == 'master' || BRANCH_NAME.startsWith('releases/')) ? BRAN
 library "knime-pipeline@$BN"
 
 properties([
-    pipelineTriggers([
-        upstream('knime-core-table/' + env.BRANCH_NAME.replaceAll('/', '%2F')),
-    ]),
+    pipelineTriggers([]),
 	parameters(workflowTests.getConfigurationsAsParameters()),
     buildDiscarder(logRotator(numToKeepStr: '5')),
     disableConcurrentBuilds()

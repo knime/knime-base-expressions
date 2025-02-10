@@ -16,6 +16,10 @@
 	<description>Expression nodes for KNIME Analytics Platform</description>
 
 	<modules>
+		<module>org.knime.core.expressions/libs/fetch_jars</module>
+		<module>org.knime.core.expressions</module>
+		<module>org.knime.core.expressions.testing</module>
+		<module>org.knime.core.expressions.tests</module>
 		<module>org.knime.base.expressions/js-src</module>
 		<module>org.knime.base.expressions</module>
 		<module>org.knime.base.expressions.tests/libs/fetch_jars</module>
@@ -31,6 +35,7 @@
 		<feature-branch-extension.branchListProperty>git.branch</feature-branch-extension.branchListProperty>
 		<feature-branch-extension.appendArtifactoryProperties>false</feature-branch-extension.appendArtifactoryProperties>
 		<knime.sonar-env>Sonarcloud</knime.sonar-env>
+		<sonar.exclusions>org.knime.core.expressions/src/generated/**/*</sonar.exclusions>
 	</properties>
 
 	<repositories>
