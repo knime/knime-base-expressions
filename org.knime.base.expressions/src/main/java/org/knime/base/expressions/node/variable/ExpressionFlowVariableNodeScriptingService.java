@@ -70,6 +70,7 @@ import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.ScriptingService;
 import org.knime.scripting.editor.WorkflowControl;
 
@@ -110,14 +111,14 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
     public final class ExpressionNodeRpcService extends RpcService {
 
         @Override
-        protected String getCodeSuggestion(final String userPrompt, final String currentCode) throws IOException {
+        protected String getCodeSuggestion(final String userPrompt, final String currentCode,
+            final InputOutputModel[] inputModels) throws IOException {
             // NB: The AI button is disabled if the input is not available
             return ExpressionCodeAssistant.generateCode( //
                 ExpressionCodeAssistant.ExpressionType.VARIABLE, //
                 userPrompt, //
                 currentCode, //
-                getWorkflowControl().getInputSpec(), //
-                getSupportedFlowVariables() //
+                inputModels //
             );
         }
 

@@ -73,6 +73,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
+import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.ScriptingService;
 import org.knime.scripting.editor.WorkflowControl;
 
@@ -137,14 +138,14 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
     public final class ExpressionNodeRpcService extends RpcService {
 
         @Override
-        protected String getCodeSuggestion(final String userPrompt, final String currentCode) throws IOException {
+        protected String getCodeSuggestion(final String userPrompt, final String currentCode,
+            final InputOutputModel[] inputModels) throws IOException {
             // NB: The AI button is disabled if the input is not available
             return ExpressionCodeAssistant.generateCode( //
                 ExpressionCodeAssistant.ExpressionType.FILTER, //
                 userPrompt, //
                 currentCode, //
-                getWorkflowControl().getInputSpec(), //
-                getSupportedFlowVariables() //
+                inputModels //
             );
         }
 
