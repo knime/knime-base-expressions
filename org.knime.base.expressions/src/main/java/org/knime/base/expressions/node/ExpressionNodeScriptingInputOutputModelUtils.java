@@ -51,6 +51,7 @@ package org.knime.base.expressions.node;
 import java.util.Collection;
 import java.util.List;
 
+import org.knime.base.expressions.ColumnInputUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.expressions.ValueType;
@@ -129,8 +130,8 @@ public final class ExpressionNodeScriptingInputOutputModelUtils {
                 .subItems(ROW_INFO_SUB_ITEMS) //
                 .subItems( //
                     dataTablespec, //
-                    type -> ExpressionRunnerUtils.mapDataTypeToValueType(type).baseType().name(), //
-                    type -> ExpressionRunnerUtils.mapDataTypeToValueType(type) != null //
+                    type -> ColumnInputUtils.mapDataTypeToValueType(type).baseType().name(), //
+                    type -> ColumnInputUtils.mapDataTypeToValueType(type) != null //
                 ) //
                 .build() //
             ); //

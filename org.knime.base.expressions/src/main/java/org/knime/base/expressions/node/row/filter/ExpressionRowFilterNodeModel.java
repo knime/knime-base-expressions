@@ -48,7 +48,6 @@
  */
 package org.knime.base.expressions.node.row.filter;
 
-import static org.knime.base.expressions.ExpressionRunnerUtils.columnToTypesForTypeInference;
 import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForTypeInference;
 
 import java.io.File;
@@ -56,9 +55,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.knime.base.expressions.ColumnInputUtils;
+import org.knime.base.expressions.ExpressionEvaluationRuntimeException;
 import org.knime.base.expressions.ExpressionRunnerUtils;
-import org.knime.base.expressions.Exec.ExpressionEvaluationRuntimeException;
-import org.knime.base.expressions.node.NodeExpressionMapperContext;
+import org.knime.base.expressions.node.NodeExpressionAdditionalInputs;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
@@ -99,7 +99,7 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
 
         var ast = Expressions.parse(expression);
         Expressions.inferTypes(ast, //
-            columnToTypesForTypeInference(inSpec), //
+            ColumnInputUtils.columnToTypesForTypeInference(inSpec), //
             flowVarToTypeForTypeInference(availableFlowVariables) //
         );
         return ast;
@@ -196,10 +196,10 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
         ExpressionRunnerUtils.evaluateAggregations(ast, inRefTable.getBufferedTable(), exec.createSubProgress(0.33));
 
         // Evaluate the expression and materialize the result
-        var exprContext = new NodeExpressionMapperContext(availableFlowVariables);
+        var additionalInputs = new NodeExpressionAdditionalInputs(availableFlowVariables);
 
         var filteredTable = ExpressionRunnerUtils.filterTableByExpression(inRefTable.getVirtualTable(), ast,
-            inputTable.size(), setWarning::accept, exprContext);
+            inputTable.size(), setWarning::accept, additionalInputs);
 
         var materializeProgress = exec.createSubProgress(0.34);
         try {

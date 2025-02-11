@@ -62,22 +62,11 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.knime.base.expressions.Exec.ExpressionEvaluationRuntimeException;
-import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContext;
 import org.knime.base.expressions.aggregations.ColumnAggregations;
-import org.knime.base.expressions.node.NodeExpressionMapperContext;
-import org.knime.core.data.BooleanValue;
-import org.knime.core.data.DataColumnSpec;
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.data.DataType;
-import org.knime.core.data.DoubleValue;
 import org.knime.core.data.IDataRepository;
-import org.knime.core.data.LongValue;
-import org.knime.core.data.StringValue;
 import org.knime.core.data.columnar.ColumnarTableBackend;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
@@ -108,7 +97,6 @@ import org.knime.core.node.Node;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
-import org.knime.core.table.access.ReadAccess;
 
 /**
  * Utility methods to work with expressions on Columnar virtual tables.
@@ -142,31 +130,17 @@ public final class ExpressionRunnerUtils {
      * @param expression the expression to filter the table
      * @param numRows number of rows in the input table (no slicing here)
      * @param evaluationContext
-     * @param exprContext
+     * @param additionalInputs
      * @return the filtered table
      *
      */
     public static ColumnarVirtualTable filterTableByExpression(final ColumnarVirtualTable inputTable,
         final Ast expression, final long numRows, final EvaluationContext evaluationContext,
-        final NodeExpressionMapperContext exprContext) {
-
-        var slicedResolvedInputTable = resolveColumns(expression, inputTable, numRows);
-
-        final var columns = Exec.RequiredColumns.of(expression);
-
-        final var inputSchema = slicedResolvedInputTable.getSchema();
-
-        final IntFunction<Function<ReadAccess[], ? extends Computer>> columnIndexToComputerFactory = columnIndex -> {
-            int inputIndex = columns.getInputIndex(columnIndex);
-            Function<ReadAccess, ? extends Computer> createComputer =
-                inputSchema.getSpec(columnIndex).accept(Exec.DATA_SPEC_TO_READER_FACTORY);
-            return readAccesses -> createComputer.apply(readAccesses[inputIndex]);
-        };
-
-        var filterFactory = Exec.createRowFilterFactory(expression, columnIndexToComputerFactory,
-            exprContext::flowVariableToComputer, exprContext::aggregationToComputer, evaluationContext);
-
-        return slicedResolvedInputTable.filterRows(columns.columnIndices(), filterFactory)
+        final ExpressionAdditionalInputs additionalInputs) {
+        var resolvedInput = resolveColumns(expression, inputTable, numRows);
+        var filterFactory =
+            new ExpressionRowFilterFactory(expression, resolvedInput.getSchema(), additionalInputs, evaluationContext);
+        return resolvedInput.filterRows(filterFactory.getInputColumnIndices(), filterFactory)
             .selectColumns(IntStream.range(0, inputTable.getSchema().numColumns()).toArray());
     }
 
@@ -432,18 +406,18 @@ public final class ExpressionRunnerUtils {
      * @param numRows number of rows in the input table
      * @param expression the expression. Must have {@link Expressions#inferTypes inferred types}.
      * @param outputColumnName the name of the column that will contain the result of the expression
-     * @param exprContext a context for the {@link ExpressionMapperFactory}
+     * @param additionalInputs a context for the {@link ExpressionMapperFactory}
      * @param ctx the {@link EvaluationContext}
      * @return the result of the expression
      */
     public static ColumnarVirtualTable applyExpression(final ColumnarVirtualTable input, final long numRows,
-        final Ast expression, final String outputColumnName, final ExpressionMapperContext exprContext,
+        final Ast expression, final String outputColumnName, final ExpressionAdditionalInputs additionalInputs,
         final EvaluationContext ctx) {
 
         var resolvedInput = resolveColumns(expression, input, numRows);
 
         var expressionMapperFactory =
-            new ExpressionMapperFactory(expression, resolvedInput.getSchema(), outputColumnName, exprContext, ctx);
+            new ExpressionMapperFactory(expression, resolvedInput.getSchema(), outputColumnName, additionalInputs, ctx);
         return input.selectColumns(0)
             .append(resolvedInput.map(expressionMapperFactory, expressionMapperFactory.getInputColumnIndices()));
     }
@@ -564,7 +538,7 @@ public final class ExpressionRunnerUtils {
      * @param exec the execution context
      * @param progress an execution monitor for progress and cancellation checks. Could be a subprogress monitor, since
      *            it will go from 0-1 over the course of the execution here.
-     * @param exprContext a context for the {@link ExpressionMapperFactory}
+     * @param additionalInputs a context for the {@link ExpressionMapperFactory}
      * @param ctx the {@link EvaluationContext}
      * @return the materialized result of the expression
      * @throws CanceledExecutionException if the execution was canceled
@@ -577,12 +551,12 @@ public final class ExpressionRunnerUtils {
         final String outputColumnName, //
         final ExecutionContext exec, //
         final ExecutionMonitor progress, //
-        final ExpressionMapperContext exprContext, //
+        final ExpressionAdditionalInputs additionalInputs, //
         final EvaluationContext ctx //
     ) throws CanceledExecutionException, VirtualTableIncompatibleException, ExpressionEvaluationException {
         var numRows = refTable.getBufferedTable().size();
         var expressionResultVirtual =
-            applyExpression(refTable.getVirtualTable(), numRows, expression, outputColumnName, exprContext, ctx);
+            applyExpression(refTable.getVirtualTable(), numRows, expression, outputColumnName, additionalInputs, ctx);
         try {
             return ColumnarVirtualTableMaterializer.materializer() //
                 .sources(refTable.getSources()) //
@@ -596,44 +570,6 @@ public final class ExpressionRunnerUtils {
                 .materialize(expressionResultVirtual);
         } catch (ExpressionEvaluationRuntimeException e) { // NOSONAR - throwing only the cause is intended
             throw e.getCause();
-        }
-    }
-
-    /**
-     * Utility function to get a mapper from column names to the value type
-     *
-     * @param spec the {@link DataTableSpec} to get the column types from
-     * @return a function that maps column names to the value type
-     */
-    public static Function<String, ReturnResult<ValueType>> columnToTypesForTypeInference(final DataTableSpec spec) {
-        return name -> ReturnResult.fromNullable(spec, "No input data is available.") //
-            .flatMap(s -> ReturnResult.fromNullable(s.getColumnSpec(name),
-                "No column with the name '" + name + "' is available.")) //
-            .map(DataColumnSpec::getType) //
-            .flatMap(type -> ReturnResult.fromNullable(mapDataTypeToValueType(type),
-                "Columns of the type '" + type + "' are not supported in expressions."));
-    }
-
-    /**
-     * Map a {@link DataType} to the {@link ValueType} which is used for it in expressions.
-     *
-     * @param type the {@link DataType} to map
-     * @return the {@link ValueType} or {@code null} if the type is not supported
-     */
-    public static ValueType mapDataTypeToValueType(final DataType type) {
-        if (type.isCompatible(BooleanValue.class)) {
-            return ValueType.OPT_BOOLEAN;
-        } else if (type.isCompatible(LongValue.class)) {
-            // Note that IntCell is compatible with LongValue
-            return ValueType.OPT_INTEGER;
-        } else if (type.isCompatible(DoubleValue.class)) {
-            return ValueType.OPT_FLOAT;
-        } else if (type.getPreferredValueClass().equals(StringValue.class)) {
-            // Note that we do not use isCompatible because many types are compatible with StringValue
-            // but we do not want to represent them as Strings (e.g. JSON, XML, Date and Time)
-            return ValueType.OPT_STRING;
-        } else {
-            return null;
         }
     }
 

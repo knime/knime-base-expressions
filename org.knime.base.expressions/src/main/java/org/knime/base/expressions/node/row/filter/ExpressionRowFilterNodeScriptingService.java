@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import org.knime.base.expressions.ColumnInputUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
@@ -128,7 +129,7 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
     private synchronized Function<String, ReturnResult<ValueType>> getColumnToTypeMapper() {
         if (m_columnToType == null) {
             var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
-            m_columnToType = ExpressionRunnerUtils.columnToTypesForTypeInference(spec);
+            m_columnToType = ColumnInputUtils.columnToTypesForTypeInference(spec);
         }
         return m_columnToType;
     }

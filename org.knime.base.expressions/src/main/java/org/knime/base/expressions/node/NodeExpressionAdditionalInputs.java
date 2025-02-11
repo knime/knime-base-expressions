@@ -44,38 +44,43 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 27, 2024 (benjamin): created
+ *   Aug 20, 2024 (kampmann): created
  */
-package org.knime.base.expressions.aggregations;
+package org.knime.base.expressions.node;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import java.util.Map;
+import java.util.Optional;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.knime.base.expressions.ColumnOutputUtils;
-import org.knime.core.data.DataColumnSpec;
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.expressions.Ast;
-import org.knime.core.expressions.aggregations.TestColumnAggregationArgumentSource;
+import org.knime.base.expressions.ExpressionAdditionalInputs;
+import org.knime.base.expressions.ExpressionRunnerUtils;
+import org.knime.core.expressions.Ast.AggregationCall;
+import org.knime.core.expressions.Ast.FlowVarAccess;
+import org.knime.core.expressions.Computer;
+import org.knime.core.node.workflow.FlowVariable;
 
 /**
- * Tests the collection of column aggregations {@link ColumnAggregations}.
- *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
+ * Simple implementation of {@link ExpressionAdditionalInputs} that maps flow variables to computers and resolves
+ * aggregations that have been evaluated using {@link ExpressionRunnerUtils#evaluateAggregations}.
  */
-@SuppressWarnings("static-method")
-final class ColumnAggregationsTest {
+public class NodeExpressionAdditionalInputs implements ExpressionAdditionalInputs {
 
-    private static final DataTableSpec TEST_TABLE_SPEC = new DataTableSpec( //
-        TestColumnAggregationArgumentSource.TEST_COLUMNS.entrySet().stream() //
-            .map(e -> ColumnOutputUtils.valueTypeToDataColumnSpec(e.getValue(), e.getKey())) //
-            .toArray(DataColumnSpec[]::new) //
-    );
+    private final Map<String, FlowVariable> m_availableFlowVariables;
 
-    @ParameterizedTest
-    @ArgumentsSource(TestColumnAggregationArgumentSource.class)
-    void testAllAggregationsImplemented(final Ast.AggregationCall agg) {
-        var aggImpl = ColumnAggregations.getAggregationImplementationFor(agg, TEST_TABLE_SPEC);
-        assertNotNull(aggImpl, "No implementation for " + agg);
+    /**
+     * @param availableFlowVariables the available flow variables
+     */
+    public NodeExpressionAdditionalInputs(final Map<String, FlowVariable> availableFlowVariables) {
+        m_availableFlowVariables = availableFlowVariables;
+    }
+
+    @Override
+    public Optional<Computer> flowVariableToComputer(final FlowVarAccess flowVariableAccess) {
+        return Optional.ofNullable(m_availableFlowVariables.get(flowVariableAccess.name()))
+            .map(ExpressionRunnerUtils::computerForFlowVariable);
+    }
+
+    @Override
+    public Optional<Computer> aggregationToComputer(final AggregationCall aggregationCall) {
+        return Optional.ofNullable(ExpressionRunnerUtils.getAggregationResultComputer(aggregationCall));
     }
 }

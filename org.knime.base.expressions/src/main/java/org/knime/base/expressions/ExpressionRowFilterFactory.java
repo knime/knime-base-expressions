@@ -44,38 +44,34 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 7, 2024 (benjamin): created
+ *   Feb 11, 2025 (benjamin): created
  */
 package org.knime.base.expressions;
 
+import java.util.function.BooleanSupplier;
+
 import org.knime.base.expressions.ColumnInputUtils.RequiredColumns;
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable.ColumnarMapperFactory;
 import org.knime.core.data.v2.schema.ValueSchema;
-import org.knime.core.data.v2.schema.ValueSchemaUtils;
 import org.knime.core.expressions.Ast;
-import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileException;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
+import org.knime.core.expressions.ValueType;
 import org.knime.core.table.access.ReadAccess;
-import org.knime.core.table.access.WriteAccess;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
 /**
- * Applies the given expression to each row of the given data.
+ * Filters the input virtual table based on the result of the expression.
  *
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction") // ColumnarMapperFactory is not API yet
-public final class ExpressionMapperFactory implements ColumnarMapperFactory {
+public class ExpressionRowFilterFactory implements RowFilterFactory {
 
     private final Ast m_ast;
 
     private final ValueSchema m_inputTableSchema;
-
-    private final String m_outputColumnName;
 
     private final ExpressionAdditionalInputs m_additionalInputs;
 
@@ -83,20 +79,28 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
 
     private final RequiredColumns m_requiredColumns;
 
+    private static void checkAstOutputType(final Ast ast) {
+        var outputType = Expressions.getInferredType(ast);
+        if (!ValueType.BOOLEAN.equals(outputType)) {
+            throw new IllegalArgumentException(
+                "The expression must evaluate to BOOLEAN. Got " + outputType.name() + ".");
+        }
+    }
+
     /**
      * Creates a new instance.
      *
      * @param ast the expression. Must have {@link Expressions#inferTypes inferred types}.
      * @param inputTableSchema
-     * @param outputColumnName
      * @param additionalInputs
      * @param ctx
      */
-    public ExpressionMapperFactory(final Ast ast, final ValueSchema inputTableSchema, final String outputColumnName,
+    public ExpressionRowFilterFactory(final Ast ast, final ValueSchema inputTableSchema,
         final ExpressionAdditionalInputs additionalInputs, final EvaluationContext ctx) {
+        checkAstOutputType(ast);
+
         m_ast = ast;
         m_inputTableSchema = inputTableSchema;
-        m_outputColumnName = outputColumnName;
         m_additionalInputs = additionalInputs;
         m_ctx = ctx;
 
@@ -108,12 +112,10 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
     }
 
     @Override
-    public Runnable createMapper(final ReadAccess[] inputs, final WriteAccess[] outputs) {
-
-        // Prepare the output computer
-        Computer outputComputer;
+    public BooleanSupplier createRowFilter(final ReadAccess[] inputs) {
+        BooleanComputer outputComputer;
         try {
-            outputComputer = Expressions.evaluate( //
+            outputComputer = (BooleanComputer)Expressions.evaluate( //
                 m_ast, //
                 ColumnInputUtils.createColumnToComputerFn(m_inputTableSchema, m_requiredColumns, inputs), //
                 m_additionalInputs::flowVariableToComputer, //
@@ -124,32 +126,13 @@ public final class ExpressionMapperFactory implements ColumnarMapperFactory {
             throw new IllegalStateException(ex);
         }
 
-        // Prepare the output container
-        var writeAccess = outputs[0];
-        var writeValue = getOutputSchema().getValueFactory(0).createWriteValue(writeAccess);
-        var computerResultWriter = ColumnOutputUtils.createComputerResultWriter(outputComputer, writeValue);
-
-        // Sonar complains a about a too long lambda
-        return () -> { // NOSONAR
+        return () -> {
             try {
-                if (outputComputer.isMissing(m_ctx)) {
-                    writeAccess.setMissing();
-                } else {
-                    computerResultWriter.write(m_ctx);
-                }
+                return outputComputer.compute(m_ctx);
             } catch (ExpressionEvaluationException e) {
-                // NB: We wrap the exception as a RuntimeException so we can throw it
                 throw new ExpressionEvaluationRuntimeException(e);
             }
         };
     }
 
-    @Override
-    public ValueSchema getOutputSchema() {
-        var outputValueType = Expressions.getInferredType(m_ast);
-        var tableSpec =
-            new DataTableSpec(ColumnOutputUtils.valueTypeToDataColumnSpec(outputValueType, m_outputColumnName));
-        var valueFactory = ColumnOutputUtils.valueTypeToValueFactory(outputValueType);
-        return ValueSchemaUtils.create(tableSpec, valueFactory);
-    }
 }

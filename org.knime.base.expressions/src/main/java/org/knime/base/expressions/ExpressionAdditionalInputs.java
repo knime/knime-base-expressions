@@ -44,43 +44,35 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Aug 20, 2024 (kampmann): created
+ *   Feb 11, 2025 (benjamin): created
  */
-package org.knime.base.expressions.node;
+package org.knime.base.expressions;
 
-import java.util.Map;
 import java.util.Optional;
 
-import org.knime.base.expressions.ExpressionMapperFactory.ExpressionMapperContext;
-import org.knime.base.expressions.ExpressionRunnerUtils;
-import org.knime.core.expressions.Ast.AggregationCall;
-import org.knime.core.expressions.Ast.FlowVarAccess;
+import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.Computer;
-import org.knime.core.node.workflow.FlowVariable;
 
 /**
- * Simple implementation of {@link ExpressionMapperContext} that maps flow variables to computers and resolves
- * aggregations that have been evaluated using {@link ExpressionRunnerUtils#evaluateAggregations}.
+ * Provides flow variables and aggregations as computers to evaluate expressions.
+ *
+ * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public class NodeExpressionMapperContext implements ExpressionMapperContext {
-
-    private final Map<String, FlowVariable> m_availableFlowVariables;
+public interface ExpressionAdditionalInputs {
 
     /**
-     * @param availableFlowVariables the available flow variables
+     * Returns a computer for the given flow variable access.
+     *
+     * @param flowVarAccess the flow variable access
+     * @return a computer that returns the value of the flow variable
      */
-    public NodeExpressionMapperContext(final Map<String, FlowVariable> availableFlowVariables) {
-        m_availableFlowVariables = availableFlowVariables;
-    }
+    Optional<Computer> flowVariableToComputer(Ast.FlowVarAccess flowVarAccess);
 
-    @Override
-    public Optional<Computer> flowVariableToComputer(final FlowVarAccess flowVariableAccess) {
-        return Optional.ofNullable(m_availableFlowVariables.get(flowVariableAccess.name()))
-            .map(ExpressionRunnerUtils::computerForFlowVariable);
-    }
-
-    @Override
-    public Optional<Computer> aggregationToComputer(final AggregationCall aggregationCall) {
-        return Optional.ofNullable(ExpressionRunnerUtils.getAggregationResultComputer(aggregationCall));
-    }
+    /**
+     * Returns a computer for the given aggregation call.
+     *
+     * @param aggregationCall the aggregation call
+     * @return a computer that returns the result of the aggregation
+     */
+    Optional<Computer> aggregationToComputer(Ast.AggregationCall aggregationCall);
 }

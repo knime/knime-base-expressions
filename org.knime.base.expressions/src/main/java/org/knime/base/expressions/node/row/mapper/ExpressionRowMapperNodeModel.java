@@ -48,7 +48,6 @@
  */
 package org.knime.base.expressions.node.row.mapper;
 
-import static org.knime.base.expressions.ExpressionRunnerUtils.columnToTypesForTypeInference;
 import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForTypeInference;
 
 import java.io.File;
@@ -59,12 +58,12 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
-import org.knime.base.expressions.Exec;
-import org.knime.base.expressions.ExpressionMapperFactory;
+import org.knime.base.expressions.ColumnInputUtils;
+import org.knime.base.expressions.ColumnOutputUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils.NewColumnPosition;
 import org.knime.base.expressions.InsertionMode;
-import org.knime.base.expressions.node.NodeExpressionMapperContext;
+import org.knime.base.expressions.node.NodeExpressionAdditionalInputs;
 import org.knime.base.expressions.node.WithIndexExpressionException;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataTableSpecCreator;
@@ -112,7 +111,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
 
         var ast = Expressions.parse(expression);
         Expressions.inferTypes(ast, //
-            columnToTypesForTypeInference(inSpec), //
+            ColumnInputUtils.columnToTypesForTypeInference(inSpec), //
             flowVarToTypeForTypeInference(availableFlowVariables) //
         );
         return ast;
@@ -144,9 +143,8 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
                     "Expression %d evaluates to MISSING. Enter an expression that has an output type."
                         .formatted(indexInScripts + 1));
             }
-            var outputDataSpec = Exec.valueTypeToDataSpec(outputType);
             var outputColumnSpec =
-                ExpressionMapperFactory.primitiveDataSpecToDataColumnSpec(outputDataSpec.spec(), outputColumn);
+                ColumnOutputUtils.valueTypeToDataColumnSpec(outputType, outputColumn);
 
             if (outputMode == InsertionMode.REPLACE_EXISTING) {
                 var columnIndex = inputSpec.findColumnIndex(outputColumn);
@@ -258,7 +256,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         final BiConsumer<Integer, String> setWarning //
     ) throws ExpressionCompileException, CanceledExecutionException, VirtualTableIncompatibleException,
         WithIndexExpressionException {
-        var exprContext = new NodeExpressionMapperContext(availableFlowVariables);
+        var additionalInputs = new NodeExpressionAdditionalInputs(availableFlowVariables);
         var numberOfExpressions = expressions.size();
         var nextInputTable = inputTable;
         var outputTables = new ArrayList<BufferedDataTable>();
@@ -287,7 +285,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
             ReferenceTable expressionResult;
             try {
                 expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
-                    newColumnPosition.columnName(), exec, subExec.createSubProgress(0.34), exprContext, ctx);
+                    newColumnPosition.columnName(), exec, subExec.createSubProgress(0.34), additionalInputs, ctx);
             } catch (ExpressionEvaluationException e) {
                 throw WithIndexExpressionException.forEvaluationException(i, e);
             }

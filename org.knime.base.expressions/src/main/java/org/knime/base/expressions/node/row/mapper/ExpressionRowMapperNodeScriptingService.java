@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.knime.base.expressions.ColumnInputUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.InsertionMode;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
@@ -182,7 +183,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         }
 
         private static Map<String, ReturnResult<ValueType>> constructColumnToTypeMap(final DataTableSpec spec) {
-            var typeResolver = ExpressionRunnerUtils.columnToTypesForTypeInference(spec);
+            var typeResolver = ColumnInputUtils.columnToTypesForTypeInference(spec);
             var columnToTypeMap = new HashMap<String, ReturnResult<ValueType>>();
             for (var columnSpec : spec) {
                 var columnName = columnSpec.getName();

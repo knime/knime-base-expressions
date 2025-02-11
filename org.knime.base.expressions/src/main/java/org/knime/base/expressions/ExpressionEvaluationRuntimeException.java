@@ -44,38 +44,35 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   May 27, 2024 (benjamin): created
+ *   Feb 11, 2025 (benjamin): created
  */
-package org.knime.base.expressions.aggregations;
+package org.knime.base.expressions;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.knime.base.expressions.ColumnOutputUtils;
-import org.knime.core.data.DataColumnSpec;
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.expressions.Ast;
-import org.knime.core.expressions.aggregations.TestColumnAggregationArgumentSource;
+import org.knime.core.expressions.ExpressionEvaluationException;
+import org.knime.core.table.virtual.spec.MapTransformSpec.MapperFactory;
+import org.knime.core.table.virtual.spec.RowFilterTransformSpec.RowFilterFactory;
 
 /**
- * Tests the collection of column aggregations {@link ColumnAggregations}.
+ * Exception throw by the {@link MapperFactory} and {@link RowFilterFactory} when the expression cannot be evaluated on
+ * the current input data.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("static-method")
-final class ColumnAggregationsTest {
+public final class ExpressionEvaluationRuntimeException extends RuntimeException {
 
-    private static final DataTableSpec TEST_TABLE_SPEC = new DataTableSpec( //
-        TestColumnAggregationArgumentSource.TEST_COLUMNS.entrySet().stream() //
-            .map(e -> ColumnOutputUtils.valueTypeToDataColumnSpec(e.getValue(), e.getKey())) //
-            .toArray(DataColumnSpec[]::new) //
-    );
+    private static final long serialVersionUID = 1L;
 
-    @ParameterizedTest
-    @ArgumentsSource(TestColumnAggregationArgumentSource.class)
-    void testAllAggregationsImplemented(final Ast.AggregationCall agg) {
-        var aggImpl = ColumnAggregations.getAggregationImplementationFor(agg, TEST_TABLE_SPEC);
-        assertNotNull(aggImpl, "No implementation for " + agg);
+    ExpressionEvaluationRuntimeException(final ExpressionEvaluationException cause) {
+        super(cause);
+    }
+
+    /**
+     * The {@link ExpressionEvaluationException} that caused this runtime exception.
+     * <p>
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized ExpressionEvaluationException getCause() {
+        return (ExpressionEvaluationException)super.getCause();
     }
 }
