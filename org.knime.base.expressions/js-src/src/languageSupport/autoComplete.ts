@@ -177,6 +177,16 @@ const getCompletionContext = (
   } else if (textBefore(1) === "$") {
     // Started for column or flow variable
     return { range: relRange(1), quote: '"' };
+  } else if (textBefore(2) === "&&" || textBefore(2) === "||") {
+    // Started for logical operator
+    return { range: relRange(2), quote: '"' };
+  } else if (
+    textBefore(1) === "&" ||
+    textBefore(1) === "|" ||
+    textBefore(1) === "!"
+  ) {
+    // Started for logical operator
+    return { range: relRange(1), quote: '"' };
   } else {
     // ELSE: We are not in a special case -> use the current word
     return {
@@ -191,6 +201,48 @@ const getCompletionContext = (
   }
   /* eslint-enable no-magic-numbers */
 };
+
+const logicalOperatorsConstantsCompletions: StaticCompletionItem[] = [
+  {
+    label: "and",
+    insertText: "and",
+    kind: monaco.languages.CompletionItemKind.Operator,
+    documentation: "Logical 'and' operator",
+  },
+  {
+    label: "and",
+    insertText: "and",
+    kind: monaco.languages.CompletionItemKind.Operator,
+    documentation: "Logical 'and' operator",
+    filterText: "&&",
+  },
+  {
+    label: "or",
+    insertText: "or",
+    kind: monaco.languages.CompletionItemKind.Operator,
+    documentation: "Logical 'or' operator",
+  },
+  {
+    label: "or",
+    insertText: "or",
+    kind: monaco.languages.CompletionItemKind.Operator,
+    documentation: "Logical 'or' operator",
+    filterText: "||",
+  },
+  {
+    label: "not",
+    insertText: "not",
+    kind: monaco.languages.CompletionItemKind.Operator,
+    documentation: "Logical 'not' operator",
+  },
+  {
+    label: "not",
+    insertText: "not",
+    kind: monaco.languages.CompletionItemKind.Operator,
+    documentation: "Logical 'not' operator",
+    filterText: "!",
+  },
+];
 
 export const registerCompletionItemProvider = ({
   columnGetter,
@@ -214,7 +266,7 @@ export const registerCompletionItemProvider = ({
     getInputsCompletions(flowVariableGetter(), "$$", quote);
 
   return monaco.languages.registerCompletionItemProvider(languageName, {
-    triggerCharacters: ["$", "[", '"', "'"],
+    triggerCharacters: ["$", "[", '"', "'", "&", "|", "!"],
     provideCompletionItems: (model, position) => {
       // We always provide the same items. Monaco does the filtering.
       // We only have to provide a reasonable range
@@ -241,6 +293,7 @@ export const registerCompletionItemProvider = ({
         ...functionsConstantsCompletions,
         ...getColumnCompletions(quote),
         ...getFlowVariableCompletions(quote),
+        ...logicalOperatorsConstantsCompletions,
       ];
 
       return {

@@ -70,7 +70,7 @@ describe("registerKnimeExpressionLanguage", () => {
     ).toHaveBeenCalledWith(
       "knime-expression",
       expect.objectContaining({
-        triggerCharacters: ["$", "[", '"', "'"],
+        triggerCharacters: ["$", "[", '"', "'", "&", "|", "!"],
         provideCompletionItems: expect.any(Function),
       }),
     );
