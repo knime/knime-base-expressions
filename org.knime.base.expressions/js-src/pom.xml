@@ -25,8 +25,8 @@
 		<sonar.coverage.exclusions>**/__tests__/**,**/__mocks__/**,test-setup/**</sonar.coverage.exclusions>
 		<sonar.css.stylelint.reportPaths>target/stylelint.json</sonar.css.stylelint.reportPaths>
 		<sonar.eslint.reportPaths>target/eslint.json</sonar.eslint.reportPaths>
-		<node.version>v20.11.1</node.version>
-		<npm.version>10.2.3</npm.version>
+		<node.version>v22.11.0</node.version>
+		<npm.version>10.9.1</npm.version>
 		<cyclonedx.skip>true</cyclonedx.skip>
 	</properties>
 
