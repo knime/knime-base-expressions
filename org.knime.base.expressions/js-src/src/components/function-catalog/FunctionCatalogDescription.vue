@@ -106,7 +106,7 @@ const lowerHeader = computed(() => {
   &.is-function {
     & .description-title:last-child {
       white-space: wrap;
-      word-break: break-word;
+      overflow-wrap: anywhere;
       font-weight: 300;
       font-size: 13px;
     }

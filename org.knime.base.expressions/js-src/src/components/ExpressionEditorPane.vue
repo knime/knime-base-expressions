@@ -419,7 +419,7 @@ const isEmptyExpr = computed(
       color: var(--error-text-colour);
       font-size: 10px;
       line-height: 12px;
-      word-break: break-word;
+      overflow-wrap: anywhere;
     }
 
     & .error-icon {
