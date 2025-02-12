@@ -45,7 +45,12 @@ export const insertFunctionCall = ({
       // Insert with parentheses
       return editor.executeEdits(
         "function-insert",
-        [{ range: selection, text: `${functionName}()` }],
+        [
+          {
+            range: selection,
+            text: `${functionName}(${editor.getModel()?.getValueInRange(selection) ?? ""})`,
+          },
+        ],
         // Move the cursor between the parentheses
         (editOperations) => [
           Selection.fromPositions({
