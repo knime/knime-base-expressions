@@ -235,7 +235,6 @@ const isEmptyExpr = computed(
       'is-empty-expr': isEmptyExpr,
       active: props.orderingOptions.isActive,
     }"
-    @focusin="onFocus"
   >
     <div class="everything-except-error">
       <span class="editor-title-bar">
@@ -261,6 +260,7 @@ const isEmptyExpr = computed(
         ref="monacoEditorContainerRef"
         class="code-editor"
         @drop="onDropEvent"
+        @focusin="onFocus"
       />
 
       <span class="editor-control-bar">
