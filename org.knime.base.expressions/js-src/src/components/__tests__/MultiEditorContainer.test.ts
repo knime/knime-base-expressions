@@ -5,6 +5,7 @@ import { onKeyStroke } from "@vueuse/core";
 
 import type { ExpressionEditorPaneExposes } from "../ExpressionEditorPane.vue";
 import MultiEditorContainer, {
+  type EditorStates,
   type MultiEditorContainerExposes,
 } from "../MultiEditorContainer.vue";
 
@@ -62,6 +63,20 @@ const doMount = async () => {
   );
 
   return { wrapper, keys };
+};
+
+const getActiveEditorIdxFromWrapper = (
+  wrapper: Awaited<ReturnType<typeof doMount>>["wrapper"],
+) => {
+  const onChangeEvents = wrapper.emitted("on-change") as [EditorStates][];
+  expect(onChangeEvents?.length).toBeGreaterThan(0);
+
+  const lastChangeEvent = onChangeEvents?.[onChangeEvents.length - 1];
+  const activeEditorKey = lastChangeEvent[0].activeEditorKey;
+  const editorKeys = extractKeysFromWrapper(
+    wrapper.vm as MultiEditorContainerExposes,
+  );
+  return activeEditorKey === null ? null : editorKeys.indexOf(activeEditorKey);
 };
 
 describe("MultiEditorContainer", () => {
@@ -229,16 +244,21 @@ describe("MultiEditorContainer", () => {
     ).toEqual(keys);
   });
 
-  it("should focus the first editor by default", async () => {
+  it("should set the first editor as active on mounted", async () => {
+    const { wrapper } = await doMount();
+    expect(getActiveEditorIdxFromWrapper(wrapper)).toBe(0);
+  });
+
+  it("should not focus the first editor by default", async () => {
     const { wrapper } = await doMount();
 
     const editors = wrapper.findAllComponents({ name: "ExpressionEditorPane" });
 
-    // we expect that the first editor is focused by default, but let's make sure
+    // We should not call "focus" on load to not steal focus from the user
     expect(
       (editors[0].vm as ExpressionEditorPaneExposes).getEditorState().editor
         .value?.focus,
-    ).toHaveBeenCalled();
+    ).not.toHaveBeenCalled();
     expect(
       (editors[1].vm as ExpressionEditorPaneExposes).getEditorState().editor
         .value?.focus,

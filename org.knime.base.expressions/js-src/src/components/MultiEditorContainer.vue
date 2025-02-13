@@ -71,7 +71,15 @@ export type MultiEditorContainerExposes = {
     key: string,
     returnType: ExpressionReturnType,
   ) => void;
-  setActiveEditor: (key: string) => void;
+
+  /**
+   * Focus the editor with the given key such that the user can start typing
+   * an expression into this editor.
+   * Note that an editor that has focus is also automatically the active editor.
+   *
+   * @param key The key of the editor to focus.
+   */
+  focusEditor: (key: string) => void;
 };
 
 const activeEditorFileName = ref<string | null>(null);
@@ -153,10 +161,13 @@ const emitOnChange = () => {
 };
 
 /**
- * Called by the ExpressionEditorPane when it gains focus. This function updates
- * the active editor and emits the change event.
+ * Sets the active editor to the editor with the given key. Note that this
+ * does not set the focus.
+ *
+ * Called by the ExpressionEditorPane when an editor gains focus and by
+ * onMounted to set the initial active editor.
  */
-const onFocusChanged = (key: string) => {
+const setActiveEditor = (key: string) => {
   activeEditorFileName.value = key;
   setActiveEditorStoreForAi(editorReferences[key].getEditorState());
 
@@ -180,7 +191,7 @@ const onFocusChanged = (key: string) => {
  *
  * @param key The key of the editor to focus.
  */
-const setActiveEditor = (key: string) =>
+const focusEditor = (key: string) =>
   editorReferences[key].getEditorState().editor.value?.focus();
 
 defineExpose<MultiEditorContainerExposes>({
@@ -197,7 +208,7 @@ defineExpose<MultiEditorContainerExposes>({
   ) {
     editorStates[key].expressionReturnType = returnType;
   },
-  setActiveEditor,
+  focusEditor,
 });
 
 const pushNewEditorState = ({
@@ -294,8 +305,8 @@ const onRequestedAddEditorAtBottom = async () => {
     orderedEditorKeys[orderedEditorKeys.length - 1],
   );
 
-  // setActiveEditor will emit the change event
-  nextTick().then(() => setActiveEditor(latestKey));
+  // focusEditor will emit the change event
+  nextTick().then(() => focusEditor(latestKey));
 };
 
 const onEditorRequestedDelete = (key: string) => {
@@ -317,8 +328,8 @@ const onEditorRequestedDelete = (key: string) => {
   const keyToFocus = orderedEditorKeys[Math.max(0, indexOfDeletedEditor - 1)];
 
   // Now that the editor is gone, focus the one above it
-  // setActiveEditor will emit the change event
-  nextTick().then(() => setActiveEditor(keyToFocus));
+  // focusEditor will emit the change event
+  nextTick().then(() => focusEditor(keyToFocus));
 };
 
 const onEditorRequestedMoveUp = (key: string) => {
@@ -334,8 +345,8 @@ const onEditorRequestedMoveUp = (key: string) => {
   ];
 
   // Focus the moved editor after rerendering
-  // setActiveEditor will emit the change event
-  nextTick().then(() => setActiveEditor(key));
+  // focusEditor will emit the change event
+  nextTick().then(() => focusEditor(key));
 };
 
 const onEditorRequestedMoveDown = (key: string) => {
@@ -351,8 +362,8 @@ const onEditorRequestedMoveDown = (key: string) => {
   ];
 
   // Focus the moved editor after rerendering
-  // setActiveEditor will emit the change event
-  nextTick().then(() => setActiveEditor(key));
+  // focusEditor will emit the change event
+  nextTick().then(() => focusEditor(key));
 };
 
 const onEditorRequestedCopyBelow = async (key: string) => {
@@ -374,8 +385,8 @@ const onEditorRequestedCopyBelow = async (key: string) => {
     .setInitialText(editorReferences[key].getEditorState().text.value);
 
   // focusing the editor will cause the change event to be emitted
-  // setActiveEditor will emit the change event
-  nextTick().then(() => setActiveEditor(newKey));
+  // focusEditor will emit the change event
+  nextTick().then(() => focusEditor(newKey));
 };
 
 registerInsertionListener(() =>
@@ -461,6 +472,7 @@ onMounted(async () => {
   const register = await getSettingsService().registerSettings("model");
   onChangedState.value = register(getState());
 
+  // Note that we do call focusEditor here, because we do not want to steal focus
   // setActiveEditor emits the change event, so we don't need to do it here.
   setActiveEditor(orderedEditorKeys[0]);
 });
@@ -495,7 +507,7 @@ const getOutputLabel = (key: string) => {
         isActive: activeEditorFileName === key,
       }"
       :error-state="getMostConcerningErrorStateForEditor(key)"
-      @focus="onFocusChanged(key)"
+      @focus="setActiveEditor(key)"
       @delete="onEditorRequestedDelete"
       @move-down="onEditorRequestedMoveDown"
       @move-up="onEditorRequestedMoveUp"

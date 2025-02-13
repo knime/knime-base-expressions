@@ -86,7 +86,7 @@ const refreshInputOutputItems = (
     }));
 
   const focusEditorActionBuilder = (editorKey: string) => () => {
-    multiEditorContainerRef.value?.setActiveEditor(editorKey);
+    multiEditorContainerRef.value?.focusEditor(editorKey);
   };
 
   currentInputOutputItems.value[0].subItems =
