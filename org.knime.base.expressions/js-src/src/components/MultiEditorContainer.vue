@@ -325,11 +325,16 @@ const onEditorRequestedDelete = (key: string) => {
   delete editorReferences[key];
   delete editorControlsExpanded.value[key];
 
-  const keyToFocus = orderedEditorKeys[Math.max(0, indexOfDeletedEditor - 1)];
+  if (key === getActiveEditorKey()) {
+    const keyToFocus =
+      orderedEditorKeys[
+        Math.min(indexOfDeletedEditor, numberOfEditors.value - 1)
+      ];
 
-  // Now that the editor is gone, focus the one above it
-  // focusEditor will emit the change event
-  nextTick().then(() => focusEditor(keyToFocus));
+    // Now that the editor is gone, set the one below as active. Do not focus it.
+    // setActiveEditor will emit the change event
+    nextTick().then(() => setActiveEditor(keyToFocus));
+  }
 };
 
 const onEditorRequestedMoveUp = (key: string) => {

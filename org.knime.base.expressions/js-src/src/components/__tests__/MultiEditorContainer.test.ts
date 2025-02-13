@@ -79,6 +79,29 @@ const getActiveEditorIdxFromWrapper = (
   return activeEditorKey === null ? null : editorKeys.indexOf(activeEditorKey);
 };
 
+const addEditorAndFocus = async (
+  wrapper: Awaited<ReturnType<typeof doMount>>["wrapper"],
+) => {
+  const addButton = wrapper.find("[data-testid='add-new-editor-button']");
+  await addButton.trigger("click");
+  await flushPromises();
+  const addedEditorComponent = wrapper
+    .findAllComponents({
+      name: "ExpressionEditorPane",
+    })
+    .slice(-1)[0];
+
+  // Trigger the focus event if "focus" was called on the editor.
+  // In practice the editor would focus itself, but it does not do this in tests
+  const addedEditorState = (
+    wrapper.vm as MultiEditorContainerExposes
+  ).getOrderedEditorStates()[2].monacoState;
+  expect(addedEditorState.editor.value?.focus).toHaveBeenCalled();
+  addedEditorComponent.vm.$emit("focus", extractKeysFromWrapper(wrapper.vm)[2]);
+
+  await nextTick();
+};
+
 describe("MultiEditorContainer", () => {
   it("should register onKeyStroke handler", async () => {
     await doMount();
@@ -265,42 +288,92 @@ describe("MultiEditorContainer", () => {
     ).not.toHaveBeenCalled();
   });
 
-  it.for([
-    { eventToEmit: "delete", keyIndexToPass: 1, expectedFocusedKeyIndex: 0 },
-    {
-      eventToEmit: "copy-below",
-      keyIndexToPass: 1,
-      expectedFocusedKeyIndex: 2,
-    },
-  ])(
-    "should focus the right editor when an editor fires $eventToEmit",
-    async ({ eventToEmit, keyIndexToPass, expectedFocusedKeyIndex }) => {
-      const { wrapper } = await doMount();
+  it("should focus the copied editor", async () => {
+    const { wrapper } = await doMount();
 
-      wrapper
-        .findAllComponents({ name: "ExpressionEditorPane" })
-        [
-          keyIndexToPass
-        ].vm.$emit(eventToEmit, extractKeysFromWrapper(wrapper.vm)[keyIndexToPass]);
+    wrapper
+      .findAllComponents({ name: "ExpressionEditorPane" })[1]
+      .vm.$emit("copy-below", extractKeysFromWrapper(wrapper.vm)[1]);
 
-      await flushPromises();
-      await nextTick();
+    await flushPromises();
+    await nextTick();
 
-      // Get the editor model from the wrapper
-      const hopefullyFocusedEditor = (
-        wrapper.vm as MultiEditorContainerExposes
-      ).getOrderedEditorStates()[expectedFocusedKeyIndex].monacoState;
+    // Get the copied editor model from the wrapper
+    const copiedEditor = (
+      wrapper.vm as MultiEditorContainerExposes
+    ).getOrderedEditorStates()[2].monacoState;
 
-      const failureMessage =
-        `editor ${expectedFocusedKeyIndex} wasn't focused after ` +
-        `emitting ${eventToEmit} by editor ${keyIndexToPass}`;
+    expect(copiedEditor.editor.value?.focus).toHaveBeenCalled();
+  });
 
-      expect(
-        hopefullyFocusedEditor.editor.value?.focus,
-        failureMessage,
-      ).toHaveBeenCalled();
-    },
-  );
+  it("should focus editor after it was added", async () => {
+    const { wrapper } = await doMount();
+
+    await addEditorAndFocus(wrapper);
+    expect(getActiveEditorIdxFromWrapper(wrapper)).toBe(2);
+  });
+
+  it("should not change active editor when unactive editor is deleted", async () => {
+    const { wrapper } = await doMount();
+
+    // Add two editors - the last one added should be active now
+    await addEditorAndFocus(wrapper);
+    await addEditorAndFocus(wrapper);
+    expect(getActiveEditorIdxFromWrapper(wrapper)).toBe(3);
+
+    // Delete editor at index 1 - should not change active editor or call focus events
+    const editorToDelete = 1;
+    wrapper
+      .findAllComponents({ name: "ExpressionEditorPane" })
+      [
+        editorToDelete
+      ].vm.$emit("delete", extractKeysFromWrapper(wrapper.vm)[editorToDelete]);
+
+    await flushPromises();
+    await nextTick();
+
+    // The first editor should not get focused
+    const firstEditor = (
+      wrapper.vm as MultiEditorContainerExposes
+    ).getOrderedEditorStates()[0];
+    expect(firstEditor.monacoState.editor.value?.focus).not.toHaveBeenCalled();
+
+    // The last editor should still be active
+    // (it was at index 3 but now is at index 2 because of the deletion)
+    expect(getActiveEditorIdxFromWrapper(wrapper)).toBe(2);
+  });
+
+  it("should set next editor active if active editor is deleted", async () => {
+    const editorToDelete = 1;
+    const { wrapper } = await doMount();
+
+    // Add two editors - the last one added should be active now
+    await addEditorAndFocus(wrapper);
+    await addEditorAndFocus(wrapper);
+
+    // Set the editor to delete as active
+    const editorToDeleteComponent = wrapper.findAllComponents({
+      name: "ExpressionEditorPane",
+    })[editorToDelete];
+    editorToDeleteComponent.vm.$emit(
+      "focus",
+      extractKeysFromWrapper(wrapper.vm)[2],
+    );
+    expect(getActiveEditorIdxFromWrapper(wrapper)).toBe(editorToDelete);
+
+    // Delete the editor
+    editorToDeleteComponent.vm.$emit(
+      "delete",
+      extractKeysFromWrapper(wrapper.vm)[editorToDelete],
+    );
+
+    await flushPromises();
+    await nextTick();
+
+    // The 1 was deleted but there is a new editor at index 1
+    // this one should be active now
+    expect(getActiveEditorIdxFromWrapper(wrapper)).toBe(1);
+  });
 
   it("should add a new editor when pressing the 'add new editor' button", async () => {
     const { wrapper } = await doMount();
