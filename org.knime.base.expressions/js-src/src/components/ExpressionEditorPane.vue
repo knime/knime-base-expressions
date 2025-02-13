@@ -375,7 +375,6 @@ const isEmptyExpr = computed(
     }
   }
 
-  &:focus-within,
   &.active {
     & .everything-except-error::after {
       position: absolute;
