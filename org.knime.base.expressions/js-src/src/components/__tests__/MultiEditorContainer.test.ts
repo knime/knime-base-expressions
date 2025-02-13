@@ -266,8 +266,6 @@ describe("MultiEditorContainer", () => {
   });
 
   it.for([
-    { eventToEmit: "move-down", keyIndexToPass: 0, expectedFocusedKeyIndex: 1 },
-    { eventToEmit: "move-up", keyIndexToPass: 1, expectedFocusedKeyIndex: 0 },
     { eventToEmit: "delete", keyIndexToPass: 1, expectedFocusedKeyIndex: 0 },
     {
       eventToEmit: "copy-below",

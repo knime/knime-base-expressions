@@ -343,10 +343,7 @@ const onEditorRequestedMoveUp = (key: string) => {
     orderedEditorKeys[index - 1],
     orderedEditorKeys[index],
   ];
-
-  // Focus the moved editor after rerendering
-  // focusEditor will emit the change event
-  nextTick().then(() => focusEditor(key));
+  // Note: we do not change the focus
 };
 
 const onEditorRequestedMoveDown = (key: string) => {
@@ -360,10 +357,7 @@ const onEditorRequestedMoveDown = (key: string) => {
     orderedEditorKeys[index + 1],
     orderedEditorKeys[index],
   ];
-
-  // Focus the moved editor after rerendering
-  // focusEditor will emit the change event
-  nextTick().then(() => focusEditor(key));
+  // Note: we do not change the focus
 };
 
 const onEditorRequestedCopyBelow = async (key: string) => {
