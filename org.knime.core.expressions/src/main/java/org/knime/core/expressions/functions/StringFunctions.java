@@ -359,9 +359,9 @@ public final class StringFunctions {
         .build();
 
     // TODO(AP-22345) emit a warning on potentially slow regexes
-    private static final Pattern underscorePattern = Pattern.compile("([^\\[]|^)(?:_)([^\\[]|$)");
+    private static final Pattern underscorePattern = Pattern.compile("\\[_\\]|_");
 
-    private static final Pattern percentPattern = Pattern.compile("([^\\[]|^)(?:%)([^\\[]|$)");
+    private static final Pattern percentPattern = Pattern.compile("\\[%\\]|%");
 
     private static final Pattern regexCharsExceptSquareBracketsPattern = Pattern.compile("[{}().+*?^$\\\\|]");
 
@@ -384,13 +384,25 @@ public final class StringFunctions {
                 .matcher(escapedPattern) //
                 .replaceAll("\\\\$0");
 
-            // Replace _ and % with their appropriate wildcards, then replace
+            // Replace _ and % with their appropriate wildcards, and replace
             // [_] and [%] with literal _ and %
-            escapedPattern = underscorePattern.matcher(escapedPattern).replaceAll("$1.$2");
-            escapedPattern = percentPattern.matcher(escapedPattern).replaceAll("$1.*$2");
+            escapedPattern = underscorePattern.matcher(escapedPattern).replaceAll(matchResult -> {
+                String match = matchResult.group(0);
+                if (match.equals("[_]")) {
+                    return "_";
+                } else {
+                    return ".";
+                }
+            });
+            escapedPattern = percentPattern.matcher(escapedPattern).replaceAll(matchResult -> {
+                String match = matchResult.group(0);
+                if (match.equals("[%]")) {
+                    return "%";
+                } else {
+                    return ".*";
+                }
+            });
             escapedPattern = escapedPattern //
-                .replace("[_]", "_") //
-                .replace("[%]", "%") //
                 .replace("[", "\\[") //
                 .replace("]", "\\]");
 
