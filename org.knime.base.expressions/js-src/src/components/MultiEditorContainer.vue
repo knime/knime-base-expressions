@@ -74,7 +74,7 @@ export type MultiEditorContainerExposes = {
 
   /**
    * Focus the editor with the given key such that the user can start typing
-   * an expression into this editor.
+   * an expression into this editor. Scrolls the editor into view if necessary.
    * Note that an editor that has focus is also automatically the active editor.
    *
    * @param key The key of the editor to focus.
@@ -173,18 +173,6 @@ const setActiveEditor = (key: string) => {
   }
   activeEditorFileName.value = key;
   setActiveEditorStoreForAi(editorReferences[key].getEditorState());
-
-  // Scroll to the editor. The focusing somehow interferes with scrolling,
-  // so wait for a tick first.
-  nextTick().then(() => {
-    editorReferences[key]
-      ?.getEditorState()
-      .editor.value?.getDomNode()
-      ?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-  });
   emitOnChange();
 };
 
@@ -195,7 +183,7 @@ const setActiveEditor = (key: string) => {
  * @param key The key of the editor to focus.
  */
 const focusEditor = (key: string) =>
-  editorReferences[key].getEditorState().editor.value?.focus();
+  editorReferences[key].focusEditorProgrammatically();
 
 defineExpose<MultiEditorContainerExposes>({
   getOrderedEditorStates: getEditorStatesWithMonacoState,

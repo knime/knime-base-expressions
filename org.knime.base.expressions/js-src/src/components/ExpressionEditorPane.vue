@@ -34,6 +34,11 @@ import EditorOption = monaco.EditorOption;
 
 export type ExpressionEditorPaneExposes = {
   getEditorState: () => UseCodeEditorReturn;
+  /**
+   * Focus this editor. This will scroll the editor into view and set the
+   * active cursor into the editor.
+   */
+  focusEditorProgrammatically: () => void;
 };
 
 const emit = defineEmits<{
@@ -127,9 +132,18 @@ const editorState = editor.useCodeEditor({
   },
 });
 
-const getEditorState = () => editorState;
+const containerRef = ref<HTMLDivElement>();
 defineExpose<ExpressionEditorPaneExposes>({
-  getEditorState,
+  getEditorState: () => editorState,
+  focusEditorProgrammatically: () => {
+    // Note: We must call focus before scrolling into view, otherwise the
+    // editor will not scroll into view.
+    editorState.editor.value?.focus();
+    containerRef.value?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  },
 });
 
 onKeyStroke("Escape", () => {
@@ -228,6 +242,7 @@ const isEmptyExpr = computed(
 
 <template>
   <div
+    ref="containerRef"
     class="editor-and-controls-container"
     :class="{
       'has-error': errorState.level === 'ERROR' && !isEmptyExpr,

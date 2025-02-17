@@ -68,35 +68,36 @@ export const insertFunctionCall = ({
 export const registerInsertionListener = (
   getActiveEditor: () => ExpressionEditorPaneExposes | null,
 ) => {
+  const focusActiveEditorAndGetState = () => {
+    const activeEditor = getActiveEditor();
+    activeEditor?.focusEditorProgrammatically();
+    return activeEditor?.getEditorState();
+  };
+
   insertionEventHelper
     .getInsertionEventHelper(FUNCTION_INSERTION_EVENT)
     .registerInsertionListener((insertionEvent: InsertionEvent) => {
-      const editorState = getActiveEditor()?.getEditorState();
-      if (!editorState) {
-        return;
+      const editorState = focusActiveEditorAndGetState();
+      if (typeof editorState !== "undefined") {
+        insertFunctionCall({
+          editorState,
+          functionName: insertionEvent.textToInsert,
+          functionArgs: insertionEvent.extraArgs?.functionArgs ?? null,
+        });
       }
-      editorState.editor.value?.focus();
-      insertFunctionCall({
-        editorState,
-        functionName: insertionEvent.textToInsert,
-        functionArgs: insertionEvent.extraArgs?.functionArgs ?? null,
-      });
     });
 
   insertionEventHelper
     .getInsertionEventHelper(COLUMN_INSERTION_EVENT)
     .registerInsertionListener((insertionEvent: InsertionEvent) => {
-      const editorState = getActiveEditor()?.getEditorState();
-      if (!editorState) {
-        return;
+      const editorState = focusActiveEditorAndGetState();
+      if (typeof editorState !== "undefined") {
+        const codeToInsert = insertionEvent.textToInsert;
+
+        // Note that we're ignoring requiredImport, because the expression editor
+        // doesn't need imports.
+        editorState.insertColumnReference(codeToInsert);
       }
-      editorState.editor.value?.focus();
-
-      const codeToInsert = insertionEvent.textToInsert;
-
-      // Note that we're ignoring requiredImport, because the expression editor
-      // doesn't need imports.
-      editorState.insertColumnReference(codeToInsert);
     });
 };
 

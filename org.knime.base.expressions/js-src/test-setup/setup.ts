@@ -14,6 +14,10 @@ export const consola = new Consola({
 // @ts-expect-error
 window.consola = consola;
 
+// Mock the scrollIntoView method, which is not implemented in jsdom.
+// https://github.com/vuejs/vue-test-utils/issues/1219
+Element.prototype.scrollIntoView = vi.fn();
+
 // NB: We do not use importActual here, because we want to ensure everything is mocked.
 // Not mocking something can lead randomly appearing timeout errors because of the
 // `getConfig` call of the ui-extension-service.
