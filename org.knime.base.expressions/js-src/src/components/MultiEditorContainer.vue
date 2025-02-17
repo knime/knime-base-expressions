@@ -598,6 +598,16 @@ const getOutputLabel = (key: string) => {
   container-type: inline-size;
 
   &.hidden {
+    /* Use visibility: hidden in addition to opacity to prevent
+     * children from getting focus
+     */
+    visibility: hidden;
+
+    /* When hiding, add an extra delayed transition for visibility */
+    transition:
+      opacity 0.4s ease-in-out,
+      max-height 0.4s ease-in-out,
+      visibility 0s step-end 0.4s;
     max-height: 0;
     opacity: 0;
     overflow: hidden;
