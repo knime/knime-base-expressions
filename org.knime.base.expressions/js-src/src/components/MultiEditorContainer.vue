@@ -505,7 +505,7 @@ const getOutputLabel = (key: string) => {
     >
       <!-- Controls displayed once per editor -->
       <template #multi-editor-controls>
-        <div class="output-label" @click="() => handleToggleExpand(key)">
+        <button class="output-label" @click="() => handleToggleExpand(key)">
           <span
             class="output-expansion-icon"
             :class="{
@@ -515,7 +515,7 @@ const getOutputLabel = (key: string) => {
             <NextIcon />
           </span>
           {{ getOutputLabel(key) }}
-        </div>
+        </button>
         <div
           class="editor-controls"
           :class="{
@@ -641,6 +641,7 @@ const getOutputLabel = (key: string) => {
 }
 
 .output-label {
+  all: unset; /* Removes default button styles */
   width: 100%;
   display: flex;
   flex-direction: row;
@@ -651,7 +652,12 @@ const getOutputLabel = (key: string) => {
   font-weight: 500;
   line-height: 14px;
   text-align: left;
-  user-select: none;
+  box-sizing: border-box;
+
+  &:focus-visible {
+    outline: 2px solid var(--knime-cornflower);
+    border-radius: var(--space-4);
+  }
 }
 
 @container (width < 390px) {
