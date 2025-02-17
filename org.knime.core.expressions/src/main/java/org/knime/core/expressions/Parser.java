@@ -261,7 +261,11 @@ final class Parser {
 
         @Override
         public Ast visitFullExpr(final FullExprContext ctx) {
-            return ctx.expr().accept(this);
+            try {
+                return ctx.expr().accept(this);
+            } catch (StackOverflowError e) { // NOSONAR - no need to pass on StackOverflowError
+                throw expressionDepthExceededError();
+            }
         }
 
         @Override
@@ -584,6 +588,11 @@ final class Parser {
 
                 default -> throw syntaxError("Unexpected binary operator: " + op.getType() + ".", getLocation(op));
             };
+        }
+
+        /** Create a {@link RuntimeSyntaxError} to throw (will result in a {@link ExpressionCompileException}) */
+        private static RuntimeSyntaxError expressionDepthExceededError() {
+            return new RuntimeSyntaxError(ExpressionCompileError.expressionDepthExceededError());
         }
 
         /** Create a {@link RuntimeSyntaxError} to throw (will result in a {@link ExpressionCompileException}) */
