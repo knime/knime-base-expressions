@@ -130,21 +130,7 @@ const paintFocus = useShouldFocusBePainted();
   padding: var(--space-4) 0;
 }
 
-/* Create a selection highlight slightly bigger than the buttons themselves */
-.switch-button.focus-painted:focus-within::after {
-  --border-spacing: var(--space-4);
-
-  content: "";
-  border: 2px solid var(--knime-cornflower);
-  position: absolute;
-  pointer-events: none;
-  z-index: 1;
-  left: calc(-1 * var(--border-spacing));
-  top: calc(-1 * var(--border-spacing));
-  height: calc(100% + 2 * var(--border-spacing));
-  width: calc(100% + 2 * var(--border-spacing));
-
-  /* Canonical way to get largest possible pill-shaped border */
-  border-radius: 999vw;
+.switch-button.focus-painted:focus-within {
+  outline: 2px solid var(--knime-cornflower);
 }
 </style>
