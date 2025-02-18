@@ -15,15 +15,33 @@
 	<name>KNIME Base Expressions</name>
 	<description>Expression nodes for KNIME Analytics Platform</description>
 
+	<profiles>
+		<profile>
+			<id>build</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<modules>
+				<module>org.knime.base.expressions.tests/libs/fetch_jars</module>
+				<module>org.knime.core.expressions.tests</module>
+				<module>org.knime.base.expressions.tests</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>benchmark</id>
+			<modules>
+				<module>org.knime.core.expressions.benchmarks.tests/libs/fetch_jars</module>
+				<module>org.knime.core.expressions.benchmarks.tests</module>
+			</modules>
+		</profile>
+	</profiles>
+
 	<modules>
 		<module>org.knime.core.expressions/libs/fetch_jars</module>
 		<module>org.knime.core.expressions</module>
 		<module>org.knime.core.expressions.testing</module>
-		<module>org.knime.core.expressions.tests</module>
 		<module>org.knime.base.expressions/js-src</module>
 		<module>org.knime.base.expressions</module>
-		<module>org.knime.base.expressions.tests/libs/fetch_jars</module>
-		<module>org.knime.base.expressions.tests</module>
 		<module>org.knime.features.base.expressions</module>
 		<module>org.knime.update.base.expressions</module>
 	</modules>
