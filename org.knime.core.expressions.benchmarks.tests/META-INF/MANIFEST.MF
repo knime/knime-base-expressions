@@ -1,0 +1,18 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Benchmarks the KNIME Expressions Backend
+Bundle-SymbolicName: org.knime.core.expressions.benchmarks.tests;singleton:=true
+Bundle-Version: 5.5.0.qualifier
+Automatic-Module-Name: org.knime.core.expressions.benchmarks.tests
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Fragment-Host: org.knime.core.expressions;bundle-version="[5.5.0, 6.0.0)"
+Require-Bundle: org.knime.core;bundle-version="[5.5.0,6.0.0)",
+ junit-jupiter-api;bundle-version="[5.9.2,6.0.0)",
+ junit-jupiter-params;bundle-version="[5.9.2,6.0.0)"
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: libs/commons-math3-3.6.1.jar,
+ libs/jmh-core-1.37.jar,
+ libs/jmh-generator-annprocess-1.37.jar,
+ libs/jopt-simple-5.0.4.jar,
+ .
