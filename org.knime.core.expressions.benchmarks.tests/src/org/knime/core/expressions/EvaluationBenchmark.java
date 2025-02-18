@@ -76,8 +76,8 @@ import org.openjdk.jmh.infra.Blackhole;
  */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Warmup(iterations = 2, time = 10, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 4, time = 10, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations = 2, time = 1, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 4, time = 1, timeUnit = TimeUnit.SECONDS)
 @State(Scope.Benchmark)
 @SuppressWarnings("javadoc")
 public class EvaluationBenchmark {
