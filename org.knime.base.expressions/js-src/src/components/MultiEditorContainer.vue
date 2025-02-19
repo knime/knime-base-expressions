@@ -168,6 +168,9 @@ const emitOnChange = () => {
  * onMounted to set the initial active editor.
  */
 const setActiveEditor = (key: string) => {
+  if (activeEditorFileName.value === key) {
+    return;
+  }
   activeEditorFileName.value = key;
   setActiveEditorStoreForAi(editorReferences[key].getEditorState());
 
