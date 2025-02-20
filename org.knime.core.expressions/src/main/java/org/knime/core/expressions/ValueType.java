@@ -72,6 +72,24 @@ public interface ValueType {
     /** Type for "STRING" values */
     ValueType STRING = NativeValueType.STRING;
 
+    /** Type for "LOCAL_DATE" values */
+    ValueType LOCAL_DATE = NativeValueType.LOCAL_DATE;
+
+    /** Type for "LOCAL_TIME" values */
+    ValueType LOCAL_TIME = NativeValueType.LOCAL_TIME;
+
+    /** Type for "LOCAL_DATE_TIME" values */
+    ValueType LOCAL_DATE_TIME = NativeValueType.LOCAL_DATE_TIME;
+
+    /** Type for "ZONED_DATE_TIME" values */
+    ValueType ZONED_DATE_TIME = NativeValueType.ZONED_DATE_TIME;
+
+    /** Type for "DURATION" values */
+    ValueType DURATION = NativeValueType.DURATION;
+
+    /** Type for "PERIOD" values */
+    ValueType PERIOD = NativeValueType.PERIOD;
+
     /** Type for values of {@link #BOOLEAN} that might be "MISSING" */
     ValueType OPT_BOOLEAN = new OptionalValueType(NativeValueType.BOOLEAN);
 
@@ -83,6 +101,24 @@ public interface ValueType {
 
     /** Type for values of {@link #STRING} that might be "MISSING" */
     ValueType OPT_STRING = new OptionalValueType(NativeValueType.STRING);
+
+    /** Type for values of {@link #LOCAL_DATE} that might be "MISSING" */
+    ValueType OPT_LOCAL_DATE = new OptionalValueType(NativeValueType.LOCAL_DATE);
+
+    /** Type for values of {@link #LOCAL_TIME} that might be "MISSING" */
+    ValueType OPT_LOCAL_TIME = new OptionalValueType(NativeValueType.LOCAL_TIME);
+
+    /** Type for values of {@link #LOCAL_DATE_TIME} that might be "MISSING" */
+    ValueType OPT_LOCAL_DATE_TIME = new OptionalValueType(NativeValueType.LOCAL_DATE_TIME);
+
+    /** Type for values of {@link #ZONED_DATE_TIME} that might be "MISSING" */
+    ValueType OPT_ZONED_DATE_TIME = new OptionalValueType(NativeValueType.ZONED_DATE_TIME);
+
+    /** Type for values of {@link #DURATION} that might be "MISSING" */
+    ValueType OPT_DURATION = new OptionalValueType(NativeValueType.DURATION);
+
+    /** Type for values of {@link #PERIOD} that might be "MISSING" */
+    ValueType OPT_PERIOD = new OptionalValueType(NativeValueType.PERIOD);
 
     /**
      * Helper to create {@link #BOOLEAN} or {@link #OPT_BOOLEAN} types.
@@ -122,6 +158,66 @@ public interface ValueType {
      */
     static ValueType STRING(final boolean optional) { // NOSONAR - naming this utility the same is useful
         return optional ? OPT_STRING : STRING;
+    }
+
+    /**
+     * Helper to create {@link #LOCAL_DATE} or {@link #OPT_LOCAL_DATE} types.
+     *
+     * @param optional if the resulting type should permit "MISSING" values
+     * @return {@link #LOCAL_DATE} or {@link #OPT_LOCAL_DATE}
+     */
+    static ValueType LOCAL_DATE(final boolean optional) { // NOSONAR - naming this utility the same is useful
+        return optional ? OPT_LOCAL_DATE : LOCAL_DATE;
+    }
+
+    /**
+     * Helper to create {@link #LOCAL_TIME} or {@link #OPT_LOCAL_TIME} types.
+     *
+     * @param optional if the resulting type should permit "MISSING" values
+     * @return {@link #LOCAL_TIME} or {@link #OPT_LOCAL_TIME}
+     */
+    static ValueType LOCAL_TIME(final boolean optional) { // NOSONAR - naming this utility the same is useful
+        return optional ? OPT_LOCAL_TIME : LOCAL_TIME;
+    }
+
+    /**
+     * Helper to create {@link #LOCAL_DATE_TIME} or {@link #OPT_LOCAL_DATE_TIME} types.
+     *
+     * @param optional if the resulting type should permit "MISSING" values
+     * @return {@link #LOCAL_DATE_TIME} or {@link #OPT_LOCAL_DATE_TIME}
+     */
+    static ValueType LOCAL_DATE_TIME(final boolean optional) { // NOSONAR - naming this utility the same is useful
+        return optional ? OPT_LOCAL_DATE_TIME : LOCAL_DATE_TIME;
+    }
+
+    /**
+     * Helper to create {@link #ZONED_DATE_TIME} or {@link #OPT_ZONED_DATE_TIME} types.
+     *
+     * @param optional if the resulting type should permit "MISSING" values
+     * @return {@link #ZONED_DATE_TIME} or {@link #OPT_ZONED_DATE_TIME}
+     */
+    static ValueType ZONED_DATE_TIME(final boolean optional) { // NOSONAR - naming this utility the same is useful
+        return optional ? OPT_ZONED_DATE_TIME : ZONED_DATE_TIME;
+    }
+
+    /**
+     * Helper to create {@link #DURATION} or {@link #OPT_DURATION} types.
+     *
+     * @param optional if the resulting type should permit "MISSING" values
+     * @return {@link #DURATION} or {@link #OPT_DURATION}
+     */
+    static ValueType DURATION(final boolean optional) { // NOSONAR - naming this utility the same is useful
+        return optional ? OPT_DURATION : DURATION;
+    }
+
+    /**
+     * Helper to create {@link #PERIOD} or {@link #OPT_PERIOD} types.
+     *
+     * @param optional if the resulting type should permit "MISSING" values
+     * @return {@link #PERIOD} or {@link #OPT_PERIOD}
+     */
+    static ValueType PERIOD(final boolean optional) { // NOSONAR - naming this utility the same is useful
+        return optional ? OPT_PERIOD : PERIOD;
     }
 
     /**
@@ -180,7 +276,9 @@ public interface ValueType {
     /** Implementation of {@link ValueType} for the native types "BOOLEAN", "INTEGER, "FLOAT", and "STRING". */
     @SuppressWarnings("hiding")
     enum NativeValueType implements ValueType {
-            BOOLEAN, INTEGER, FLOAT, STRING;
+            BOOLEAN, INTEGER, FLOAT, STRING, //
+            LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME, ZONED_DATE_TIME, //
+            DURATION, PERIOD;
 
         @Override
         public boolean isOptional() {
@@ -245,7 +343,7 @@ public interface ValueType {
 
         @Override
         public String name() {
-            return m_baseType.name() + "| MISSING" ;
+            return m_baseType.name() + "| MISSING";
         }
 
         @Override

@@ -49,10 +49,23 @@
 package org.knime.core.expressions;
 
 import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.DURATION;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.MISSING;
+import static org.knime.core.expressions.ValueType.PERIOD;
 import static org.knime.core.expressions.ValueType.STRING;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
+
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
 
 /**
  * A supplier of computation results for expressions.
@@ -275,6 +288,216 @@ public interface Computer {
         }
     }
 
+    /** {@link Computer} for {@link ValueType#LOCAL_DATE} and {@link ValueType#OPT_LOCAL_DATE} */
+    interface LocalDateComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        LocalDate compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link LocalDateComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link LocalDateComputer}
+         */
+        static LocalDateComputer of(final ComputerResultSupplier<LocalDate> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new LocalDateComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public LocalDate compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#LOCAL_TIME} and {@link ValueType#OPT_LOCAL_TIME} */
+    interface LocalTimeComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        LocalTime compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link LocalTimeComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link LocalTimeComputer}
+         */
+        static LocalTimeComputer of(final ComputerResultSupplier<LocalTime> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new LocalTimeComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public LocalTime compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#LOCAL_DATE_TIME} and {@link ValueType#OPT_LOCAL_DATE_TIME} */
+    interface LocalDateTimeComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        LocalDateTime compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link LocalDateTimeComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link LocalDateTimeComputer}
+         */
+        static LocalDateTimeComputer of(final ComputerResultSupplier<LocalDateTime> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new LocalDateTimeComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public LocalDateTime compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#ZONED_DATE_TIME} and {@link ValueType#OPT_ZONED_DATE_TIME} */
+    interface ZonedDateTimeComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        ZonedDateTime compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link ZonedDateTimeComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link ZonedDateTimeComputer}
+         */
+        static ZonedDateTimeComputer of(final ComputerResultSupplier<ZonedDateTime> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new ZonedDateTimeComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public ZonedDateTime compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#DURATION} and {@link ValueType#OPT_DURATION} */
+    interface DurationComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        Duration compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link DurationComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link DurationComputer}
+         */
+        static DurationComputer of(final ComputerResultSupplier<Duration> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new DurationComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public Duration compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#PERIOD} and {@link ValueType#OPT_PERIOD} */
+    interface PeriodComputer extends Computer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        Period compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link PeriodComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link PeriodComputer}
+         */
+        static PeriodComputer of(final ComputerResultSupplier<Period> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new PeriodComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public Period compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+    }
+
     /**
      * Helper method to get the return type of the computer {@link ValueType}.
      *
@@ -290,6 +513,18 @@ public interface Computer {
             return INTEGER;
         } else if (computer instanceof StringComputer) {
             return STRING;
+        } else if (computer instanceof LocalDateComputer) {
+            return LOCAL_DATE;
+        } else if (computer instanceof LocalTimeComputer) {
+            return LOCAL_TIME;
+        } else if (computer instanceof LocalDateTimeComputer) {
+            return LOCAL_DATE_TIME;
+        } else if (computer instanceof ZonedDateTimeComputer) {
+            return ZONED_DATE_TIME;
+        } else if (computer instanceof DurationComputer) {
+            return DURATION;
+        } else if (computer instanceof PeriodComputer) {
+            return PERIOD;
         } else {
             return MISSING;
         }
