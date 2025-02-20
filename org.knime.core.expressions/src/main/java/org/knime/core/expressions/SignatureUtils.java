@@ -163,6 +163,120 @@ public final class SignatureUtils {
         return hasBaseType(ValueType.BOOLEAN);
     }
 
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#LOCAL_DATE} */
+    public static ArgMatcher isLocalDate() {
+        return hasType(ValueType.LOCAL_DATE);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#LOCAL_DATE} and {@link ValueType#OPT_LOCAL_DATE} */
+    public static ArgMatcher isLocalDateOrOpt() {
+        return hasBaseType(ValueType.LOCAL_DATE);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#LOCAL_TIME} */
+    public static ArgMatcher isLocalTime() {
+        return hasType(ValueType.LOCAL_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#LOCAL_TIME} and {@link ValueType#OPT_LOCAL_TIME} */
+    public static ArgMatcher isLocalTimeOrOpt() {
+        return hasBaseType(ValueType.LOCAL_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#LOCAL_DATE_TIME} */
+    public static ArgMatcher isLocalDateTime() {
+        return hasType(ValueType.LOCAL_DATE_TIME);
+    }
+
+    /**
+     * @return an {@link ArgMatcher} that matches {@link ValueType#LOCAL_DATE_TIME} and
+     *         {@link ValueType#OPT_LOCAL_DATE_TIME}
+     */
+    public static ArgMatcher isLocalDateTimeOrOpt() {
+        return hasBaseType(ValueType.LOCAL_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#ZONED_DATE_TIME} */
+    public static ArgMatcher isZonedDateTime() {
+        return hasType(ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches any non-optional date-time-like type */
+    public static ArgMatcher isDateTime() {
+        return isOneOfTypes(ValueType.LOCAL_DATE, ValueType.LOCAL_TIME, ValueType.LOCAL_DATE_TIME,
+            ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches any date-time-like type */
+    public static ArgMatcher isDateTimeOrOpt() {
+        return isOneOfBaseTypes(ValueType.LOCAL_DATE, ValueType.LOCAL_TIME, ValueType.LOCAL_DATE_TIME,
+            ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches any non-optional date-time-like type with a date part */
+    public static ArgMatcher hasDateInformation() {
+        return isOneOfTypes(ValueType.LOCAL_DATE, ValueType.LOCAL_DATE_TIME, ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches any date-time-like type with a date part */
+    public static ArgMatcher hasDateInformationOrOpt() {
+        return isOneOfBaseTypes(ValueType.LOCAL_DATE, ValueType.LOCAL_DATE_TIME, ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches any non-optional date-time-like type with a time part */
+    public static ArgMatcher hasTimeInformation() {
+        return isOneOfTypes(ValueType.LOCAL_TIME, ValueType.LOCAL_DATE_TIME, ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches any date-time-like type with a time part */
+    public static ArgMatcher hasTimeInformationOrOpt() {
+        return isOneOfBaseTypes(ValueType.LOCAL_TIME, ValueType.LOCAL_DATE_TIME, ValueType.ZONED_DATE_TIME);
+    }
+
+    /**
+     * @return an {@link ArgMatcher} that matches {@link ValueType#ZONED_DATE_TIME} and
+     *         {@link ValueType#OPT_ZONED_DATE_TIME}
+     */
+    public static ArgMatcher isZonedDateTimeOrOpt() {
+        return hasBaseType(ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#TIME_DURATION} */
+    public static ArgMatcher isTimeDuration() {
+        return hasType(ValueType.TIME_DURATION);
+    }
+
+    /**
+     * @return an {@link ArgMatcher} that matches {@link ValueType#TIME_DURATION} and
+     *         {@link ValueType#OPT_TIME_DURATION}
+     */
+    public static ArgMatcher isTimeDurationOrOpt() {
+        return hasBaseType(ValueType.TIME_DURATION);
+    }
+
+    /** @return an {@link ArgMatcher} that matches {@link ValueType#DATE_DURATION} */
+    public static ArgMatcher isDateDuration() {
+        return hasType(ValueType.DATE_DURATION);
+    }
+
+    /**
+     * @return an {@link ArgMatcher} that matches {@link ValueType#DATE_DURATION} and
+     *         {@link ValueType#OPT_DATE_DURATION}
+     */
+    public static ArgMatcher isDateDurationOrOpt() {
+        return hasBaseType(ValueType.DATE_DURATION);
+    }
+
+    /** @return an {@link ArgMatcher} that matches any kind of non-optional duration */
+    public static ArgMatcher isDuration() {
+        return isOneOfTypes(ValueType.TIME_DURATION, ValueType.DATE_DURATION);
+    }
+
+    /** @return an {@link ArgMatcher} that matches any kind of duration */
+    public static ArgMatcher isDurationOrOpt() {
+        return isOneOfBaseTypes(ValueType.TIME_DURATION, ValueType.DATE_DURATION);
+    }
+
     /** @return an {@link ArgMatcher} that matches any type (missing or otherwise) */
     public static ArgMatcher isAnything() {
         return new ArgMatcherImpl("ANYTHING", arg -> true);

@@ -59,6 +59,12 @@ import org.knime.core.data.DataType;
 import org.knime.core.data.DoubleValue;
 import org.knime.core.data.LongValue;
 import org.knime.core.data.StringValue;
+import org.knime.core.data.time.duration.DurationValue;
+import org.knime.core.data.time.localdate.LocalDateValue;
+import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
+import org.knime.core.data.time.localtime.LocalTimeValue;
+import org.knime.core.data.time.period.PeriodValue;
+import org.knime.core.data.time.zoneddatetime.ZonedDateTimeValue;
 import org.knime.core.data.v2.ReadValue;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.schema.ValueSchema;
@@ -67,9 +73,15 @@ import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
+import org.knime.core.expressions.Computer.TimeDurationComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.LocalDateComputer;
+import org.knime.core.expressions.Computer.LocalDateTimeComputer;
+import org.knime.core.expressions.Computer.LocalTimeComputer;
+import org.knime.core.expressions.Computer.DateDurationComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
@@ -116,6 +128,18 @@ public final class ColumnInputUtils {
             return ValueType.OPT_INTEGER;
         } else if (type.isCompatible(DoubleValue.class)) {
             return ValueType.OPT_FLOAT;
+        } else if (type.isCompatible(LocalDateValue.class)) {
+            return ValueType.OPT_LOCAL_DATE;
+        } else if (type.isCompatible(LocalTimeValue.class)) {
+            return ValueType.OPT_LOCAL_TIME;
+        } else if (type.isCompatible(LocalDateTimeValue.class)) {
+            return ValueType.OPT_LOCAL_DATE_TIME;
+        } else if (type.isCompatible(ZonedDateTimeValue.class)) {
+            return ValueType.OPT_ZONED_DATE_TIME;
+        } else if (type.isCompatible(DurationValue.class)) {
+            return ValueType.OPT_TIME_DURATION;
+        } else if (type.isCompatible(PeriodValue.class)) {
+            return ValueType.OPT_DATE_DURATION;
         } else if (type.getPreferredValueClass().equals(StringValue.class)) {
             // Note that we do not use isCompatible because many types are compatible with StringValue
             // but we do not want to represent them as Strings (e.g. JSON, XML, Date and Time)
@@ -159,6 +183,18 @@ public final class ColumnInputUtils {
             return IntegerComputer.of(ctx -> longValue.getLongValue(), isMissing);
         } else if (readValue instanceof DoubleValue doubleValue) {
             return FloatComputer.of(ctx -> doubleValue.getDoubleValue(), isMissing);
+        } else if (readValue instanceof LocalDateValue localDateValue) {
+            return LocalDateComputer.of(ctx -> localDateValue.getLocalDate(), isMissing);
+        } else if (readValue instanceof LocalTimeValue localTimeValue) {
+            return LocalTimeComputer.of(ctx -> localTimeValue.getLocalTime(), isMissing);
+        } else if (readValue instanceof LocalDateTimeValue localDateTimeValue) {
+            return LocalDateTimeComputer.of(ctx -> localDateTimeValue.getLocalDateTime(), isMissing);
+        } else if (readValue instanceof ZonedDateTimeValue zonedDateTimeValue) {
+            return ZonedDateTimeComputer.of(ctx -> zonedDateTimeValue.getZonedDateTime(), isMissing);
+        } else if (readValue instanceof DurationValue durationValue) {
+            return TimeDurationComputer.of(ctx -> durationValue.getDuration(), isMissing);
+        } else if (readValue instanceof PeriodValue periodValue) {
+            return DateDurationComputer.of(ctx -> periodValue.getPeriod(), isMissing);
         } else if (readValue instanceof StringValue stringValue) {
             return StringComputer.of(ctx -> stringValue.getStringValue(), isMissing);
         } else {

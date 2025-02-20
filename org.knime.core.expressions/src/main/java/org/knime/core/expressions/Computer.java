@@ -49,10 +49,29 @@
 package org.knime.core.expressions;
 
 import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.DATE_DURATION;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.STRING;
+import static org.knime.core.expressions.ValueType.TIME_DURATION;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
+
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.TemporalAmount;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
+import org.knime.core.expressions.ValueType.NativeValueType;
 
 /**
  * A supplier of computation results for expressions.
@@ -169,6 +188,16 @@ public interface Computer {
                 }
             };
         }
+
+        /**
+         * Helper method to create a non-missing {@link BooleanComputer} from a constant value.
+         *
+         * @param value the constant value
+         * @return an {@link BooleanComputer}
+         */
+        static BooleanComputer ofConstant(final boolean value) {
+            return of(ctx -> value, ctx -> false);
+        }
     }
 
     /** {@link Computer} for {@link ValueType#INTEGER} and {@link ValueType#OPT_INTEGER} */
@@ -204,6 +233,16 @@ public interface Computer {
                 }
             };
         }
+
+        /**
+         * Helper method to create a non-missing {@link IntegerComputer} from a constant value.
+         *
+         * @param value the constant value
+         * @return an {@link IntegerComputer}
+         */
+        static IntegerComputer ofConstant(final long value) {
+            return of(ctx -> value, ctx -> false);
+        }
     }
 
     /** {@link Computer} for {@link ValueType#FLOAT} and {@link ValueType#OPT_FLOAT} */
@@ -237,6 +276,16 @@ public interface Computer {
                     return value.applyAsDouble(ctx);
                 }
             };
+        }
+
+        /**
+         * Helper method to create a non-missing {@link FloatComputer} from a constant value.
+         *
+         * @param value the constant value
+         * @return a {@link FloatComputer}
+         */
+        static FloatComputer ofConstant(final double value) {
+            return of(ctx -> value, ctx -> false);
         }
     }
 
@@ -273,6 +322,321 @@ public interface Computer {
                 }
             };
         }
+
+        /**
+         * Helper method to create a non-missing {@link StringComputer} from a constant value.
+         *
+         * @param value the constant value
+         * @return a {@link StringComputer}
+         */
+        static StringComputer ofConstant(final String value) {
+            return of(ctx -> value, ctx -> false);
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#LOCAL_DATE} and {@link ValueType#OPT_LOCAL_DATE} */
+    non-sealed interface LocalDateComputer extends TemporalAccessorComputer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        @Override
+        LocalDate compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link LocalDateComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link LocalDateComputer}
+         */
+        static LocalDateComputer of(final ComputerResultSupplier<LocalDate> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new LocalDateComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public LocalDate compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+
+        /**
+         * Helper method to create a non-missing {@link LocalDateComputer} from a constant value.
+         *
+         * @param value the constant value
+         * @return a {@link LocalDateComputer}
+         */
+        static LocalDateComputer ofConstant(final LocalDate value) {
+            return of(ctx -> value, ctx -> false);
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#LOCAL_TIME} and {@link ValueType#OPT_LOCAL_TIME} */
+    non-sealed interface LocalTimeComputer extends TemporalAccessorComputer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        @Override
+        LocalTime compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link LocalTimeComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link LocalTimeComputer}
+         */
+        static LocalTimeComputer of(final ComputerResultSupplier<LocalTime> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new LocalTimeComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public LocalTime compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+
+        /**
+         * Helper method to create a non-missing {@link LocalTimeComputer} from a constant value.
+         *
+         * @param value the constant value
+         * @return a {@link LocalTimeComputer}
+         */
+        static LocalTimeComputer ofConstant(final LocalTime value) {
+            return of(ctx -> value, ctx -> false);
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#LOCAL_DATE_TIME} and {@link ValueType#OPT_LOCAL_DATE_TIME} */
+    non-sealed interface LocalDateTimeComputer extends TemporalAccessorComputer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        @Override
+        LocalDateTime compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link LocalDateTimeComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link LocalDateTimeComputer}
+         */
+        static LocalDateTimeComputer of(final ComputerResultSupplier<LocalDateTime> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new LocalDateTimeComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public LocalDateTime compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+
+        /**
+         * Helper method to create a non-missing {@link LocalDateTimeComputer} from a constant value.
+         *
+         * @param value the constant value
+         * @return a {@link LocalDateTimeComputer}
+         */
+        static LocalDateTimeComputer ofConstant(final LocalDateTime value) {
+            return of(ctx -> value, ctx -> false);
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#ZONED_DATE_TIME} and {@link ValueType#OPT_ZONED_DATE_TIME} */
+    non-sealed interface ZonedDateTimeComputer extends TemporalAccessorComputer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        @Override
+        ZonedDateTime compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link ZonedDateTimeComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link ZonedDateTimeComputer}
+         */
+        static ZonedDateTimeComputer of(final ComputerResultSupplier<ZonedDateTime> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new ZonedDateTimeComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public ZonedDateTime compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+
+        /**
+         * Helper method to create a non-missing {@link ZonedDateTimeComputer} from a constant value.
+         *
+         * @param value the constant value
+         * @return a {@link ZonedDateTimeComputer}
+         */
+        static ZonedDateTimeComputer ofConstant(final ZonedDateTime value) {
+            return of(ctx -> value, ctx -> false);
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#TIME_DURATION} and {@link ValueType#OPT_TIME_DURATION} */
+    non-sealed interface TimeDurationComputer extends TemporalAmountComputer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        @Override
+        Duration compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link TimeDurationComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link TimeDurationComputer}
+         */
+        static TimeDurationComputer of(final ComputerResultSupplier<Duration> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new TimeDurationComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public Duration compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+
+        /**
+         * Helper method to create a non-missing {@link TimeDurationComputer} from a constant value.
+         *
+         * @param value the constant value
+         * @return a {@link TimeDurationComputer}
+         */
+        static TimeDurationComputer ofConstant(final Duration value) {
+            return of(ctx -> value, ctx -> false);
+        }
+    }
+
+    /** {@link Computer} for {@link ValueType#DATE_DURATION} and {@link ValueType#OPT_DATE_DURATION} */
+    non-sealed interface DateDurationComputer extends TemporalAmountComputer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        @Override
+        Period compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+
+        /**
+         * Helper method to create a {@link DateDurationComputer}.
+         *
+         * @param value a supplier for the {@link #compute(EvaluationContext)} result
+         * @param missing a supplier that returns {@code true} if the result {@link #isMissing(EvaluationContext)}
+         * @return a {@link DateDurationComputer}
+         */
+        static DateDurationComputer of(final ComputerResultSupplier<Period> value,
+            final BooleanComputerResultSupplier missing) {
+
+            return new DateDurationComputer() {
+
+                @Override
+                public boolean isMissing(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return missing.applyAsBoolean(ctx);
+                }
+
+                @Override
+                public Period compute(final EvaluationContext ctx) throws ExpressionEvaluationException {
+                    return value.apply(ctx);
+                }
+            };
+        }
+
+        /**
+         * Helper method to create a non-missing {@link DateDurationComputer} from a constant value.
+         *
+         * @param value the constant value
+         * @return a {@link DateDurationComputer}
+         */
+        static DateDurationComputer ofConstant(final Period value) {
+            return of(ctx -> value, ctx -> false);
+        }
+    }
+
+    /**
+     * A supplier for the result of an expression. Not directly useable but serves as a supertype for
+     * {@link LocalDateComputer}, {@link LocalTimeComputer}, {@link LocalDateTimeComputer}, and
+     * {@link ZonedDateTimeComputer}.
+     */
+    sealed interface TemporalAccessorComputer extends Computer
+        permits LocalDateComputer, LocalTimeComputer, LocalDateTimeComputer, ZonedDateTimeComputer {
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        TemporalAccessor compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+    }
+
+    /**
+     * A supplier for the result of an expression. Not directly useable but serves as a supertype for
+     * {@link DateDurationComputer} and {@link TimeDurationComputer}.
+     */
+    sealed interface TemporalAmountComputer extends Computer permits DateDurationComputer, TimeDurationComputer {
+
+        /**
+         * @param ctx a {@link EvaluationContext} to report warnings
+         * @return the result of the expression evaluation
+         * @throws ExpressionEvaluationException if the expression could not be evaluated
+         */
+        TemporalAmount compute(EvaluationContext ctx) throws ExpressionEvaluationException;
     }
 
     /**
@@ -282,6 +646,8 @@ public interface Computer {
      * @return a {@link ValueType}
      */
     static ValueType getReturnTypeFromComputer(final Computer computer) {
+
+        // TODO(AP-24022) use pattern matching for exhaustive type switches
         if (computer instanceof BooleanComputer) {
             return BOOLEAN;
         } else if (computer instanceof FloatComputer) {
@@ -290,6 +656,18 @@ public interface Computer {
             return INTEGER;
         } else if (computer instanceof StringComputer) {
             return STRING;
+        } else if (computer instanceof LocalDateComputer) {
+            return LOCAL_DATE;
+        } else if (computer instanceof LocalTimeComputer) {
+            return LOCAL_TIME;
+        } else if (computer instanceof LocalDateTimeComputer) {
+            return LOCAL_DATE_TIME;
+        } else if (computer instanceof ZonedDateTimeComputer) {
+            return ZONED_DATE_TIME;
+        } else if (computer instanceof TimeDurationComputer) {
+            return TIME_DURATION;
+        } else if (computer instanceof DateDurationComputer) {
+            return DATE_DURATION;
         } else {
             return MISSING;
         }
@@ -309,8 +687,7 @@ public interface Computer {
         BooleanComputerResultSupplier isMissing = ctx -> computerSupplier.apply(ctx).isMissing(ctx);
 
         if (returnType.baseType() == BOOLEAN) {
-            return BooleanComputer.of(ctx -> ((BooleanComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR  - method reference is not possible due to delayed computation
-                isMissing);
+            return BooleanComputer.of(ctx -> ((BooleanComputer)computerSupplier.apply(ctx)).compute(ctx), isMissing);
         }
         if (returnType.baseType() == INTEGER) {
             return IntegerComputer.of(ctx -> Math.round(toFloat(computerSupplier.apply(ctx)).compute(ctx)), isMissing);
@@ -319,12 +696,38 @@ public interface Computer {
             return FloatComputer.of(ctx -> toFloat(computerSupplier.apply(ctx)).compute(ctx), isMissing);
         }
         if (returnType.baseType() == STRING) {
-            return StringComputer.of(ctx -> ((StringComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR - method reference is not possible due to delayed computation
+            return StringComputer.of(ctx -> ((StringComputer)computerSupplier.apply(ctx)).compute(ctx), isMissing);
+        }
+        if (returnType.baseType() == LOCAL_DATE) {
+            return LocalDateComputer.of(ctx -> ((LocalDateComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+        if (returnType.baseType() == LOCAL_TIME) {
+            return LocalTimeComputer.of(ctx -> ((LocalTimeComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+        if (returnType.baseType() == LOCAL_DATE_TIME) {
+            return LocalDateTimeComputer.of(ctx -> ((LocalDateTimeComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+        if (returnType.baseType() == ZONED_DATE_TIME) {
+            return ZonedDateTimeComputer.of(ctx -> ((ZonedDateTimeComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+        if (returnType.baseType() == TIME_DURATION) {
+            return TimeDurationComputer.of(ctx -> ((TimeDurationComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+        if (returnType.baseType() == DATE_DURATION) {
+            return DateDurationComputer.of(ctx -> ((DateDurationComputer)computerSupplier.apply(ctx)).compute(ctx),
                 isMissing);
         }
 
-        throw new IllegalStateException("Type of Expression is unknown: " + returnType
-            + " not in FLOAT, INTEGER, BOOLEAN or STRING. This in an implementation error.");
+        var commaSeparatedNames = Arrays.stream(NativeValueType.values()) //
+            .map(ValueType::name) //
+            .collect(Collectors.joining(", "));
+        throw new IllegalStateException("Type of Expression is unknown: " + returnType + " not in "
+            + commaSeparatedNames + ". This in an implementation error.");
     }
 
     /**
@@ -343,5 +746,45 @@ public interface Computer {
         }
         throw new IllegalArgumentException(
             "Cannot cast computer to FLOAT: " + computer + ". This in an implementation error.");
+    }
+
+    /**
+     * Helper method to get the string representation of a computer. If it is Missing, it will return "MISSING".
+     * Otherwise the string representation is type-specific.
+     *
+     * @param computer
+     * @param ctx
+     * @return the string representation of the computer
+     * @throws ExpressionEvaluationException
+     */
+    static String stringRepresentation(final Computer computer, final EvaluationContext ctx)
+        throws ExpressionEvaluationException {
+
+        // TODO(AP-24022) use pattern matching for exhaustive type switches
+        if (computer.isMissing(ctx)) {
+            return "MISSING";
+        } else if (computer instanceof BooleanComputer c) {
+            return c.compute(ctx) ? "true" : "false";
+        } else if (computer instanceof FloatComputer c) {
+            return Double.toString(c.compute(ctx));
+        } else if (computer instanceof IntegerComputer c) {
+            return Long.toString(c.compute(ctx));
+        } else if (computer instanceof StringComputer c) {
+            return c.compute(ctx);
+        } else if (computer instanceof LocalDateComputer c) {
+            return c.compute(ctx).toString();
+        } else if (computer instanceof LocalTimeComputer c) {
+            return c.compute(ctx).toString();
+        } else if (computer instanceof LocalDateTimeComputer c) {
+            return c.compute(ctx).toString();
+        } else if (computer instanceof ZonedDateTimeComputer c) {
+            return c.compute(ctx).toString();
+        } else if (computer instanceof TimeDurationComputer c) {
+            return c.compute(ctx).toString();
+        } else if (computer instanceof DateDurationComputer c) {
+            return c.compute(ctx).toString();
+        } else {
+            throw new IllegalStateException("Implementation error: a computer is not of a known type.");
+        }
     }
 }

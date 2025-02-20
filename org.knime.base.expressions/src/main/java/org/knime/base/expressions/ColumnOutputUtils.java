@@ -55,8 +55,26 @@ import org.knime.core.data.def.BooleanCell;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.data.def.StringCell;
+import org.knime.core.data.time.duration.DurationCellFactory;
+import org.knime.core.data.time.localdate.LocalDateCellFactory;
+import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
+import org.knime.core.data.time.localtime.LocalTimeCellFactory;
+import org.knime.core.data.time.period.PeriodCellFactory;
+import org.knime.core.data.time.zoneddatetime.ZonedDateTimeCellFactory;
 import org.knime.core.data.v2.ValueFactory;
 import org.knime.core.data.v2.WriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.DurationWriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.LocalDateTimeWriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.LocalDateWriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.LocalTimeWriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.PeriodWriteValue;
+import org.knime.core.data.v2.time.DateTimeValueInterfaces.ZonedDateTimeWriteValue;
+import org.knime.core.data.v2.time.DurationValueFactory;
+import org.knime.core.data.v2.time.LocalDateTimeValueFactory;
+import org.knime.core.data.v2.time.LocalDateValueFactory;
+import org.knime.core.data.v2.time.LocalTimeValueFactory;
+import org.knime.core.data.v2.time.PeriodValueFactory;
+import org.knime.core.data.v2.time.ZonedDateTimeValueFactory;
 import org.knime.core.data.v2.value.BooleanValueFactory;
 import org.knime.core.data.v2.value.DoubleValueFactory;
 import org.knime.core.data.v2.value.LongValueFactory;
@@ -67,9 +85,15 @@ import org.knime.core.data.v2.value.ValueInterfaces.LongWriteValue;
 import org.knime.core.data.v2.value.ValueInterfaces.StringWriteValue;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
+import org.knime.core.expressions.Computer.TimeDurationComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.LocalDateComputer;
+import org.knime.core.expressions.Computer.LocalDateTimeComputer;
+import org.knime.core.expressions.Computer.LocalTimeComputer;
+import org.knime.core.expressions.Computer.DateDurationComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.ValueType;
@@ -100,6 +124,18 @@ public final class ColumnOutputUtils {
             columnType = LongCell.TYPE;
         } else if (ValueType.FLOAT.equals(valueType.baseType())) {
             columnType = DoubleCell.TYPE;
+        } else if (ValueType.LOCAL_DATE.equals(valueType.baseType())) {
+            columnType = LocalDateCellFactory.TYPE;
+        } else if (ValueType.LOCAL_TIME.equals(valueType.baseType())) {
+            columnType = LocalTimeCellFactory.TYPE;
+        } else if (ValueType.LOCAL_DATE_TIME.equals(valueType.baseType())) {
+            columnType = LocalDateTimeCellFactory.TYPE;
+        } else if (ValueType.ZONED_DATE_TIME.equals(valueType.baseType())) {
+            columnType = ZonedDateTimeCellFactory.TYPE;
+        } else if (ValueType.TIME_DURATION.equals(valueType.baseType())) {
+            columnType = DurationCellFactory.TYPE;
+        } else if (ValueType.DATE_DURATION.equals(valueType.baseType())) {
+            columnType = PeriodCellFactory.TYPE;
         } else if (ValueType.STRING.equals(valueType.baseType())) {
             columnType = StringCell.TYPE;
         } else if (ValueType.MISSING.equals(valueType)) {
@@ -127,6 +163,18 @@ public final class ColumnOutputUtils {
             return DoubleValueFactory.INSTANCE;
         } else if (ValueType.STRING.equals(valueType.baseType())) {
             return StringValueFactory.INSTANCE;
+        } else if (ValueType.LOCAL_DATE.equals(valueType.baseType())) {
+            return LocalDateValueFactory.INSTANCE;
+        } else if (ValueType.LOCAL_TIME.equals(valueType.baseType())) {
+            return LocalTimeValueFactory.INSTANCE;
+        } else if (ValueType.LOCAL_DATE_TIME.equals(valueType.baseType())) {
+            return LocalDateTimeValueFactory.INSTANCE;
+        } else if (ValueType.ZONED_DATE_TIME.equals(valueType.baseType())) {
+            return ZonedDateTimeValueFactory.INSTANCE;
+        } else if (ValueType.TIME_DURATION.equals(valueType.baseType())) {
+            return DurationValueFactory.INSTANCE;
+        } else if (ValueType.DATE_DURATION.equals(valueType.baseType())) {
+            return PeriodValueFactory.INSTANCE;
         } else if (ValueType.MISSING.equals(valueType)) {
             throw new IllegalArgumentException("Cannot create ValueFactory for missing value type");
         } else {
@@ -149,6 +197,18 @@ public final class ColumnOutputUtils {
             return ctx -> ((LongWriteValue)writeValue).setLongValue(integerComputer.compute(ctx));
         } else if (outputComputer instanceof FloatComputer floatComputer) {
             return ctx -> ((DoubleWriteValue)writeValue).setDoubleValue(floatComputer.compute(ctx));
+        } else if (outputComputer instanceof LocalDateComputer localDateComputer) {
+            return ctx -> ((LocalDateWriteValue)writeValue).setLocalDate(localDateComputer.compute(ctx));
+        } else if (outputComputer instanceof LocalTimeComputer localTimeComputer) {
+            return ctx -> ((LocalTimeWriteValue)writeValue).setLocalTime(localTimeComputer.compute(ctx));
+        } else if (outputComputer instanceof LocalDateTimeComputer localDateTimeComputer) {
+            return ctx -> ((LocalDateTimeWriteValue)writeValue).setLocalDateTime(localDateTimeComputer.compute(ctx));
+        } else if (outputComputer instanceof ZonedDateTimeComputer zonedDateTimeComputer) {
+            return ctx -> ((ZonedDateTimeWriteValue)writeValue).setZonedDateTime(zonedDateTimeComputer.compute(ctx));
+        } else if (outputComputer instanceof TimeDurationComputer durationComputer) {
+            return ctx -> ((DurationWriteValue)writeValue).setDuration(durationComputer.compute(ctx));
+        } else if (outputComputer instanceof DateDurationComputer periodComputer) {
+            return ctx -> ((PeriodWriteValue)writeValue).setPeriod(periodComputer.compute(ctx));
         } else if (outputComputer instanceof StringComputer stringComputer) {
             return ctx -> ((StringWriteValue)writeValue).setStringValue(stringComputer.compute(ctx));
         } else {

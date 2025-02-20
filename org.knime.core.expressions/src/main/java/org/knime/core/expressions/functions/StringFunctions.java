@@ -1977,6 +1977,7 @@ public final class StringFunctions {
                 * Float: Converted to their string representations, e.g. "5.4".
                 * Integer: Converted to their string representations, e.g. "1".
                 * String: Returns unchanged input string.
+                * Any date, time, or duration: Returns the relevant ISO 8601 string representation.
 
                 Any values that are `MISSING` are converted to the string "MISSING".
                 """) //
@@ -1998,25 +1999,11 @@ public final class StringFunctions {
         .build();
 
     private static Computer toStringImpl(final Arguments<Computer> args) {
-        ComputerResultSupplier<String> value = ctx -> {
-            var c = args.get("input");
-
-            if (c.isMissing(ctx)) {
-                return "MISSING";
-            } else if (c instanceof BooleanComputer bc) {
-                return String.valueOf(bc.compute(ctx));
-            } else if (c instanceof FloatComputer fc) {
-                return String.valueOf(fc.compute(ctx));
-            } else if (c instanceof IntegerComputer ic) {
-                return String.valueOf(ic.compute(ctx));
-            } else if (c instanceof StringComputer sc) {
-                return sc.compute(ctx);
-            } else {
-                throw FunctionUtils.calledWithIllegalArgs();
-            }
-        };
-
-        return StringComputer.of(value, ctx -> false);
+        var inputComputer = args.get("input");
+        return StringComputer.of( //
+            ctx -> Computer.stringRepresentation(inputComputer, ctx), //
+            ctx -> false //
+        );
     }
 
     public static final ExpressionFunction PARSE_FLOAT = functionBuilder() //

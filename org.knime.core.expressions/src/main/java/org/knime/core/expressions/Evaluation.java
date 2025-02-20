@@ -145,22 +145,22 @@ final class Evaluation {
 
         @Override
         public Computer visit(final BooleanConstant node) {
-            return BooleanComputer.of(ctx -> node.value(), ctx -> false);
+            return BooleanComputer.ofConstant(node.value());
         }
 
         @Override
         public IntegerComputer visit(final IntegerConstant node) {
-            return IntegerComputer.of(ctx -> node.value(), ctx -> false);
+            return IntegerComputer.ofConstant(node.value());
         }
 
         @Override
         public Computer visit(final FloatConstant node) {
-            return FloatComputer.of(ctx -> node.value(), ctx -> false);
+            return FloatComputer.ofConstant(node.value());
         }
 
         @Override
         public Computer visit(final StringConstant node) {
-            return StringComputer.of(ctx -> node.value(), ctx -> false);
+            return StringComputer.ofConstant(node.value());
         }
 
         @Override
@@ -467,20 +467,7 @@ final class Evaluation {
 
     private static class Strings {
         static ComputerResultSupplier<String> stringRepr(final Computer computer) {
-            ComputerResultSupplier<String> value;
-            if (computer instanceof BooleanComputer c) {
-                value = ctx -> c.compute(ctx) ? "true" : "false";
-            } else if (computer instanceof IntegerComputer c) {
-                value = ctx -> Long.toString(c.compute(ctx));
-            } else if (computer instanceof FloatComputer c) {
-                value = ctx -> Double.toString(c.compute(ctx));
-            } else if (computer instanceof StringComputer c) {
-                value = c::compute;
-            } else {
-                throw new EvaluationImplementationError(
-                    "Argument of " + computer.getClass() + " cannot be cast to STRING.");
-            }
-            return ctx -> computer.isMissing(ctx) ? "MISSING" : value.apply(ctx);
+            return ctx -> Computer.stringRepresentation(computer, ctx);
         }
 
         static StringComputer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
