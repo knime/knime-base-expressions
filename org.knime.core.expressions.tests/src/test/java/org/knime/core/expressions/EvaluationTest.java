@@ -72,6 +72,12 @@ import static org.knime.core.expressions.AstTestUtils.COL;
 import static org.knime.core.expressions.AstTestUtils.FLOAT;
 import static org.knime.core.expressions.AstTestUtils.FLOW;
 import static org.knime.core.expressions.AstTestUtils.FUN;
+import static org.knime.core.expressions.AstTestUtils.F_DURATION;
+import static org.knime.core.expressions.AstTestUtils.F_LOCAL_DATE;
+import static org.knime.core.expressions.AstTestUtils.F_LOCAL_DATE_TIME;
+import static org.knime.core.expressions.AstTestUtils.F_LOCAL_TIME;
+import static org.knime.core.expressions.AstTestUtils.F_PERIOD;
+import static org.knime.core.expressions.AstTestUtils.F_ZONED_DATE_TIME;
 import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
@@ -82,6 +88,13 @@ import static org.knime.core.expressions.TestUtils.COLUMN_ID;
 import static org.knime.core.expressions.TestUtils.COLUMN_NAME;
 import static org.knime.core.expressions.TestUtils.computerResultChecker;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -400,6 +413,158 @@ final class EvaluationTest {
                 42), //
             AGG_RETURN_42_WITH_COL_TYPE_F(AstTestUtils.AGG(TestAggregations.RETURN_42_WITH_COL_TYPE, STR("FLOAT")),
                 42.0), //
+
+            // === Time types
+
+            // Time binary operators (temporalamount - temporalamount)
+            DIFFERENCE_DURATION(OP(F_DURATION("P1D"), MINUS, F_DURATION("PT1H")), Duration.ofHours(23)), //
+            DIFFERENCE_PERIOD(OP(F_PERIOD("P1M"), MINUS, F_PERIOD("P1D")), Period.of(0, 1, -1)), //
+
+            // Time binary operators (temporal - temporal)
+            DIFFERENCE_LOCAL_DATE(OP(F_LOCAL_DATE("2019-01-02"), MINUS, F_LOCAL_DATE("2019-01-01")),
+                Period.of(0, 0, 1)), //
+            DIFFERENCE_LOCAL_TIME(OP(F_LOCAL_TIME("12:00"), MINUS, F_LOCAL_TIME("11:00")), Duration.ofHours(1)), //
+            DIFFERENCE_LOCAL_DATE_TIME(
+                OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), MINUS, F_LOCAL_DATE_TIME("2019-01-01T11:00")),
+                Duration.ofHours(25)), //
+            DIFFERENCE_ZONED_DATE_TIME(
+                OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), MINUS, F_ZONED_DATE_TIME("2019-01-01T11:00+01:00")),
+                Duration.ofHours(25)), //
+
+            // Time binary operators (temporal - temporalamount)
+            DIFFERENCE_LOCAL_TIME_DURATION(OP(F_LOCAL_TIME("12:00"), MINUS, F_DURATION("PT1H")), LocalTime.of(11, 0)), //
+            DIFFERENCE_LOCAL_DATE_TIME_DURATION(OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), MINUS, F_DURATION("PT1H")),
+                LocalDateTime.of(2019, 1, 2, 11, 0)), //
+            DIFFERENCE_ZONED_DATE_TIME_DURATION(
+                OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), MINUS, F_DURATION("PT1H")),
+                ZonedDateTime.of(2019, 1, 2, 11, 0, 0, 0, ZoneOffset.ofHours(1))), //
+            DIFFERENCE_LOCAL_DATE_PERIOD(OP(F_LOCAL_DATE("2019-01-02"), MINUS, F_PERIOD("P1D")),
+                LocalDate.of(2019, 1, 1)), //
+            DIFFERENCE_LOCAL_DATE_TIME_PERIOD(OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), MINUS, F_PERIOD("P1D")),
+                LocalDateTime.of(2019, 1, 1, 12, 0)), //
+            DIFFERENCE_ZONED_DATE_TIME_PERIOD(OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), MINUS, F_PERIOD("P1D")),
+                ZonedDateTime.of(2019, 1, 1, 12, 0, 0, 0, ZoneOffset.ofHours(1))), //
+
+            // Time binary operators (temporalamount + temporalamount)
+            SUM_DURATION(OP(F_DURATION("P1D"), PLUS, F_DURATION("PT1H")), Duration.ofHours(25)), //
+            SUM_PERIOD(OP(F_PERIOD("P1M"), PLUS, F_PERIOD("P1D")), Period.of(0, 1, 1)), //
+
+            // Time binary operators (temporal + temporalamount)
+            SUM_LOCAL_TIME_DURATION(OP(F_LOCAL_TIME("12:00"), PLUS, F_DURATION("PT1H")), LocalTime.of(13, 0)), //
+            SUM_LOCAL_DATE_TIME_DURATION(OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), PLUS, F_DURATION("PT1H")),
+                LocalDateTime.of(2019, 1, 2, 13, 0)), //
+            SUM_ZONED_DATE_TIME_DURATION(OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), PLUS, F_DURATION("PT1H")),
+                ZonedDateTime.of(2019, 1, 2, 13, 0, 0, 0, ZoneOffset.ofHours(1))), //
+            SUM_LOCAL_DATE_PERIOD(OP(F_LOCAL_DATE("2019-01-02"), PLUS, F_PERIOD("P1D")), LocalDate.of(2019, 1, 3)), //
+            SUM_LOCAL_DATE_TIME_PERIOD(OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), PLUS, F_PERIOD("P1D")),
+                LocalDateTime.of(2019, 1, 3, 12, 0)), //
+            SUM_ZONED_DATE_TIME_PERIOD(OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), PLUS, F_PERIOD("P1D")),
+                ZonedDateTime.of(2019, 1, 3, 12, 0, 0, 0, ZoneOffset.ofHours(1))), //
+
+            // Time binary operators (temporalamount * or / scalar)
+            MULTIPLY_DURATION(OP(F_DURATION("P1D"), MULTIPLY, INT(2)), Duration.ofDays(2)), //
+            DIVIDE_DURATION(OP(F_DURATION("P1D"), DIVIDE, INT(2)), Duration.ofHours(12)), //
+            MULTIPLY_PERIOD(OP(F_PERIOD("P1M"), MULTIPLY, INT(2)), Period.of(0, 2, 0)), //
+
+            // Time ordering
+            LT_DURATION(OP(F_DURATION("P1D"), LESS_THAN, F_DURATION("P2D")), true), //
+            LT_DURATION_FALSE(OP(F_DURATION("P2D"), LESS_THAN, F_DURATION("P1D")), false), //
+            LT_LOCAL_DATE(OP(F_LOCAL_DATE("2019-01-01"), LESS_THAN, F_LOCAL_DATE("2019-01-02")), true), //
+            LT_LOCAL_DATE_FALSE(OP(F_LOCAL_DATE("2019-01-02"), LESS_THAN, F_LOCAL_DATE("2019-01-01")), false), //
+            LT_LOCAL_TIME(OP(F_LOCAL_TIME("11:00"), LESS_THAN, F_LOCAL_TIME("12:00")), true), //
+            LT_LOCAL_TIME_FALSE(OP(F_LOCAL_TIME("12:00"), LESS_THAN, F_LOCAL_TIME("11:00")), false), //
+            LT_LOCAL_DATE_TIME(
+                OP(F_LOCAL_DATE_TIME("2019-01-01T11:00"), LESS_THAN, F_LOCAL_DATE_TIME("2019-01-02T12:00")), true), //
+            LT_LOCAL_DATE_TIME_FALSE(
+                OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), LESS_THAN, F_LOCAL_DATE_TIME("2019-01-01T11:00")), false), //
+            LT_ZONED_DATE_TIME(
+                OP(F_ZONED_DATE_TIME("2019-01-01T11:00+01:00"), LESS_THAN, F_ZONED_DATE_TIME("2019-01-02T12:00+01:00")),
+                true), //
+            LT_ZONED_DATE_TIME_FALSE(
+                OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), LESS_THAN, F_ZONED_DATE_TIME("2019-01-01T11:00+01:00")),
+                false), //
+            LE_DURATION(OP(F_DURATION("P1D"), LESS_THAN_EQUAL, F_DURATION("P1D")), true), //
+            LE_DURATION_FALSE(OP(F_DURATION("P2D"), LESS_THAN_EQUAL, F_DURATION("P1D")), false), //
+            LE_LOCAL_DATE(OP(F_LOCAL_DATE("2019-01-01"), LESS_THAN_EQUAL, F_LOCAL_DATE("2019-01-01")), true), //
+            LE_LOCAL_DATE_FALSE(OP(F_LOCAL_DATE("2019-01-02"), LESS_THAN_EQUAL, F_LOCAL_DATE("2019-01-01")), false), //
+            LE_LOCAL_TIME(OP(F_LOCAL_TIME("11:00"), LESS_THAN_EQUAL, F_LOCAL_TIME("11:00")), true), //
+            LE_LOCAL_TIME_FALSE(OP(F_LOCAL_TIME("12:00"), LESS_THAN_EQUAL, F_LOCAL_TIME("11:00")), false), //
+            LE_LOCAL_DATE_TIME(
+                OP(F_LOCAL_DATE_TIME("2019-01-01T11:00"), LESS_THAN_EQUAL, F_LOCAL_DATE_TIME("2019-01-01T11:00")),
+                true), //
+            LE_LOCAL_DATE_TIME_FALSE(
+                OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), LESS_THAN_EQUAL, F_LOCAL_DATE_TIME("2019-01-01T11:00")),
+                false), //
+            LE_ZONED_DATE_TIME(OP(F_ZONED_DATE_TIME("2019-01-01T11:00+01:00"), LESS_THAN_EQUAL,
+                F_ZONED_DATE_TIME("2019-01-01T11:00+01:00")), true), //
+            LE_ZONED_DATE_TIME_FALSE(OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), LESS_THAN_EQUAL,
+                F_ZONED_DATE_TIME("2019-01-01T11:00+01:00")), false), //
+            GT_DURATION(OP(F_DURATION("P2D"), GREATER_THAN, F_DURATION("P1D")), true), //
+            GT_DURATION_FALSE(OP(F_DURATION("P1D"), GREATER_THAN, F_DURATION("P2D")), false), //
+            GT_LOCAL_DATE(OP(F_LOCAL_DATE("2019-01-02"), GREATER_THAN, F_LOCAL_DATE("2019-01-01")), true), //
+            GT_LOCAL_DATE_FALSE(OP(F_LOCAL_DATE("2019-01-01"), GREATER_THAN, F_LOCAL_DATE("2019-01-02")), false), //
+            GT_LOCAL_TIME(OP(F_LOCAL_TIME("12:00"), GREATER_THAN, F_LOCAL_TIME("11:00")), true), //
+            GT_LOCAL_TIME_FALSE(OP(F_LOCAL_TIME("11:00"), GREATER_THAN, F_LOCAL_TIME("12:00")), false), //
+            GT_LOCAL_DATE_TIME(
+                OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), GREATER_THAN, F_LOCAL_DATE_TIME("2019-01-01T11:00")), true), //
+            GT_LOCAL_DATE_TIME_FALSE(
+                OP(F_LOCAL_DATE_TIME("2019-01-01T11:00"), GREATER_THAN, F_LOCAL_DATE_TIME("2019-01-02T12:00")), false), //
+            GT_ZONED_DATE_TIME(OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), GREATER_THAN,
+                F_ZONED_DATE_TIME("2019-01-01T11:00+01:00")), true), //
+            GT_ZONED_DATE_TIME_FALSE(OP(F_ZONED_DATE_TIME("2019-01-01T11:00+01:00"), GREATER_THAN,
+                F_ZONED_DATE_TIME("2019-01-02T12:00+01:00")), false), //
+            GE_DURATION(OP(F_DURATION("P1D"), GREATER_THAN_EQUAL, F_DURATION("P1D")), true), //
+            GE_DURATION_FALSE(OP(F_DURATION("P1D"), GREATER_THAN_EQUAL, F_DURATION("P2D")), false), //
+            GE_LOCAL_DATE(OP(F_LOCAL_DATE("2019-01-01"), GREATER_THAN_EQUAL, F_LOCAL_DATE("2019-01-01")), true), //
+            GE_LOCAL_DATE_FALSE(OP(F_LOCAL_DATE("2019-01-01"), GREATER_THAN_EQUAL, F_LOCAL_DATE("2019-01-02")), false), //
+            GE_LOCAL_TIME(OP(F_LOCAL_TIME("11:00"), GREATER_THAN_EQUAL, F_LOCAL_TIME("11:00")), true), //
+            GE_LOCAL_TIME_FALSE(OP(F_LOCAL_TIME("11:00"), GREATER_THAN_EQUAL, F_LOCAL_TIME("12:00")), false), //
+            GE_LOCAL_DATE_TIME(
+                OP(F_LOCAL_DATE_TIME("2019-01-01T11:00"), GREATER_THAN_EQUAL, F_LOCAL_DATE_TIME("2019-01-01T11:00")),
+                true), //
+            GE_LOCAL_DATE_TIME_FALSE(
+                OP(F_LOCAL_DATE_TIME("2019-01-01T11:00"), GREATER_THAN_EQUAL, F_LOCAL_DATE_TIME("2019-01-02T12:00")),
+                false), //
+            GE_ZONED_DATE_TIME(OP(F_ZONED_DATE_TIME("2019-01-01T11:00+01:00"), GREATER_THAN_EQUAL,
+                F_ZONED_DATE_TIME("2019-01-01T11:00+01:00")), true), //
+            GE_ZONED_DATE_TIME_FALSE(OP(F_ZONED_DATE_TIME("2019-01-01T11:00+01:00"), GREATER_THAN_EQUAL,
+                F_ZONED_DATE_TIME("2019-01-02T12:00+01:00")), false), //
+
+            // Time equality
+            EQ_EQUAL_DURATIONS(OP(F_DURATION("P1D"), EQUAL_TO, F_DURATION("P1D")), true), //
+            EQ_UNEQUAL_DURATION(OP(F_DURATION("P1D"), EQUAL_TO, F_DURATION("P2D")), false), //
+            EQ_EQUAL_PERIODS(OP(F_PERIOD("P1M"), EQUAL_TO, F_PERIOD("P1M")), true), //
+            EQ_UNEQUAL_PERIOD(OP(F_PERIOD("P1M"), EQUAL_TO, F_PERIOD("P2M")), false), //
+            EQ_EQUAL_LOCAL_DATE(OP(F_LOCAL_DATE("2019-01-02"), EQUAL_TO, F_LOCAL_DATE("2019-01-02")), true), //
+            EQ_UNEQUAL_LOCAL_DATE(OP(F_LOCAL_DATE("2019-01-02"), EQUAL_TO, F_LOCAL_DATE("2019-01-01")), false), //
+            EQ_EQUAL_LOCAL_TIME(OP(F_LOCAL_TIME("12:00"), EQUAL_TO, F_LOCAL_TIME("12:00")), true), //
+            EQ_UNEQUAL_LOCAL_TIME(OP(F_LOCAL_TIME("12:00"), EQUAL_TO, F_LOCAL_TIME("11:00")), false), //
+            EQ_EQUAL_LOCAL_DATE_TIME(
+                OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), EQUAL_TO, F_LOCAL_DATE_TIME("2019-01-02T12:00")), true), //
+            EQ_UNEQUAL_LOCAL_DATE_TIME(
+                OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), EQUAL_TO, F_LOCAL_DATE_TIME("2019-01-01T12:00")), false), //
+            EQ_EQUAL_ZONED_DATE_TIME(
+                OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), EQUAL_TO, F_ZONED_DATE_TIME("2019-01-02T12:00+01:00")),
+                true), //
+            EQ_UNEQUAL_ZONED_DATE_TIME(
+                OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), EQUAL_TO, F_ZONED_DATE_TIME("2019-01-01T12:00+01:00")),
+                false), //
+            NEQ_EQUAL_DURATIONS(OP(F_DURATION("P1D"), NOT_EQUAL_TO, F_DURATION("P1D")), false), //
+            NEQ_UNEQUAL_DURATION(OP(F_DURATION("P1D"), NOT_EQUAL_TO, F_DURATION("P2D")), true), //
+            NEQ_EQUAL_PERIODS(OP(F_PERIOD("P1M"), NOT_EQUAL_TO, F_PERIOD("P1M")), false), //
+            NEQ_UNEQUAL_PERIOD(OP(F_PERIOD("P1M"), NOT_EQUAL_TO, F_PERIOD("P2M")), true), //
+            NEQ_EQUAL_LOCAL_DATE(OP(F_LOCAL_DATE("2019-01-02"), NOT_EQUAL_TO, F_LOCAL_DATE("2019-01-02")), false), //
+            NEQ_UNEQUAL_LOCAL_DATE(OP(F_LOCAL_DATE("2019-01-02"), NOT_EQUAL_TO, F_LOCAL_DATE("2019-01-01")), true), //
+            NEQ_EQUAL_LOCAL_TIME(OP(F_LOCAL_TIME("12:00"), NOT_EQUAL_TO, F_LOCAL_TIME("12:00")), false), //
+            NEQ_UNEQUAL_LOCAL_TIME(OP(F_LOCAL_TIME("12:00"), NOT_EQUAL_TO, F_LOCAL_TIME("11:00")), true), //
+            NEQ_EQUAL_LOCAL_DATE_TIME(
+                OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), NOT_EQUAL_TO, F_LOCAL_DATE_TIME("2019-01-02T12:00")), false), //
+            NEQ_UNEQUAL_LOCAL_DATE_TIME(
+                OP(F_LOCAL_DATE_TIME("2019-01-02T12:00"), NOT_EQUAL_TO, F_LOCAL_DATE_TIME("2019-01-01T12:00")), true), //
+            NEQ_EQUAL_ZONED_DATE_TIME(OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), NOT_EQUAL_TO,
+                F_ZONED_DATE_TIME("2019-01-02T12:00+01:00")), false), //
+            NEQ_UNEQUAL_ZONED_DATE_TIME(OP(F_ZONED_DATE_TIME("2019-01-02T12:00+01:00"), NOT_EQUAL_TO,
+                F_ZONED_DATE_TIME("2019-01-01T12:00+01:00")), true), //
         ;
 
         private final Ast m_expression;
@@ -427,6 +592,36 @@ final class EvaluationTest {
         }
 
         private ExecutionTest(final Ast expression, final String expected) {
+            m_expression = expression;
+            m_resultChecker = computerResultChecker(expression.toString(), expected);
+        }
+
+        private ExecutionTest(final Ast expression, final Duration expected) {
+            m_expression = expression;
+            m_resultChecker = computerResultChecker(expression.toString(), expected);
+        }
+
+        private ExecutionTest(final Ast expression, final Period expected) {
+            m_expression = expression;
+            m_resultChecker = computerResultChecker(expression.toString(), expected);
+        }
+
+        private ExecutionTest(final Ast expression, final LocalTime expected) {
+            m_expression = expression;
+            m_resultChecker = computerResultChecker(expression.toString(), expected);
+        }
+
+        private ExecutionTest(final Ast expression, final LocalDate expected) {
+            m_expression = expression;
+            m_resultChecker = computerResultChecker(expression.toString(), expected);
+        }
+
+        private ExecutionTest(final Ast expression, final LocalDateTime expected) {
+            m_expression = expression;
+            m_resultChecker = computerResultChecker(expression.toString(), expected);
+        }
+
+        private ExecutionTest(final Ast expression, final ZonedDateTime expected) {
             m_expression = expression;
             m_resultChecker = computerResultChecker(expression.toString(), expected);
         }

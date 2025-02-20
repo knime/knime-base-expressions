@@ -49,13 +49,20 @@
 package org.knime.core.expressions;
 
 import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.DURATION;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.OPT_FLOAT;
+import static org.knime.core.expressions.ValueType.PERIOD;
 import static org.knime.core.expressions.ValueType.STRING;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.knime.core.expressions.Ast.AggregationCall;
@@ -175,7 +182,8 @@ final class Typing {
             } else if (op.isArithmetic() && isAllNumeric(t1, t2)) {
                 // Arithmetic operation
                 return arithmeticType(node, t1, t2);
-            } else if (op.isOrderingComparison() && isAllNumeric(t1, t2)) {
+            } else if (op.isOrderingComparison()
+                && (isAllNumeric(t1, t2) || isAllMutuallyOrderedTemporalTypes(t1, t2))) {
                 // Ordering comparison
                 return BOOLEAN;
             } else if (op.isEqualityComparison()) {
@@ -186,6 +194,14 @@ final class Typing {
                 return BOOLEAN(t1.isOptional() || t2.isOptional());
             } else if (op == BinaryOperator.MISSING_FALLBACK) {
                 return missingFallbackTypes(node, t1, t2);
+            } else if (op == BinaryOperator.MINUS && areCompatibleTemporalTypesForSubtraction(t1, t2)) {
+                return valueTypesForTemporalSubtraction(t1, t2).get();
+            } else if (op == BinaryOperator.PLUS && areCompatibleTemporalTypesForAddition(t1, t2)) {
+                return valueTypesForTemporalAddition(t1, t2).get();
+            } else if (op == BinaryOperator.MULTIPLY && areCompatibleTemporalTypesForMultiplication(t1, t2)) {
+                return valueTypesForTemporalMultiplication(t1, t2).get();
+            } else if (op == BinaryOperator.DIVIDE && areCompatibleTemporalTypesForDivision(t1, t2)) {
+                return valueTypesForTemporalDivision(t1, t2).get();
             } else {
                 return ErrorValueType.binaryOpNotApplicable(node, t1, t2);
             }
@@ -196,7 +212,7 @@ final class Typing {
             var op = node.op();
             var type = getType(node.arg());
 
-            if (op == UnaryOperator.MINUS && isNumeric(type)) {
+            if (op == UnaryOperator.MINUS && (isNumeric(type) || isInterval(type))) {
                 return type;
             } else if (op == UnaryOperator.NOT && BOOLEAN.equals(type.baseType())) {
                 return type;
@@ -277,7 +293,7 @@ final class Typing {
 
                 // result is optional iff both operands are optional
                 return (typeA.isOptional() && typeB.isOptional()) //
-                    ? typeA //
+                    ? typeA //areCompatibleTemporalTypesForSubtraction
                     : typeA.baseType();
             } else if (isAllNumeric(typeA, typeB)) {
 
@@ -297,6 +313,11 @@ final class Typing {
             return INTEGER.equals(baseType) || FLOAT.equals(baseType);
         }
 
+        private static boolean isInterval(final ValueType type) {
+            var baseType = type.baseType();
+            return PERIOD.equals(baseType) || DURATION.equals(baseType);
+        }
+
         private static boolean isAnyString(final ValueType typeA, final ValueType typeB) {
             return STRING.equals(typeA.baseType()) || STRING.equals(typeB.baseType());
         }
@@ -305,12 +326,115 @@ final class Typing {
             return isNumeric(typeA) && isNumeric(typeB);
         }
 
+        private static boolean isAllMutuallyOrderedTemporalTypes(final ValueType t1, final ValueType t2) {
+            var b1 = t1.baseType();
+            var b2 = t2.baseType();
+
+            var b1IsATemporalInstant = hasDatePart(b1) || hasTimePart(b1);
+            var b2IsATemporalInstant = hasDatePart(b2) || hasTimePart(b2);
+
+            var typesAreTemporalInstantsAndComparable = b1IsATemporalInstant && b2IsATemporalInstant && b1.equals(b2);
+            var typesAreTemporalAmountsAndComparable = b1.equals(DURATION) && b2.equals(DURATION);
+
+            return typesAreTemporalInstantsAndComparable || typesAreTemporalAmountsAndComparable;
+        }
+
         private static boolean isAllBoolean(final ValueType typeA, final ValueType typeB) {
             return BOOLEAN.equals(typeA.baseType()) && BOOLEAN.equals(typeB.baseType());
         }
 
         private static boolean isAnyMissing(final ValueType t1, final ValueType t2) {
             return MISSING.equals(t1) || MISSING.equals(t2);
+        }
+
+        private static boolean hasTimePart(final ValueType t) {
+            return t.equals(LOCAL_TIME) || t.equals(ZONED_DATE_TIME) || t.equals(LOCAL_DATE_TIME);
+        }
+
+        private static boolean hasDatePart(final ValueType t) {
+            return t.equals(LOCAL_DATE) || t.equals(ZONED_DATE_TIME) || t.equals(LOCAL_DATE_TIME);
+        }
+
+        private static boolean areCompatibleTemporalTypesForSubtraction(final ValueType t1, final ValueType t2) {
+            return valueTypesForTemporalSubtraction(t1, t2).isPresent();
+        }
+
+        private static Optional<ValueType> valueTypesForTemporalSubtraction(final ValueType t1, final ValueType t2) {
+            var b1 = t1.baseType();
+            var b2 = t2.baseType();
+            var outputTypeIsOptional = t1.isOptional() || t2.isOptional();
+
+            ValueType out = null;
+            if ((b1.equals(LOCAL_DATE) && b2.equals(LOCAL_DATE)) || (b1.equals(PERIOD) && b2.equals(PERIOD))) {
+                out = PERIOD;
+            } else if ((hasDatePart(b1) && b2.equals(PERIOD)) || (hasTimePart(b1) && b2.equals(DURATION))) {
+                out = b1;
+            } else if ((hasTimePart(b1) && b1.equals(b2)) || (b1.equals(DURATION) && b2.equals(DURATION))) {
+                out = DURATION;
+            }
+
+            return Optional.ofNullable(out) //
+                .map(t -> outputTypeIsOptional ? t.optionalType() : t);
+        }
+
+        private static boolean areCompatibleTemporalTypesForMultiplication(final ValueType t1, final ValueType t2) {
+            return valueTypesForTemporalMultiplication(t1, t2).isPresent();
+        }
+
+        private static Optional<ValueType> valueTypesForTemporalMultiplication(final ValueType t1, final ValueType t2) {
+            var b1 = t1.baseType();
+            var b2 = t2.baseType();
+            var outputTypeIsOptional = t1.isOptional() || t2.isOptional();
+
+            ValueType out = null;
+            if ((b1.equals(DURATION) && b2.equals(INTEGER)) || (b2.equals(DURATION) && b1.equals(INTEGER))) {
+                out = DURATION;
+            } else if ((b1.equals(PERIOD) && b2.equals(INTEGER)) || (b1.equals(INTEGER) && b2.equals(PERIOD))) {
+                out = PERIOD;
+            }
+
+            return Optional.ofNullable(out) //
+                .map(t -> outputTypeIsOptional ? t.optionalType() : t);
+        }
+
+        private static boolean areCompatibleTemporalTypesForDivision(final ValueType t1, final ValueType t2) {
+            return valueTypesForTemporalDivision(t1, t2).isPresent();
+        }
+
+        private static Optional<ValueType> valueTypesForTemporalDivision(final ValueType t1, final ValueType t2) {
+            var b1 = t1.baseType();
+            var b2 = t2.baseType();
+            var outputTypeIsOptional = t1.isOptional() || t2.isOptional();
+
+            ValueType out = null;
+            if ((b1.equals(DURATION) && b2.equals(INTEGER))) {
+                out = DURATION;
+            }
+
+            return Optional.ofNullable(out) //
+                .map(t -> outputTypeIsOptional ? t.optionalType() : t);
+        }
+
+        private static boolean areCompatibleTemporalTypesForAddition(final ValueType t1, final ValueType t2) {
+            return valueTypesForTemporalAddition(t1, t2).isPresent();
+        }
+
+        private static Optional<ValueType> valueTypesForTemporalAddition(final ValueType t1, final ValueType t2) {
+            var b1 = t1.baseType();
+            var b2 = t2.baseType();
+            var outputTypeIsOptional = t1.isOptional() || t2.isOptional();
+
+            ValueType out = null;
+            if ((hasDatePart(b1) && b2.equals(PERIOD)) || (hasTimePart(b1) && b2.equals(DURATION))) {
+                out = b1;
+            } else if (b1.equals(PERIOD) && b2.equals(PERIOD)) {
+                out = PERIOD;
+            } else if (b1.equals(DURATION) && b2.equals(DURATION)) {
+                out = DURATION;
+            }
+
+            return Optional.ofNullable(out) //
+                .map(t -> outputTypeIsOptional ? t.optionalType() : t);
         }
     }
 

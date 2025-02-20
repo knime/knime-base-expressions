@@ -45,6 +45,7 @@
  */
 package org.knime.core.expressions;
 
+import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -72,6 +73,7 @@ import static org.knime.core.expressions.AstTestUtils.COL;
 import static org.knime.core.expressions.AstTestUtils.FLOAT;
 import static org.knime.core.expressions.AstTestUtils.FLOW;
 import static org.knime.core.expressions.AstTestUtils.FUN;
+import static org.knime.core.expressions.AstTestUtils.F_PERIOD;
 import static org.knime.core.expressions.AstTestUtils.INT;
 import static org.knime.core.expressions.AstTestUtils.MIS;
 import static org.knime.core.expressions.AstTestUtils.OP;
@@ -81,14 +83,26 @@ import static org.knime.core.expressions.AstTestUtils.STR;
 import static org.knime.core.expressions.SignatureUtils.arg;
 import static org.knime.core.expressions.SignatureUtils.hasType;
 import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.DURATION;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.OPT_BOOLEAN;
+import static org.knime.core.expressions.ValueType.OPT_DURATION;
 import static org.knime.core.expressions.ValueType.OPT_FLOAT;
 import static org.knime.core.expressions.ValueType.OPT_INTEGER;
+import static org.knime.core.expressions.ValueType.OPT_LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.OPT_LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.OPT_LOCAL_TIME;
+import static org.knime.core.expressions.ValueType.OPT_PERIOD;
 import static org.knime.core.expressions.ValueType.OPT_STRING;
+import static org.knime.core.expressions.ValueType.OPT_ZONED_DATE_TIME;
+import static org.knime.core.expressions.ValueType.PERIOD;
 import static org.knime.core.expressions.ValueType.STRING;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
 
 import java.util.List;
 import java.util.Locale;
@@ -98,6 +112,7 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.SignatureUtils.Arg;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
@@ -144,8 +159,13 @@ final class TypingTest {
             // Unary Ops
             NEGATION_INTEGER(OP(MINUS, INT(-100)), INTEGER), //
             NEGATION_FLOAT(OP(MINUS, FLOAT(-100.5)), FLOAT), //
+            NEGATION_DURATION(OP(MINUS, COL("d")), DURATION), //
+            NEGATION_PERIOD(OP(MINUS, F_PERIOD("p")), PERIOD), //
             // optional
             NEGATION_OPTIONAL_INTEGER(OP(MINUS, COL("i?")), OPT_INTEGER), //
+            NEGATION_OPTIONAL_FLOAT(OP(MINUS, COL("f?")), OPT_FLOAT), //
+            NEGATION_OPTIONAL_DURATION(OP(MINUS, COL("d?")), OPT_DURATION), //
+            NEGATION_OPTIONAL_PERIOD(OP(MINUS, COL("p?")), OPT_PERIOD), //
 
             // Binary Ops
             SUM_OF_TWO_INTEGERS(OP(INT(10), PLUS, INT(20)), INTEGER), //
@@ -156,7 +176,45 @@ final class TypingTest {
             DIVISION_OF_INTEGER_AND_FLOAT(OP(INT(10), DIVIDE, FLOAT(20.1)), FLOAT), //
             DIVISION_OF_TWO_FLOATS(OP(FLOAT(10.0), MULTIPLY, FLOAT(2.0)), FLOAT), //
             FLOOR_DIVISION(OP(INT(10), FLOOR_DIVIDE, INT(20)), INTEGER), //
-            // optional
+
+            // === Time binary operators (non-optional)
+
+            // Time binary operators (temporalamount - temporalamount)
+            DIFFERENCE_DURATION(OP(COL("d"), BinaryOperator.MINUS, COL("d")), DURATION), //
+            DIFFERENCE_PERIOD(OP(COL("p"), BinaryOperator.MINUS, COL("p")), PERIOD), //
+
+            // Time binary operators (temporal - temporal)
+            DIFFERENCE_LOCAL_DATE(OP(COL("ld"), BinaryOperator.MINUS, COL("ld")), PERIOD), //
+            DIFFERENCE_LOCAL_TIME(OP(COL("lt"), BinaryOperator.MINUS, COL("lt")), DURATION), //
+            DIFFERENCE_LOCAL_DATE_TIME(OP(COL("ldt"), BinaryOperator.MINUS, COL("ldt")), DURATION), //
+            DIFFERENCE_ZONED_DATE_TIME(OP(COL("zdt"), BinaryOperator.MINUS, COL("zdt")), DURATION), //
+
+            // Time binary operators (temporal - temporalamount)
+            DIFFERENCE_LOCAL_TIME_DURATION(OP(COL("lt"), BinaryOperator.MINUS, COL("d")), LOCAL_TIME), //
+            DIFFERENCE_LOCAL_DATE_TIME_DURATION(OP(COL("ldt"), BinaryOperator.MINUS, COL("d")), LOCAL_DATE_TIME), //
+            DIFFERENCE_ZONED_DATE_TIME_DURATION(OP(COL("zdt"), BinaryOperator.MINUS, COL("d")), ZONED_DATE_TIME), //
+            DIFFERENCE_LOCAL_DATE_PERIOD(OP(COL("ld"), BinaryOperator.MINUS, COL("p")), LOCAL_DATE), //
+            DIFFERENCE_LOCAL_DATE_TIME_PERIOD(OP(COL("ldt"), BinaryOperator.MINUS, COL("p")), LOCAL_DATE_TIME), //
+            DIFFERENCE_ZONED_DATE_TIME_PERIOD(OP(COL("zdt"), BinaryOperator.MINUS, COL("p")), ZONED_DATE_TIME), //
+
+            // Time binary operators (temporalamount + temporalamount)
+            SUM_PERIOD(OP(COL("p"), BinaryOperator.PLUS, COL("p")), PERIOD), //
+            SUM_DURATION(OP(COL("d"), BinaryOperator.PLUS, COL("d")), DURATION), //
+
+            // Time binary operators (temporal + temporalamount)
+            SUM_LOCAL_TIME_DURATION(OP(COL("lt"), BinaryOperator.PLUS, COL("d")), LOCAL_TIME), //
+            SUM_LOCAL_DATE_TIME_DURATION(OP(COL("ldt"), BinaryOperator.PLUS, COL("d")), LOCAL_DATE_TIME), //
+            SUM_ZONED_DATE_TIME_DURATION(OP(COL("zdt"), BinaryOperator.PLUS, COL("d")), ZONED_DATE_TIME), //
+            SUM_LOCAL_DATE_PERIOD(OP(COL("ld"), BinaryOperator.PLUS, COL("p")), LOCAL_DATE), //
+            SUM_LOCAL_DATE_TIME_PERIOD(OP(COL("ldt"), BinaryOperator.PLUS, COL("p")), LOCAL_DATE_TIME), //
+            SUM_ZONED_DATE_TIME_PERIOD(OP(COL("zdt"), BinaryOperator.PLUS, COL("p")), ZONED_DATE_TIME), //
+
+            // Time binary operators (temporalamount * or / scalar)
+            MULTIPLY_DURATION(OP(COL("d"), BinaryOperator.MULTIPLY, INT(10)), DURATION), //
+            MULTIPLY_PERIOD(OP(COL("p"), BinaryOperator.MULTIPLY, INT(10)), PERIOD), //
+            DIVIDE_DURATION(OP(COL("d"), BinaryOperator.DIVIDE, INT(10)), DURATION), //
+
+            // binary operators - optional
             SUM_OF_INTEGER_AND_OPT_INTEGER(OP(INT(10), PLUS, COL("i?")), OPT_INTEGER), //
             SUM_OF_TWO_OPT_INTEGER(OP(COL("i?"), PLUS, COL("i?")), OPT_INTEGER), //
             DIVISION_OF_OPTIONAL_INTEGERS(OP(INT(10), DIVIDE, COL("i?")), OPT_FLOAT), //
@@ -190,6 +248,42 @@ final class TypingTest {
             GREATER_THAN_EQ_OPT_INT(OP(COL("i?"), GREATER_THAN_EQUAL, INT(10)), BOOLEAN), //
             LESS_THAN_EQ_BOTH_OPT(OP(COL("i?"), LESS_THAN_EQUAL, COL("f?")), BOOLEAN), //
 
+            // Time equality
+            EQ_LOCAL_DATE(OP(COL("ld"), EQUAL_TO, COL("ld")), BOOLEAN), //
+            NEQ_LOCAL_DATE(OP(COL("ld"), NOT_EQUAL_TO, COL("ld")), BOOLEAN), //
+            EQ_LOCAL_TIME(OP(COL("lt"), EQUAL_TO, COL("lt")), BOOLEAN), //
+            NEQ_LOCAL_TIME(OP(COL("lt"), NOT_EQUAL_TO, COL("lt")), BOOLEAN), //
+            EQ_LOCAL_DATE_TIME(OP(COL("ldt"), EQUAL_TO, COL("ldt")), BOOLEAN), //
+            NEQ_LOCAL_DATE_TIME(OP(COL("ldt"), NOT_EQUAL_TO, COL("ldt")), BOOLEAN), //
+            EQ_ZONED_DATE_TIME(OP(COL("zdt"), EQUAL_TO, COL("zdt")), BOOLEAN), //
+            NEQ_ZONED_DATE_TIME(OP(COL("zdt"), NOT_EQUAL_TO, COL("zdt")), BOOLEAN), //
+            EQ_DURATION(OP(COL("d"), EQUAL_TO, COL("d")), BOOLEAN), //
+            NEQ_DURATION(OP(COL("d"), NOT_EQUAL_TO, COL("d")), BOOLEAN), //
+            EQ_PERIOD(OP(COL("p"), EQUAL_TO, COL("p")), BOOLEAN), //
+            NEQ_PERIOD(OP(COL("p"), NOT_EQUAL_TO, COL("p")), BOOLEAN), //
+
+            // Time ordering
+            GREATER_THAN_LOCAL_DATE(OP(COL("ld"), GREATER_THAN, COL("ld")), BOOLEAN), //
+            LESS_THAN_LOCAL_DATE(OP(COL("ld"), LESS_THAN, COL("ld")), BOOLEAN), //
+            GREATER_THAN_EQ_LOCAL_DATE(OP(COL("ld"), GREATER_THAN_EQUAL, COL("ld")), BOOLEAN), //
+            LESS_THAN_EQ_LOCAL_DATE(OP(COL("ld"), LESS_THAN_EQUAL, COL("ld")), BOOLEAN), //
+            GREATER_THAN_LOCAL_TIME(OP(COL("lt"), GREATER_THAN, COL("lt")), BOOLEAN), //
+            LESS_THAN_LOCAL_TIME(OP(COL("lt"), LESS_THAN, COL("lt")), BOOLEAN), //
+            GREATER_THAN_EQ_LOCAL_TIME(OP(COL("lt"), GREATER_THAN_EQUAL, COL("lt")), BOOLEAN), //
+            LESS_THAN_EQ_LOCAL_TIME(OP(COL("lt"), LESS_THAN_EQUAL, COL("lt")), BOOLEAN), //
+            GREATER_THAN_LOCAL_DATE_TIME(OP(COL("ldt"), GREATER_THAN, COL("ldt")), BOOLEAN), //
+            LESS_THAN_LOCAL_DATE_TIME(OP(COL("ldt"), LESS_THAN, COL("ldt")), BOOLEAN), //
+            GREATER_THAN_EQ_LOCAL_DATE_TIME(OP(COL("ldt"), GREATER_THAN_EQUAL, COL("ldt")), BOOLEAN), //
+            LESS_THAN_EQ_LOCAL_DATE_TIME(OP(COL("ldt"), LESS_THAN_EQUAL, COL("ldt")), BOOLEAN), //
+            GREATER_THAN_ZONED_DATE_TIME(OP(COL("zdt"), GREATER_THAN, COL("zdt")), BOOLEAN), //
+            LESS_THAN_ZONED_DATE_TIME(OP(COL("zdt"), LESS_THAN, COL("zdt")), BOOLEAN), //
+            GREATER_THAN_EQ_ZONED_DATE_TIME(OP(COL("zdt"), GREATER_THAN_EQUAL, COL("zdt")), BOOLEAN), //
+            LESS_THAN_EQ_ZONED_DATE_TIME(OP(COL("zdt"), LESS_THAN_EQUAL, COL("zdt")), BOOLEAN), //
+            GREATER_THAN_DURATION(OP(COL("d"), GREATER_THAN, COL("d")), BOOLEAN), //
+            LESS_THAN_DURATION(OP(COL("d"), LESS_THAN, COL("d")), BOOLEAN), //
+            GREATER_THAN_EQ_DURATION(OP(COL("d"), GREATER_THAN_EQUAL, COL("d")), BOOLEAN), //
+            LESS_THAN_EQ_DURATION(OP(COL("d"), LESS_THAN_EQUAL, COL("d")), BOOLEAN), //
+
             // Equality
             EQUALITY_BOTH_STRING(OP(STR("a"), EQUAL_TO, STR("b")), BOOLEAN), //
             EQUALITY_BOTH_INT(OP(INT(10), NOT_EQUAL_TO, INT(20)), BOOLEAN), //
@@ -203,6 +297,14 @@ final class TypingTest {
             EQUALITY_INT_MISSING(OP(INT(10), EQUAL_TO, MIS()), BOOLEAN), //
             EQUALITY_MISSING_OPT_STRING(OP(MIS(), EQUAL_TO, COL("s?")), BOOLEAN), //
             EQUALITY_MISSING_MISSING(OP(MIS(), EQUAL_TO, MIS()), BOOLEAN), //
+
+            // Time equality
+            EQUALITY_LOCAL_DATE(OP(COL("ld"), EQUAL_TO, COL("ld")), BOOLEAN), //
+            EQUALITY_LOCAL_TIME(OP(COL("lt"), EQUAL_TO, COL("lt")), BOOLEAN), //
+            EQUALITY_LOCAL_DATE_TIME(OP(COL("ldt"), EQUAL_TO, COL("ldt")), BOOLEAN), //
+            EQUALITY_ZONED_DATE_TIME(OP(COL("zdt"), EQUAL_TO, COL("zdt")), BOOLEAN), //
+            EQUALITY_DURATION(OP(COL("d"), EQUAL_TO, COL("d")), BOOLEAN), //
+            EQUALITY_PERIOD(OP(COL("p"), EQUAL_TO, COL("p")), BOOLEAN), //
 
             // === Logical Operations
 
@@ -333,11 +435,17 @@ final class TypingTest {
             "error message should contain column name '" + colName + "', was '" + errorMessage + "'");
     }
 
-    private static final Map<String, ValueType> TEST_TYPES = Map.of( //
-        "b", BOOLEAN, "b?", OPT_BOOLEAN, //
-        "i", INTEGER, "i?", OPT_INTEGER, //
-        "f", FLOAT, "f?", OPT_FLOAT, //
-        "s", STRING, "s?", OPT_STRING //
+    private static final Map<String, ValueType> TEST_TYPES = Map.ofEntries( //
+        entry("b", BOOLEAN), entry("b?", OPT_BOOLEAN), //
+        entry("i", INTEGER), entry("i?", OPT_INTEGER), //
+        entry("f", FLOAT), entry("f?", OPT_FLOAT), //
+        entry("s", STRING), entry("s?", OPT_STRING), //
+        entry("d", DURATION), entry("d?", OPT_DURATION), //
+        entry("p", PERIOD), entry("p?", OPT_PERIOD), //
+        entry("ld", LOCAL_DATE), entry("ld?", OPT_LOCAL_DATE), //
+        entry("lt", LOCAL_TIME), entry("lt?", OPT_LOCAL_TIME), //
+        entry("ldt", LOCAL_DATE_TIME), entry("ldt?", OPT_LOCAL_DATE_TIME), //
+        entry("zdt", ZONED_DATE_TIME), entry("zdt?", OPT_ZONED_DATE_TIME) //
     );
 
     private static final Function<String, ReturnResult<ValueType>> TEST_COLUMN_TO_TYPE =

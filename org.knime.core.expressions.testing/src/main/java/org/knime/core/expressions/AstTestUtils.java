@@ -48,12 +48,26 @@
  */
 package org.knime.core.expressions;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
 import org.knime.core.expressions.Ast.ConstantAst;
+import org.knime.core.expressions.Computer.DurationComputer;
+import org.knime.core.expressions.Computer.LocalDateComputer;
+import org.knime.core.expressions.Computer.LocalDateTimeComputer;
+import org.knime.core.expressions.Computer.LocalTimeComputer;
+import org.knime.core.expressions.Computer.PeriodComputer;
+import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.functions.ExpressionFunction;
+import org.knime.core.expressions.functions.ExpressionFunctionBuilder;
 
 /**
  * Helpers to create {@link Ast}s with as few characters as possible. Only for tests.
@@ -213,4 +227,138 @@ public final class AstTestUtils {
 
         return Ast.aggregationCall(columnAggregation, args);
     }
+
+    /**
+     * Create a function call that produces a {@link ValueType#LOCAL_DATE}, for testing purposes.
+     *
+     * @param date
+     * @return
+     */
+    public static Ast.FunctionCall F_LOCAL_DATE(final String date) {
+        return FUN(MAKE_LOCAL_DATE_FOR_TEST, STR(date));
+    }
+
+    /**
+     * Create a function call that produces a {@link ValueType#LOCAL_TIME}, for testing purposes.
+     *
+     * @param time
+     * @return
+     */
+    public static Ast.FunctionCall F_LOCAL_TIME(final String time) {
+        return FUN(MAKE_LOCAL_TIME_FOR_TEST, STR(time));
+    }
+
+    /**
+     * Create a function call that produces a {@link ValueType#LOCAL_DATE_TIME}, for testing purposes.
+     *
+     * @param datetime
+     * @return
+     */
+    public static Ast.FunctionCall F_LOCAL_DATE_TIME(final String datetime) {
+        return FUN(MAKE_LOCAL_DATE_TIME_FOR_TEST, STR(datetime));
+    }
+
+    /**
+     * Create a function call that produces a {@link ValueType#ZONED_DATE_TIME}, for testing purposes.
+     *
+     * @param datetime
+     * @return
+     */
+    public static Ast.FunctionCall F_ZONED_DATE_TIME(final String datetime) {
+        return FUN(MAKE_ZONED_DATE_TIME_FOR_TEST, STR(datetime));
+    }
+
+    /**
+     * Create a function call that produces a {@link ValueType#DURATION}, for testing purposes.
+     *
+     * @param duration
+     * @return
+     */
+    public static Ast.FunctionCall F_DURATION(final String duration) {
+        return FUN(MAKE_DURATION_FOR_TEST, STR(duration));
+    }
+
+    /**
+     * Create a function call that produces a {@link ValueType#PERIOD}, for testing purposes.
+     *
+     * @param period
+     * @return
+     */
+    public static Ast.FunctionCall F_PERIOD(final String period) {
+        return FUN(MAKE_PERIOD_FOR_TEST, STR(period));
+    }
+
+    private static final OperatorCategory TEST_CATEGORY = new OperatorCategory("Test", "Test");
+
+    private static final ExpressionFunction MAKE_LOCAL_DATE_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_local_date_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.arg("date", "", SignatureUtils.isString())) //
+        .returnType("", "", args -> ValueType.LOCAL_DATE) //
+        .impl(args -> LocalDateComputer.of(ctx -> LocalDate.parse(((StringComputer)args.get("date")).compute(ctx)),
+            ctx -> false)) //
+        .build();
+
+    private static final ExpressionFunction MAKE_LOCAL_TIME_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_local_time_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.arg("time", "", SignatureUtils.isString())) //
+        .returnType("", "", args -> ValueType.LOCAL_TIME) //
+        .impl(args -> LocalTimeComputer.of(ctx -> LocalTime.parse(((StringComputer)args.get("time")).compute(ctx)),
+            ctx -> false)) //
+        .build();
+
+    private static final ExpressionFunction MAKE_LOCAL_DATE_TIME_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_local_date_time_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.arg("datetime", "", SignatureUtils.isString())) //
+        .returnType("", "", args -> ValueType.LOCAL_DATE_TIME) //
+        .impl(args -> LocalDateTimeComputer
+            .of(ctx -> LocalDateTime.parse(((StringComputer)args.get("datetime")).compute(ctx)), ctx -> false)) //
+        .build();
+
+    private static final ExpressionFunction MAKE_ZONED_DATE_TIME_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_zoned_date_time_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.arg("datetime", "", SignatureUtils.isString())) //
+        .returnType("", "", args -> ValueType.ZONED_DATE_TIME) //
+        .impl(args -> ZonedDateTimeComputer
+            .of(ctx -> ZonedDateTime.parse(((StringComputer)args.get("datetime")).compute(ctx)), ctx -> false)) //
+        .build();
+
+    private static final ExpressionFunction MAKE_DURATION_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_duration_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.arg("duration", "", SignatureUtils.isString())) //
+        .returnType("", "", args -> ValueType.DURATION) //
+        .impl(args -> DurationComputer.of(ctx -> Duration.parse(((StringComputer)args.get("duration")).compute(ctx)),
+            ctx -> false)) //
+        .build();
+
+    private static final ExpressionFunction MAKE_PERIOD_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_period_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.arg("period", "", SignatureUtils.isString())) //
+        .returnType("", "", args -> ValueType.PERIOD) //
+        .impl(args -> PeriodComputer.of(ctx -> Period.parse(((StringComputer)args.get("period")).compute(ctx)),
+            ctx -> false)) //
+        .build();
 }

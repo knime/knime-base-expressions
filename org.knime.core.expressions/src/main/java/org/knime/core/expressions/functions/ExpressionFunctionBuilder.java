@@ -122,7 +122,7 @@ public final class ExpressionFunctionBuilder {
 
     // ====================== BUILDER ===========================
 
-    interface RequiresName {
+    public interface RequiresName {
         /**
          * @param name the {@link ExpressionFunction#name()}
          * @return the next stage of the builder
@@ -130,7 +130,7 @@ public final class ExpressionFunctionBuilder {
         RequiresDescription name(String name);
     }
 
-    interface RequiresDescription {
+    public interface RequiresDescription {
         /**
          * @param description the {@link OperatorDescription#description()}
          * @return the next stage of the builder
@@ -138,7 +138,7 @@ public final class ExpressionFunctionBuilder {
         RequiresExamples description(String description);
     }
 
-    interface RequiresExamples {
+    public interface RequiresExamples {
         /**
          * @param examples the {@link OperatorDescription#examples()}
          * @return the next stage of the builder
@@ -146,7 +146,7 @@ public final class ExpressionFunctionBuilder {
         RequiresKeywords examples(String examples);
     }
 
-    interface RequiresKeywords {
+    public interface RequiresKeywords {
         /**
          * @param keywords the {@link OperatorDescription#keywords()}
          * @return the next stage of the builder
@@ -154,7 +154,7 @@ public final class ExpressionFunctionBuilder {
         RequiresCategory keywords(String... keywords);
     }
 
-    interface RequiresCategory {
+    public interface RequiresCategory {
         /**
          * @param category the {@link OperatorDescription#category()}
          * @return the next stage of the builder
@@ -162,7 +162,7 @@ public final class ExpressionFunctionBuilder {
         RequiresArgs category(OperatorCategory category);
     }
 
-    interface RequiresArgs {
+    public interface RequiresArgs {
         /**
          * @param args the argument declarations
          * @return the next stage of the builder
@@ -170,7 +170,7 @@ public final class ExpressionFunctionBuilder {
         RequiresReturnType args(Arg... args);
     }
 
-    interface RequiresReturnType {
+    public interface RequiresReturnType {
         /**
          * @param returnDesc the {@link OperatorDescription#returnDescription()}
          * @param returnType the {@link OperatorDescription#returnType()}
@@ -181,7 +181,7 @@ public final class ExpressionFunctionBuilder {
             Function<Arguments<ValueType>, ValueType> returnTypeMapping);
     }
 
-    interface RequiresImpl {
+    public interface RequiresImpl {
         /**
          * @param impl the implementation of the function ({@link ExpressionFunction#apply(Arguments)}
          * @return the next stage of the builder
@@ -189,7 +189,7 @@ public final class ExpressionFunctionBuilder {
         FinalStage impl(Function<Arguments<Computer>, Computer> impl);
     }
 
-    record FinalStage( // NOSONAR - equals and hashCode are not important for this record
+    public record FinalStage( // NOSONAR - equals and hashCode are not important for this record
         String name, String description, String examples, String[] keywords, OperatorCategory category, Arg[] args,
         String returnDesc, String returnType, Function<Arguments<ValueType>, ValueType> returnTypeMapping,
         Function<Arguments<Computer>, Computer> impl) {

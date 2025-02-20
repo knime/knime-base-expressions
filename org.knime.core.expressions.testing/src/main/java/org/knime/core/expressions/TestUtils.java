@@ -54,6 +54,12 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -67,9 +73,15 @@ import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Ast.RowId;
 import org.knime.core.expressions.Ast.RowIndex;
 import org.knime.core.expressions.Computer.BooleanComputer;
+import org.knime.core.expressions.Computer.DurationComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.LocalDateComputer;
+import org.knime.core.expressions.Computer.LocalDateTimeComputer;
+import org.knime.core.expressions.Computer.LocalTimeComputer;
+import org.knime.core.expressions.Computer.PeriodComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
@@ -254,4 +266,116 @@ public final class TestUtils {
         };
     }
 
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (DURATION)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final Duration expected) {
+        return c -> {
+            assertInstanceOf(DurationComputer.class, c, computerDesc + " should eval to DURATION");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
+                assertEquals(expected, ((DurationComputer)c).compute(DUMMY_WML),
+                    computerDesc + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        };
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (PERIOD)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final Period expected) {
+        return c -> {
+            assertInstanceOf(PeriodComputer.class, c, computerDesc + " should eval to DURATION");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
+                assertEquals(expected, ((PeriodComputer)c).compute(DUMMY_WML), computerDesc + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        };
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (LOCAL_DATE)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final LocalDate expected) {
+        return c -> {
+            assertInstanceOf(LocalDateComputer.class, c, computerDesc + " should eval to STRING");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
+                assertEquals(expected, ((LocalDateComputer)c).compute(DUMMY_WML),
+                    computerDesc + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        };
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (LOCAL_TIME)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final LocalTime expected) {
+        return c -> {
+            assertInstanceOf(LocalTimeComputer.class, c, computerDesc + " should eval to STRING");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
+                assertEquals(expected, ((LocalTimeComputer)c).compute(DUMMY_WML),
+                    computerDesc + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        };
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (LOCAL_DATE_TIME)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final LocalDateTime expected) {
+        return c -> {
+            assertInstanceOf(LocalDateTimeComputer.class, c, computerDesc + " should eval to STRING");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
+                assertEquals(expected, ((LocalDateTimeComputer)c).compute(DUMMY_WML),
+                    computerDesc + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        };
+    }
+
+    /**
+     * @param computerDesc a string about what the computer represents for assertion messages
+     * @param expected the expected value (ZONED_DATE_TIME)
+     * @return a consumer that checks that the argument computer evaluates to the expected value
+     */
+    public static Consumer<Computer> computerResultChecker(final String computerDesc, final ZonedDateTime expected) {
+        return c -> {
+            assertInstanceOf(ZonedDateTimeComputer.class, c, computerDesc + " should eval to STRING");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
+                assertEquals(expected, ((ZonedDateTimeComputer)c).compute(DUMMY_WML),
+                    computerDesc + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        };
+    }
 }
