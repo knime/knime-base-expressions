@@ -45,6 +45,7 @@
  */
 package org.knime.core.expressions;
 
+import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -81,14 +82,26 @@ import static org.knime.core.expressions.AstTestUtils.STR;
 import static org.knime.core.expressions.SignatureUtils.arg;
 import static org.knime.core.expressions.SignatureUtils.hasType;
 import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.DATE_DURATION;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.OPT_BOOLEAN;
+import static org.knime.core.expressions.ValueType.OPT_DATE_DURATION;
 import static org.knime.core.expressions.ValueType.OPT_FLOAT;
 import static org.knime.core.expressions.ValueType.OPT_INTEGER;
+import static org.knime.core.expressions.ValueType.OPT_LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.OPT_LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.OPT_LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.OPT_STRING;
+import static org.knime.core.expressions.ValueType.OPT_TIME_DURATION;
+import static org.knime.core.expressions.ValueType.OPT_ZONED_DATE_TIME;
 import static org.knime.core.expressions.ValueType.STRING;
+import static org.knime.core.expressions.ValueType.TIME_DURATION;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
 
 import java.util.List;
 import java.util.Locale;
@@ -98,6 +111,7 @@ import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.knime.core.expressions.Ast.BinaryOperator;
 import org.knime.core.expressions.SignatureUtils.Arg;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
@@ -144,8 +158,13 @@ final class TypingTest {
             // Unary Ops
             NEGATION_INTEGER(OP(MINUS, INT(-100)), INTEGER), //
             NEGATION_FLOAT(OP(MINUS, FLOAT(-100.5)), FLOAT), //
+            NEGATION_TIME_DURATION(OP(MINUS, COL("d")), TIME_DURATION), //
+            NEGATION_DATE_DURATION(OP(MINUS, COL("p")), DATE_DURATION), //
             // optional
             NEGATION_OPTIONAL_INTEGER(OP(MINUS, COL("i?")), OPT_INTEGER), //
+            NEGATION_OPTIONAL_FLOAT(OP(MINUS, COL("f?")), OPT_FLOAT), //
+            NEGATION_OPTIONAL_TIME_DURATION(OP(MINUS, COL("d?")), OPT_TIME_DURATION), //
+            NEGATION_OPTIONAL_DATE_DURATION(OP(MINUS, COL("p?")), OPT_DATE_DURATION), //
 
             // Binary Ops
             SUM_OF_TWO_INTEGERS(OP(INT(10), PLUS, INT(20)), INTEGER), //
@@ -156,7 +175,102 @@ final class TypingTest {
             DIVISION_OF_INTEGER_AND_FLOAT(OP(INT(10), DIVIDE, FLOAT(20.1)), FLOAT), //
             DIVISION_OF_TWO_FLOATS(OP(FLOAT(10.0), MULTIPLY, FLOAT(2.0)), FLOAT), //
             FLOOR_DIVISION(OP(INT(10), FLOOR_DIVIDE, INT(20)), INTEGER), //
-            // optional
+
+            // === Time binary operators (non-optional)
+
+            // Time binary operators (temporalamount - temporalamount)
+            DIFFERENCE_TIME_DURATION(OP(COL("d"), BinaryOperator.MINUS, COL("d")), TIME_DURATION), //
+            DIFFERENCE_DATE_DURATION(OP(COL("p"), BinaryOperator.MINUS, COL("p")), DATE_DURATION), //
+
+            // Time binary operators (temporalamount - temporalamount, both optional)
+            DIFFERENCE_OPT_TIME_DURATION(OP(COL("d?"), BinaryOperator.MINUS, COL("d?")), OPT_TIME_DURATION), //
+            DIFFERENCE_OPT_DATE_DURATION(OP(COL("p?"), BinaryOperator.MINUS, COL("p?")), OPT_DATE_DURATION), //
+
+            // Time binary operators (temporalamount - temporalamount, one optional)
+            DIFFERENCE_TIME_DURATION_OPT(OP(COL("d"), BinaryOperator.MINUS, COL("d?")), OPT_TIME_DURATION), //
+            DIFFERENCE_DATE_DURATION_OPT(OP(COL("p"), BinaryOperator.MINUS, COL("p?")), OPT_DATE_DURATION), //
+
+            // Time binary operators (temporal - temporal)
+            DIFFERENCE_LOCAL_DATE(OP(COL("ld"), BinaryOperator.MINUS, COL("ld")), DATE_DURATION), //
+            DIFFERENCE_LOCAL_TIME(OP(COL("lt"), BinaryOperator.MINUS, COL("lt")), TIME_DURATION), //
+            DIFFERENCE_LOCAL_DATE_TIME(OP(COL("ldt"), BinaryOperator.MINUS, COL("ldt")), TIME_DURATION), //
+            DIFFERENCE_ZONED_DATE_TIME(OP(COL("zdt"), BinaryOperator.MINUS, COL("zdt")), TIME_DURATION), //
+
+            // Time binary operators (temporal - temporal, both optional)
+            DIFFERENCE_OPT_LOCAL_DATE(OP(COL("ld?"), BinaryOperator.MINUS, COL("ld?")), OPT_DATE_DURATION), //
+            DIFFERENCE_OPT_LOCAL_TIME(OP(COL("lt?"), BinaryOperator.MINUS, COL("lt?")), OPT_TIME_DURATION), //
+            DIFFERENCE_OPT_LOCAL_DATE_TIME(OP(COL("ldt?"), BinaryOperator.MINUS, COL("ldt?")), OPT_TIME_DURATION), //
+            DIFFERENCE_OPT_ZONED_DATE_TIME(OP(COL("zdt?"), BinaryOperator.MINUS, COL("zdt?")), OPT_TIME_DURATION), //
+
+            // Time binary operators (temporal - temporalamount)
+            DIFFERENCE_LOCAL_TIME_TIME_DURATION(OP(COL("lt"), BinaryOperator.MINUS, COL("d")), LOCAL_TIME), //
+            DIFFERENCE_LOCAL_DATE_TIME_TIME_DURATION(OP(COL("ldt"), BinaryOperator.MINUS, COL("d")), LOCAL_DATE_TIME), //
+            DIFFERENCE_ZONED_DATE_TIME_TIME_DURATION(OP(COL("zdt"), BinaryOperator.MINUS, COL("d")), ZONED_DATE_TIME), //
+            DIFFERENCE_LOCAL_DATE_DATE_DURATION(OP(COL("ld"), BinaryOperator.MINUS, COL("p")), LOCAL_DATE), //
+            DIFFERENCE_LOCAL_DATE_TIME_DATE_DURATION(OP(COL("ldt"), BinaryOperator.MINUS, COL("p")), LOCAL_DATE_TIME), //
+            DIFFERENCE_ZONED_DATE_TIME_DATE_DURATION(OP(COL("zdt"), BinaryOperator.MINUS, COL("p")), ZONED_DATE_TIME), //
+
+            // Time binary operators (temporal - temporalamount, one optional)
+            DIFFERENCE_LOCAL_DATE_OPT_DATE_DURATION(OP(COL("ld"), BinaryOperator.MINUS, COL("p?")), OPT_LOCAL_DATE), //
+            DIFFERENCE_LOCAL_TIME_OPT_TIME_DURATION(OP(COL("lt"), BinaryOperator.MINUS, COL("d?")), OPT_LOCAL_TIME), //
+            DIFFERENCE_LOCAL_DATE_TIME_OPT_TIME_DURATION(OP(COL("ldt"), BinaryOperator.MINUS, COL("d?")),
+                OPT_LOCAL_DATE_TIME), //
+            DIFFERENCE_ZONED_DATE_TIME_OPT_TIME_DURATION(OP(COL("zdt"), BinaryOperator.MINUS, COL("d?")),
+                OPT_ZONED_DATE_TIME), //
+            DIFFERENCE_OPT_LOCAL_DATE_DATE_DURATION(OP(COL("ld?"), BinaryOperator.MINUS, COL("p")), OPT_LOCAL_DATE), //
+            DIFFERENCE_OPT_LOCAL_TIME_TIME_DURATION(OP(COL("lt?"), BinaryOperator.MINUS, COL("d")), OPT_LOCAL_TIME), //
+            DIFFERENCE_OPT_LOCAL_DATE_TIME_TIME_DURATION(OP(COL("ldt?"), BinaryOperator.MINUS, COL("d")),
+                OPT_LOCAL_DATE_TIME), //
+            DIFFERENCE_OPT_ZONED_DATE_TIME_TIME_DURATION(OP(COL("zdt?"), BinaryOperator.MINUS, COL("d")),
+                OPT_ZONED_DATE_TIME), //
+
+            // Time binary operators (temporalamount + temporalamount)
+            SUM_DATE_DURATION(OP(COL("p"), BinaryOperator.PLUS, COL("p")), DATE_DURATION), //
+            SUM_TIME_DURATION(OP(COL("d"), BinaryOperator.PLUS, COL("d")), TIME_DURATION), //
+
+            // Time binary operators (temporalamount + temporalamount, both optional)
+            SUM_OPT_DATE_DURATION(OP(COL("p?"), BinaryOperator.PLUS, COL("p?")), OPT_DATE_DURATION), //
+            SUM_OPT_TIME_DURATION(OP(COL("d?"), BinaryOperator.PLUS, COL("d?")), OPT_TIME_DURATION), //
+
+            // Time binary operators (temporalamount + temporalamount, one optional)
+            SUM_DATE_DURATION_MIXED(OP(COL("p"), BinaryOperator.PLUS, COL("p?")), OPT_DATE_DURATION), //
+            SUM_TIME_DURATION_MIXED(OP(COL("d"), BinaryOperator.PLUS, COL("d?")), OPT_TIME_DURATION), //
+
+            // Time binary operators (temporal + temporalamount)
+            SUM_LOCAL_TIME_TIME_DURATION(OP(COL("lt"), BinaryOperator.PLUS, COL("d")), LOCAL_TIME), //
+            SUM_LOCAL_DATE_TIME_TIME_DURATION(OP(COL("ldt"), BinaryOperator.PLUS, COL("d")), LOCAL_DATE_TIME), //
+            SUM_ZONED_DATE_TIME_TIME_DURATION(OP(COL("zdt"), BinaryOperator.PLUS, COL("d")), ZONED_DATE_TIME), //
+            SUM_LOCAL_DATE_DATE_DURATION(OP(COL("ld"), BinaryOperator.PLUS, COL("p")), LOCAL_DATE), //
+            SUM_LOCAL_DATE_TIME_DATE_DURATION(OP(COL("ldt"), BinaryOperator.PLUS, COL("p")), LOCAL_DATE_TIME), //
+            SUM_ZONED_DATE_TIME_DATE_DURATION(OP(COL("zdt"), BinaryOperator.PLUS, COL("p")), ZONED_DATE_TIME), //
+
+            // Time binary operators (temporal + temporalamount, one optional)
+            SUM_LOCAL_DATE_OPT_DATE_DURATION(OP(COL("ld"), BinaryOperator.PLUS, COL("p?")), OPT_LOCAL_DATE), //
+            SUM_LOCAL_TIME_OPT_TIME_DURATION(OP(COL("lt"), BinaryOperator.PLUS, COL("d?")), OPT_LOCAL_TIME), //
+
+            // Time binary operators (temporal + temporalamount, both optional)
+            SUM_LOCAL_DATE_DATE_DURATION_BOTH_OPT(OP(COL("ld?"), BinaryOperator.PLUS, COL("p")), OPT_LOCAL_DATE), //
+            SUM_LOCAL_TIME_TIME_DURATION_BOTH_OPT(OP(COL("lt?"), BinaryOperator.PLUS, COL("d")), OPT_LOCAL_TIME), //
+
+            // Time binary operators (temporalamount * scalar)
+            MULTIPLY_TIME_DURATION(OP(COL("d"), BinaryOperator.MULTIPLY, INT(10)), TIME_DURATION), //
+            MULTIPLY_DATE_DURATION(OP(COL("p"), BinaryOperator.MULTIPLY, INT(10)), DATE_DURATION), //
+            MULTIPLY_TIME_DURATION_INTEGER_FIRST(OP(INT(10), BinaryOperator.MULTIPLY, COL("d")), TIME_DURATION), //
+            MULTIPLY_DATE_DURATION_INTEGER_FIRST(OP(INT(10), BinaryOperator.MULTIPLY, COL("p")), DATE_DURATION), //
+
+            // Time binary operators (temporalamount * scalar, one optional)
+            MULTIPLY_OPT_TIME_DURATION(OP(COL("d?"), BinaryOperator.MULTIPLY, INT(10)), OPT_TIME_DURATION), //
+            MULTIPLY_OPT_DATE_DURATION(OP(COL("p?"), BinaryOperator.MULTIPLY, INT(10)), OPT_DATE_DURATION), //
+            MULTIPLY_OPT_TIME_DURATION_INTEGER_FIRST(OP(COL("d"), BinaryOperator.MULTIPLY, COL("i?")),
+                OPT_TIME_DURATION), //
+            MULTIPLY_OPT_DATE_DURATION_INTEGER_FIRST(OP(COL("p"), BinaryOperator.MULTIPLY, COL("i?")),
+                OPT_DATE_DURATION), //
+
+            // Time binary operators (temporalamount * scalar, both optional)
+            MULTIPLY_OPT_TIME_DURATION_BOTH_OPT(OP(COL("d?"), BinaryOperator.MULTIPLY, COL("i?")), OPT_TIME_DURATION), //
+            MULTIPLY_OPT_DATE_DURATION_BOTH_OPT(OP(COL("p?"), BinaryOperator.MULTIPLY, COL("i?")), OPT_DATE_DURATION), //
+
+            // binary operators - optional
             SUM_OF_INTEGER_AND_OPT_INTEGER(OP(INT(10), PLUS, COL("i?")), OPT_INTEGER), //
             SUM_OF_TWO_OPT_INTEGER(OP(COL("i?"), PLUS, COL("i?")), OPT_INTEGER), //
             DIVISION_OF_OPTIONAL_INTEGERS(OP(INT(10), DIVIDE, COL("i?")), OPT_FLOAT), //
@@ -189,6 +303,106 @@ final class TypingTest {
             LESS_THAN_INT_FLOAT(OP(INT(5), LESS_THAN, FLOAT(10.0)), BOOLEAN), //
             GREATER_THAN_EQ_OPT_INT(OP(COL("i?"), GREATER_THAN_EQUAL, INT(10)), BOOLEAN), //
             LESS_THAN_EQ_BOTH_OPT(OP(COL("i?"), LESS_THAN_EQUAL, COL("f?")), BOOLEAN), //
+
+            // Time equality
+            EQ_LOCAL_DATE(OP(COL("ld"), EQUAL_TO, COL("ld")), BOOLEAN), //
+            NEQ_LOCAL_DATE(OP(COL("ld"), NOT_EQUAL_TO, COL("ld")), BOOLEAN), //
+            EQ_LOCAL_TIME(OP(COL("lt"), EQUAL_TO, COL("lt")), BOOLEAN), //
+            NEQ_LOCAL_TIME(OP(COL("lt"), NOT_EQUAL_TO, COL("lt")), BOOLEAN), //
+            EQ_LOCAL_DATE_TIME(OP(COL("ldt"), EQUAL_TO, COL("ldt")), BOOLEAN), //
+            NEQ_LOCAL_DATE_TIME(OP(COL("ldt"), NOT_EQUAL_TO, COL("ldt")), BOOLEAN), //
+            EQ_TIME_DURATION(OP(COL("d"), EQUAL_TO, COL("d")), BOOLEAN), //
+            NEQ_TIME_DURATION(OP(COL("d"), NOT_EQUAL_TO, COL("d")), BOOLEAN), //
+            EQ_DATE_DURATION(OP(COL("p"), EQUAL_TO, COL("p")), BOOLEAN), //
+            NEQ_DATE_DURATION(OP(COL("p"), NOT_EQUAL_TO, COL("p")), BOOLEAN), //
+
+            // Time equality with two optional cols
+            EQ_OPT_LOCAL_DATE(OP(COL("ld?"), EQUAL_TO, COL("ld?")), BOOLEAN), //
+            NEQ_OPT_LOCAL_DATE(OP(COL("ld?"), NOT_EQUAL_TO, COL("ld?")), BOOLEAN), //
+            EQ_OPT_LOCAL_TIME(OP(COL("lt?"), EQUAL_TO, COL("lt?")), BOOLEAN), //
+            NEQ_OPT_LOCAL_TIME(OP(COL("lt?"), NOT_EQUAL_TO, COL("lt?")), BOOLEAN), //
+            EQ_OPT_LOCAL_DATE_TIME(OP(COL("ldt?"), EQUAL_TO, COL("ldt?")), BOOLEAN), //
+            NEQ_OPT_LOCAL_DATE_TIME(OP(COL("ldt?"), NOT_EQUAL_TO, COL("ldt?")), BOOLEAN), //
+
+            // Time equality with one optional and one non-optional col
+            EQ_LOCAL_DATE_MIXED_OPT(OP(COL("ld?"), EQUAL_TO, COL("ld")), BOOLEAN), //
+            NEQ_LOCAL_DATE_MIXED_OPT(OP(COL("ld"), NOT_EQUAL_TO, COL("ld?")), BOOLEAN), //
+            EQ_LOCAL_DATE_TIME_MIXED_OPT(OP(COL("ldt"), EQUAL_TO, COL("ldt?")), BOOLEAN), //
+            NEQ_LOCAL_DATE_TIME_MIXED_OPT(OP(COL("ldt?"), NOT_EQUAL_TO, COL("ldt")), BOOLEAN), //
+            EQ_LOCAL_TIME_MIXED_OPT(OP(COL("lt?"), EQUAL_TO, COL("lt")), BOOLEAN), //
+            NEQ_LOCAL_TIME_MIXED_OPT(OP(COL("lt"), NOT_EQUAL_TO, COL("lt?")), BOOLEAN), //
+
+            // Time ordering
+            GREATER_THAN_LOCAL_DATE(OP(COL("ld"), GREATER_THAN, COL("ld")), BOOLEAN), //
+            LESS_THAN_LOCAL_DATE(OP(COL("ld"), LESS_THAN, COL("ld")), BOOLEAN), //
+            GREATER_THAN_EQ_LOCAL_DATE(OP(COL("ld"), GREATER_THAN_EQUAL, COL("ld")), BOOLEAN), //
+            LESS_THAN_EQ_LOCAL_DATE(OP(COL("ld"), LESS_THAN_EQUAL, COL("ld")), BOOLEAN), //
+            GREATER_THAN_LOCAL_TIME(OP(COL("lt"), GREATER_THAN, COL("lt")), BOOLEAN), //
+            LESS_THAN_LOCAL_TIME(OP(COL("lt"), LESS_THAN, COL("lt")), BOOLEAN), //
+            GREATER_THAN_EQ_LOCAL_TIME(OP(COL("lt"), GREATER_THAN_EQUAL, COL("lt")), BOOLEAN), //
+            LESS_THAN_EQ_LOCAL_TIME(OP(COL("lt"), LESS_THAN_EQUAL, COL("lt")), BOOLEAN), //
+            GREATER_THAN_LOCAL_DATE_TIME(OP(COL("ldt"), GREATER_THAN, COL("ldt")), BOOLEAN), //
+            LESS_THAN_LOCAL_DATE_TIME(OP(COL("ldt"), LESS_THAN, COL("ldt")), BOOLEAN), //
+            GREATER_THAN_EQ_LOCAL_DATE_TIME(OP(COL("ldt"), GREATER_THAN_EQUAL, COL("ldt")), BOOLEAN), //
+            LESS_THAN_EQ_LOCAL_DATE_TIME(OP(COL("ldt"), LESS_THAN_EQUAL, COL("ldt")), BOOLEAN), //
+            GREATER_THAN_ZONED_DATE_TIME(OP(COL("zdt"), GREATER_THAN, COL("zdt")), BOOLEAN), //
+            LESS_THAN_ZONED_DATE_TIME(OP(COL("zdt"), LESS_THAN, COL("zdt")), BOOLEAN), //
+            GREATER_THAN_EQ_ZONED_DATE_TIME(OP(COL("zdt"), GREATER_THAN_EQUAL, COL("zdt")), BOOLEAN), //
+            LESS_THAN_EQ_ZONED_DATE_TIME(OP(COL("zdt"), LESS_THAN_EQUAL, COL("zdt")), BOOLEAN), //
+            GREATER_THAN_TIME_DURATION(OP(COL("d"), GREATER_THAN, COL("d")), BOOLEAN), //
+            LESS_THAN_TIME_DURATION(OP(COL("d"), LESS_THAN, COL("d")), BOOLEAN), //
+            GREATER_THAN_EQ_TIME_DURATION(OP(COL("d"), GREATER_THAN_EQUAL, COL("d")), BOOLEAN), //
+            LESS_THAN_EQ_TIME_DURATION(OP(COL("d"), LESS_THAN_EQUAL, COL("d")), BOOLEAN), //
+
+            // Time ordering with optional cols
+            GREATER_THAN_OPT_LOCAL_DATE(OP(COL("ld?"), GREATER_THAN, COL("ld?")), BOOLEAN), //
+            LESS_THAN_OPT_LOCAL_DATE(OP(COL("ld?"), LESS_THAN, COL("ld?")), BOOLEAN), //
+            GREATER_THAN_EQ_OPT_LOCAL_DATE(OP(COL("ld?"), GREATER_THAN_EQUAL, COL("ld?")), BOOLEAN), //
+            LESS_THAN_EQ_OPT_LOCAL_DATE(OP(COL("ld?"), LESS_THAN_EQUAL, COL("ld?")), BOOLEAN), //
+            GREATER_THAN_OPT_LOCAL_TIME(OP(COL("lt?"), GREATER_THAN, COL("lt?")), BOOLEAN), //
+            LESS_THAN_OPT_LOCAL_TIME(OP(COL("lt?"), LESS_THAN, COL("lt?")), BOOLEAN), //
+            GREATER_THAN_EQ_OPT_LOCAL_TIME(OP(COL("lt?"), GREATER_THAN_EQUAL, COL("lt?")), BOOLEAN), //
+            LESS_THAN_EQ_OPT_LOCAL_TIME(OP(COL("lt?"), LESS_THAN_EQUAL, COL("lt?")), BOOLEAN), //
+            GREATER_THAN_OPT_LOCAL_DATE_TIME(OP(COL("ldt?"), GREATER_THAN, COL("ldt?")), BOOLEAN), //
+            LESS_THAN_OPT_LOCAL_DATE_TIME(OP(COL("ldt?"), LESS_THAN, COL("ldt?")), BOOLEAN), //
+            GREATER_THAN_EQ_OPT_LOCAL_DATE_TIME(OP(COL("ldt?"), GREATER_THAN_EQUAL, COL("ldt?")), BOOLEAN), //
+            LESS_THAN_EQ_OPT_LOCAL_DATE_TIME(OP(COL("ldt?"), LESS_THAN_EQUAL, COL("ldt?")), BOOLEAN), //
+            GREATER_THAN_OPT_ZONED_DATE_TIME(OP(COL("zdt?"), GREATER_THAN, COL("zdt?")), BOOLEAN), //
+            LESS_THAN_OPT_ZONED_DATE_TIME(OP(COL("zdt?"), LESS_THAN, COL("zdt?")), BOOLEAN), //
+            GREATER_THAN_EQ_OPT_ZONED_DATE_TIME(OP(COL("zdt?"), GREATER_THAN_EQUAL, COL("zdt?")), BOOLEAN), //
+            LESS_THAN_EQ_OPT_ZONED_DATE_TIME(OP(COL("zdt?"), LESS_THAN_EQUAL, COL("zdt?")), BOOLEAN), //
+            GREATER_THAN_OPT_TIME_DURATION(OP(COL("d?"), GREATER_THAN, COL("d?")), BOOLEAN), //
+            LESS_THAN_OPT_TIME_DURATION(OP(COL("d?"), LESS_THAN, COL("d?")), BOOLEAN), //
+            GREATER_THAN_EQ_OPT_TIME_DURATION(OP(COL("d?"), GREATER_THAN_EQUAL, COL("d?")), BOOLEAN), //
+            LESS_THAN_EQ_OPT_TIME_DURATION(OP(COL("d?"), LESS_THAN_EQUAL, COL("d?")), BOOLEAN), //
+
+            // Couple of extra ordering tests with one optional and one non-optional col
+            GREATER_THAN_LOCAL_DATE_TIME_MIXED_OPT(OP(COL("ldt?"), GREATER_THAN, COL("ldt")), BOOLEAN), //
+            LESS_THAN_LOCAL_DATE_TIME_MIXED_OPT(OP(COL("ldt?"), LESS_THAN, COL("ldt")), BOOLEAN), //
+            GREATER_THAN_EQ_LOCAL_DATE_TIME_MIXED_OPT(OP(COL("ldt?"), GREATER_THAN_EQUAL, COL("ldt")), BOOLEAN), //
+            LESS_THAN_EQ_LOCAL_DATE_TIME_MIXED_OPT(OP(COL("ldt?"), LESS_THAN_EQUAL, COL("ldt")), BOOLEAN), //
+            GREATER_THAN_ZONED_DATE_TIME_MIXED_OPT(OP(COL("zdt?"), GREATER_THAN, COL("zdt")), BOOLEAN), //
+            LESS_THAN_ZONED_DATE_TIME_MIXED_OPT(OP(COL("zdt?"), LESS_THAN, COL("zdt")), BOOLEAN), //
+            GREATER_THAN_EQ_ZONED_DATE_TIME_MIXED_OPT(OP(COL("zdt?"), GREATER_THAN_EQUAL, COL("zdt")), BOOLEAN), //
+            LESS_THAN_EQ_ZONED_DATE_TIME_MIXED_OPT(OP(COL("zdt?"), LESS_THAN_EQUAL, COL("zdt")), BOOLEAN), //
+            GREATER_THAN_TIME_DURATION_MIXED_OPT(OP(COL("d?"), GREATER_THAN, COL("d")), BOOLEAN), //
+            LESS_THAN_TIME_DURATION_MIXED_OPT(OP(COL("d?"), LESS_THAN, COL("d")), BOOLEAN), //
+            GREATER_THAN_EQ_TIME_DURATION_MIXED_OPT(OP(COL("d?"), GREATER_THAN_EQUAL, COL("d")), BOOLEAN), //
+            LESS_THAN_EQ_TIME_DURATION_MIXED_OPT(OP(COL("d?"), LESS_THAN_EQUAL, COL("d")), BOOLEAN), //
+
+            // Comparing times and durations to MISSING
+            EQ_LOCAL_DATE_MISSING(OP(COL("ld"), EQUAL_TO, MIS()), BOOLEAN), //
+            NEQ_LOCAL_DATE_MISSING(OP(COL("ld"), NOT_EQUAL_TO, MIS()), BOOLEAN), //
+            EQ_LOCAL_TIME_MISSING(OP(COL("lt"), EQUAL_TO, MIS()), BOOLEAN), //
+            NEQ_LOCAL_TIME_MISSING(OP(COL("lt"), NOT_EQUAL_TO, MIS()), BOOLEAN), //
+            EQ_LOCAL_DATE_TIME_MISSING(OP(COL("ldt"), EQUAL_TO, MIS()), BOOLEAN), //
+            NEQ_LOCAL_DATE_TIME_MISSING(OP(COL("ldt"), NOT_EQUAL_TO, MIS()), BOOLEAN), //
+            EQ_ZONED_DATE_TIME_MISSING(OP(COL("zdt"), EQUAL_TO, MIS()), BOOLEAN), //
+            NEQ_ZONED_DATE_TIME_MISSING(OP(COL("zdt"), NOT_EQUAL_TO, MIS()), BOOLEAN), //
+            EQ_TIME_DURATION_MISSING(OP(COL("d"), EQUAL_TO, MIS()), BOOLEAN), //
+            NEQ_TIME_DURATION_MISSING(OP(COL("d"), NOT_EQUAL_TO, MIS()), BOOLEAN), //
+            EQ_DATE_DURATION_MISSING(OP(COL("p"), EQUAL_TO, MIS()), BOOLEAN), //
+            NEQ_DATE_DURATION_MISSING(OP(COL("p"), NOT_EQUAL_TO, MIS()), BOOLEAN), //
 
             // Equality
             EQUALITY_BOTH_STRING(OP(STR("a"), EQUAL_TO, STR("b")), BOOLEAN), //
@@ -269,14 +483,36 @@ final class TypingTest {
             FLOOR_DIVISION_ON_INT_AND_FLOAT(OP(INT(2), FLOOR_DIVIDE, FLOAT(2.0)), "//", FLOAT.name(), INTEGER.name()), //
             NEGATE_STRING(OP(MINUS, STR("foo")), "-", STRING.name()), //
             NEGATE_MISSING(OP(MINUS, MIS()), "-", MISSING.name()), //
+            DURATION_PLUS_TIMELIKE(OP(COL("d"), PLUS, COL("lt")), "must be first"), //
+            PERIOD_PLUS_DATELIKE(OP(COL("p"), PLUS, COL("ld")), "must be first"), //
+            SUBTRACT_TWO_DIFFERENT_TEMPORAL_TYPES(OP(COL("ldt"), BinaryOperator.MINUS, COL("zdt")),
+                LOCAL_DATE_TIME.name(), ZONED_DATE_TIME.name()), //
+            PERIOD_MINUS_DATELIKE(OP(COL("p"), BinaryOperator.MINUS, COL("ld")), "must be first"), //
+            DURATION_MINUS_TIMELIKE(OP(COL("d"), BinaryOperator.MINUS, COL("lt")), "must be first"), //
+            MULTIPLY_DATE_DURATION_FLOAT(OP(COL("p"), MULTIPLY, FLOAT(2.0)), DATE_DURATION.name(), FLOAT.name()), //
+            MULTIPLY_TIME_DURATION_FLOAT(OP(COL("d"), MULTIPLY, FLOAT(2.0)), TIME_DURATION.name(), FLOAT.name()), //
+            DIVIDE_DATE_DURATION_INTEGER(OP(COL("p"), DIVIDE, INT(2)), DATE_DURATION.name(), INTEGER.name()), //
+            DIVIDE_TIME_DURATION_INTEGER(OP(COL("d"), DIVIDE, INT(2)), TIME_DURATION.name(), INTEGER.name()), //
+            DURATION_MINUS_PERIOD(OP(COL("d"), BinaryOperator.MINUS, COL("p")), "different type"), //
+            PERIOD_MINUS_DURATION(OP(COL("p"), BinaryOperator.MINUS, COL("d")), "different type"), //
+            DURATION_PLUS_PERIOD(OP(COL("d"), PLUS, COL("p")), "different type"), //
+            PERIOD_PLUS_DURATION(OP(COL("p"), PLUS, COL("d")), "different type"), //
+            LOCAL_DATE_PLUS_DURATION(OP(COL("ld"), PLUS, COL("d")), LOCAL_DATE.name(), TIME_DURATION.name()), //
+            LOCAL_DATE_MINUS_DURATION(OP(COL("ld"), BinaryOperator.MINUS, COL("d")), LOCAL_DATE.name(),
+                TIME_DURATION.name()), //
+            LOCAL_TIME_PLUS_PERIOD(OP(COL("lt"), PLUS, COL("p")), LOCAL_TIME.name(), DATE_DURATION.name()), //
+            LOCAL_TIME_MINUS_PERIOD(OP(COL("lt"), BinaryOperator.MINUS, COL("p")), LOCAL_TIME.name(),
+                DATE_DURATION.name()), //
 
             // === Comparison Operations
             ORDERING_ON_INT_AND_BOOLEAN(OP(INT(100), GREATER_THAN, BOOL(false)), ">", INTEGER.name(), BOOLEAN.name()), //
             ORDERING_ON_STRING(OP(STR("a"), LESS_THAN, STR("b")), "<", STRING.name()), //
             ORDERING_ON_INT_AND_MISSING(OP(INT(20), LESS_THAN, MIS()), "<", INTEGER.name(), MISSING.name()), //
+            ORDERING_ON_DATE_DURATIONS(OP(COL("p"), GREATER_THAN, COL("p")), DATE_DURATION.name()), //
             EQUALITY_ON_STRING_AND_BOOLEAN(OP(STR("a"), NOT_EQUAL_TO, BOOL(false)), "!=", STRING.name(),
                 BOOLEAN.name()), //
             EQUALITY_ON_INT_AND_STRING(OP(INT(20), EQUAL_TO, STR("bar")), "==", INTEGER.name(), STRING.name()), //
+            EQUALITY_ON_ZONED_AND_ZONED(OP(COL("zdt"), EQUAL_TO, COL("zdt")), ZONED_DATE_TIME.name()), //
 
             // === Logical Operations
             LOGICAL_ON_INTEGER(OP(INT(10), CONDITIONAL_AND, INT(20)), "and", INTEGER.name()), //
@@ -333,11 +569,17 @@ final class TypingTest {
             "error message should contain column name '" + colName + "', was '" + errorMessage + "'");
     }
 
-    private static final Map<String, ValueType> TEST_TYPES = Map.of( //
-        "b", BOOLEAN, "b?", OPT_BOOLEAN, //
-        "i", INTEGER, "i?", OPT_INTEGER, //
-        "f", FLOAT, "f?", OPT_FLOAT, //
-        "s", STRING, "s?", OPT_STRING //
+    private static final Map<String, ValueType> TEST_TYPES = Map.ofEntries( //
+        entry("b", BOOLEAN), entry("b?", OPT_BOOLEAN), //
+        entry("i", INTEGER), entry("i?", OPT_INTEGER), //
+        entry("f", FLOAT), entry("f?", OPT_FLOAT), //
+        entry("s", STRING), entry("s?", OPT_STRING), //
+        entry("d", TIME_DURATION), entry("d?", OPT_TIME_DURATION), //
+        entry("p", DATE_DURATION), entry("p?", OPT_DATE_DURATION), //
+        entry("ld", LOCAL_DATE), entry("ld?", OPT_LOCAL_DATE), //
+        entry("lt", LOCAL_TIME), entry("lt?", OPT_LOCAL_TIME), //
+        entry("ldt", LOCAL_DATE_TIME), entry("ldt?", OPT_LOCAL_DATE_TIME), //
+        entry("zdt", ZONED_DATE_TIME), entry("zdt?", OPT_ZONED_DATE_TIME) //
     );
 
     private static final Function<String, ReturnResult<ValueType>> TEST_COLUMN_TO_TYPE =

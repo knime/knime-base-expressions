@@ -50,10 +50,22 @@ package org.knime.core.expressions;
 
 import static org.knime.core.expressions.Computer.toFloat;
 import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.DATE_DURATION;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.STRING;
+import static org.knime.core.expressions.ValueType.TIME_DURATION;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -74,11 +86,17 @@ import org.knime.core.expressions.Ast.UnaryOperator;
 import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
 import org.knime.core.expressions.Computer.ComputerResultSupplier;
+import org.knime.core.expressions.Computer.DateDurationComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.FloatComputerResultSupplier;
 import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.IntegerComputerResultSupplier;
+import org.knime.core.expressions.Computer.LocalDateComputer;
+import org.knime.core.expressions.Computer.LocalDateTimeComputer;
+import org.knime.core.expressions.Computer.LocalTimeComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.TimeDurationComputer;
+import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 
 /**
  * Implementation of expression evaluation based on {@link Computer}.
@@ -174,6 +192,10 @@ final class Evaluation {
                 return Integer.unary(node.op(), (IntegerComputer)arg);
             } else if (FLOAT.equals(outType.baseType())) {
                 return Float.unary(node.op(), toFloat(arg));
+            } else if (TIME_DURATION.equals(outType.baseType())) {
+                return Durations.unary(node.op(), (TimeDurationComputer)arg);
+            } else if (DATE_DURATION.equals(outType.baseType())) {
+                return Periods.unary(node.op(), (DateDurationComputer)arg);
             }
             throw new EvaluationImplementationError("Unknown output type " + outType.name() + " for unary operation.");
         }
@@ -195,6 +217,27 @@ final class Evaluation {
                 return Float.binary(node.op(), toFloat(arg1), toFloat(arg2));
             } else if (STRING.equals(outType.baseType())) {
                 return Strings.binary(node.op(), arg1, arg2);
+            } else if (TIME_DURATION.equals(outType.baseType())) {
+                // subtraction of any two TemporalAmounts except LocalDate, or two Durations
+                // or multiplication/division of a Duration with an Integer, or Duration
+                // plus a Duration
+                return Durations.binary(node.op(), arg1, arg2);
+            } else if (DATE_DURATION.equals(outType.baseType())) {
+                // subtraction of any two LocalDates, or two Periods
+                // or multiplication/division of a Period with an Integer
+                return Periods.binary(node.op(), arg1, arg2);
+            } else if (LOCAL_DATE.equals(outType.baseType())) {
+                // LocalDate +/- Period
+                return LocalDates.binary(node.op(), arg1, arg2);
+            } else if (LOCAL_TIME.equals(outType.baseType())) {
+                // LocalTime +/- Duration|Period
+                return LocalTimes.binary(node.op(), arg1, arg2);
+            } else if (LOCAL_DATE_TIME.equals(outType.baseType())) {
+                // LocalDateTime +/- Duration|Period
+                return LocalDateTimes.binary(node.op(), arg1, arg2);
+            } else if (ZONED_DATE_TIME.equals(outType.baseType())) {
+                // ZonedDateTime +/- Duration|Period
+                return ZonedDateTimes.binary(node.op(), arg1, arg2);
             }
 
             throw new EvaluationImplementationError("Unknown output type " + outType.name() + " for binary operation.");
@@ -274,39 +317,45 @@ final class Evaluation {
 
         private static BooleanComputer comparison( // NOSONAR - this method is complex but still clear
             final BinaryOperator op, final Computer arg1, final Computer arg2) {
+
             BooleanComputerResultSupplier anyMissing = ctx -> arg1.isMissing(ctx) || arg2.isMissing(ctx);
             BooleanComputerResultSupplier bothMissing = ctx -> arg1.isMissing(ctx) && arg2.isMissing(ctx);
 
-            BooleanComputerResultSupplier value;
+            // This comparator only runs if both values are non-missing.
+            IntegerComputerResultSupplier comparator;
             if (arg1 instanceof FloatComputer || arg2 instanceof FloatComputer) {
-                // One is FLOAT -> we do the comparison for FLOAT
+                // One is FLOAT -> we do the comparison for FLOAT.
                 var a1 = toFloat(arg1);
                 var a2 = toFloat(arg2);
-                value = switch (op) { // NOSONAR
-                    case LESS_THAN -> ctx -> !anyMissing.applyAsBoolean(ctx) && a1.compute(ctx) < a2.compute(ctx);
-                    case LESS_THAN_EQUAL -> ctx -> bothMissing.applyAsBoolean(ctx)
-                        || (!anyMissing.applyAsBoolean(ctx) && a1.compute(ctx) <= a2.compute(ctx));
-                    case GREATER_THAN -> ctx -> !anyMissing.applyAsBoolean(ctx) && a1.compute(ctx) > a2.compute(ctx);
-                    case GREATER_THAN_EQUAL -> ctx -> bothMissing.applyAsBoolean(ctx)
-                        || (!anyMissing.applyAsBoolean(ctx) && a1.compute(ctx) >= a2.compute(ctx));
-                    default -> throw new EvaluationImplementationError(
-                        "Binary operator " + op + " is not a comparison.");
-                };
+
+                comparator = ctx -> Double.compare(a1.compute(ctx), a2.compute(ctx));
+            } else if (arg1 instanceof IntegerComputer a1 && arg2 instanceof IntegerComputer a2) {
+                comparator = ctx -> Long.compare(a1.compute(ctx), a2.compute(ctx));
+            } else if (arg1 instanceof TimeDurationComputer d1 && arg2 instanceof TimeDurationComputer d2) {
+                comparator = ctx -> d1.compute(ctx).compareTo(d2.compute(ctx));
+            } else if (arg1 instanceof LocalDateComputer ld1 && arg2 instanceof LocalDateComputer ld2) {
+                comparator = ctx -> ld1.compute(ctx).compareTo(ld2.compute(ctx));
+            } else if (arg1 instanceof LocalDateTimeComputer ldt1 && arg2 instanceof LocalDateTimeComputer ldt2) {
+                comparator = ctx -> ldt1.compute(ctx).compareTo(ldt2.compute(ctx));
+            } else if (arg1 instanceof ZonedDateTimeComputer zdt1 && arg2 instanceof ZonedDateTimeComputer zdt2) {
+                comparator = ctx -> zdt1.compute(ctx).compareTo(zdt2.compute(ctx));
+            } else if (arg1 instanceof LocalTimeComputer lt1 && arg2 instanceof LocalTimeComputer lt2) {
+                comparator = ctx -> lt1.compute(ctx).compareTo(lt2.compute(ctx));
             } else {
-                // Both are INTEGER
-                var a1 = (IntegerComputer)arg1;
-                var a2 = (IntegerComputer)arg2;
-                value = switch (op) {
-                    case LESS_THAN -> ctx -> !anyMissing.applyAsBoolean(ctx) && a1.compute(ctx) < a2.compute(ctx);
-                    case LESS_THAN_EQUAL -> ctx -> bothMissing.applyAsBoolean(ctx)
-                        || (!anyMissing.applyAsBoolean(ctx) && a1.compute(ctx) <= a2.compute(ctx));
-                    case GREATER_THAN -> ctx -> !anyMissing.applyAsBoolean(ctx) && a1.compute(ctx) > a2.compute(ctx);
-                    case GREATER_THAN_EQUAL -> ctx -> bothMissing.applyAsBoolean(ctx)
-                        || (!anyMissing.applyAsBoolean(ctx) && a1.compute(ctx) >= a2.compute(ctx));
-                    default -> throw new EvaluationImplementationError(
-                        "Binary operator " + op + " is not a comparison.");
-                };
+                throw new EvaluationImplementationError(
+                    "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not comparable.");
             }
+
+            BooleanComputerResultSupplier value = switch (op) {
+                case LESS_THAN -> ctx -> !anyMissing.applyAsBoolean(ctx) && comparator.applyAsLong(ctx) < 0;
+                case LESS_THAN_EQUAL -> ctx -> bothMissing.applyAsBoolean(ctx)
+                    || (!anyMissing.applyAsBoolean(ctx) && comparator.applyAsLong(ctx) <= 0);
+                case GREATER_THAN -> ctx -> !anyMissing.applyAsBoolean(ctx) && comparator.applyAsLong(ctx) > 0;
+                case GREATER_THAN_EQUAL -> ctx -> bothMissing.applyAsBoolean(ctx)
+                    || (!anyMissing.applyAsBoolean(ctx) && comparator.applyAsLong(ctx) >= 0);
+                default -> throw new EvaluationImplementationError("Binary operator " + op + " is not a comparison.");
+            };
+
             return BooleanComputer.of(value, ctx -> false);
         }
 
@@ -327,6 +376,16 @@ final class Evaluation {
                 valuesEqual = ctx -> a1.compute(ctx) == a2.compute(ctx); // NOSONAR - we want the equality test here
             } else if (arg1 instanceof IntegerComputer a1 && arg2 instanceof IntegerComputer a2) {
                 valuesEqual = ctx -> a1.compute(ctx) == a2.compute(ctx);
+            } else if (arg1 instanceof TimeDurationComputer d1 && arg2 instanceof TimeDurationComputer d2) {
+                valuesEqual = ctx -> d1.compute(ctx).equals(d2.compute(ctx));
+            } else if (arg1 instanceof DateDurationComputer p1 && arg2 instanceof DateDurationComputer p2) {
+                valuesEqual = ctx -> p1.compute(ctx).equals(p2.compute(ctx));
+            } else if (arg1 instanceof LocalDateComputer ld1 && arg2 instanceof LocalDateComputer ld2) {
+                valuesEqual = ctx -> ld1.compute(ctx).equals(ld2.compute(ctx));
+            } else if (arg1 instanceof LocalTimeComputer t1 && arg2 instanceof LocalTimeComputer t2) {
+                valuesEqual = ctx -> t1.compute(ctx).equals(t2.compute(ctx));
+            } else if (arg1 instanceof LocalDateTimeComputer dt1 && arg2 instanceof LocalDateTimeComputer dt2) {
+                valuesEqual = ctx -> dt1.compute(ctx).equals(dt2.compute(ctx));
             } else {
                 throw new EvaluationImplementationError(
                     "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not equality comparable.");
@@ -478,6 +537,245 @@ final class Evaluation {
             var a2 = Strings.stringRepr(arg2);
             return StringComputer.of(ctx -> a1.apply(ctx) + a2.apply(ctx), ctx -> false);
         }
+    }
+
+    private static class Durations {
+
+        static TimeDurationComputer unary(final UnaryOperator op, final TimeDurationComputer arg) {
+            ComputerResultSupplier<Duration> value = switch (op) {
+                case MINUS -> ctx -> arg.compute(ctx).negated();
+                default -> throw unsupportedOutputForOpError(op, TIME_DURATION);
+            };
+            return TimeDurationComputer.of(ctx -> {
+                try {
+                    return value.apply(ctx);
+                } catch (ArithmeticException ex) {
+                    throw new ExpressionEvaluationException(
+                        "Result was outside the range of values representable by `TIME_DURATION`", ex);
+                }
+            }, arg::isMissing);
+        }
+
+        static TimeDurationComputer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
+            ComputerResultSupplier<Duration> value;
+            if (arg1 instanceof TimeDurationComputer d1 && arg2 instanceof TimeDurationComputer d2) {
+                value = switch (op) {
+                    case PLUS -> ctx -> d1.compute(ctx).plus(d2.compute(ctx));
+                    case MINUS -> ctx -> d1.compute(ctx).minus(d2.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, TIME_DURATION);
+                };
+            } else if (arg1 instanceof TimeDurationComputer d1 && arg2 instanceof IntegerComputer i2) {
+                value = switch (op) {
+                    case MULTIPLY -> ctx -> d1.compute(ctx).multipliedBy(i2.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, TIME_DURATION);
+                };
+            } else if (arg1 instanceof IntegerComputer i1 && arg2 instanceof TimeDurationComputer d2) {
+                value = switch (op) {
+                    case MULTIPLY -> ctx -> d2.compute(ctx).multipliedBy(i1.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, TIME_DURATION);
+                };
+            } else if (arg1 instanceof LocalTimeComputer t1 && arg2 instanceof LocalTimeComputer t2) {
+                value = switch (op) {
+                    case MINUS -> ctx -> Duration.between(t2.compute(ctx), t1.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, TIME_DURATION);
+                };
+            } else if (arg1 instanceof LocalDateTimeComputer dt1 && arg2 instanceof LocalDateTimeComputer dt2) {
+                value = switch (op) {
+                    case MINUS -> ctx -> Duration.between(dt2.compute(ctx), dt1.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, TIME_DURATION);
+                };
+            } else if (arg1 instanceof ZonedDateTimeComputer zdt1 && arg2 instanceof ZonedDateTimeComputer zdt2) {
+                value = switch (op) {
+                    case MINUS -> ctx -> Duration.between(zdt2.compute(ctx), zdt1.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, TIME_DURATION);
+                };
+            } else {
+                throw new EvaluationImplementationError(
+                    "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not duration compatible.");
+            }
+
+            return TimeDurationComputer.of(ctx -> {
+                try {
+                    return value.apply(ctx);
+                } catch (ArithmeticException ex) {
+                    throw new ExpressionEvaluationException(
+                        "Result was outside the result of range representable by `TIME_DURATION`", ex);
+                }
+            }, ctx -> arg1.isMissing(ctx) || arg2.isMissing(ctx));
+        }
+    }
+
+    private static class Periods {
+
+        static DateDurationComputer unary(final UnaryOperator op, final DateDurationComputer arg) {
+            ComputerResultSupplier<Period> value = switch (op) {
+                case MINUS -> ctx -> arg.compute(ctx).negated();
+                default -> throw unsupportedOutputForOpError(op, DATE_DURATION);
+            };
+            return DateDurationComputer.of(ctx -> {
+                try {
+                    return value.apply(ctx);
+                } catch (ArithmeticException ex) {
+                    throw new ExpressionEvaluationException(
+                        "Result was outside the range of values representable by `DATE_DURATION`", ex);
+                }
+            }, arg::isMissing);
+        }
+
+        static DateDurationComputer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
+            ComputerResultSupplier<Period> value;
+            if (arg1 instanceof DateDurationComputer p1 && arg2 instanceof DateDurationComputer p2) {
+                value = switch (op) {
+                    case PLUS -> ctx -> p1.compute(ctx).plus(p2.compute(ctx));
+                    case MINUS -> ctx -> p1.compute(ctx).minus(p2.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, DATE_DURATION);
+                };
+            } else if (arg1 instanceof DateDurationComputer p1 && arg2 instanceof IntegerComputer i2) {
+                value = switch (op) {
+                    case MULTIPLY -> ctx -> p1.compute(ctx).multipliedBy((int)i2.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, DATE_DURATION);
+                };
+            } else if (arg1 instanceof IntegerComputer i1 && arg2 instanceof DateDurationComputer p2) {
+                value = switch (op) {
+                    case MULTIPLY -> ctx -> p2.compute(ctx).multipliedBy((int)i1.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, DATE_DURATION);
+                };
+            } else if (arg1 instanceof LocalDateComputer ld1 && arg2 instanceof LocalDateComputer ld2) {
+                value = switch (op) {
+                    case MINUS -> ctx -> Period.between(ld2.compute(ctx), ld1.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, DATE_DURATION);
+                };
+            } else {
+                throw new EvaluationImplementationError(
+                    "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not period compatible.");
+            }
+
+            return DateDurationComputer.of(ctx -> {
+                try {
+                    return value.apply(ctx);
+                } catch (ArithmeticException ex) {
+                    throw new ExpressionEvaluationException(
+                        "Result was outside the range of values representable by `DATE_DURATION`", ex);
+                }
+            }, ctx -> arg1.isMissing(ctx) || arg2.isMissing(ctx));
+        }
+    }
+
+    private static class LocalDates {
+
+        static Computer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
+            ComputerResultSupplier<LocalDate> value;
+            if (arg1 instanceof LocalDateComputer ld1 && arg2 instanceof DateDurationComputer p2) {
+                value = switch (op) {
+                    case PLUS -> ctx -> ld1.compute(ctx).plus(p2.compute(ctx));
+                    case MINUS -> ctx -> ld1.compute(ctx).minus(p2.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, LOCAL_DATE);
+                };
+            } else {
+                throw new EvaluationImplementationError(
+                    "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not date compatible.");
+            }
+
+            return LocalDateComputer.of(ctx -> {
+                try {
+                    return value.apply(ctx);
+                } catch (ArithmeticException ex) {
+                    throw new ExpressionEvaluationException(
+                        "Result was outside the range of values representable by `LOCAL_DATE`", ex);
+                }
+            }, ctx -> arg1.isMissing(ctx) || arg2.isMissing(ctx));
+        }
+    }
+
+    private static class LocalTimes {
+
+        static Computer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
+            ComputerResultSupplier<LocalTime> value;
+            if (arg1 instanceof LocalTimeComputer lt1 && arg2 instanceof TimeDurationComputer d2) {
+                value = switch (op) {
+                    case PLUS -> ctx -> lt1.compute(ctx).plus(d2.compute(ctx));
+                    case MINUS -> ctx -> lt1.compute(ctx).minus(d2.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, LOCAL_TIME);
+                };
+            } else {
+                throw new EvaluationImplementationError(
+                    "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not time compatible.");
+            }
+
+            return LocalTimeComputer.of(ctx -> {
+                try {
+                    return value.apply(ctx);
+                } catch (ArithmeticException ex) {
+                    throw new ExpressionEvaluationException(
+                        "Result was outside the range of values representable by `LOCAL_TIME`", ex);
+                }
+            }, ctx -> arg1.isMissing(ctx) || arg2.isMissing(ctx));
+        }
+    }
+
+    private static class LocalDateTimes {
+
+        static Computer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
+            ComputerResultSupplier<LocalDateTime> value;
+            if (arg1 instanceof LocalDateTimeComputer ldt1 && arg2 instanceof TimeDurationComputer d2) {
+                value = switch (op) {
+                    case PLUS -> ctx -> ldt1.compute(ctx).plus(d2.compute(ctx));
+                    case MINUS -> ctx -> ldt1.compute(ctx).minus(d2.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, LOCAL_DATE_TIME);
+                };
+            } else if (arg1 instanceof LocalDateTimeComputer ldt1 && arg2 instanceof DateDurationComputer p2) {
+                value = switch (op) {
+                    case PLUS -> ctx -> ldt1.compute(ctx).plus(p2.compute(ctx));
+                    case MINUS -> ctx -> ldt1.compute(ctx).minus(p2.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, LOCAL_DATE_TIME);
+                };
+            } else {
+                throw new EvaluationImplementationError(
+                    "Arguments of " + arg1.getClass() + " and " + arg2.getClass() + " are not date-time compatible.");
+            }
+
+            return LocalDateTimeComputer.of(ctx -> {
+                try {
+                    return value.apply(ctx);
+                } catch (ArithmeticException ex) {
+                    throw new ExpressionEvaluationException(
+                        "Result was outside the range of values representable by `LOCAL_DATE_TIME`", ex);
+                }
+            }, ctx -> arg1.isMissing(ctx) || arg2.isMissing(ctx));
+        }
+    }
+
+    private static class ZonedDateTimes {
+
+        static Computer binary(final BinaryOperator op, final Computer arg1, final Computer arg2) {
+            ComputerResultSupplier<ZonedDateTime> value;
+            if (arg1 instanceof ZonedDateTimeComputer zdt1 && arg2 instanceof TimeDurationComputer d2) {
+                value = switch (op) {
+                    case PLUS -> ctx -> zdt1.compute(ctx).plus(d2.compute(ctx));
+                    case MINUS -> ctx -> zdt1.compute(ctx).minus(d2.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, ZONED_DATE_TIME);
+                };
+            } else if (arg1 instanceof ZonedDateTimeComputer zdt1 && arg2 instanceof DateDurationComputer p2) {
+                value = switch (op) {
+                    case PLUS -> ctx -> zdt1.compute(ctx).plus(p2.compute(ctx));
+                    case MINUS -> ctx -> zdt1.compute(ctx).minus(p2.compute(ctx));
+                    default -> throw unsupportedOutputForOpError(op, ZONED_DATE_TIME);
+                };
+            } else {
+                throw new EvaluationImplementationError("Arguments of " + arg1.getClass() + " and " + arg2.getClass()
+                    + " are not zoned date-time compatible.");
+            }
+
+            return ZonedDateTimeComputer.of(ctx -> {
+                try {
+                    return value.apply(ctx);
+                } catch (ArithmeticException ex) {
+                    throw new ExpressionEvaluationException(
+                        "Result was outside the range of values representable by `ZONED_DATE_TIME`", ex);
+                }
+            }, ctx -> arg1.isMissing(ctx) || arg2.isMissing(ctx));
+        }
+
     }
 
     private static EvaluationImplementationError unsupportedOutputForOpError(final Object operator,

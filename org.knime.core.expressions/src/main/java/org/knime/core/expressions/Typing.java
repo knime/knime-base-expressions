@@ -49,13 +49,20 @@
 package org.knime.core.expressions;
 
 import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.DATE_DURATION;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.OPT_FLOAT;
 import static org.knime.core.expressions.ValueType.STRING;
+import static org.knime.core.expressions.ValueType.TIME_DURATION;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.knime.core.expressions.Ast.AggregationCall;
@@ -168,6 +175,10 @@ final class Typing {
             var t1 = getType(node.arg1());
             var t2 = getType(node.arg2());
 
+            var temporalSubtractionOutputType = valueTypesForTemporalSubtraction(node, t1, t2);
+            var temporalAdditionOutputType = valueTypesForTemporalAddition(node, t1, t2);
+            var temporalMultiplicationOutputType = valueTypesForTemporalMultiplication(t1, t2);
+
             if (t1 instanceof ErrorValueType || t2 instanceof ErrorValueType) {
                 return ErrorValueType.combined(List.of(t1, t2));
             } else if (op == BinaryOperator.PLUS && isAnyString(t1, t2) && !isAnyMissing(t1, t2)) {
@@ -175,17 +186,23 @@ final class Typing {
             } else if (op.isArithmetic() && isAllNumeric(t1, t2)) {
                 // Arithmetic operation
                 return arithmeticType(node, t1, t2);
-            } else if (op.isOrderingComparison() && isAllNumeric(t1, t2)) {
+            } else if (op.isOrderingComparison()
+                && (isAllNumeric(t1, t2) || isAllMutuallyOrderedTemporalTypes(t1, t2))) {
                 // Ordering comparison
                 return BOOLEAN;
             } else if (op.isEqualityComparison()) {
-                // Equality comparison
                 return equalityType(node, t1, t2);
             } else if (op.isLogical() && isAllBoolean(t1, t2)) {
                 // Logical operation
                 return BOOLEAN(t1.isOptional() || t2.isOptional());
             } else if (op == BinaryOperator.MISSING_FALLBACK) {
                 return missingFallbackTypes(node, t1, t2);
+            } else if (op == BinaryOperator.MINUS && temporalSubtractionOutputType.isPresent()) {
+                return temporalSubtractionOutputType.get();
+            } else if (op == BinaryOperator.PLUS && temporalAdditionOutputType.isPresent()) {
+                return temporalAdditionOutputType.get();
+            } else if (op == BinaryOperator.MULTIPLY && temporalMultiplicationOutputType.isPresent()) {
+                return temporalMultiplicationOutputType.get();
             } else {
                 return ErrorValueType.binaryOpNotApplicable(node, t1, t2);
             }
@@ -196,7 +213,7 @@ final class Typing {
             var op = node.op();
             var type = getType(node.arg());
 
-            if (op == UnaryOperator.MINUS && isNumeric(type)) {
+            if (op == UnaryOperator.MINUS && (isNumeric(type) || isInterval(type))) {
                 return type;
             } else if (op == UnaryOperator.NOT && BOOLEAN.equals(type.baseType())) {
                 return type;
@@ -249,6 +266,10 @@ final class Typing {
 
         /** @throws ExpressionCompileException if the given types cannot be compared with an equality operator */
         private static ValueType equalityType(final BinaryOp node, final ValueType typeA, final ValueType typeB) {
+            if (typeA.baseType().equals(ZONED_DATE_TIME) && typeB.baseType().equals(ZONED_DATE_TIME)) {
+                // TODO(AP-23966): refer to specific functions that can be used instead in this error message
+                return ErrorValueType.typingError("Equality comparison is not supported for ZONED_DATE_TIME.", node);
+            }
             if (typeA.baseType().equals(typeB.baseType())) {
                 // Same type or one is the missing type extension of the other
                 return BOOLEAN;
@@ -297,6 +318,11 @@ final class Typing {
             return INTEGER.equals(baseType) || FLOAT.equals(baseType);
         }
 
+        private static boolean isInterval(final ValueType type) {
+            var baseType = type.baseType();
+            return DATE_DURATION.equals(baseType) || TIME_DURATION.equals(baseType);
+        }
+
         private static boolean isAnyString(final ValueType typeA, final ValueType typeB) {
             return STRING.equals(typeA.baseType()) || STRING.equals(typeB.baseType());
         }
@@ -305,12 +331,101 @@ final class Typing {
             return isNumeric(typeA) && isNumeric(typeB);
         }
 
+        private static boolean isAllMutuallyOrderedTemporalTypes(final ValueType t1, final ValueType t2) {
+            var b1 = t1.baseType();
+            var b2 = t2.baseType();
+
+            return b1.equals(b2) && (LOCAL_TIME.equals(b1) || LOCAL_DATE.equals(b1) || LOCAL_DATE_TIME.equals(b1)
+                || ZONED_DATE_TIME.equals(b1) || TIME_DURATION.equals(b1));
+        }
+
         private static boolean isAllBoolean(final ValueType typeA, final ValueType typeB) {
             return BOOLEAN.equals(typeA.baseType()) && BOOLEAN.equals(typeB.baseType());
         }
 
         private static boolean isAnyMissing(final ValueType t1, final ValueType t2) {
             return MISSING.equals(t1) || MISSING.equals(t2);
+        }
+
+        private static boolean hasTimePart(final ValueType t) {
+            return t.equals(LOCAL_TIME) || t.equals(ZONED_DATE_TIME) || t.equals(LOCAL_DATE_TIME);
+        }
+
+        private static boolean hasDatePart(final ValueType t) {
+            return t.equals(LOCAL_DATE) || t.equals(ZONED_DATE_TIME) || t.equals(LOCAL_DATE_TIME);
+        }
+
+        private static Optional<ValueType> valueTypesForTemporalSubtraction(final BinaryOp node, final ValueType t1,
+            final ValueType t2) {
+            var b1 = t1.baseType();
+            var b2 = t2.baseType();
+            var outputTypeIsOptional = t1.isOptional() || t2.isOptional();
+
+            ValueType out = null;
+            if ((b1.equals(LOCAL_DATE) && b2.equals(LOCAL_DATE))) {
+                out = DATE_DURATION;
+            } else if (b1.equals(DATE_DURATION) && b2.equals(DATE_DURATION)) {
+                out = DATE_DURATION;
+            } else if ((hasDatePart(b1) && b2.equals(DATE_DURATION)) || (hasTimePart(b1) && b2.equals(TIME_DURATION))) {
+                out = b1;
+            } else if (hasTimePart(b1) && b1.equals(b2)) {
+                out = TIME_DURATION;
+            } else if (b1.equals(TIME_DURATION) && b2.equals(TIME_DURATION)) {
+                out = TIME_DURATION;
+            } else if ((b1.equals(DATE_DURATION) && hasDatePart(b2)) || (b1.equals(TIME_DURATION) && hasTimePart(b2))) {
+                // we don't allow interval ± instant, only the other way around. Special error message
+                // for this case to help the user.
+                out = ErrorValueType
+                    .typingError("When subtracting a duration and date-time, the date-time must be first", node);
+            } else if ((b1.equals(DATE_DURATION) && b2.equals(TIME_DURATION))
+                || (b1.equals(TIME_DURATION) && b2.equals(DATE_DURATION))) {
+                out = ErrorValueType.typingError("Cannot subtract a duration from a different type of duration.", node);
+            }
+
+            return Optional.ofNullable(out) //
+                .map(t -> outputTypeIsOptional ? t.optionalType() : t);
+        }
+
+        private static Optional<ValueType> valueTypesForTemporalMultiplication(final ValueType t1, final ValueType t2) {
+            var b1 = t1.baseType();
+            var b2 = t2.baseType();
+            var outputTypeIsOptional = t1.isOptional() || t2.isOptional();
+
+            ValueType out = null;
+            if ((b1.equals(TIME_DURATION) && b2.equals(INTEGER)) || (b2.equals(TIME_DURATION) && b1.equals(INTEGER))) {
+                out = TIME_DURATION;
+            } else if ((b1.equals(DATE_DURATION) && b2.equals(INTEGER))
+                || (b1.equals(INTEGER) && b2.equals(DATE_DURATION))) {
+                out = DATE_DURATION;
+            }
+
+            return Optional.ofNullable(out) //
+                .map(t -> outputTypeIsOptional ? t.optionalType() : t);
+        }
+
+        private static Optional<ValueType> valueTypesForTemporalAddition(final BinaryOp node, final ValueType t1,
+            final ValueType t2) {
+            var b1 = t1.baseType();
+            var b2 = t2.baseType();
+            var outputTypeIsOptional = t1.isOptional() || t2.isOptional();
+
+            ValueType out = null;
+            if ((hasDatePart(b1) && b2.equals(DATE_DURATION)) || (hasTimePart(b1) && b2.equals(TIME_DURATION))) {
+                out = b1;
+            } else if (b1.equals(DATE_DURATION) && b2.equals(DATE_DURATION)) {
+                out = DATE_DURATION;
+            } else if (b1.equals(TIME_DURATION) && b2.equals(TIME_DURATION)) {
+                out = TIME_DURATION;
+            } else if ((b1.equals(DATE_DURATION) && hasDatePart(b2)) || (b1.equals(TIME_DURATION) && hasTimePart(b2))) {
+                out = ErrorValueType.typingError("When adding a duration and date-time, the date-time must be first.",
+                    node);
+            } else if ((b1.equals(DATE_DURATION) && b2.equals(TIME_DURATION))
+                || (b1.equals(TIME_DURATION) && b2.equals(DATE_DURATION))) {
+                out = ErrorValueType.typingError("Cannot add two different types of duration.", node);
+            }
+
+            return Optional.ofNullable(out) //
+                .map(t -> outputTypeIsOptional ? t.optionalType() : t);
         }
     }
 

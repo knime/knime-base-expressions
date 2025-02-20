@@ -122,7 +122,8 @@ public final class ExpressionFunctionBuilder {
 
     // ====================== BUILDER ===========================
 
-    interface RequiresName {
+    /** The first stage of the builder. Add a name to continue. */
+    public interface RequiresName {
         /**
          * @param name the {@link ExpressionFunction#name()}
          * @return the next stage of the builder
@@ -130,7 +131,8 @@ public final class ExpressionFunctionBuilder {
         RequiresDescription name(String name);
     }
 
-    interface RequiresDescription {
+    /** The second stage of the builder. Add a description to continue */
+    public interface RequiresDescription {
         /**
          * @param description the {@link OperatorDescription#description()}
          * @return the next stage of the builder
@@ -138,7 +140,8 @@ public final class ExpressionFunctionBuilder {
         RequiresExamples description(String description);
     }
 
-    interface RequiresExamples {
+    /** The third stage of the builder. Add examples to continue */
+    public interface RequiresExamples {
         /**
          * @param examples the {@link OperatorDescription#examples()}
          * @return the next stage of the builder
@@ -146,7 +149,8 @@ public final class ExpressionFunctionBuilder {
         RequiresKeywords examples(String examples);
     }
 
-    interface RequiresKeywords {
+    /** The fourth stage of the builder. Add keywords to continue */
+    public interface RequiresKeywords {
         /**
          * @param keywords the {@link OperatorDescription#keywords()}
          * @return the next stage of the builder
@@ -154,7 +158,8 @@ public final class ExpressionFunctionBuilder {
         RequiresCategory keywords(String... keywords);
     }
 
-    interface RequiresCategory {
+    /** The fifth stage of the builder. Add a category to continue */
+    public interface RequiresCategory {
         /**
          * @param category the {@link OperatorDescription#category()}
          * @return the next stage of the builder
@@ -162,7 +167,8 @@ public final class ExpressionFunctionBuilder {
         RequiresArgs category(OperatorCategory category);
     }
 
-    interface RequiresArgs {
+    /** The sixth stage of the builder. Add arguments to continue */
+    public interface RequiresArgs {
         /**
          * @param args the argument declarations
          * @return the next stage of the builder
@@ -170,7 +176,8 @@ public final class ExpressionFunctionBuilder {
         RequiresReturnType args(Arg... args);
     }
 
-    interface RequiresReturnType {
+    /** The seventh stage of the builder. Add a return type to continue */
+    public interface RequiresReturnType {
         /**
          * @param returnDesc the {@link OperatorDescription#returnDescription()}
          * @param returnType the {@link OperatorDescription#returnType()}
@@ -181,7 +188,8 @@ public final class ExpressionFunctionBuilder {
             Function<Arguments<ValueType>, ValueType> returnTypeMapping);
     }
 
-    interface RequiresImpl {
+    /** The penultimate stage of the builder. Add an implementation to continue */
+    public interface RequiresImpl {
         /**
          * @param impl the implementation of the function ({@link ExpressionFunction#apply(Arguments)}
          * @return the next stage of the builder
@@ -189,7 +197,14 @@ public final class ExpressionFunctionBuilder {
         FinalStage impl(Function<Arguments<Computer>, Computer> impl);
     }
 
-    record FinalStage( // NOSONAR - equals and hashCode are not important for this record
+    /**
+     * The final stage of the builder. Call {@link FinalStage#build()} to create the function.
+     *
+     * If you ever find yourself calling this constructor directly, you are probably doing something wrong. Use the
+     * builder instead.
+     */
+    @SuppressWarnings("javadoc")
+    public record FinalStage( // NOSONAR - equals and hashCode are not important for this record
         String name, String description, String examples, String[] keywords, OperatorCategory category, Arg[] args,
         String returnDesc, String returnType, Function<Arguments<ValueType>, ValueType> returnTypeMapping,
         Function<Arguments<Computer>, Computer> impl) {

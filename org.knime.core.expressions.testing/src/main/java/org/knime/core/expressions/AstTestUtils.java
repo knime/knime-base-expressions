@@ -48,12 +48,33 @@
  */
 package org.knime.core.expressions;
 
+import static org.knime.core.expressions.ValueType.DATE_DURATION;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.LOCAL_TIME;
+import static org.knime.core.expressions.ValueType.TIME_DURATION;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
+
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
 import org.knime.core.expressions.Ast.ConstantAst;
+import org.knime.core.expressions.Computer.DateDurationComputer;
+import org.knime.core.expressions.Computer.LocalDateComputer;
+import org.knime.core.expressions.Computer.LocalDateTimeComputer;
+import org.knime.core.expressions.Computer.LocalTimeComputer;
+import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.TimeDurationComputer;
+import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.functions.ExpressionFunction;
+import org.knime.core.expressions.functions.ExpressionFunctionBuilder;
 
 /**
  * Helpers to create {@link Ast}s with as few characters as possible. Only for tests.
@@ -213,4 +234,194 @@ public final class AstTestUtils {
 
         return Ast.aggregationCall(columnAggregation, args);
     }
+
+    /**
+     * Create a function call that produces a {@link ValueType#LOCAL_DATE}, for testing purposes.
+     *
+     * @param date
+     * @return a {@link Ast.FunctionCall} which produces a {@link ValueType#LOCAL_DATE} from the given ISO string
+     */
+    public static Ast.FunctionCall F_LOCAL_DATE(final String date) {
+        return FUN(MAKE_LOCAL_DATE_FOR_TEST, STR(date));
+    }
+
+    /**
+     * Create a function call that produces a missing {@link ValueType#LOCAL_DATE}, for testing purposes.
+     *
+     * @return a {@link Ast.FunctionCall} which produces a missing {@link ValueType#LOCAL_DATE}
+     */
+    public static Ast.FunctionCall F_LOCAL_DATE() {
+        return FUN(MAKE_LOCAL_DATE_FOR_TEST);
+    }
+
+    /**
+     * Create a function call that produces a {@link ValueType#LOCAL_TIME}, for testing purposes.
+     *
+     * @param time
+     * @return a {@link Ast.FunctionCall} which produces a {@link ValueType#LOCAL_TIME} from the given ISO string
+     */
+    public static Ast.FunctionCall F_LOCAL_TIME(final String time) {
+        return FUN(MAKE_LOCAL_TIME_FOR_TEST, STR(time));
+    }
+
+    /**
+     * Create a function call that produces a missing {@link ValueType#LOCAL_TIME}, for testing purposes.
+     *
+     * @return a {@link Ast.FunctionCall} which produces a missing {@link ValueType#LOCAL_TIME}
+     */
+    public static Ast.FunctionCall F_LOCAL_TIME() {
+        return FUN(MAKE_LOCAL_TIME_FOR_TEST);
+    }
+
+    /**
+     * Create a function call that produces a {@link ValueType#LOCAL_DATE_TIME}, for testing purposes.
+     *
+     * @param datetime
+     * @return a {@link Ast.FunctionCall} which produces a {@link ValueType#LOCAL_DATE_TIME} from the given ISO string
+     */
+    public static Ast.FunctionCall F_LOCAL_DATE_TIME(final String datetime) {
+        return FUN(MAKE_LOCAL_DATE_TIME_FOR_TEST, STR(datetime));
+    }
+
+    /**
+     * Create a function call that produces a missing {@link ValueType#LOCAL_DATE_TIME}, for testing purposes.
+     *
+     * @return a {@link Ast.FunctionCall} which produces a missing {@link ValueType#LOCAL_DATE_TIME}
+     */
+    public static Ast.FunctionCall F_LOCAL_DATE_TIME() {
+        return FUN(MAKE_LOCAL_DATE_TIME_FOR_TEST);
+    }
+
+    /**
+     * Create a function call that produces a {@link ValueType#ZONED_DATE_TIME}, for testing purposes.
+     *
+     * @param datetime
+     * @return a {@link Ast.FunctionCall} which produces a {@link ValueType#ZONED_DATE_TIME} from the given ISO string
+     */
+    public static Ast.FunctionCall F_ZONED_DATE_TIME(final String datetime) {
+        return FUN(MAKE_ZONED_DATE_TIME_FOR_TEST, STR(datetime));
+    }
+
+    /**
+     * Create a function call that produces a missing {@link ValueType#ZONED_DATE_TIME}, for testing purposes.
+     *
+     * @return a {@link Ast.FunctionCall} which produces a missing {@link ValueType#ZONED_DATE_TIME}
+     */
+    public static Ast.FunctionCall F_ZONED_DATE_TIME() {
+        return FUN(MAKE_ZONED_DATE_TIME_FOR_TEST);
+    }
+
+    /**
+     * Create a function call that produces a {@link ValueType#TIME_DURATION}, for testing purposes.
+     *
+     * @param duration
+     * @return a {@link Ast.FunctionCall} which produces a {@link ValueType#TIME_DURATION} from the given ISO string
+     */
+    public static Ast.FunctionCall F_TIME_DURATION(final String duration) {
+        return FUN(MAKE_TIME_DURATION_FOR_TEST, STR(duration));
+    }
+
+    /**
+     * Create a function call that produces a missing{@link ValueType#TIME_DURATION}, for testing purposes.
+     *
+     * @return a {@link Ast.FunctionCall} which produces a missing {@link ValueType#TIME_DURATION}
+     */
+    public static Ast.FunctionCall F_TIME_DURATION() {
+        return FUN(MAKE_TIME_DURATION_FOR_TEST);
+    }
+
+    /**
+     * Create a function call that produces a {@link ValueType#DATE_DURATION}, for testing purposes.
+     *
+     * @param period
+     * @return a {@link Ast.FunctionCall} which produces a {@link ValueType#DATE_DURATION} from the given ISO string
+     */
+    public static Ast.FunctionCall F_DATE_DURATION(final String period) {
+        return FUN(MAKE_DATE_DURATION_FOR_TEST, STR(period));
+    }
+
+    /**
+     * Create a function call that produces a missing {@link ValueType#LOCAL_DATE}, for testing purposes.
+     *
+     * @return a {@link Ast.FunctionCall} which produces a missing {@link ValueType#LOCAL_DATE}
+     */
+    public static Ast.FunctionCall F_DATE_DURATION() {
+        return FUN(MAKE_DATE_DURATION_FOR_TEST);
+    }
+
+    private static final OperatorCategory TEST_CATEGORY = new OperatorCategory("Test", "Test");
+
+    private static final ExpressionFunction MAKE_LOCAL_DATE_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_local_date_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.optarg("date", "", SignatureUtils.isStringOrOpt())) //
+        .returnType("", "", args -> LOCAL_DATE(args.getNumberOfArguments() == 0)) //
+        .impl(args -> LocalDateComputer.of(ctx -> LocalDate.parse(((StringComputer)args.get("date")).compute(ctx)),
+            ctx -> !args.has("date"))) //
+        .build();
+
+    private static final ExpressionFunction MAKE_LOCAL_TIME_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_local_time_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.optarg("time", "", SignatureUtils.isStringOrOpt())) //
+        .returnType("", "", args -> LOCAL_TIME(args.getNumberOfArguments() == 0)) //
+        .impl(args -> LocalTimeComputer.of(ctx -> LocalTime.parse(((StringComputer)args.get("time")).compute(ctx)),
+            ctx -> !args.has("time"))) //
+        .build();
+
+    private static final ExpressionFunction MAKE_LOCAL_DATE_TIME_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_local_date_time_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.optarg("datetime", "", SignatureUtils.isStringOrOpt())) //
+        .returnType("", "", args -> LOCAL_DATE_TIME(args.getNumberOfArguments() == 0)) //
+        .impl(args -> LocalDateTimeComputer.of(
+            ctx -> LocalDateTime.parse(((StringComputer)args.get("datetime")).compute(ctx)),
+            ctx -> !args.has("datetime"))) //
+        .build();
+
+    private static final ExpressionFunction MAKE_ZONED_DATE_TIME_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_zoned_date_time_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.optarg("datetime", "", SignatureUtils.isStringOrOpt())) //
+        .returnType("", "", args -> ZONED_DATE_TIME(args.getNumberOfArguments() == 0)) //
+        .impl(args -> ZonedDateTimeComputer.of(
+            ctx -> ZonedDateTime.parse(((StringComputer)args.get("datetime")).compute(ctx)),
+            ctx -> !args.has("datetime"))) //
+        .build();
+
+    private static final ExpressionFunction MAKE_TIME_DURATION_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_time_duration_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.optarg("str", "", SignatureUtils.isStringOrOpt())) //
+        .returnType("", "", args -> TIME_DURATION(args.getNumberOfArguments() == 0)) //
+        .impl(args -> TimeDurationComputer.of(ctx -> Duration.parse(((StringComputer)args.get("str")).compute(ctx)),
+            ctx -> !args.has("str"))) //
+        .build();
+
+    private static final ExpressionFunction MAKE_DATE_DURATION_FOR_TEST = ExpressionFunctionBuilder.functionBuilder() //
+        .name("make_date_duration_for_test") //
+        .description("") //
+        .examples("") //
+        .keywords("") //
+        .category(TEST_CATEGORY) //
+        .args(SignatureUtils.optarg("str", "", SignatureUtils.isStringOrOpt())) //
+        .returnType("", "", args -> DATE_DURATION(args.getNumberOfArguments() == 0)) //
+        .impl(args -> DateDurationComputer.of(ctx -> Period.parse(((StringComputer)args.get("str")).compute(ctx)),
+            ctx -> !args.has("str"))) //
+        .build();
 }
