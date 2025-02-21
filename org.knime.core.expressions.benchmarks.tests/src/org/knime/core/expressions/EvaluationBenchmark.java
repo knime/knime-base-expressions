@@ -137,4 +137,13 @@ public class EvaluationBenchmark {
             }
         }
     }
+
+    /** Evaluate the expression as a compiled Java function. */
+    // @Benchmark // Just for comparison during development
+    @OperationsPerInvocation(BenchmarkTable.NUM_ROWS)
+    public void evaluateInJava(final Blackhole bh) {
+        for (int i = 0; i < BenchmarkTable.NUM_ROWS; i++) {
+            bh.consume(m_expression.runJavaImpl(i));
+        }
+    }
 }
