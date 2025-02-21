@@ -48,6 +48,9 @@
  */
 package org.knime.core.expressions;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
+
 /**
  *
  * @author David Hickey, TNG Technology Consulting GmbH
@@ -69,22 +72,66 @@ public final class ReturnTypeDescriptions {
     /** Return type description for function returning non-optional float */
     public static final String RETURN_FLOAT = "FLOAT";
 
+    /** Return type description for function returning non-optional date */
+    public static final String RETURN_LOCAL_DATE = "LOCAL_DATE";
+
+    /** Return type description for function returning non-optional time */
+    public static final String RETURN_LOCAL_TIME = "LOCAL_TIME";
+
+    /** Return type description for function returning non-optional date-time */
+    public static final String RETURN_LOCAL_DATE_TIME = "LOCAL_DATE_TIME";
+
+    /** Return type description for function returning non-optional zoned date-time */
+    public static final String RETURN_ZONED_DATE_TIME = "ZONED_DATE_TIME";
+
+    /** Return type description for function returning non-optional duration */
+    public static final String RETURN_DURATION = "DURATION";
+
+    /** Return type description for function returning non-optional period */
+    public static final String RETURN_PERIOD = "PERIOD";
+
     /** Return type description for function returning non-optional numeric type */
-    public static final String RETURN_INTEGER_FLOAT = "INTEGER | FLOAT";
+    public static final String RETURN_INTEGER_FLOAT = union(RETURN_INTEGER, RETURN_FLOAT);
 
     /** Return type description for function returning optional boolean */
-    public static final String RETURN_BOOLEAN_MISSING = "BOOLEAN | MISSING";
+    public static final String RETURN_BOOLEAN_MISSING = optUnion(RETURN_BOOLEAN);
 
     /** Return type description for function returning optional integer */
-    public static final String RETURN_INTEGER_MISSING = "INTEGER | MISSING";
+    public static final String RETURN_INTEGER_MISSING = optUnion(RETURN_INTEGER);
 
     /** Return type description for function returning optional float */
-    public static final String RETURN_FLOAT_MISSING = "FLOAT | MISSING";
+    public static final String RETURN_FLOAT_MISSING = optUnion(RETURN_FLOAT);
 
     /** Return type description for function returning optional string */
-    public static final String RETURN_STRING_MISSING = "STRING | MISSING";
+    public static final String RETURN_STRING_MISSING = optUnion(RETURN_STRING);
+
+    /** Return type description for function returning optional date */
+    public static final String RETURN_LOCAL_DATE_MISSING = optUnion(RETURN_LOCAL_DATE);
+
+    /** Return type description for function returning optional time */
+    public static final String RETURN_LOCAL_TIME_MISSING = optUnion(RETURN_LOCAL_TIME);
+
+    /** Return type description for function returning optional date-time */
+    public static final String RETURN_LOCAL_DATE_TIME_MISSING = optUnion(RETURN_LOCAL_DATE_TIME);
+
+    /** Return type description for function returning optional zoned date-time */
+    public static final String RETURN_ZONED_DATE_TIME_MISSING = optUnion(RETURN_ZONED_DATE_TIME);
+
+    /** Return type description for function returning optional duration */
+    public static final String RETURN_DURATION_MISSING = optUnion(RETURN_DURATION);
+
+    /** Return type description for function returning optional period */
+    public static final String RETURN_PERIOD_MISSING = optUnion(RETURN_PERIOD);
 
     /** Return type description for function returning optional numeric type */
-    public static final String RETURN_INTEGER_FLOAT_MISSING = "INTEGER | FLOAT | MISSING";
+    public static final String RETURN_INTEGER_FLOAT_MISSING = optUnion(RETURN_INTEGER, RETURN_FLOAT);
 
+    private static String union(final String... types) {
+        return String.join(" | ", types);
+    }
+
+    private static String optUnion(final String... types) {
+        var typesWithMissing = Stream.concat(Arrays.stream(types), Stream.of("MISSING"));
+        return union(typesWithMissing.toArray(String[]::new));
+    }
 }

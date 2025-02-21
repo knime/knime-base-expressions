@@ -217,6 +217,10 @@ public interface Computer {
                 }
             };
         }
+
+        static IntegerComputer ofConstant(final long value) {
+            return of(ctx -> value, ctx -> false);
+        }
     }
 
     /** {@link Computer} for {@link ValueType#FLOAT} and {@link ValueType#OPT_FLOAT} */
@@ -250,6 +254,10 @@ public interface Computer {
                     return value.applyAsDouble(ctx);
                 }
             };
+        }
+
+        static FloatComputer ofConstant(final double value) {
+            return of(ctx -> value, ctx -> false);
         }
     }
 
@@ -286,6 +294,10 @@ public interface Computer {
                 }
             };
         }
+
+        static StringComputer ofConstant(final String value) {
+            return of(ctx -> value, ctx -> false);
+        }
     }
 
     /** {@link Computer} for {@link ValueType#LOCAL_DATE} and {@link ValueType#OPT_LOCAL_DATE} */
@@ -320,6 +332,10 @@ public interface Computer {
                     return value.apply(ctx);
                 }
             };
+        }
+
+        static LocalDateComputer ofConstant(final LocalDate value) {
+            return of(ctx -> value, ctx -> false);
         }
     }
 
@@ -356,6 +372,10 @@ public interface Computer {
                 }
             };
         }
+
+        static LocalTimeComputer ofConstant(final LocalTime value) {
+            return of(ctx -> value, ctx -> false);
+        }
     }
 
     /** {@link Computer} for {@link ValueType#LOCAL_DATE_TIME} and {@link ValueType#OPT_LOCAL_DATE_TIME} */
@@ -390,6 +410,10 @@ public interface Computer {
                     return value.apply(ctx);
                 }
             };
+        }
+
+        static LocalDateTimeComputer ofConstant(final LocalDateTime value) {
+            return of(ctx -> value, ctx -> false);
         }
     }
 
@@ -426,6 +450,10 @@ public interface Computer {
                 }
             };
         }
+
+        static ZonedDateTimeComputer ofConstant(final ZonedDateTime value) {
+            return of(ctx -> value, ctx -> false);
+        }
     }
 
     /** {@link Computer} for {@link ValueType#DURATION} and {@link ValueType#OPT_DURATION} */
@@ -461,6 +489,10 @@ public interface Computer {
                 }
             };
         }
+
+        static DurationComputer ofConstant(final Duration value) {
+            return of(ctx -> value, ctx -> false);
+        }
     }
 
     /** {@link Computer} for {@link ValueType#PERIOD} and {@link ValueType#OPT_PERIOD} */
@@ -495,6 +527,10 @@ public interface Computer {
                     return value.apply(ctx);
                 }
             };
+        }
+
+        static PeriodComputer ofConstant(final Period value) {
+            return of(ctx -> value, ctx -> false);
         }
     }
 
@@ -555,6 +591,30 @@ public interface Computer {
         }
         if (returnType.baseType() == STRING) {
             return StringComputer.of(ctx -> ((StringComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR - method reference is not possible due to delayed computation
+                isMissing);
+        }
+        if (returnType.baseType() == LOCAL_DATE) {
+            return LocalDateComputer.of(ctx -> ((LocalDateComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR - method reference is not possible due to delayed computation
+                isMissing);
+        }
+        if (returnType.baseType() == LOCAL_TIME) {
+            return LocalTimeComputer.of(ctx -> ((LocalTimeComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR - method reference is not possible due to delayed computation
+                isMissing);
+        }
+        if (returnType.baseType() == LOCAL_DATE_TIME) {
+            return LocalDateTimeComputer.of(ctx -> ((LocalDateTimeComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR - method reference is not possible due to delayed computation
+                isMissing);
+        }
+        if (returnType.baseType() == ZONED_DATE_TIME) {
+            return ZonedDateTimeComputer.of(ctx -> ((ZonedDateTimeComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR - method reference is not possible due to delayed computation
+                isMissing);
+        }
+        if (returnType.baseType() == DURATION) {
+            return DurationComputer.of(ctx -> ((DurationComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR - method reference is not possible due to delayed computation
+                isMissing);
+        }
+        if (returnType.baseType() == PERIOD) {
+            return PeriodComputer.of(ctx -> ((PeriodComputer)computerSupplier.apply(ctx)).compute(ctx), // NOSONAR - method reference is not possible due to delayed computation
                 isMissing);
         }
 

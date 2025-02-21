@@ -97,6 +97,14 @@ public record FunctionCatalogData(List<OperatorCategory> categories, List<Operat
         categories.addAll(BuiltInAggregations.BUILT_IN_CATEGORIES);
 
         categories.addAll(BuiltInFunctions.META_CATEGORY_STRING);
+        categories.addAll(BuiltInFunctions.META_CATEGORY_TEMPORAL);
+
+        if (!categories.containsAll(BuiltInFunctions.BUILT_IN_CATEGORIES)) {
+            // I wasted a lot of time because of this, so I'm adding a check here. At least now we get
+            // an exception if we forget to add a category here.
+            throw new IllegalStateException(
+                "Not all built-in categories are included in the list of categories. This is probably a bug.");
+        }
 
         return categories;
     }

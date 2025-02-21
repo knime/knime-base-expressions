@@ -93,17 +93,25 @@ public final class BuiltInFunctions {
         StringFunctions.CATEGORY_ENCODE //
     );
 
+    /** List of all temporal manipulation categories */
+    public static final List<OperatorCategory> META_CATEGORY_TEMPORAL = List.of( //
+        TemporalFunctions.CATEGORY_PARSE_FORMAT //
+    );
+
     /** List of all control flow categories */
     public static final List<OperatorCategory> META_CATEGORY_CONTROL = List.of( //
         ControlFlowFunctions.CATEGORY //
     );
 
     /** All built-in function categories */
-    public static final List<OperatorCategory> BUILT_IN_CATEGORIES = Stream.concat( //
-        Stream.concat( //
-            META_CATEGORY_MATH.stream(), META_CATEGORY_STRING.stream()), //
-        META_CATEGORY_CONTROL.stream() //
-    ).collect(Collectors.toUnmodifiableList());
+    public static final List<OperatorCategory> BUILT_IN_CATEGORIES = Stream.of( //
+        META_CATEGORY_MATH, //
+        META_CATEGORY_STRING, //
+        META_CATEGORY_TEMPORAL, //
+        META_CATEGORY_CONTROL //
+    ) //
+        .flatMap(List::stream) //
+        .toList(); // unmodifiable list
 
     /** Built-in functions */
     public static final List<ExpressionFunction> BUILT_IN_FUNCTIONS = List.of( //
@@ -206,7 +214,16 @@ public final class BuiltInFunctions {
         // String – Encode
         StringFunctions.XML_ENCODE, //
         StringFunctions.URL_ENCODE, //
-        StringFunctions.URL_DECODE //
+        StringFunctions.URL_DECODE, //
+        // Temporal – Parse & Format
+        TemporalFunctions.PARSE_LOCAL_DATE, //
+        TemporalFunctions.PARSE_LOCAL_TIME, //
+        TemporalFunctions.PARSE_LOCAL_DATE_TIME, //
+        TemporalFunctions.PARSE_ZONED_DATE_TIME, //
+        TemporalFunctions.PARSE_DURATION, //
+        TemporalFunctions.PARSE_PERIOD, //
+        TemporalFunctions.FORMAT_TEMPORAL, //
+        TemporalFunctions.FORMAT_INTERVAL //
     );
 
     /** Built-in functions as map */
