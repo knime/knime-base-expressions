@@ -48,6 +48,8 @@
  */
 package org.knime.core.expressions;
 
+import java.util.function.IntFunction;
+
 /**
  * Expression examples that can be used for benchmarking.
  *
@@ -56,13 +58,13 @@ package org.knime.core.expressions;
 public enum BenchmarkExpression {
 
         /** Binary operations with two constants */
-        SIMPLE_ARITHMETIC("1 + 2 # A basic arithmetic operation with a comment"), //
+        SIMPLE_ARITHMETIC("1 + 2 # A basic arithmetic operation with a comment", rowIdx -> 1 + 2), //
 
         /** Binary operations building a deep tree */
-        DEEP_AST("1" + "+1".repeat(2_000)), //
+        DEEP_AST("1" + "+1".repeat(2_000), DeepAstJavaImpl::run), //
 
         /** Nests a function call 200 times */
-        DEEP_FN_CALLS("sqrt(".repeat(200) + "10_000" + ")".repeat(200)), //
+        DEEP_FN_CALLS("sqrt(".repeat(200) + "10_000" + ")".repeat(200), DeepFnCallsJavaImpl::run), //
 
         /** Medium complexity expression with function calls logic operators and string concatenation */
         MEDIUM_COMPLEXITY("""
@@ -70,7 +72,19 @@ public enum BenchmarkExpression {
                     (abs($amount) > 100 and not ($status = "invalid")) or $["category"] = "special",
                     "Approved: " + $[ROW_ID],
                     "Rejected: " + (MISSING ?? "Unknown")
-                )"""), //
+                )""", //
+            rowIdx -> {
+                if (rowIdx >= 9) {
+                    return null;
+                } else if ((Math.abs(BenchmarkTable.AMOUNT[rowIdx]) > 100
+                    && !BenchmarkTable.STATUS[rowIdx].equals("invalid"))
+                    || BenchmarkTable.CATEGORY[rowIdx].equals("special")) {
+                    return "Approved: " + BenchmarkTable.ROW_ID[rowIdx];
+                } else {
+                    return "Rejected: " + (null == null ? "Unknown" : null);
+                }
+            } //
+        ), //
 
         /** Complex expression aggregation and windowing */
         COMPLEX_AGGREGATION("""
@@ -79,17 +93,42 @@ public enum BenchmarkExpression {
                 ($[ROW_NUMBER] ?? 1) +
                 if($["status"] = "active", "active", "inactive") +
                 "_" + $$user_name
-                """), //
+                """, //
+            rowIdx -> {
+                if (rowIdx >= 9) {
+                    return null;
+                } else {
+                    var columnAverage = 42.2; // Note: aggregations happen outside of the expression framework
+                    return columnAverage
+                        + (BenchmarkTable.REVENUE[rowIdx] * Math.pow(Math.E, -BenchmarkTable.GROWTH_RATE[rowIdx]))
+                            / (rowIdx + 1)
+                        + (BenchmarkTable.STATUS[rowIdx].equals("active") ? "active" : "inactive") + "_" + "john.doe";
+                }
+            } //
+        ), //
     ;
 
     private final String m_expression;
 
-    BenchmarkExpression(final String expression) {
+    private final IntFunction<Object> m_javaImpl;
+
+    BenchmarkExpression(final String expression, final IntFunction<Object> javaImpl) {
         m_expression = expression;
+        m_javaImpl = javaImpl;
     }
 
     /** @return the benchmark expression */
     public String getExpression() {
         return m_expression;
+    }
+
+    /**
+     * Run the Java implementation of the expression.
+     *
+     * @param rowIdx the row index
+     * @return the result
+     */
+    public Object runJavaImpl(final int rowIdx) {
+        return m_javaImpl.apply(rowIdx);
     }
 }
