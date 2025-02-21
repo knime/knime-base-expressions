@@ -52,13 +52,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.knime.core.expressions.OperatorCategory;
 
 /**
  * Holds the collection of all built-in {@link ExpressionFunction functions} and {@link OperatorCategory function
  * categories}.
+ *
+ * Note that new categories added here should be registered in FunctionCatalogData in org.knime.base.expressions.
+ * Otherwise, the expression editor will crash at runtime without a helpful error message.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
@@ -93,17 +95,15 @@ public final class BuiltInFunctions {
         StringFunctions.CATEGORY_ENCODE //
     );
 
+    /** List of all temporal manipulation categories */
+    public static final List<OperatorCategory> META_CATEGORY_TEMPORAL = List.of( //
+        TemporalFunctions.CATEGORY_PARSE_FORMAT //
+    );
+
     /** List of all control flow categories */
     public static final List<OperatorCategory> META_CATEGORY_CONTROL = List.of( //
         ControlFlowFunctions.CATEGORY //
     );
-
-    /** All built-in function categories */
-    public static final List<OperatorCategory> BUILT_IN_CATEGORIES = Stream.concat( //
-        Stream.concat( //
-            META_CATEGORY_MATH.stream(), META_CATEGORY_STRING.stream()), //
-        META_CATEGORY_CONTROL.stream() //
-    ).collect(Collectors.toUnmodifiableList());
 
     /** Built-in functions */
     public static final List<ExpressionFunction> BUILT_IN_FUNCTIONS = List.of( //
@@ -206,7 +206,18 @@ public final class BuiltInFunctions {
         // String – Encode
         StringFunctions.XML_ENCODE, //
         StringFunctions.URL_ENCODE, //
-        StringFunctions.URL_DECODE //
+        StringFunctions.URL_DECODE, //
+        // Temporal – Parse & Format
+        TemporalFunctions.PARSE_DATE, //
+        TemporalFunctions.PARSE_TIME, //
+        TemporalFunctions.PARSE_DATE_TIME, //
+        TemporalFunctions.PARSE_ZONED_DATE_TIME, //
+        TemporalFunctions.PARSE_TIME_DURATION, //
+        TemporalFunctions.PARSE_DATE_DURATION, //
+        TemporalFunctions.FORMAT_DATE, //
+        TemporalFunctions.FORMAT_TIME, //
+        TemporalFunctions.FORMAT_DATE_TIME, //
+        TemporalFunctions.FORMAT_DURATION //
     );
 
     /** Built-in functions as map */
