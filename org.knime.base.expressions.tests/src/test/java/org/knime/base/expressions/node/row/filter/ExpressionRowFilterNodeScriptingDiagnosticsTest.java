@@ -179,7 +179,7 @@ final class ExpressionRowFilterNodeScriptingDiagnosticsTest {
         assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).severity(),
             "Expected error severity for unsupported column type.");
         assertEquals( //
-            "Columns of the type 'Bit vector' are not supported in expressions.", //
+            "Columns of the type '" + DenseBitVectorCell.TYPE.getName() + "' are not supported in expressions.", //
             diagnostics.get(0).message(), //
             "Expected unsupported column type error message." //
         );
