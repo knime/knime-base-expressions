@@ -97,6 +97,7 @@ public record FunctionCatalogData(List<OperatorCategory> categories, List<Operat
         categories.addAll(BuiltInAggregations.BUILT_IN_CATEGORIES);
 
         categories.addAll(BuiltInFunctions.META_CATEGORY_STRING);
+        categories.addAll(BuiltInFunctions.META_CATEGORY_TEMPORAL);
 
         return categories;
     }
