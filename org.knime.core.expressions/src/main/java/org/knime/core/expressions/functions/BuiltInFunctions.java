@@ -97,7 +97,8 @@ public final class BuiltInFunctions {
 
     /** List of all temporal manipulation categories */
     public static final List<OperatorCategory> META_CATEGORY_TEMPORAL = List.of( //
-        TemporalFunctions.CATEGORY_PARSE_FORMAT //
+        TemporalFunctions.CATEGORY_PARSE_FORMAT, //
+        TemporalFunctions.CATEGORY_CREATE_EXTRACT //
     );
 
     /** List of all control flow categories */
@@ -217,7 +218,27 @@ public final class BuiltInFunctions {
         TemporalFunctions.FORMAT_DATE, //
         TemporalFunctions.FORMAT_TIME, //
         TemporalFunctions.FORMAT_DATE_TIME, //
-        TemporalFunctions.FORMAT_DURATION //
+        TemporalFunctions.FORMAT_DURATION, //
+        // Temporal – Create & Extract
+        TemporalFunctions.MAKE_DATE, //
+        TemporalFunctions.MAKE_TIME, //
+        TemporalFunctions.MAKE_DATETIME, //
+        TemporalFunctions.MAKE_ZONED, //
+        TemporalFunctions.MAKE_TIME_DURATION, //
+        TemporalFunctions.MAKE_DATE_DURATION, //
+        TemporalFunctions.EXTRACT_YEAR, //
+        TemporalFunctions.EXTRACT_MONTH, //
+        TemporalFunctions.EXTRACT_DAY_OF_MONTH, //
+        TemporalFunctions.EXTRACT_HOUR, //
+        TemporalFunctions.EXTRACT_MINUTE, //
+        TemporalFunctions.EXTRACT_SECOND, //
+        TemporalFunctions.EXTRACT_NANOSECOND, //
+        TemporalFunctions.EXTRACT_DATE, //
+        TemporalFunctions.EXTRACT_TIME, //
+        TemporalFunctions.EXTRACT_DATETIME, //
+        TemporalFunctions.TO_HOURS, //
+        TemporalFunctions.TO_MINUTES, //
+        TemporalFunctions.TO_SECONDS //
     );
 
     /** Built-in functions as map */
