@@ -61,6 +61,7 @@ import static org.knime.core.expressions.SignatureUtils.arg;
 import static org.knime.core.expressions.SignatureUtils.hasDateAndTimeInformationOrOpt;
 import static org.knime.core.expressions.SignatureUtils.hasDateInformationOrOpt;
 import static org.knime.core.expressions.SignatureUtils.hasTimeInformationOrOpt;
+import static org.knime.core.expressions.SignatureUtils.isDateDurationOrOpt;
 import static org.knime.core.expressions.SignatureUtils.isDurationOrOpt;
 import static org.knime.core.expressions.SignatureUtils.isIntegerOrOpt;
 import static org.knime.core.expressions.SignatureUtils.isLocalDateOrOpt;
@@ -100,19 +101,26 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalField;
 import java.time.temporal.TemporalQuery;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
 import org.knime.core.expressions.Computer.ComputerResultSupplier;
 import org.knime.core.expressions.Computer.DateDurationComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
@@ -129,6 +137,11 @@ import org.knime.core.expressions.Computer.TimeDurationComputer;
 import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.OperatorCategory;
+import org.knime.core.expressions.OperatorDescription;
+import org.knime.core.expressions.ReturnResult;
+import org.knime.core.expressions.SignatureUtils;
+import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.ValueType.NativeValueType;
 import org.knime.time.util.DurationPeriodFormatUtils;
 import org.knime.time.util.TimeBasedGranularityUnit;
 
@@ -166,6 +179,9 @@ public final class TemporalFunctions {
         new OperatorCategory(TEMPORAL_META_CATEGORY_NAME, "Creation & Extraction", """
                 Functions for creating and extracting temporal data, such as dates, times, and intervals.
                 """);
+
+    public static final OperatorCategory CATEGORY_ARITHMETIC = new OperatorCategory(TEMPORAL_META_CATEGORY_NAME,
+        "Arithmetic", "Functions for performing arithmetic operations on temporal data.");
 
     /**
      * Checks if the provided string is a valid long-form duration string. If it isn't, throws an exception.
@@ -1505,6 +1521,470 @@ public final class TemporalFunctions {
             args -> FLOAT(anyOptional(args))) //
         .impl(TemporalFunctions.convertDurationImpl(TimeBasedGranularityUnit.SECONDS)) //
         .build();
+
+    public static final ExpressionFunction DATE_DURATION_BETWEEN = new ExpressionFunction() {
+
+        private static final List<String> ARG_NAMES = List.of("start", "end");
+
+        private static final List<String> ARG_DESCS = List.of("The start time", "The end time");
+
+        private static final String ARG_TYPE_DESC = Stream.of( //
+            NativeValueType.LOCAL_DATE, //
+            NativeValueType.LOCAL_DATE_TIME, //
+            NativeValueType.ZONED_DATE_TIME //
+        ) //
+            .map(ValueType::name) //
+            .collect(Collectors.joining(", "));
+
+        @Override
+        public <T> ReturnResult<Arguments<T>> signature(final List<T> positionalArguments,
+            final Map<String, T> namedArguments) {
+
+            var argList = IntStream.range(0, ARG_NAMES.size()) //
+                .mapToObj(i -> arg(ARG_NAMES.get(i), ARG_DESCS.get(i), hasDateInformationOrOpt())) //
+                .toList();
+
+            return SignatureUtils.matchSignature(argList, positionalArguments, namedArguments);
+        }
+
+        @Override
+        public ReturnResult<ValueType> returnType(final Arguments<ValueType> argTypes) {
+            // Check that both arguments are of the same type and that that type has time information
+            var startType = argTypes.get("start");
+            var endType = argTypes.get("end");
+
+            if (!startType.baseType().equals(endType.baseType())) {
+                return ReturnResult.failure("Both arguments must be of the date type");
+            }
+
+            var startHasDateInformation = hasDateInformationOrOpt().matches(startType);
+            var endHasDateInformation = hasDateInformationOrOpt().matches(endType);
+
+            if (!startHasDateInformation || !endHasDateInformation) {
+                return ReturnResult.failure("Both arguments must have date information");
+            }
+
+            return ReturnResult.success(DATE_DURATION(anyOptional(argTypes)));
+        }
+
+        @Override
+        public String name() {
+            return "date_duration_between";
+        }
+
+        @Override
+        public OperatorDescription description() {
+            var description = """
+                    Calculates the `DATE_DURATION` between two date-time values of the same type that
+                    have date information. The time part of the date-time values will be ignored.
+
+                    If either of the provided dates is missing, the function returns `MISSING`.
+                    """;
+
+            var examples = """
+                    * `date_duration_between(parse_date("1970-01-01"), parse_date("1970-01-02"))` returns `P1D`
+                    * `date_duration_between(parse_date("1970-01-02"), parse_date("1970-01-01"))` returns `-P1D`
+                    """;
+
+            var arguments = IntStream.range(0, ARG_NAMES.size()) //
+                .mapToObj(i -> new OperatorDescription.Argument(ARG_NAMES.get(i), ARG_TYPE_DESC, ARG_DESCS.get(i))) //
+                .toList();
+
+            var returnDesc = "A `DATE_DURATION` representing the duration between the two date parts";
+
+            var keywords = List.of("interval", "duration", "period", "date");
+
+            return new OperatorDescription( //
+                name(), //
+                description, //
+                examples, //
+                arguments, //
+                RETURN_DATE_DURATION_MISSING, //
+                returnDesc, //
+                keywords, //
+                CATEGORY_ARITHMETIC.fullName(), //
+                OperatorDescription.FUNCTION_ENTRY_TYPE //
+            );
+        }
+
+        @Override
+        public Computer apply(final Arguments<Computer> args) {
+            ComputerResultSupplier<Period> valueSupplier = ctx -> {
+                var start = ((TemporalComputer)args.get("start")).compute(ctx);
+                var end = ((TemporalComputer)args.get("end")).compute(ctx);
+
+                var startDate = LocalDate.from(start);
+                var endDate = LocalDate.from(end);
+
+                return Period.between(startDate, endDate);
+            };
+
+            return DateDurationComputer.of( //
+                valueSupplier, //
+                anyMissing(args) //
+            );
+        }
+    };
+
+    public static final ExpressionFunction TIME_DURATION_BETWEEN = new ExpressionFunction() {
+
+        private static final List<String> ARG_NAMES = List.of("start", "end");
+
+        private static final List<String> ARG_DESCS = List.of("The start time", "The end time");
+
+        private static final String ARG_TYPE_DESC = Stream.of( //
+            NativeValueType.LOCAL_TIME, //
+            NativeValueType.LOCAL_DATE_TIME, //
+            NativeValueType.ZONED_DATE_TIME //
+        ) //
+            .map(ValueType::name) //
+            .collect(Collectors.joining(", "));
+
+        @Override
+        public <T> ReturnResult<Arguments<T>> signature(final List<T> positionalArguments,
+            final Map<String, T> namedArguments) {
+
+            var argList = IntStream.range(0, ARG_NAMES.size()) //
+                .mapToObj(i -> arg(ARG_NAMES.get(i), ARG_DESCS.get(i), hasTimeInformationOrOpt())) //
+                .toList();
+
+            return SignatureUtils.matchSignature(argList, positionalArguments, namedArguments);
+        }
+
+        @Override
+        public ReturnResult<ValueType> returnType(final Arguments<ValueType> argTypes) {
+            // Check that both arguments are of the same type and that that type has time information
+            var startType = argTypes.get("start");
+            var endType = argTypes.get("end");
+
+            if (!startType.baseType().equals(endType.baseType())) {
+                return ReturnResult.failure("Both arguments must be of the same type");
+            }
+
+            var startHasTimeInformation = hasTimeInformationOrOpt().matches(startType);
+
+            if (!startHasTimeInformation) {
+                return ReturnResult.failure("Both arguments must have time information");
+            }
+
+            return ReturnResult.success(TIME_DURATION(anyOptional(argTypes)));
+        }
+
+        @Override
+        public String name() {
+            return "time_duration_between";
+        }
+
+        @Override
+        public OperatorDescription description() {
+            var description = """
+                    Calculates the `TIME_DURATION` between two date-time values of the same type that
+                    have time information.
+
+                    If either of the provided times is missing, the function returns `MISSING`.
+                    """;
+
+            var examples = """
+                    * `time_duration_between(parse_time("00:00:00"), parse_time("01:00:00"))` returns `PT1H`
+                    * `time_duration_between(parse_time("01:00:00"), parse_time("00:00:00"))` returns `-PT1H`
+                    """;
+
+            var arguments = IntStream.range(0, ARG_NAMES.size()) //
+                .mapToObj(i -> new OperatorDescription.Argument(ARG_NAMES.get(i), ARG_TYPE_DESC, ARG_DESCS.get(i))) //
+                .toList();
+
+            var returnDesc = "A `TIME_DURATION` representing the duration between the two date-times";
+
+            var keywords = List.of("interval", "duration", "difference");
+
+            return new OperatorDescription( //
+                name(), //
+                description, //
+                examples, //
+                arguments, //
+                RETURN_TIME_DURATION_MISSING, //
+                returnDesc, //
+                keywords, //
+                CATEGORY_ARITHMETIC.fullName(), //
+                OperatorDescription.FUNCTION_ENTRY_TYPE //
+            );
+        }
+
+        @Override
+        public Computer apply(final Arguments<Computer> args) {
+            ComputerResultSupplier<Duration> valueSupplier = ctx -> {
+                var start = ((TemporalComputer)args.get("start")).compute(ctx);
+                var end = ((TemporalComputer)args.get("end")).compute(ctx);
+
+                try {
+                    return Duration.between(start, end);
+                } catch (ArithmeticException ex) {
+                    throw new ExpressionEvaluationException("Duration is too large to be represented", ex);
+                }
+            };
+
+            return TimeDurationComputer.of( //
+                valueSupplier, //
+                anyMissing(args) //
+            );
+        }
+    };
+
+    public static final ExpressionFunction ADD_TIME_DURATION = functionBuilder() //
+        .name("add_time_duration") //
+        .description("""
+                Adds a `TIME_DURATION` to a date-time value with time information.
+
+                If either the date-time or the duration is missing, the function returns `MISSING`. It is
+                possible that the resulting time is too large to be represented, in which case the function
+                returns `MISSING` and emits a warning.
+                """) //
+        .examples("""
+                * `add_time_duration(parse_time("00:00:00"), parse_time_duration("PT1H"))` returns `01:00:00`
+                * `add_time_duration(parse_time("00:00:00"), parse_time_duration("PT1H30M"))` returns `01:30:00`
+                """) //
+        .keywords("add", "time", "duration") //
+        .category(CATEGORY_ARITHMETIC) //
+        .args( //
+            arg("start", "The time to add the duration to.", hasTimeInformationOrOpt()), //
+            arg("duration", "The duration to add to the time.", isTimeDurationOrOpt()) //
+        ) //
+        .returnType("The input value with the duration added", hasTimeInformationOrOpt().allowed(),
+            args -> anyOptional(args) ? args.get("start").optionalType() : args.get("start").baseType()) //
+        .impl(TemporalFunctions::addTimeDurationImpl) //
+        .build();
+
+    private static Computer addTimeDurationImpl(final Arguments<Computer> args) {
+        var startComputer = (TemporalComputer)args.get("start");
+
+        ComputerResultSupplier<Temporal> valueSupplier = ctx -> {
+            var startTime = startComputer.compute(ctx);
+            var duration = ((TimeDurationComputer)args.get("duration")).compute(ctx);
+
+            try {
+                return startTime.plus(duration);
+            } catch (ArithmeticException | DateTimeException ex) {
+                throw new ExpressionEvaluationException("Resulting date-time is too large to be represented", ex);
+            }
+        };
+
+        BooleanComputerResultSupplier isMissing = anyMissing(args);
+
+        if (startComputer instanceof LocalTimeComputer) {
+            return LocalTimeComputer.of( //
+                ctx -> (LocalTime)valueSupplier.apply(ctx), //
+                isMissing //
+            );
+        } else if (startComputer instanceof LocalDateTimeComputer) {
+            return LocalDateTimeComputer.of( //
+                ctx -> (LocalDateTime)valueSupplier.apply(ctx), //
+                isMissing //
+            );
+        } else if (startComputer instanceof ZonedDateTimeComputer) {
+            return ZonedDateTimeComputer.of( //
+                ctx -> (ZonedDateTime)valueSupplier.apply(ctx), //
+                isMissing //
+            );
+        } else {
+            throw new IllegalArgumentException(
+                "Unsupported temporal type computer: " + startComputer.getClass().getName());
+        }
+    }
+
+    public static final ExpressionFunction ADD_DATE_DURATION = functionBuilder() //
+        .name("add_date_duration") //
+        .description("""
+                Adds a `DATE_DURATION` to a date-time value with date information.
+
+                If either the date-time or the duration is missing, the function returns `MISSING`.
+                """) //
+        .examples("""
+                * `add_date_duration(parse_date("1970-01-01"), parse_date_duration("P1D"))` returns `1970-01-02`
+                * `add_date_duration(parse_date("1970-01-01"), parse_date_duration("P1M"))` returns `1970-02-01`
+                """) //
+        .keywords("add", "date", "duration") //
+        .category(CATEGORY_ARITHMETIC) //
+        .args( //
+            arg("start", "The date-time to add the duration to.", hasDateInformationOrOpt()), //
+            arg("duration", "The duration to add to the date-time.", isDateDurationOrOpt()) //
+        ) //
+        .returnType("The input value with the duration added", hasDateInformationOrOpt().allowed(),
+            args -> anyOptional(args) ? args.get("start").optionalType() : args.get("start").baseType()) //
+        .impl(TemporalFunctions::addDateDurationImpl) //
+        .build();
+
+    private static Computer addDateDurationImpl(final Arguments<Computer> args) {
+        var startComputer = (TemporalComputer)args.get("start");
+
+        ComputerResultSupplier<Temporal> valueSupplier = ctx -> {
+            var startDate = startComputer.compute(ctx);
+            var duration = ((DateDurationComputer)args.get("duration")).compute(ctx);
+
+            try {
+                return startDate.plus(duration);
+            } catch (ArithmeticException | DateTimeException ex) {
+                throw new ExpressionEvaluationException("Resulting date-time is too large to be represented", ex);
+            }
+        };
+
+        BooleanComputerResultSupplier isMissing = anyMissing(args);
+
+        if (startComputer instanceof LocalDateComputer) {
+            return LocalDateComputer.of( //
+                ctx -> (LocalDate)valueSupplier.apply(ctx), //
+                isMissing //
+            );
+        } else if (startComputer instanceof LocalDateTimeComputer) {
+            return LocalDateTimeComputer.of( //
+                ctx -> (LocalDateTime)valueSupplier.apply(ctx), //
+                isMissing //
+            );
+        } else if (startComputer instanceof ZonedDateTimeComputer) {
+            return ZonedDateTimeComputer.of( //
+                ctx -> (ZonedDateTime)valueSupplier.apply(ctx), //
+                isMissing //
+            );
+        } else {
+            throw new IllegalArgumentException(
+                "Unsupported temporal type computer: " + startComputer.getClass().getName());
+        }
+    }
+
+    private static class UnitsBetweenExpressionFunction implements ExpressionFunction {
+
+        private final ChronoUnit m_unit;
+
+        private final String m_description;
+
+        private final String m_examples;
+
+        private static final String ARG_TYPE = hasDateInformationOrOpt().allowed();
+
+        private static final List<String> ARG_NAMES = List.of("start", "end");
+
+        private static final List<String> ARG_DESCS = List.of("The start date-time", "The end date-time");
+
+        UnitsBetweenExpressionFunction(final ChronoUnit unit, final String description, final String examples) {
+            m_unit = unit;
+            m_description = description;
+            m_examples = examples;
+        }
+
+        @Override
+        public <T> ReturnResult<Arguments<T>> signature(final List<T> positionalArguments,
+            final Map<String, T> namedArguments) {
+
+            var argList = IntStream.range(0, ARG_NAMES.size()) //
+                .mapToObj(i -> arg(ARG_NAMES.get(i), ARG_DESCS.get(i), hasDateInformationOrOpt())) //
+                .toList();
+
+            return SignatureUtils.matchSignature(argList, positionalArguments, namedArguments);
+        }
+
+        @Override
+        public String name() {
+            return "%s_between".formatted(m_unit.toString().toLowerCase(Locale.ROOT));
+        }
+
+        @Override
+        public OperatorDescription description() {
+            return new OperatorDescription( //
+                name(), //
+                m_description, //
+                m_examples, //
+                IntStream.range(0, ARG_NAMES.size()) //
+                    .mapToObj(i -> new OperatorDescription.Argument(ARG_NAMES.get(i), ARG_TYPE, ARG_DESCS.get(i))) //
+                    .toList(), //
+                RETURN_INTEGER_MISSING, //
+                "An integer representing the number of %s between the two date-times".formatted(m_unit.toString()), //
+                List.of("interval", "duration", "period", "date", "difference"), //
+                CATEGORY_ARITHMETIC.fullName(), //
+                OperatorDescription.FUNCTION_ENTRY_TYPE //
+            );
+        }
+
+        @Override
+        public ReturnResult<ValueType> returnType(final Arguments<ValueType> argTypes) {
+            var startType = argTypes.get("start");
+            var endType = argTypes.get("end");
+
+            if (!startType.baseType().equals(endType.baseType())) {
+                return ReturnResult.failure("Both arguments must be of the same type");
+            }
+
+            var startHasTimeInformation = hasDateInformationOrOpt().matches(startType);
+
+            if (!startHasTimeInformation) {
+                return ReturnResult.failure("Both arguments must have date information");
+            }
+
+            return ReturnResult.success(INTEGER(anyOptional(argTypes)));
+
+        }
+
+        @Override
+        public Computer apply(final Arguments<Computer> args) {
+            IntegerComputerResultSupplier value = ctx -> {
+                var start = ((TemporalComputer)args.get("start")).compute(ctx);
+                var end = ((TemporalComputer)args.get("end")).compute(ctx);
+
+                return m_unit.between( //
+                    LocalDate.from(start), //
+                    LocalDate.from(end) //
+                );
+            };
+
+            return IntegerComputer.of(value, anyMissing(args));
+        }
+    }
+
+    public static final ExpressionFunction YEARS_BETWEEN = new UnitsBetweenExpressionFunction(ChronoUnit.YEARS, //
+        """
+                Calculates the number of calendar years between two date-time values with date information.
+                23:59:59 on the last day of one year and 00:00:01 on the next day are considered to be one
+                year apart.
+
+                If the first date is after the second date, the result will be negative.
+
+                If either of the provided dates is missing, the function returns `MISSING`.
+                """, //
+        """
+                * `years_between(parse_date("1970-01-01"), parse_date("1971-01-01"))` returns `1`
+                * `years_between(parse_date("1971-01-01"), parse_date("1970-01-01"))` returns `-1`
+                """ //
+    );
+
+    public static final ExpressionFunction MONTHS_BETWEEN = new UnitsBetweenExpressionFunction(ChronoUnit.MONTHS, //
+        """
+                Calculates the number of calendar months between two date-time values with date information.
+                23:59:59 on the last day of one month and 00:00:01 on the next day are considered to be one
+                month apart.
+
+                If the first date is after the second date, the result will be negative.
+
+                If either of the provided dates is missing, the function returns `MISSING`.
+                """, //
+        """
+                * `months_between(parse_date("1970-01-01"), parse_date("1970-02-01"))` returns `1`
+                * `months_between(parse_date("1970-02-01"), parse_date("1970-01-01"))` returns `-1`
+                """ //
+    );
+
+    public static final ExpressionFunction DAYS_BETWEEN = new UnitsBetweenExpressionFunction(ChronoUnit.DAYS, //
+        """
+                Calculates the number of calendar days between two date-time values with date information. The
+                time part of the date-time values will be ignored, meaning that 23:59:59 on one day and
+                00:00:01 on the next day are considered to be one day apart.
+
+                If the first date is after the second date, the result will be negative.
+
+                If either of the provided dates is missing, the function returns `MISSING`.
+                """, //
+        """
+                * `days_between(parse_date("1970-01-01"), parse_date("1970-01-02"))` returns `1`
+                * `days_between(parse_date("1970-01-02"), parse_date("1970-01-01"))` returns `-1`
+                """ //
+    );
 
     private static boolean isShortormDuration(final String durationString) {
         return !durationString.isBlank() && Pattern.compile("(\\d+\\s*h)?\\s*(\\d+\\s*m)?\\s*(\\d(.\\d+)?\\s*s)?") //

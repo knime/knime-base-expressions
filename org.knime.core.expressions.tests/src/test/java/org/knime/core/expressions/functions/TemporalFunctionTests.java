@@ -609,4 +609,130 @@ final class TemporalFunctionTests {
             .impl("missing duration", List.of(misDuration())) //
             .tests();
     }
+
+    @TestFactory
+    List<DynamicNode> dateDurationBetween() {
+        return new FunctionTestBuilder(TemporalFunctions.DATE_DURATION_BETWEEN) //
+            .typing("LOCAL_DATE × 2", List.of(LOCAL_DATE, LOCAL_DATE), DATE_DURATION) //
+            .typing("OPT LOCAL_DATE x 2", List.of(OPT_LOCAL_DATE, OPT_LOCAL_DATE), OPT_DATE_DURATION) //
+            .typing("LOCAL_DATE_TIME × 2", List.of(LOCAL_DATE_TIME, LOCAL_DATE_TIME), DATE_DURATION) //
+            .typing("OPT LOCAL_DATE_TIME x 2", List.of(OPT_LOCAL_DATE_TIME, OPT_LOCAL_DATE_TIME), OPT_DATE_DURATION) //
+            .typing("ZONED_DATE_TIME × 2", List.of(ZONED_DATE_TIME, ZONED_DATE_TIME), DATE_DURATION) //
+            .typing("OPT ZONED_DATE_TIME x 2", List.of(OPT_ZONED_DATE_TIME, OPT_ZONED_DATE_TIME), OPT_DATE_DURATION) //
+            .illegalArgs("Not a temporal with date info", List.of(LOCAL_TIME, LOCAL_TIME)) //
+            .illegalArgs("Two different temporal types", List.of(LOCAL_DATE, LOCAL_DATE_TIME)) //
+            .impl("valid dates", List.of(arg(LocalDate.of(2001, 2, 3)), arg(LocalDate.of(2001, 3, 6))),
+                Period.of(0, 1, 3)) //
+            .impl("missing date", List.of(misLocalDate(), arg(LocalDate.of(2001, 3, 6)))) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> timeDurationBetween() {
+        return new FunctionTestBuilder(TemporalFunctions.TIME_DURATION_BETWEEN) //
+            .typing("LOCAL_TIME × 2", List.of(LOCAL_TIME, LOCAL_TIME), TIME_DURATION) //
+            .typing("OPT LOCAL_TIME x 2", List.of(OPT_LOCAL_TIME, OPT_LOCAL_TIME), OPT_TIME_DURATION) //
+            .typing("LOCAL_DATE_TIME × 2", List.of(LOCAL_DATE_TIME, LOCAL_DATE_TIME), TIME_DURATION) //
+            .typing("OPT LOCAL_DATE_TIME x 2", List.of(OPT_LOCAL_DATE_TIME, OPT_LOCAL_DATE_TIME), OPT_TIME_DURATION) //
+            .typing("ZONED_DATE_TIME × 2", List.of(ZONED_DATE_TIME, ZONED_DATE_TIME), TIME_DURATION) //
+            .typing("OPT ZONED_DATE_TIME x 2", List.of(OPT_ZONED_DATE_TIME, OPT_ZONED_DATE_TIME), OPT_TIME_DURATION) //
+            .illegalArgs("Not a temporal with time info", List.of(LOCAL_DATE, LOCAL_DATE)) //
+            .illegalArgs("Two different temporal types", List.of(LOCAL_TIME, LOCAL_DATE_TIME)) //
+            .impl("valid times", List.of(arg(LocalTime.of(1, 2, 3)), arg(LocalTime.of(4, 5, 6))),
+                Duration.ofHours(3).plusMinutes(3).plusSeconds(3)) //
+            .impl("missing time", List.of(misLocalTime(), arg(LocalTime.of(4, 5, 6)))) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> yearsBetween() {
+        return new FunctionTestBuilder(TemporalFunctions.YEARS_BETWEEN) //
+            .typing("LOCAL_DATE × 2", List.of(LOCAL_DATE, LOCAL_DATE), INTEGER) //
+            .typing("OPT LOCAL_DATE x 2", List.of(OPT_LOCAL_DATE, OPT_LOCAL_DATE), OPT_INTEGER) //
+            .typing("LOCAL_DATE_TIME × 2", List.of(LOCAL_DATE_TIME, LOCAL_DATE_TIME), INTEGER) //
+            .typing("OPT LOCAL_DATE_TIME x 2", List.of(OPT_LOCAL_DATE_TIME, OPT_LOCAL_DATE_TIME), OPT_INTEGER) //
+            .typing("ZONED_DATE_TIME × 2", List.of(ZONED_DATE_TIME, ZONED_DATE_TIME), INTEGER) //
+            .typing("OPT ZONED_DATE_TIME x 2", List.of(OPT_ZONED_DATE_TIME, OPT_ZONED_DATE_TIME), OPT_INTEGER) //
+            .illegalArgs("Not a temporal with date info", List.of(LOCAL_TIME, LOCAL_TIME)) //
+            .illegalArgs("Two different temporal types", List.of(LOCAL_DATE, LOCAL_DATE_TIME)) //
+            .impl("valid dates", List.of(arg(LocalDate.of(2001, 2, 3)), arg(LocalDate.of(2001, 3, 6))), 0) //
+            .impl("negative", List.of(arg(LocalDate.of(2001, 3, 6)), arg(LocalDate.of(2001, 2, 3))), 0) //
+            .impl("missing date", List.of(misLocalDate(), arg(LocalDate.of(2001, 3, 6)))) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> monthsBetween() {
+        return new FunctionTestBuilder(TemporalFunctions.MONTHS_BETWEEN) //
+            .typing("LOCAL_DATE × 2", List.of(LOCAL_DATE, LOCAL_DATE), INTEGER) //
+            .typing("OPT LOCAL_DATE x 2", List.of(OPT_LOCAL_DATE, OPT_LOCAL_DATE), OPT_INTEGER) //
+            .typing("LOCAL_DATE_TIME × 2", List.of(LOCAL_DATE_TIME, LOCAL_DATE_TIME), INTEGER) //
+            .typing("OPT LOCAL_DATE_TIME x 2", List.of(OPT_LOCAL_DATE_TIME, OPT_LOCAL_DATE_TIME), OPT_INTEGER) //
+            .typing("ZONED_DATE_TIME × 2", List.of(ZONED_DATE_TIME, ZONED_DATE_TIME), INTEGER) //
+            .typing("OPT ZONED_DATE_TIME x 2", List.of(OPT_ZONED_DATE_TIME, OPT_ZONED_DATE_TIME), OPT_INTEGER) //
+            .illegalArgs("Not a temporal with date info", List.of(LOCAL_TIME, LOCAL_TIME)) //
+            .illegalArgs("Two different temporal types", List.of(LOCAL_DATE, LOCAL_DATE_TIME)) //
+            .impl("valid dates", List.of(arg(LocalDate.of(2001, 2, 3)), arg(LocalDate.of(2001, 3, 6))), 1) //
+            .impl("negative", List.of(arg(LocalDate.of(2001, 3, 6)), arg(LocalDate.of(2001, 2, 3))), -1) //
+            .impl("missing date", List.of(misLocalDate(), arg(LocalDate.of(2001, 3, 6)))) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> daysBetween() {
+        return new FunctionTestBuilder(TemporalFunctions.DAYS_BETWEEN) //
+            .typing("LOCAL_DATE × 2", List.of(LOCAL_DATE, LOCAL_DATE), INTEGER) //
+            .typing("OPT LOCAL_DATE x 2", List.of(OPT_LOCAL_DATE, OPT_LOCAL_DATE), OPT_INTEGER) //
+            .typing("LOCAL_DATE_TIME × 2", List.of(LOCAL_DATE_TIME, LOCAL_DATE_TIME), INTEGER) //
+            .typing("OPT LOCAL_DATE_TIME x 2", List.of(OPT_LOCAL_DATE_TIME, OPT_LOCAL_DATE_TIME), OPT_INTEGER) //
+            .typing("ZONED_DATE_TIME × 2", List.of(ZONED_DATE_TIME, ZONED_DATE_TIME), INTEGER) //
+            .typing("OPT ZONED_DATE_TIME x 2", List.of(OPT_ZONED_DATE_TIME, OPT_ZONED_DATE_TIME), OPT_INTEGER) //
+            .illegalArgs("Not a temporal with date info", List.of(LOCAL_TIME, LOCAL_TIME)) //
+            .illegalArgs("Two different temporal types", List.of(LOCAL_DATE, LOCAL_DATE_TIME)) //
+            .impl("valid dates", List.of(arg(LocalDate.of(2001, 2, 3)), arg(LocalDate.of(2001, 3, 6))), 31) //
+            .impl("negative", List.of(arg(LocalDate.of(2001, 3, 6)), arg(LocalDate.of(2001, 2, 3))), -31) //
+            .impl("missing date", List.of(misLocalDate(), arg(LocalDate.of(2001, 3, 6)))) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> addDateDuration() {
+        return new FunctionTestBuilder(TemporalFunctions.ADD_DATE_DURATION) //
+            .typing("LOCAL_DATE, DATE_DURATION", List.of(LOCAL_DATE, DATE_DURATION), LOCAL_DATE) //
+            .typing("OPT LOCAL_DATE, OPT DATE_DURATION", List.of(OPT_LOCAL_DATE, OPT_DATE_DURATION), OPT_LOCAL_DATE) //
+            .typing("LOCAL_DATE_TIME, DATE_DURATION", List.of(LOCAL_DATE_TIME, DATE_DURATION), LOCAL_DATE_TIME) //
+            .typing("OPT LOCAL_DATE_TIME, OPT DATE_DURATION", List.of(OPT_LOCAL_DATE_TIME, OPT_DATE_DURATION),
+                OPT_LOCAL_DATE_TIME) //
+            .typing("ZONED_DATE_TIME, DATE_DURATION", List.of(ZONED_DATE_TIME, DATE_DURATION), ZONED_DATE_TIME) //
+            .typing("OPT ZONED_DATE_TIME, OPT DATE_DURATION", List.of(OPT_ZONED_DATE_TIME, OPT_DATE_DURATION),
+                OPT_ZONED_DATE_TIME) //
+            .illegalArgs("Not a temporal with date info", List.of(LOCAL_TIME, DATE_DURATION)) //
+            .illegalArgs("Not a period", List.of(LOCAL_DATE, TIME_DURATION)) //
+            .impl("valid date", List.of(arg(LocalDate.of(2001, 2, 3)), arg(Period.of(1, 2, 3))),
+                LocalDate.of(2002, 4, 6)) //
+            .impl("missing date", List.of(misLocalDate(), arg(Period.of(1, 2, 3)))) //
+            .errors("overflow", List.of(arg(LocalDate.MAX), arg(Period.of(1, 0, 0))), ".*too large.*") //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> addTimeDuration() {
+        return new FunctionTestBuilder(TemporalFunctions.ADD_TIME_DURATION) //
+            .typing("LOCAL_TIME, TIME_DURATION", List.of(LOCAL_TIME, TIME_DURATION), LOCAL_TIME) //
+            .typing("OPT LOCAL_TIME, OPT TIME_DURATION", List.of(OPT_LOCAL_TIME, OPT_TIME_DURATION), OPT_LOCAL_TIME) //
+            .typing("LOCAL_DATE_TIME, TIME_DURATION", List.of(LOCAL_DATE_TIME, TIME_DURATION), LOCAL_DATE_TIME) //
+            .typing("OPT LOCAL_DATE_TIME, OPT TIME_DURATION", List.of(OPT_LOCAL_DATE_TIME, OPT_TIME_DURATION),
+                OPT_LOCAL_DATE_TIME) //
+            .typing("ZONED_DATE_TIME, TIME_DURATION", List.of(ZONED_DATE_TIME, TIME_DURATION), ZONED_DATE_TIME) //
+            .typing("OPT ZONED_DATE_TIME, OPT TIME_DURATION", List.of(OPT_ZONED_DATE_TIME, OPT_TIME_DURATION),
+                OPT_ZONED_DATE_TIME) //
+            .illegalArgs("Not a temporal with time info", List.of(LOCAL_DATE, TIME_DURATION)) //
+            .illegalArgs("Not a duration", List.of(LOCAL_TIME, DATE_DURATION)) //
+            .impl("valid time",
+                List.of(arg(LocalTime.of(1, 2, 3)), arg(Duration.ofHours(1).plusMinutes(2).plusSeconds(3))),
+                LocalTime.of(2, 4, 6)) //
+            .impl("missing time", List.of(misLocalTime(), arg(Duration.ofHours(1).plusMinutes(2).plusSeconds(3)))) //
+            .errors("overflow", List.of(arg(LocalDateTime.MAX), arg(Duration.ofHours(1))), ".*too large.*") //
+            .tests();
+    }
 }

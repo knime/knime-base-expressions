@@ -98,7 +98,8 @@ public final class BuiltInFunctions {
     /** List of all temporal manipulation categories */
     public static final List<OperatorCategory> META_CATEGORY_TEMPORAL = List.of( //
         TemporalFunctions.CATEGORY_PARSE_FORMAT, //
-        TemporalFunctions.CATEGORY_CREATE_EXTRACT //
+        TemporalFunctions.CATEGORY_CREATE_EXTRACT, //
+        TemporalFunctions.CATEGORY_ARITHMETIC //
     );
 
     /** List of all control flow categories */
@@ -238,7 +239,15 @@ public final class BuiltInFunctions {
         TemporalFunctions.EXTRACT_DATETIME, //
         TemporalFunctions.TO_HOURS, //
         TemporalFunctions.TO_MINUTES, //
-        TemporalFunctions.TO_SECONDS //
+        TemporalFunctions.TO_SECONDS, //
+        // Temporal – Basic logic and arithmetic
+        TemporalFunctions.TIME_DURATION_BETWEEN, //
+        TemporalFunctions.DATE_DURATION_BETWEEN, //
+        TemporalFunctions.ADD_TIME_DURATION, //
+        TemporalFunctions.ADD_DATE_DURATION, //
+        TemporalFunctions.YEARS_BETWEEN, //
+        TemporalFunctions.MONTHS_BETWEEN, //
+        TemporalFunctions.DAYS_BETWEEN //
     );
 
     /** Built-in functions as map */
