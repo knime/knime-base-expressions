@@ -48,6 +48,7 @@
  */
 package org.knime.core.expressions.functions;
 
+import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.DATE_DURATION;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
@@ -692,6 +693,39 @@ final class TemporalFunctionTests {
                 LocalTime.of(2, 4, 6)) //
             .impl("missing time", List.of(misLocalTime(), arg(Duration.ofHours(1).plusMinutes(2).plusSeconds(3)))) //
             .errors("overflow", List.of(arg(LocalDateTime.MAX), arg(Duration.ofHours(1))), ".*too large.*") //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> changeZone() {
+        return new FunctionTestBuilder(TemporalFunctions.CHANGE_ZONE) //
+            .typing("ZONED_DATE_TIME, STRING", List.of(ZONED_DATE_TIME, STRING), ZONED_DATE_TIME) //
+            .typing("OPT ZONED_DATE_TIME, STRING", List.of(OPT_ZONED_DATE_TIME, STRING), OPT_ZONED_DATE_TIME) //
+            .typing("with boolean argument", List.of(ZONED_DATE_TIME, STRING, BOOLEAN), ZONED_DATE_TIME) //
+            .illegalArgs("Not a zoned datetime", List.of(LOCAL_DATE_TIME, STRING)) //
+            .impl("valid zoned datetime", List.of(arg(TEST_ZONED_ID), arg("America/New_York")),
+                ZonedDateTime.of(TEST_DATE_TIME, ZoneId.of("America/New_York"))) //
+            .impl("valid zoned datetime with no adjustment of wall time",
+                List.of(arg(TEST_ZONED_ID), arg("America/New_York"), arg(false)),
+                ZonedDateTime.of(TEST_DATE_TIME, ZoneId.of("America/New_York"))) //
+            .impl("valid zoned datetime with adjustment of wall time",
+                List.of(arg(TEST_ZONED_ID), arg("America/New_York"), arg(true)),
+                ZonedDateTime.of(TEST_DATE_TIME.minusHours(6), ZoneId.of("America/New_York"))) //
+            .impl("missing zoned datetime", List.of(misZonedDateTime(), arg("America/New_York"))) //
+            .errors("wall time shifted out of valid range",
+                List.of(arg(ZonedDateTime.of(LocalDateTime.MIN, ZoneId.of("UTC"))), arg("America/New_York"), arg(true)),
+                ".*range.*") //
+            .missingAndWarns("invalid zone", List.of(arg(TEST_ZONED_ID), arg("invalid"))) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> now() {
+        return new FunctionTestBuilder(TemporalFunctions.NOW) //
+            .typing("NO ARGUMENT", List.of(), ZONED_DATE_TIME) //
+            .typing("Zone", List.of(STRING), OPT_ZONED_DATE_TIME) //
+            .illegalArgs("Optional zone", List.of(OPT_STRING)) //
+            .missingAndWarns("invalid zone", List.of(arg("invalid"))) //
             .tests();
     }
 }

@@ -60,6 +60,7 @@ import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_ZONED_DAT
 import static org.knime.core.expressions.SignatureUtils.arg;
 import static org.knime.core.expressions.SignatureUtils.hasDateInformationOrOpt;
 import static org.knime.core.expressions.SignatureUtils.hasTimeInformationOrOpt;
+import static org.knime.core.expressions.SignatureUtils.isBoolean;
 import static org.knime.core.expressions.SignatureUtils.isDateDurationOrOpt;
 import static org.knime.core.expressions.SignatureUtils.isIntegerOrOpt;
 import static org.knime.core.expressions.SignatureUtils.isLocalDateOrOpt;
@@ -119,6 +120,7 @@ import java.util.stream.Stream;
 
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
+import org.knime.core.expressions.Computer.BooleanComputer;
 import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
 import org.knime.core.expressions.Computer.ComputerResultSupplier;
 import org.knime.core.expressions.Computer.DateDurationComputer;
@@ -181,6 +183,9 @@ public final class TemporalFunctions {
 
     public static final OperatorCategory CATEGORY_ARITHMETIC = new OperatorCategory(TEMPORAL_META_CATEGORY_NAME,
         "Arithmetic", "Functions for performing arithmetic operations on temporal data.");
+
+    public static final OperatorCategory CATEGORY_ZONE_MANIPULATION = new OperatorCategory(TEMPORAL_META_CATEGORY_NAME,
+        "Zone Manipulation", "Functions for manipulating time zones.");
 
     /**
      * Implementation of a function that parses a string into a {@link TemporalAccessor} type, such as a
@@ -1827,6 +1832,123 @@ public final class TemporalFunctions {
                 * `days_between(parse_date("1970-01-02"), parse_date("1970-01-01"))` returns `-1`
                 """ //
     );
+
+    public static final ExpressionFunction CHANGE_ZONE = functionBuilder() //
+        .name("change_zone") //
+        .description("""
+                Changes the time zone of a `ZONED_DATE_TIME` value to the provided
+                time zone ID.
+
+                Depending on the value of the `adjust_wall_time` parameter, the wall time
+                can be adjusted to keep the instant the same. If `adjust_wall_time` is `false`,
+                the local time will be the same as the input value, but the time zone will be
+                changed. If `adjust_wall_time` is `true`, the wall time will be adjusted so that
+                the instant remains the same.
+
+                If the provided value is missing, the function returns `MISSING`.
+                If the provided zone ID is invalid, the function returns `MISSING`
+                and a warning is emitted.
+                """) //
+        .examples("""
+                In these examples, the input value is `1970-01-01T00:00:00Z`.
+
+                * `change_zone(parse_zoned($["input"]), "Europe/Paris")`
+                  returns `1970-01-01T00:00:00+01:00[Europe/Paris]`
+                * `change_zone(parse_zoned($["input"]), "Europe/Paris", false)`
+                  returns `1970-01-01T00:00:00+01:00[Europe/Paris]`
+                * `change_zone(parse_zoned($["input"]), "Europe/Paris", true)`
+                  returns `1970-01-01T01:00:00+01:00[Europe/Paris]`
+                """) //
+        .keywords("change", "zone", "timezone") //
+        .category(CATEGORY_ZONE_MANIPULATION) //
+        .args( //
+            arg("zoned", "The `ZONED_DATE_TIME` value to change the zone of.", isZonedDateTimeOrOpt()), //
+            arg("zone", "The ID of the new time zone.", isStringOrOpt()), //
+            optarg("adjust_wall_time", "Whether to adjust the wall time to keep the instant the same. False by default",
+                isBoolean()) //
+        ) //
+        .returnType("The input value with the time zone changed", RETURN_ZONED_DATE_TIME_MISSING,
+            args -> ZONED_DATE_TIME(anyOptional(args))) //
+        .impl(TemporalFunctions::changeZoneImpl) //
+        .build();
+
+    private static Computer changeZoneImpl(final Arguments<Computer> args) {
+        var adjustWallTime = (BooleanComputer)args.get("adjust_wall_time", BooleanComputer.ofConstant(false));
+
+        ComputerResultSupplier<Optional<ZonedDateTime>> valueSupplier = ctx -> {
+            var zoned = ((ZonedDateTimeComputer)args.get("zoned")).compute(ctx);
+            var zoneIdName = ((StringComputer)args.get("zone")).compute(ctx);
+
+            ZoneId zoneId;
+            try {
+                zoneId = ZoneId.of(zoneIdName);
+            } catch (DateTimeException ex) {
+                ctx.addWarning("Invalid time zone ID: %s".formatted(zoneIdName));
+                return Optional.empty();
+            }
+
+            if (adjustWallTime.compute(ctx)) {
+                try {
+                    return Optional.of(zoned.withZoneSameInstant(zoneId));
+                } catch (DateTimeException ex) {
+                    // means that we just exceeded the supported range
+                    throw new ExpressionEvaluationException(
+                        "Adjusting the zone of this ZONED_DATE_TIME would cause it to exceed the representable range",
+                        ex);
+                }
+            } else {
+                return Optional.of(zoned.withZoneSameLocal(zoneId));
+            }
+        };
+
+        return ZonedDateTimeComputer.of( //
+            ctx -> valueSupplier.apply(ctx).get(), //
+            ctx -> anyMissing(args).applyAsBoolean(ctx) || valueSupplier.apply(ctx).isEmpty() //
+        );
+    }
+
+    public static final ExpressionFunction NOW = functionBuilder() //
+        .name("now") //
+        .description("""
+                Returns the current date and time in the system default time zone.
+
+                The function does not take any arguments and always returns the current date and time.
+                """) //
+        .examples("""
+                * `now()` returns the current date and time
+                """) //
+        .keywords("now", "current", "time") //
+        .category(CATEGORY_CREATE_EXTRACT) //
+        .args(//
+            optarg("zone", "The ID of the time zone to return the current time in.", isString()) //
+        ) //
+        .returnType("The current date and time in the system default time zone", RETURN_ZONED_DATE_TIME_MISSING,
+            args -> ZONED_DATE_TIME(args.getNumberOfArguments() == 1)) //
+        .impl(TemporalFunctions::nowImpl) //
+        .build();
+
+    private static Computer nowImpl(final Arguments<Computer> args) {
+        StringComputer zoneComputer =
+            (StringComputer)args.get("zone", StringComputer.ofConstant(ZoneId.systemDefault().getId()));
+
+        ComputerResultSupplier<Optional<ZonedDateTime>> valueSupplier = ctx -> {
+            String zoneIdString = zoneComputer.compute(ctx);
+
+            ZoneId zoneId;
+            try {
+                zoneId = ZoneId.of(zoneIdString);
+            } catch (DateTimeException ex) {
+                ctx.addWarning("Invalid time zone ID: %s".formatted(zoneIdString));
+                return Optional.empty();
+            }
+            return Optional.of(ZonedDateTime.now(zoneId));
+        };
+
+        return ZonedDateTimeComputer.of( //
+            ctx -> valueSupplier.apply(ctx).get(), //
+            ctx -> anyMissing(args).applyAsBoolean(ctx) || valueSupplier.apply(ctx).isEmpty() //
+        );
+    }
 
     private static boolean isShortormDuration(final String durationString) {
         return !durationString.isBlank() && Pattern.compile("(\\d+\\s*h)?\\s*(\\d+\\s*m)?\\s*(\\d(.\\d+)?\\s*s)?") //
