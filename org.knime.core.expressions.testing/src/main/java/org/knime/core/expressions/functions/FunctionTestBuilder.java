@@ -97,7 +97,7 @@ import org.knime.core.expressions.ValueType;
  */
 public final class FunctionTestBuilder {
 
-    private final EvaluationContext DUMMY_WML = w -> {
+    private static final EvaluationContext DUMMY_WML = w -> {
     };
 
     // == Arguments for testing functions ==
