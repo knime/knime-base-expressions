@@ -167,6 +167,10 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             } catch (ExpressionCompileException e) {
                 throw new InvalidSettingsException( //
                     "Error in Expression " + (i + 1) + ": " + e.getMessage(), e);
+            } catch (StackOverflowError e) {
+                throw new InvalidSettingsException(
+                    "Error in Expression %s: The expression is too complex and must be simplified before it can be evaluated"
+                        .formatted(i + 1));
             }
         }
     }
@@ -281,14 +285,20 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                 ExpressionFlowVariableNodeModel::columnTypeResolver,
                 flowVarName -> toValueType(availableFlowVariables, flowVarName) //
             );
-
-            // Evaluate
-            var resultComputer = Expressions.evaluate( //
-                ast, //
-                column -> Optional.empty(), //
-                flowVar -> toComputer(availableFlowVariables, flowVar), //
-                aggregation -> Optional.empty() //
-            );
+            Computer resultComputer = null;
+            try {
+                // Evaluate
+                resultComputer = Expressions.evaluate( //
+                    ast, //
+                    column -> Optional.empty(), //
+                    flowVar -> toComputer(availableFlowVariables, flowVar), //
+                    aggregation -> Optional.empty() //
+                );
+            } catch (StackOverflowError e) {
+                ExpressionEvaluationException cause = new ExpressionEvaluationException(
+                    "The expression is too complex and must be simplified before it can be evaluated.");
+                throw WithIndexExpressionException.forEvaluationException(i, cause);
+            }
 
             final var finalI = i;
             var outputVariable = createFlowVariableFromComputer( //
