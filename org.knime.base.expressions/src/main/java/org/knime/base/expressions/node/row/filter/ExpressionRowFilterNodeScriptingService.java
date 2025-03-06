@@ -195,6 +195,8 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
                     diagnostics.add(ExpressionDiagnostic.withSameMessage(message, DiagnosticSeverity.ERROR,
                         Expressions.getTextLocation(ast)));
                 }
+            } catch (StackOverflowError ex) {
+                diagnostics.addAll(ExpressionDiagnostic.fromStackOverflow());
             } catch (ExpressionCompileException ex) {
                 diagnostics.addAll(ExpressionDiagnostic.fromException(ex));
             }
