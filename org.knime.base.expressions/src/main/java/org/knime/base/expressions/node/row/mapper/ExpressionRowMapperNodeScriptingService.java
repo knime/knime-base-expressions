@@ -265,6 +265,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
                     successfulInferredTypeName = inferredType.baseType().name();
                     columnToTypeMap.put(currentOutputColumnName, ReturnResult.success(inferredType));
+                } catch (StackOverflowError ex) {
+                    diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromStackOverflow());
                 } catch (ExpressionCompileException ex) {
                     // If there is an error in the expression, we still want to indicate that when accessing this column
                     // in another expression. Therefore, we put an appropriate error message into the map
@@ -307,7 +309,9 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 m_tablePreview.updateTables(outputTables, m_exec);
                 updateOutputTable((int)m_tablePreview.numRows(), m_inputTableCache.getFullRowCount());
 
-                sendEvent("updateWarnings", warnings);
+                if (warnings.length > 0) {
+                    sendEvent("updateWarnings", warnings);
+                }
 
             } catch (WithIndexExpressionException e) {
                 // TODO(AP-23937) - update the frontend to show the error

@@ -73,6 +73,7 @@ import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.EvaluationContext;
+import org.knime.core.expressions.ExpressionCompileError;
 import org.knime.core.expressions.ExpressionCompileException;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
@@ -105,7 +106,10 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         m_settings = new ExpressionRowMapperSettings();
     }
 
-    /** @return the typed Ast for the configured expression */
+    /**
+     * @return the typed Ast for the configured expression
+     * @throws ExpressionCompileError
+     */
     private static Ast getPreparedExpression(final String expression, final DataTableSpec inSpec,
         final Map<String, FlowVariable> availableFlowVariables) throws ExpressionCompileException {
 
@@ -143,8 +147,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
                     "Expression %d evaluates to MISSING. Enter an expression that has an output type."
                         .formatted(indexInScripts + 1));
             }
-            var outputColumnSpec =
-                ColumnOutputUtils.valueTypeToDataColumnSpec(outputType, outputColumn);
+            var outputColumnSpec = ColumnOutputUtils.valueTypeToDataColumnSpec(outputType, outputColumn);
 
             if (outputMode == InsertionMode.REPLACE_EXISTING) {
                 var columnIndex = inputSpec.findColumnIndex(outputColumn);
@@ -167,6 +170,10 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         } catch (final ExpressionCompileException e) {
             throw new InvalidSettingsException(
                 "Error in Expression %d: %s".formatted(indexInScripts + 1, e.getMessage()), e);
+        } catch (StackOverflowError e) {
+            throw new InvalidSettingsException(
+                "Error in Expression %s: The expression is too complex and must be simplified before it can be evaluated"
+                    .formatted(indexInScripts + 1));
         }
     }
 
@@ -241,7 +248,6 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
      * @param setWarning a consumer that is called if the evaluation of an expression produces a warning with the index
      *            of the expression and the warning message
      * @return the output tables, one for each expression, use the last table for the final output
-     *
      * @throws ExpressionCompileException if an expression cannot be compiled
      * @throws CanceledExecutionException if the execution is canceled
      * @throws VirtualTableIncompatibleException
