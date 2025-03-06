@@ -62,11 +62,17 @@ public final class ExpressionCompileException extends ExpressionException {
 
     private final List<ExpressionCompileError> m_errors;
 
-    ExpressionCompileException(final ExpressionCompileError error) {
+    /**
+     * @param error
+     */
+    public ExpressionCompileException(final ExpressionCompileError error) {
         this(List.of(error));
     }
 
-    ExpressionCompileException(final List<ExpressionCompileError> errors) {
+    /**
+     * @param errors
+     */
+    public ExpressionCompileException(final List<ExpressionCompileError> errors) {
         super(constructMessage(errors));
         m_errors = errors;
     }

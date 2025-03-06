@@ -117,12 +117,6 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
             CompileErrorType.EXPRESSION_EMPTY, location);
     }
 
-    static ExpressionCompileError expressionDepthExceededError() {
-        return new ExpressionCompileError(
-            "This expression is too complex and must be simplified before it can be evaluated.",
-            CompileErrorType.EXPRESSION_DEPTH, null);
-    }
-
     /** Types of compile errors */
     public enum CompileErrorType {
 
