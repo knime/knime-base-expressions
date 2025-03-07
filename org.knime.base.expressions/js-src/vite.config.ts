@@ -43,8 +43,8 @@ export default defineConfig({
     rollupOptions: {
       input: [
         fileURLToPath(new URL("./row-mapper.html", import.meta.url)),
-        fileURLToPath(new URL("./row-filter.html", import.meta.url)),
-        fileURLToPath(new URL("./flow-variable.html", import.meta.url)),
+        // fileURLToPath(new URL("./row-filter.html", import.meta.url)),
+        // fileURLToPath(new URL("./flow-variable.html", import.meta.url)),
       ],
     },
   },
