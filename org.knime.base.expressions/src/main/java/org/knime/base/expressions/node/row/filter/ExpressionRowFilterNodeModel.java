@@ -196,10 +196,9 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
         try {
             ExpressionRunnerUtils.evaluateAggregations(ast, inRefTable.getBufferedTable(),
                 exec.createSubProgress(0.33));
-        } catch (StackOverflowError e) {
-            ExpressionEvaluationException cause = new ExpressionEvaluationException(
+        } catch (StackOverflowError e) { // NOSONAR - StackOverflows here are caused by too complex expressions
+            throw new ExpressionEvaluationException(
                 "The expression is too complex and must be simplified before it can be evaluated.");
-            throw cause;
         }
         // Evaluate the expression and materialize the result
         var additionalInputs = new NodeExpressionAdditionalInputs(availableFlowVariables);

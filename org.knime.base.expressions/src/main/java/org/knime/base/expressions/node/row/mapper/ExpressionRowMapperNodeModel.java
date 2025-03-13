@@ -170,10 +170,10 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         } catch (final ExpressionCompileException e) {
             throw new InvalidSettingsException(
                 "Error in Expression %d: %s".formatted(indexInScripts + 1, e.getMessage()), e);
-        } catch (StackOverflowError e) {
+        } catch (StackOverflowError e) { // NOSONAR - Stack overflows here are caused by too complex expressions
             throw new InvalidSettingsException(
-                "Error in Expression %s: The expression is too complex and must be simplified before it can be evaluated"
-                    .formatted(indexInScripts + 1));
+                "Error in Expression %s: The expression is too complex and must be simplified "
+                    + "before it can be evaluated".formatted(indexInScripts + 1));
         }
     }
 

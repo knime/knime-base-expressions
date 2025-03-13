@@ -167,10 +167,10 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             } catch (ExpressionCompileException e) {
                 throw new InvalidSettingsException( //
                     "Error in Expression " + (i + 1) + ": " + e.getMessage(), e);
-            } catch (StackOverflowError e) {
+            } catch (StackOverflowError e) { // NOSONAR - stack overflows here are caused by too complex expressions
                 throw new InvalidSettingsException(
-                    "Error in Expression %s: The expression is too complex and must be simplified before it can be evaluated"
-                        .formatted(i + 1));
+                    "Error in Expression %s: The expression is too complex and must be simplified "
+                        + "before it can be evaluated".formatted(i + 1));
             }
         }
     }
@@ -294,7 +294,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                     flowVar -> toComputer(availableFlowVariables, flowVar), //
                     aggregation -> Optional.empty() //
                 );
-            } catch (StackOverflowError e) {
+            } catch (StackOverflowError e) { // NOSONAR
                 ExpressionEvaluationException cause = new ExpressionEvaluationException(
                     "The expression is too complex and must be simplified before it can be evaluated.");
                 throw WithIndexExpressionException.forEvaluationException(i, cause);

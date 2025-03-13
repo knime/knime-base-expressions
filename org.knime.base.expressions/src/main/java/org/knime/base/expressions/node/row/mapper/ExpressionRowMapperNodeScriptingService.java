@@ -265,7 +265,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
                     successfulInferredTypeName = inferredType.baseType().name();
                     columnToTypeMap.put(currentOutputColumnName, ReturnResult.success(inferredType));
-                } catch (StackOverflowError ex) {
+                } catch (StackOverflowError ex) { // NOSONAR
                     diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromStackOverflow());
                 } catch (ExpressionCompileException ex) {
                     // If there is an error in the expression, we still want to indicate that when accessing this column

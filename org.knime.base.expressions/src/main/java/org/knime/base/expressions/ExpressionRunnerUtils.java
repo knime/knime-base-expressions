@@ -571,9 +571,8 @@ public final class ExpressionRunnerUtils {
         } catch (ExpressionEvaluationRuntimeException e) { // NOSONAR - throwing only the cause is intended
             throw e.getCause();
         } catch (StackOverflowError e) {
-            ExpressionEvaluationException cause = new ExpressionEvaluationException(
+            throw new ExpressionEvaluationException(
                 "The expression is too complex and must be simplified before it can be evaluated.");
-            throw cause;
         }
     }
 
