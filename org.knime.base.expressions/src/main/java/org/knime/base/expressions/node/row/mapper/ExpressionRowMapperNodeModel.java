@@ -270,29 +270,35 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         for (int i = 0; i < numberOfExpressions; ++i) {
             var subExec = exec.createSubExecutionContext(1.0 / numberOfExpressions);
 
-            var newColumnPosition = newColumnPositions.get(i);
+            ReferenceTable inRefTable;
+            Ast expression;
+            try {
+                // Parse the expression and infer the types
+                expression = getPreparedExpression(expressions.get(i), nextInputTable.getDataTableSpec(),
+                    availableFlowVariables);
 
-            // Parse the expression and infer the types
-            var expression =
-                getPreparedExpression(expressions.get(i), nextInputTable.getDataTableSpec(), availableFlowVariables);
+                // Create a reference table for the input table
+                inRefTable =
+                    ExpressionRunnerUtils.createReferenceTable(nextInputTable, subExec.createSubExecutionContext(0.33));
 
-            // Create a reference table for the input table
-            var inRefTable =
-                ExpressionRunnerUtils.createReferenceTable(nextInputTable, subExec.createSubExecutionContext(0.33));
-
-            // Pre-evaluate the aggregations
-            // NB: We use the inRefTable because it is guaranteed to be a columnar table
-            ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(),
-                subExec.createSubProgress(0.33));
-
+                // Pre-evaluate the aggregations
+                // NB: We use the inRefTable because it is guaranteed to be a columnar table
+                ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(),
+                    subExec.createSubProgress(0.33));
+            } catch (StackOverflowError e) { // NOSONAR
+                ExpressionEvaluationException cause = new ExpressionEvaluationException(
+                    "The expression is too complex and must be simplified before it can be evaluated.");
+                throw WithIndexExpressionException.forEvaluationException(i, cause);
+            }
             // Evaluate the expression and materialize the result
             final var finalI = i;
             EvaluationContext ctx = warning -> setWarning.accept(finalI, warning);
             ReferenceTable expressionResult;
+            var newColumnPosition = newColumnPositions.get(i);
             try {
                 expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
                     newColumnPosition.columnName(), exec, subExec.createSubProgress(0.34), additionalInputs, ctx);
-            } catch (ExpressionEvaluationException e) {
+            } catch (ExpressionEvaluationException e) { // NOSONAR
                 throw WithIndexExpressionException.forEvaluationException(i, e);
             }
 

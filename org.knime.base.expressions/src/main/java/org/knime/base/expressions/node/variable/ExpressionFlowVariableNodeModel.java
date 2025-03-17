@@ -279,14 +279,15 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             var expression = expressions.get(i);
             var name = names.get(i);
 
-            // Prepare - parse and infer types
-            var ast = Expressions.parse(expression);
-            Expressions.inferTypes(ast, //
-                ExpressionFlowVariableNodeModel::columnTypeResolver,
-                flowVarName -> toValueType(availableFlowVariables, flowVarName) //
-            );
-            Computer resultComputer = null;
+            Computer resultComputer;
             try {
+                // Prepare - parse and infer types
+                var ast = Expressions.parse(expression);
+                Expressions.inferTypes(ast, //
+                    ExpressionFlowVariableNodeModel::columnTypeResolver,
+                    flowVarName -> toValueType(availableFlowVariables, flowVarName) //
+                );
+
                 // Evaluate
                 resultComputer = Expressions.evaluate( //
                     ast, //
