@@ -66,7 +66,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
-import java.time.temporal.TemporalAccessor;
+import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -335,7 +335,7 @@ public interface Computer {
     }
 
     /** {@link Computer} for {@link ValueType#LOCAL_DATE} and {@link ValueType#OPT_LOCAL_DATE} */
-    non-sealed interface LocalDateComputer extends TemporalAccessorComputer {
+    non-sealed interface LocalDateComputer extends TemporalComputer {
 
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
@@ -381,7 +381,7 @@ public interface Computer {
     }
 
     /** {@link Computer} for {@link ValueType#LOCAL_TIME} and {@link ValueType#OPT_LOCAL_TIME} */
-    non-sealed interface LocalTimeComputer extends TemporalAccessorComputer {
+    non-sealed interface LocalTimeComputer extends TemporalComputer {
 
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
@@ -427,7 +427,7 @@ public interface Computer {
     }
 
     /** {@link Computer} for {@link ValueType#LOCAL_DATE_TIME} and {@link ValueType#OPT_LOCAL_DATE_TIME} */
-    non-sealed interface LocalDateTimeComputer extends TemporalAccessorComputer {
+    non-sealed interface LocalDateTimeComputer extends TemporalComputer {
 
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
@@ -473,7 +473,7 @@ public interface Computer {
     }
 
     /** {@link Computer} for {@link ValueType#ZONED_DATE_TIME} and {@link ValueType#OPT_ZONED_DATE_TIME} */
-    non-sealed interface ZonedDateTimeComputer extends TemporalAccessorComputer {
+    non-sealed interface ZonedDateTimeComputer extends TemporalComputer {
 
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
@@ -615,14 +615,14 @@ public interface Computer {
      * {@link LocalDateComputer}, {@link LocalTimeComputer}, {@link LocalDateTimeComputer}, and
      * {@link ZonedDateTimeComputer}.
      */
-    sealed interface TemporalAccessorComputer extends Computer
+    sealed interface TemporalComputer extends Computer
         permits LocalDateComputer, LocalTimeComputer, LocalDateTimeComputer, ZonedDateTimeComputer {
         /**
          * @param ctx a {@link EvaluationContext} to report warnings
          * @return the result of the expression evaluation
          * @throws ExpressionEvaluationException if the expression could not be evaluated
          */
-        TemporalAccessor compute(EvaluationContext ctx) throws ExpressionEvaluationException;
+        Temporal compute(EvaluationContext ctx) throws ExpressionEvaluationException;
     }
 
     /**

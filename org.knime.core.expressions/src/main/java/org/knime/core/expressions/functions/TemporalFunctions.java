@@ -123,8 +123,8 @@ import org.knime.core.expressions.Computer.LocalDateComputer;
 import org.knime.core.expressions.Computer.LocalDateTimeComputer;
 import org.knime.core.expressions.Computer.LocalTimeComputer;
 import org.knime.core.expressions.Computer.StringComputer;
-import org.knime.core.expressions.Computer.TemporalAccessorComputer;
 import org.knime.core.expressions.Computer.TemporalAmountComputer;
+import org.knime.core.expressions.Computer.TemporalComputer;
 import org.knime.core.expressions.Computer.TimeDurationComputer;
 import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.ExpressionEvaluationException;
@@ -665,7 +665,7 @@ public final class TemporalFunctions {
         final TemporalQuery<TemporalAccessor> query) {
         return args -> {
             var formatComputer = (StringComputer)args.get("format");
-            var temporalComputer = (TemporalAccessorComputer)args.get(temporalArgument);
+            var temporalComputer = (TemporalComputer)args.get(temporalArgument);
 
             ComputerResultSupplier<Optional<String>> valueSupplier = ctx -> {
                 var formatString = formatComputer.compute(ctx);
@@ -796,7 +796,7 @@ public final class TemporalFunctions {
      * we're dealing with so that we can correctly check the format.
      */
     private static Computer formatDateTimeImpl(final Arguments<Computer> args) {
-        var localOrZonedDateTimeComputer = (TemporalAccessorComputer)args.get("datetime");
+        var localOrZonedDateTimeComputer = (TemporalComputer)args.get("datetime");
 
         if (localOrZonedDateTimeComputer instanceof ZonedDateTimeComputer) {
             return TemporalFunctions.formatTemporalImpl("datetime", ZonedDateTime::from).apply(args);
@@ -1176,7 +1176,7 @@ public final class TemporalFunctions {
     private static final Function<Arguments<Computer>, Computer> extractTemporalFieldImpl(final TemporalField field) {
         return args -> {
             IntegerComputerResultSupplier value = ctx -> {
-                var temporal = ((TemporalAccessorComputer)args.get("temporal")).compute(ctx);
+                var temporal = ((TemporalComputer)args.get("temporal")).compute(ctx);
                 return temporal.getLong(field);
             };
 
@@ -1350,7 +1350,7 @@ public final class TemporalFunctions {
 
     private static Computer extractDateImpl(final Arguments<Computer> args) {
         ComputerResultSupplier<LocalDate> valueSupplier = ctx -> {
-            var temporal = ((TemporalAccessorComputer)args.get("temporal")).compute(ctx);
+            var temporal = ((TemporalComputer)args.get("temporal")).compute(ctx);
             return LocalDate.from(temporal);
         };
 
@@ -1382,7 +1382,7 @@ public final class TemporalFunctions {
 
     private static Computer extractTimeImpl(final Arguments<Computer> args) {
         ComputerResultSupplier<LocalTime> valueSupplier = ctx -> {
-            var temporal = ((TemporalAccessorComputer)args.get("temporal")).compute(ctx);
+            var temporal = ((TemporalComputer)args.get("temporal")).compute(ctx);
             return LocalTime.from(temporal);
         };
 
