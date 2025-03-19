@@ -241,7 +241,11 @@ public final class BuiltInFunctions {
         TemporalArithmeticFunctions.ADD_DATE_DURATION, //
         TemporalArithmeticFunctions.YEARS_BETWEEN, //
         TemporalArithmeticFunctions.MONTHS_BETWEEN, //
-        TemporalArithmeticFunctions.DAYS_BETWEEN //
+        TemporalArithmeticFunctions.DAYS_BETWEEN, //
+        // Temporal – Timezone manipulation
+        TemporalZoneManipulationFunctions.CHANGE_ZONE, //
+        TemporalZoneManipulationFunctions.HAS_SAME_INSTANT, //
+        TemporalZoneManipulationFunctions.HAS_SAME_WALL_TIME //
     );
 
     /** Built-in functions as map */
