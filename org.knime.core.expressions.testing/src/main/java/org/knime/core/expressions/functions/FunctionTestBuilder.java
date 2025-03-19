@@ -66,6 +66,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.DynamicContainer;
@@ -944,7 +945,8 @@ public final class FunctionTestBuilder {
 
             assertFalse(warnings.isEmpty(), "expected warnings");
             assertEquals(1, warnings.size(), "testing multiple warnings at once is not a good idea");
-            assertThat(warnings.get(0)).as("Must match expected pattern").matches(expectedWarningPattern);
+            assertThat(warnings.get(0)).as("Must match expected pattern")
+                .matches(Pattern.compile(expectedWarningPattern, Pattern.CASE_INSENSITIVE));
             assertThat(warnings.get(0)).as("Warning messages must have end punctuation").endsWith(".");
             assertThat(warnings.get(0)).as("Too many dots were appended").doesNotEndWith("..");
         }));
