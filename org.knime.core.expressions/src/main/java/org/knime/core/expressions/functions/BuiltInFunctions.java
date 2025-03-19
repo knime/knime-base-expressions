@@ -233,7 +233,11 @@ public final class BuiltInFunctions {
         TemporalCreateExtractFunctions.EXTRACT_DATETIME, //
         TemporalCreateExtractFunctions.TO_HOURS, //
         TemporalCreateExtractFunctions.TO_MINUTES, //
-        TemporalCreateExtractFunctions.TO_SECONDS //
+        TemporalCreateExtractFunctions.TO_SECONDS, //
+        // Temporal – Timezone manipulation
+        TemporalZoneManipulationFunctions.CHANGE_ZONE, //
+        TemporalZoneManipulationFunctions.HAS_SAME_INSTANT, //
+        TemporalZoneManipulationFunctions.HAS_SAME_WALL_TIME //
     );
 
     /** Built-in functions as map */
