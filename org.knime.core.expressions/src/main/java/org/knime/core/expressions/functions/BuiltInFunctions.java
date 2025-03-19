@@ -234,6 +234,17 @@ public final class BuiltInFunctions {
         TemporalCreateExtractFunctions.TO_HOURS, //
         TemporalCreateExtractFunctions.TO_MINUTES, //
         TemporalCreateExtractFunctions.TO_SECONDS, //
+        // Temporal – Parse & Format
+        TemporalParseFormatFunctions.PARSE_DATE, //
+        TemporalParseFormatFunctions.PARSE_TIME, //
+        TemporalParseFormatFunctions.PARSE_DATE_TIME, //
+        TemporalParseFormatFunctions.PARSE_ZONED_DATE_TIME, //
+        TemporalParseFormatFunctions.PARSE_TIME_DURATION, //
+        TemporalParseFormatFunctions.PARSE_DATE_DURATION, //
+        TemporalParseFormatFunctions.FORMAT_DATE, //
+        TemporalParseFormatFunctions.FORMAT_TIME, //
+        TemporalParseFormatFunctions.FORMAT_DATE_TIME, //
+        TemporalParseFormatFunctions.FORMAT_DURATION, //
         // Temporal – Basic logic and arithmetic
         TemporalArithmeticFunctions.TIME_DURATION_BETWEEN, //
         TemporalArithmeticFunctions.DATE_DURATION_BETWEEN, //
