@@ -233,7 +233,18 @@ public final class BuiltInFunctions {
         TemporalCreateExtractFunctions.EXTRACT_DATETIME, //
         TemporalCreateExtractFunctions.TO_HOURS, //
         TemporalCreateExtractFunctions.TO_MINUTES, //
-        TemporalCreateExtractFunctions.TO_SECONDS //
+        TemporalCreateExtractFunctions.TO_SECONDS, //
+        // Temporal – Parse & Format
+        TemporalParseFormatFunctions.PARSE_DATE, //
+        TemporalParseFormatFunctions.PARSE_TIME, //
+        TemporalParseFormatFunctions.PARSE_DATE_TIME, //
+        TemporalParseFormatFunctions.PARSE_ZONED_DATE_TIME, //
+        TemporalParseFormatFunctions.PARSE_TIME_DURATION, //
+        TemporalParseFormatFunctions.PARSE_DATE_DURATION, //
+        TemporalParseFormatFunctions.FORMAT_DATE, //
+        TemporalParseFormatFunctions.FORMAT_TIME, //
+        TemporalParseFormatFunctions.FORMAT_DATE_TIME, //
+        TemporalParseFormatFunctions.FORMAT_DURATION //
     );
 
     /** Built-in functions as map */
