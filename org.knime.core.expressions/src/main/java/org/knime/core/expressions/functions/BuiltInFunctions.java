@@ -52,13 +52,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.knime.core.expressions.OperatorCategory;
+import org.knime.core.expressions.functions.temporal.TemporalArithmeticFunctions;
+import org.knime.core.expressions.functions.temporal.TemporalCreateExtractFunctions;
+import org.knime.core.expressions.functions.temporal.TemporalParseFormatFunctions;
+import org.knime.core.expressions.functions.temporal.TemporalZoneManipulationFunctions;
 
 /**
  * Holds the collection of all built-in {@link ExpressionFunction functions} and {@link OperatorCategory function
  * categories}.
+ *
+ * Note that new categories added here should be registered in FunctionCatalogData in org.knime.base.expressions.
+ * Otherwise, the expression editor will crash at runtime without a helpful error message.
  *
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
@@ -93,17 +99,18 @@ public final class BuiltInFunctions {
         StringFunctions.CATEGORY_ENCODE //
     );
 
+    /** List of all temporal manipulation categories */
+    public static final List<OperatorCategory> META_CATEGORY_TEMPORAL = List.of( //
+        TemporalParseFormatFunctions.CATEGORY_PARSE_FORMAT, //
+        TemporalCreateExtractFunctions.CATEGORY_CREATE_EXTRACT, //
+        TemporalArithmeticFunctions.CATEGORY_ARITHMETIC, //
+        TemporalZoneManipulationFunctions.CATEGORY_ZONE_MANIPULATION //
+    );
+
     /** List of all control flow categories */
     public static final List<OperatorCategory> META_CATEGORY_CONTROL = List.of( //
         ControlFlowFunctions.CATEGORY //
     );
-
-    /** All built-in function categories */
-    public static final List<OperatorCategory> BUILT_IN_CATEGORIES = Stream.concat( //
-        Stream.concat( //
-            META_CATEGORY_MATH.stream(), META_CATEGORY_STRING.stream()), //
-        META_CATEGORY_CONTROL.stream() //
-    ).collect(Collectors.toUnmodifiableList());
 
     /** Built-in functions */
     public static final List<ExpressionFunction> BUILT_IN_FUNCTIONS = List.of( //

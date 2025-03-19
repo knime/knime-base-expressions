@@ -56,10 +56,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicNode;
@@ -68,9 +75,15 @@ import org.junit.jupiter.api.TestFactory;
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
+import org.knime.core.expressions.Computer.DateDurationComputer;
 import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.LocalDateComputer;
+import org.knime.core.expressions.Computer.LocalDateTimeComputer;
+import org.knime.core.expressions.Computer.LocalTimeComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.TimeDurationComputer;
+import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.TestUtils;
@@ -84,7 +97,7 @@ import org.knime.core.expressions.ValueType;
  */
 public final class FunctionTestBuilder {
 
-    private final EvaluationContext DUMMY_WML = w -> {
+    private static final EvaluationContext DUMMY_WML = w -> {
     };
 
     // == Arguments for testing functions ==
@@ -150,6 +163,7 @@ public final class FunctionTestBuilder {
         }
 
         private Computer computer() {
+            // TODO(AP-24022): Use pattern matching for exhaustive switch
             if (m_value instanceof Boolean) {
                 return BooleanComputer.of(ctx -> (Boolean)getValue(), this::isMissing);
             } else if (m_value instanceof Long) {
@@ -158,6 +172,18 @@ public final class FunctionTestBuilder {
                 return FloatComputer.of(ctx -> (Double)getValue(), this::isMissing);
             } else if (m_value instanceof String) {
                 return StringComputer.of(ctx -> (String)getValue(), this::isMissing);
+            } else if (m_value instanceof LocalDate) {
+                return LocalDateComputer.of(ctx -> (LocalDate)getValue(), this::isMissing);
+            } else if (m_value instanceof LocalTime) {
+                return LocalTimeComputer.of(ctx -> (LocalTime)getValue(), this::isMissing);
+            } else if (m_value instanceof LocalDateTime) {
+                return LocalDateTimeComputer.of(ctx -> (LocalDateTime)getValue(), this::isMissing);
+            } else if (m_value instanceof ZonedDateTime) {
+                return ZonedDateTimeComputer.of(ctx -> (ZonedDateTime)getValue(), this::isMissing);
+            } else if (m_value instanceof Duration) {
+                return TimeDurationComputer.of(ctx -> (Duration)getValue(), this::isMissing);
+            } else if (m_value instanceof Period) {
+                return DateDurationComputer.of(ctx -> (Period)getValue(), this::isMissing);
             } else {
                 return ctx -> isMissing();
             }
@@ -196,6 +222,54 @@ public final class FunctionTestBuilder {
         return new TestingArgument(value, false);
     }
 
+    /**
+     * @param value
+     * @return a LOCAL_DATE {@link TestingArgument}
+     */
+    public static TestingArgument arg(final LocalDate value) {
+        return new TestingArgument(value, false);
+    }
+
+    /**
+     * @param value
+     * @return a LOCAL_TIME {@link TestingArgument}
+     */
+    public static TestingArgument arg(final LocalTime value) {
+        return new TestingArgument(value, false);
+    }
+
+    /**
+     * @param value
+     * @return a LOCAL_DATE_TIME {@link TestingArgument}
+     */
+    public static TestingArgument arg(final LocalDateTime value) {
+        return new TestingArgument(value, false);
+    }
+
+    /**
+     * @param value
+     * @return a ZONED_DATE_TIME {@link TestingArgument}
+     */
+    public static TestingArgument arg(final ZonedDateTime value) {
+        return new TestingArgument(value, false);
+    }
+
+    /**
+     * @param value
+     * @return a TIME_DURATION {@link TestingArgument}
+     */
+    public static TestingArgument arg(final Duration value) {
+        return new TestingArgument(value, false);
+    }
+
+    /**
+     * @param value
+     * @return a DATE_DURATION {@link TestingArgument}
+     */
+    public static TestingArgument arg(final Period value) {
+        return new TestingArgument(value, false);
+    }
+
     /** @return a MISSING {@link TestingArgument} */
     public static TestingArgument mis() {
         return new TestingArgument(null, true);
@@ -219,6 +293,36 @@ public final class FunctionTestBuilder {
     /** @return a STRING {@link TestingArgument} that is missing */
     public static TestingArgument misString() {
         return new TestingArgument("", true);
+    }
+
+    /** @return a LOCAL_DATE {@link TestingArgument} that is missing */
+    public static TestingArgument misLocalDate() {
+        return new TestingArgument(LocalDate.now(), true);
+    }
+
+    /** @return a LOCAL_TIME {@link TestingArgument} that is missing */
+    public static TestingArgument misLocalTime() {
+        return new TestingArgument(LocalTime.now(), true);
+    }
+
+    /** @return a LOCAL_DATE_TIME {@link TestingArgument} that is missing */
+    public static TestingArgument misLocalDateTime() {
+        return new TestingArgument(LocalDateTime.now(), true);
+    }
+
+    /** @return a ZONED_DATE_TIME {@link TestingArgument} that is missing */
+    public static TestingArgument misZonedDateTime() {
+        return new TestingArgument(ZonedDateTime.now(), true);
+    }
+
+    /** @return a TIME_DURATION {@link TestingArgument} that is missing */
+    public static TestingArgument misDuration() {
+        return new TestingArgument(Duration.ZERO, true);
+    }
+
+    /** @return a DATE_DURATION {@link TestingArgument} that is missing */
+    public static TestingArgument misPeriod() {
+        return new TestingArgument(Period.ZERO, true);
     }
 
     // ====
@@ -496,6 +600,216 @@ public final class FunctionTestBuilder {
     }
 
     /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final LocalDate expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(LocalDateComputer.class, c, m_function.name() + " should eval to LOCAL_DATE");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((LocalDateComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final LocalDate expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final LocalTime expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(LocalTimeComputer.class, c, m_function.name() + " should eval to LOCAL_TIME");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((LocalTimeComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final LocalTime expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final LocalDateTime expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(LocalDateTimeComputer.class, c, m_function.name() + " should eval to LOCAL_DATE_TIME");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((LocalDateTimeComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final LocalDateTime expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final ZonedDateTime expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(ZonedDateTimeComputer.class, c, m_function.name() + " should eval to ZONED_DATE_TIME");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((ZonedDateTimeComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final ZonedDateTime expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final Duration expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(TimeDurationComputer.class, c, m_function.name() + " should eval to TIME_DURATION");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((TimeDurationComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Duration expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param namedArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs, final Period expected) {
+        return impl(name, positionalArgs, namedArgs, c -> {
+            assertInstanceOf(DateDurationComputer.class, c, m_function.name() + " should eval to DATE_DURATION");
+            try {
+                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                positionalArgs.forEach(TestingArgument::resetAccessed);
+                namedArgs.values().forEach(TestingArgument::resetAccessed);
+                assertEquals(expected, ((DateDurationComputer)c).compute(DUMMY_WML),
+                    m_function.name() + " should eval correctly");
+            } catch (ExpressionEvaluationException ex) {
+                // SONAR wants to add exec to signature but this would require special interface instead of Consumer
+                fail("unexpected evaluation error", ex); // NOSONAR
+            }
+        });
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @param expected
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder impl(final String name, final List<TestingArgument> positionalArgs,
+        final Period expected) {
+        return impl(name, positionalArgs, Map.of(), expected);
+    }
+
+    /**
      * Add a test that checks that the function evaluates to the expected FLOAT value (with specified tolerance)
      *
      * @param name display name of the test
@@ -601,6 +915,7 @@ public final class FunctionTestBuilder {
 
             // Compute the computer
             if (!resultComputer.isMissing(ctx)) {
+                // TODO(AP-24022): use pattern matching for exhaustive case switches
                 if (resultComputer instanceof IntegerComputer ic) {
                     ic.compute(ctx);
                 } else if (resultComputer instanceof FloatComputer fc) {
@@ -609,6 +924,20 @@ public final class FunctionTestBuilder {
                     bc.compute(ctx);
                 } else if (resultComputer instanceof StringComputer sc) {
                     sc.compute(ctx);
+                } else if (resultComputer instanceof LocalDateComputer ldc) {
+                    ldc.compute(ctx);
+                } else if (resultComputer instanceof LocalTimeComputer ltc) {
+                    ltc.compute(ctx);
+                } else if (resultComputer instanceof LocalDateTimeComputer ldtc) {
+                    ldtc.compute(ctx);
+                } else if (resultComputer instanceof ZonedDateTimeComputer zdtc) {
+                    zdtc.compute(ctx);
+                } else if (resultComputer instanceof TimeDurationComputer tdc) {
+                    tdc.compute(ctx);
+                } else if (resultComputer instanceof DateDurationComputer ddc) {
+                    ddc.compute(ctx);
+                } else {
+                    fail("unexpected computer type");
                 }
             }
 
@@ -626,6 +955,43 @@ public final class FunctionTestBuilder {
      */
     public FunctionTestBuilder warns(final String name, final List<TestingArgument> positionalArgs) {
         return warns(name, positionalArgs, Map.of());
+    }
+
+    /**
+     * A test that checks that the given arguments produce MISSING result and a warning. Actually a shorthand for
+     * calling both {@link #impl} and {@link #warns} with the same arguments, so it adds two tests.
+     *
+     * @param name display name of the test
+     * @param positionalArgs
+     * @param namedArgs
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder missingAndWarns(final String name, final List<TestingArgument> positionalArgs,
+        final Map<String, TestingArgument> namedArgs) {
+
+        impl(name, positionalArgs, namedArgs);
+
+        // we need to copy the arguments otherwise the tests will think we called isMissing and compute
+        // twice, and fail.
+        var copiedPositionalArgs = positionalArgs.stream() //
+            .map(arg -> new TestingArgument(arg.m_value, arg.m_isMissing)) //
+            .toList();
+        var copiedNamedArgs = namedArgs.entrySet().stream() //
+            .collect(Collectors.toMap(Map.Entry::getKey,
+                e -> new TestingArgument(e.getValue().m_value, e.getValue().m_isMissing)));
+
+        warns(name, copiedPositionalArgs, copiedNamedArgs);
+
+        return this;
+    }
+
+    /**
+     * @param name
+     * @param positionalArgs
+     * @return <code>this</code> for chaining
+     */
+    public FunctionTestBuilder missingAndWarns(final String name, final List<TestingArgument> positionalArgs) {
+        return missingAndWarns(name, positionalArgs, Map.of());
     }
 
     /**
@@ -665,6 +1031,8 @@ public final class FunctionTestBuilder {
             ExpressionEvaluationException exception;
             try {
                 assertFalse(result.isMissing(DUMMY_WML), "expected error but was missing");
+
+                // TODO(AP-24022): use pattern matching for exhaustive case switches
                 if (result instanceof IntegerComputer ic) {
                     exception = assertThrows(ExpressionEvaluationException.class, () -> ic.compute(DUMMY_WML),
                         "evaluation should throw an error");
@@ -676,6 +1044,24 @@ public final class FunctionTestBuilder {
                         "evaluation should throw an error");
                 } else if (result instanceof StringComputer sc) {
                     exception = assertThrows(ExpressionEvaluationException.class, () -> sc.compute(DUMMY_WML),
+                        "evaluation should throw an error");
+                } else if (result instanceof LocalDateComputer ldc) {
+                    exception = assertThrows(ExpressionEvaluationException.class, () -> ldc.compute(DUMMY_WML),
+                        "evaluation should throw an error");
+                } else if (result instanceof LocalTimeComputer ltc) {
+                    exception = assertThrows(ExpressionEvaluationException.class, () -> ltc.compute(DUMMY_WML),
+                        "evaluation should throw an error");
+                } else if (result instanceof LocalDateTimeComputer ldtc) {
+                    exception = assertThrows(ExpressionEvaluationException.class, () -> ldtc.compute(DUMMY_WML),
+                        "evaluation should throw an error");
+                } else if (result instanceof ZonedDateTimeComputer zdtc) {
+                    exception = assertThrows(ExpressionEvaluationException.class, () -> zdtc.compute(DUMMY_WML),
+                        "evaluation should throw an error");
+                } else if (result instanceof TimeDurationComputer tdc) {
+                    exception = assertThrows(ExpressionEvaluationException.class, () -> tdc.compute(DUMMY_WML),
+                        "evaluation should throw an error");
+                } else if (result instanceof DateDurationComputer ddc) {
+                    exception = assertThrows(ExpressionEvaluationException.class, () -> ddc.compute(DUMMY_WML),
                         "evaluation should throw an error");
                 } else {
                     fail("unexpected computer type");

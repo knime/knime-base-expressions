@@ -233,6 +233,16 @@ public final class SignatureUtils {
         return isOneOfBaseTypes(ValueType.LOCAL_TIME, ValueType.LOCAL_DATE_TIME, ValueType.ZONED_DATE_TIME);
     }
 
+    /** @return an {@link ArgMatcher} that matches any non-optional date-time-like type with a time and date part */
+    public static ArgMatcher hasDateAndTimeInformation() {
+        return isOneOfTypes(ValueType.LOCAL_DATE_TIME, ValueType.ZONED_DATE_TIME);
+    }
+
+    /** @return an {@link ArgMatcher} that matches any date-time-like type with a time and date part */
+    public static ArgMatcher hasDateAndTimeInformationOrOpt() {
+        return isOneOfBaseTypes(ValueType.LOCAL_DATE_TIME, ValueType.ZONED_DATE_TIME);
+    }
+
     /**
      * @return an {@link ArgMatcher} that matches {@link ValueType#ZONED_DATE_TIME} and
      *         {@link ValueType#OPT_ZONED_DATE_TIME}

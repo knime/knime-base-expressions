@@ -7,6 +7,7 @@ Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Fragment-Host: org.knime.core.expressions;bundle-version="[5.5.0,6.0.0)"
 Require-Bundle: org.knime.core.expressions.testing;bundle-version="[5.5.0,6.0.0)",
  junit-jupiter-api;bundle-version="[5.9.2,6.0.0)",
- junit-jupiter-params;bundle-version="[5.9.2,6.0.0)"
+ junit-jupiter-params;bundle-version="[5.9.2,6.0.0)",
+ org.apache.commons.lang3;bundle-version="[3.14.0,4.0.0)"
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Automatic-Module-Name: org.knime.core.expressions.tests

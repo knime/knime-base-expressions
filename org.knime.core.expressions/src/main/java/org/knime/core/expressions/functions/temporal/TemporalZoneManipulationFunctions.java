@@ -44,61 +44,26 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Apr 5, 2024 (benjamin): created
+ *   Mar 19, 2025 (benjaminwilhelm): created
  */
-package org.knime.base.expressions.node;
+package org.knime.core.expressions.functions.temporal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.knime.core.expressions.ExpressionConstants;
 import org.knime.core.expressions.OperatorCategory;
-import org.knime.core.expressions.OperatorDescription;
-import org.knime.core.expressions.aggregations.BuiltInAggregations;
-import org.knime.core.expressions.aggregations.ColumnAggregation;
-import org.knime.core.expressions.functions.BuiltInFunctions;
-import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
- * @param categories a list of operator categories
- * @param functions a list of operator descriptions
+ * Implementation of built-in functions for manipulating time zones.
+ *
+ * @author David Hickey, TNG Technology Consulting GmbH
  */
-public record FunctionCatalogData(List<OperatorCategory> categories, List<OperatorDescription> functions) {
+public final class TemporalZoneManipulationFunctions {
 
-    public static final FunctionCatalogData BUILT_IN =
-        new FunctionCatalogData(getBuiltInCategories(), getBuiltInOperators(false));
-
-    public static final FunctionCatalogData BUILT_IN_NO_AGGREGATIONS =
-        new FunctionCatalogData(getBuiltInCategories(), getBuiltInOperators(true));
-
-    private static List<OperatorDescription> getBuiltInOperators(final boolean skipAggregations) {
-        var operators = new ArrayList<OperatorDescription>();
-
-        operators.addAll(BuiltInFunctions.BUILT_IN_FUNCTIONS.stream().map(ExpressionFunction::description).toList());
-        if (!skipAggregations) {
-            operators.addAll(
-                BuiltInAggregations.BUILT_IN_AGGREGATIONS.stream().map(ColumnAggregation::description).toList());
-        }
-        operators.addAll(
-            Arrays.stream(ExpressionConstants.values()).map(ExpressionConstants::toOperatorDescription).toList());
-
-        return operators;
+    private TemporalZoneManipulationFunctions() {
     }
 
-    private static List<OperatorCategory> getBuiltInCategories() {
-        var categories = new ArrayList<OperatorCategory>();
+    /** The Temporal - Zone Manipulation category */
+    public static final OperatorCategory CATEGORY_ZONE_MANIPULATION =
+        new OperatorCategory(TemporalFunctionUtils.TEMPORAL_META_CATEGORY_NAME, "Zone Manipulation",
+            "Functions for manipulating time zones.");
 
-        categories.add(ExpressionConstants.CONSTANTS_CATEGORY);
-        categories.addAll(BuiltInFunctions.META_CATEGORY_CONTROL);
-
-        categories.addAll(BuiltInFunctions.META_CATEGORY_MATH);
-        categories.addAll(BuiltInAggregations.BUILT_IN_CATEGORIES);
-
-        categories.addAll(BuiltInFunctions.META_CATEGORY_STRING);
-        categories.addAll(BuiltInFunctions.META_CATEGORY_TEMPORAL);
-
-        return categories;
-    }
+    // TODO(AP-23967) implement functions
 }
