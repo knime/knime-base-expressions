@@ -213,7 +213,27 @@ public final class BuiltInFunctions {
         // String – Encode
         StringFunctions.XML_ENCODE, //
         StringFunctions.URL_ENCODE, //
-        StringFunctions.URL_DECODE //
+        StringFunctions.URL_DECODE, //
+        // Temporal – Create & Extract
+        TemporalCreateExtractFunctions.MAKE_DATE, //
+        TemporalCreateExtractFunctions.MAKE_TIME, //
+        TemporalCreateExtractFunctions.MAKE_DATETIME, //
+        TemporalCreateExtractFunctions.MAKE_ZONED, //
+        TemporalCreateExtractFunctions.MAKE_TIME_DURATION, //
+        TemporalCreateExtractFunctions.MAKE_DATE_DURATION, //
+        TemporalCreateExtractFunctions.EXTRACT_YEAR, //
+        TemporalCreateExtractFunctions.EXTRACT_MONTH, //
+        TemporalCreateExtractFunctions.EXTRACT_DAY_OF_MONTH, //
+        TemporalCreateExtractFunctions.EXTRACT_HOUR, //
+        TemporalCreateExtractFunctions.EXTRACT_MINUTE, //
+        TemporalCreateExtractFunctions.EXTRACT_SECOND, //
+        TemporalCreateExtractFunctions.EXTRACT_NANOSECOND, //
+        TemporalCreateExtractFunctions.EXTRACT_DATE, //
+        TemporalCreateExtractFunctions.EXTRACT_TIME, //
+        TemporalCreateExtractFunctions.EXTRACT_DATETIME, //
+        TemporalCreateExtractFunctions.TO_HOURS, //
+        TemporalCreateExtractFunctions.TO_MINUTES, //
+        TemporalCreateExtractFunctions.TO_SECONDS //
     );
 
     /** Built-in functions as map */
