@@ -233,7 +233,15 @@ public final class BuiltInFunctions {
         TemporalCreateExtractFunctions.EXTRACT_DATETIME, //
         TemporalCreateExtractFunctions.TO_HOURS, //
         TemporalCreateExtractFunctions.TO_MINUTES, //
-        TemporalCreateExtractFunctions.TO_SECONDS //
+        TemporalCreateExtractFunctions.TO_SECONDS, //
+        // Temporal – Basic logic and arithmetic
+        TemporalArithmeticFunctions.TIME_DURATION_BETWEEN, //
+        TemporalArithmeticFunctions.DATE_DURATION_BETWEEN, //
+        TemporalArithmeticFunctions.ADD_TIME_DURATION, //
+        TemporalArithmeticFunctions.ADD_DATE_DURATION, //
+        TemporalArithmeticFunctions.YEARS_BETWEEN, //
+        TemporalArithmeticFunctions.MONTHS_BETWEEN, //
+        TemporalArithmeticFunctions.DAYS_BETWEEN //
     );
 
     /** Built-in functions as map */
