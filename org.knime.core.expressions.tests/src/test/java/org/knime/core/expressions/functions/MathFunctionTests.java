@@ -259,8 +259,8 @@ final class MathFunctionTests {
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
             .impl("NaN", List.of(arg(Float.NaN)), Float.NaN) //
-            .warns("< -1", List.of(arg(-2))) //
-            .warns("> 1", List.of(arg(1.001))) //
+            .warns("< -1", List.of(arg(-2)), "asin returned NaN because argument is outside the range \\[-1, 1\\].") //
+            .warns("> 1", List.of(arg(1.001)), "asin returned NaN because argument is outside the range \\[-1, 1\\].") //
             .tests();
     }
 
@@ -281,8 +281,8 @@ final class MathFunctionTests {
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
             .impl("NaN", List.of(arg(Float.NaN)), Float.NaN) //
-            .warns("< -1", List.of(arg(-2))) //
-            .warns("> 1", List.of(arg(1.001))) //
+            .warns("< -1", List.of(arg(-2)), "acos returned NaN because argument is greater than 1.") //
+            .warns("> 1", List.of(arg(1.001)), "acos returned NaN because argument is greater than 1.") //
             .tests();
     }
 
@@ -323,7 +323,7 @@ final class MathFunctionTests {
             .impl("missing FLOAT", List.of(misFloat(), arg(1.5))) //
             .impl("NaN", List.of(arg(Float.NaN), arg(5)), Float.NaN) //
             .impl("both args 0", List.of(arg(0), arg(0)), Float.NaN) //
-            .warns("both args zero", List.of(arg(0), arg(0))) //
+            .warns("both args zero", List.of(arg(0), arg(0)), "atan2 returned NaN because both inputs are zero.") //
             .tests();
     }
 
@@ -420,7 +420,7 @@ final class MathFunctionTests {
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
             .impl("NaN", List.of(arg(Float.NaN)), Float.NaN) //
-            .warns("<1", List.of(arg(0.9))) //
+            .warns("<1", List.of(arg(0.9)), "acosh returned NaN because argument is less than 1.") //
             .tests();
     }
 
@@ -444,9 +444,10 @@ final class MathFunctionTests {
             .impl("< -1", List.of(arg(-1.1)), Float.NaN) //
             .impl("> 1", List.of(arg(1.1)), Float.NaN) //
             .impl("== 1", List.of(arg(1)), Float.POSITIVE_INFINITY) //
-            .warns("< -1", List.of(arg(-2))) //
-            .warns("> 1", List.of(arg(1.001))) //
-            .warns("== 1", List.of(arg(1))) //
+            .warns("< -1", List.of(arg(-2)), "atanh returned NaN because argument is outside the range \\[-1, 1\\].") //
+            .warns("> 1", List.of(arg(1.001)),
+                "atanh returned NaN because argument is outside the range \\[-1, 1\\].") //
+            .warns("== 1", List.of(arg(1)), "atanh returned Infinity because argument is 1.0.") //
             .tests();
     }
 
@@ -469,8 +470,8 @@ final class MathFunctionTests {
             .impl("NaN", List.of(arg(Float.NaN)), Float.NaN) //
             .impl("< 0", List.of(arg(-1)), Float.NaN) //
             .impl("== 0", List.of(arg(0)), Float.NEGATIVE_INFINITY) //
-            .warns("== 0", List.of(arg(0))) //
-            .warns("< 0", List.of(arg(-1))) //
+            .warns("== 0", List.of(arg(0)), "ln returned -INFINITY because argument is 0.") //
+            .warns("< 0", List.of(arg(-1)), "ln returned NaN because argument is less than 0.") //
             .tests();
     }
 
@@ -494,8 +495,8 @@ final class MathFunctionTests {
             .impl("NaN", List.of(arg(Float.NaN)), Float.NaN) //
             .impl("< 0", List.of(arg(-1)), Float.NaN) //
             .impl("== 0", List.of(arg(0)), Float.NEGATIVE_INFINITY) //
-            .warns("== 0", List.of(arg(0))) //
-            .warns("< 0", List.of(arg(-1))) //
+            .warns("== 0", List.of(arg(0)), "log10 returned -INFINITY because argument is 0.") //
+            .warns("< 0", List.of(arg(-1)), "log10 returned NaN because argument is less than 0.") //
             .tests();
     }
 
@@ -518,8 +519,8 @@ final class MathFunctionTests {
             .impl("NaN", List.of(arg(Float.NaN)), Float.NaN) //
             .impl("< 0", List.of(arg(-1)), Float.NaN) //
             .impl("== 0", List.of(arg(0)), Float.NEGATIVE_INFINITY) //
-            .warns("== 0", List.of(arg(0))) //
-            .warns("< 0", List.of(arg(-1))) //
+            .warns("== 0", List.of(arg(0)), "log2 returned -INFINITY because argument is 0.") //
+            .warns("< 0", List.of(arg(-1)), "log2 returned NaN because argument is less than 0.") //
             .tests();
     }
 
@@ -551,12 +552,14 @@ final class MathFunctionTests {
             .impl("num > 0, base == 1", List.of(arg(5), arg(1)), Float.NaN) //
             .impl("num > 0, base < 0", List.of(arg(5), arg(-1)), Float.NaN) //
             .impl("num < 0, base > 0", List.of(arg(-5), arg(1)), Float.NaN) //
-            .warns("num == 0, base > 0", List.of(arg(0), arg(2.5))) //
-            .warns("num > 0 base == 0", List.of(arg(5), arg(0))) //
-            .warns("num == 0, base == 0", List.of(arg(0), arg(0))) //
-            .warns("num > 0, base == 1", List.of(arg(5), arg(1))) //
-            .warns("num > 0, base < 0", List.of(arg(5), arg(-1))) //
-            .warns("num < 0, base > 0", List.of(arg(-5), arg(1))) //
+            .warns("num == 0, base > 0", List.of(arg(0), arg(2.5)),
+                "log returned -INFINITY because first argument is 0.") //
+            .warns("num > 0 base == 0", List.of(arg(5), arg(0)), "log returned NaN because base is 0.") //
+            .warns("num == 0, base == 0", List.of(arg(0), arg(0)), "log returned NaN because both arguments are 0.") //
+            .warns("num > 0, base == 1", List.of(arg(5), arg(1)), "log returned NaN because base is 1.") //
+            .warns("num > 0, base < 0", List.of(arg(5), arg(-1)), "log returned NaN because base is less than 0.") //
+            .warns("num < 0, base > 0", List.of(arg(-5), arg(1)),
+                "log returned NaN because first argument is less than 0.") //
             .tests();
     }
 
@@ -579,8 +582,8 @@ final class MathFunctionTests {
             .impl("NaN", List.of(arg(Float.NaN)), Float.NaN) //
             .impl("< -1", List.of(arg(-2)), Float.NaN) //
             .impl("== -1", List.of(arg(-1)), Float.NEGATIVE_INFINITY) //
-            .warns("< -1", List.of(arg(-2))) //
-            .warns("== -1", List.of(arg(-1))) //
+            .warns("< -1", List.of(arg(-2)), "log1p returned NaN because argument is less than -1.") //
+            .warns("== -1", List.of(arg(-1)), "log1p returned -INFINITY because argument is -1.") //
             .tests();
     }
 
@@ -628,10 +631,14 @@ final class MathFunctionTests {
             .impl("0.0^negative", List.of(arg(0.0), arg(-1)), Float.NaN) //
             .impl("NaN", List.of(arg(Float.NaN), arg(5)), Float.NaN) //
             .impl("NaN2", List.of(arg(1.0), arg(Float.NaN)), Float.NaN) //
-            .warns("0^0", List.of(arg(0), arg(0))) //
-            .warns("0.0^0.0", List.of(arg(0.0), arg(0.0))) //
-            .warns("0^negative", List.of(arg(0), arg(-1))) //
-            .warns("0.0^negative", List.of(arg(0.0), arg(-1))) //
+            .warns("0^0", List.of(arg(0), arg(0)),
+                "INTEGER pow returned 0 because base is zero and exponent is non-positive.") //
+            .warns("0.0^0.0", List.of(arg(0.0), arg(0.0)),
+                "FLOAT pow returned NaN because base is zero and exponent is non-positive.") //
+            .warns("0^negative", List.of(arg(0), arg(-1)),
+                "INTEGER pow returned 0 because base is zero and exponent is non-positive.") //
+            .warns("0.0^negative", List.of(arg(0.0), arg(-1)),
+                "FLOAT pow returned NaN because base is zero and exponent is non-positive.") //
             .tests();
     }
 
@@ -653,7 +660,7 @@ final class MathFunctionTests {
             .impl("missing FLOAT", List.of(misFloat())) //
             .impl("NaN", List.of(arg(Float.NaN)), Float.NaN) //
             .impl("num < 0", List.of(arg(-0.5)), Float.NaN) //
-            .warns("num < 0", List.of(arg(-0.5))) //
+            .warns("num < 0", List.of(arg(-0.5)), "sqrt returned NaN because argument is negative.") //
             .tests();
     }
 
@@ -681,8 +688,8 @@ final class MathFunctionTests {
             .impl("missing second FLOAT", List.of(arg(5.2), misFloat())) //
             .impl("NaN", List.of(arg(Float.NaN), arg(5)), Float.NaN) //
             .impl("NaN", List.of(arg(3), arg(Float.NaN)), Float.NaN) //
-            .warns("divisor = 0", List.of(arg(14), arg(0))) //
-            .warns("divisor = 0.0", List.of(arg(14.0), arg(0.0))) //
+            .warns("divisor = 0", List.of(arg(14), arg(0)), "INTEGER mod returned 0 because divisor is zero.") //
+            .warns("divisor = 0.0", List.of(arg(14.0), arg(0.0)), "FLOAT mod returned NaN because divisor is zero.") //
             .tests();
     }
 
@@ -740,8 +747,7 @@ final class MathFunctionTests {
             .impl("NEG FLOAT", List.of(arg(-1.9)), -2) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
-            .impl("NaN", List.of(arg(Float.NaN))) //
-            .warns("NaN", List.of(arg(Float.NaN))) //
+            .missingAndWarns("NaN", List.of(arg(Float.NaN)), "floor returned MISSING because argument is NaN.") //
             .tests();
     }
 
@@ -761,8 +767,7 @@ final class MathFunctionTests {
             .impl("NEG FLOAT", List.of(arg(-1.9)), -1) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
-            .impl("NaN", List.of(arg(Float.NaN))) //
-            .warns("NaN", List.of(arg(Float.NaN))) //
+            .missingAndWarns("NaN", List.of(arg(Float.NaN)), "ceil returned MISSING because argument is NaN.") //
             .tests();
     }
 
@@ -782,8 +787,7 @@ final class MathFunctionTests {
             .impl("NEG FLOAT", List.of(arg(-1.9)), -1) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
-            .impl("NaN", List.of(arg(Float.NaN))) //
-            .warns("NaN", List.of(arg(Float.NaN))) //
+            .missingAndWarns("NaN", List.of(arg(Float.NaN)), "truncate returned MISSING because argument is NaN.") //
             .tests();
     }
 
@@ -821,8 +825,8 @@ final class MathFunctionTests {
             .impl("missing FLOAT", List.of(misFloat())) //
             .impl("NaN + precision", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
             .impl("negative precision", List.of(arg(1234.5), arg(-1)), 1230.0) //
-            .impl("NaN", List.of(arg(Float.NaN))) //
-            .warns("NaN", List.of(arg(Float.NaN))) //
+            .missingAndWarns("NaN", List.of(arg(Float.NaN)),
+                "roundhalfdown returned MISSING because argument is NaN.") //
             .tests();
     }
 
@@ -860,8 +864,7 @@ final class MathFunctionTests {
             .impl("missing precision", List.of(arg(1234.4), misInteger()), 1234.0) //
             .impl("NaN + precision", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
             .impl("negative precision", List.of(arg(123.4), arg(-1)), 120.0) //
-            .impl("NaN", List.of(arg(Float.NaN))) //
-            .warns("NaN", List.of(arg(Float.NaN))) //
+            .missingAndWarns("NaN", List.of(arg(Float.NaN)), "roundhalfup returned MISSING because argument is NaN.") //
             .tests();
     }
 
@@ -899,8 +902,7 @@ final class MathFunctionTests {
             .impl("missing precision", List.of(arg(1234.5), misInteger()), 1234.0) //
             .impl("NaN + precision", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
             .impl("negative precision", List.of(arg(123.4), arg(-1)), 120.0) //
-            .impl("NaN", List.of(arg(Float.NaN))) //
-            .warns("NaN", List.of(arg(Float.NaN))) //
+            .missingAndWarns("NaN", List.of(arg(Float.NaN)), "round returned MISSING because argument is NaN.") //
             .tests();
     }
 
@@ -922,8 +924,7 @@ final class MathFunctionTests {
             .impl("ZERO", List.of(arg(0)), 0) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
-            .impl("NaN", List.of(arg(Float.NaN))) //
-            .warns("NaN", List.of(arg(Float.NaN))) //
+            .missingAndWarns("NaN", List.of(arg(Float.NaN)), "sign returned MISSING because argument is NaN.") //
             .tests();
     }
 
@@ -1069,9 +1070,9 @@ final class MathFunctionTests {
             .impl("5c100 (r > n)", List.of(arg(5), arg(100)), 0) //
             .impl("(-8)c3 (n < 0)", List.of(arg(-8), arg(3)), 0) //
             .impl("missing INTEGER", List.of(misInteger(), arg(5))) //
-            .warns("n < 0", List.of(arg(-1), arg(2))) //
-            .warns("r < 0", List.of(arg(5), arg(-10))) //
-            .warns("n  r", List.of(arg(5), arg(6))) //
+            .warns("n < 0", List.of(arg(-1), arg(2)), "binomial returned zero because r > n.") //
+            .warns("r < 0", List.of(arg(5), arg(-10)), "binomial returned zero because r < 0.") //
+            .warns("n  r", List.of(arg(5), arg(6)), "binomial returned zero because r > n.") //
             .tests();
     }
 
@@ -1104,7 +1105,8 @@ final class MathFunctionTests {
             .impl("NaN 2", List.of(arg(1), arg(Float.NaN), arg(1)), Float.NaN) //
             .impl("NaN 3", List.of(arg(1), arg(2), arg(Float.NaN)), Float.NaN) //
             .impl("negative deviation", List.of(arg(0), arg(0), arg(-1)), Float.NaN) //
-            .warns("negative deviation", List.of(arg(0), arg(0), arg(-1))) //
+            .warns("negative deviation", List.of(arg(0), arg(0), arg(-1)),
+                "normal returned NaN because standard deviation <= 0.") //
             .tests();
     }
 
@@ -1142,7 +1144,8 @@ final class MathFunctionTests {
             .impl("NaN 2", List.of(arg(1), arg(Float.NaN), arg(1)), Float.NaN) //
             .impl("NaN 3", List.of(arg(1), arg(2), arg(Float.NaN)), Float.NaN) //
             .impl("negative deviation", List.of(arg(0), arg(0), arg(-1)), Float.NaN) //
-            .warns("negative deviation", List.of(arg(0), arg(0), arg(-1))) //
+            .warns("negative deviation", List.of(arg(0), arg(0), arg(-1)),
+                "error_function returned NaN because standard deviation <= 0.") //
             .tests();
     }
 

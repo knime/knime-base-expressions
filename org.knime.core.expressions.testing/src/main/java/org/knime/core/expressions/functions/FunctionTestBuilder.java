@@ -897,10 +897,11 @@ public final class FunctionTestBuilder {
      * @param name display name of the test
      * @param positionalArgs
      * @param namedArgs
+     * @param expectedWarningPattern a pattern that the warning message should match
      * @return <code>this</code> for chaining
      */
     public FunctionTestBuilder warns(final String name, final List<TestingArgument> positionalArgs,
-        final Map<String, TestingArgument> namedArgs) {
+        final Map<String, TestingArgument> namedArgs, final String expectedWarningPattern) {
         m_warningTests.add(DynamicTest.dynamicTest("warns - " + name, () -> {
 
             var args = m_function.signature(positionalArgs, namedArgs)
@@ -942,6 +943,10 @@ public final class FunctionTestBuilder {
             }
 
             assertFalse(warnings.isEmpty(), "expected warnings");
+            assertEquals(1, warnings.size(), "testing multiple warnings at once is not a good idea");
+            assertThat(warnings.get(0)).as("Must match expected pattern").matches(expectedWarningPattern);
+            assertThat(warnings.get(0)).as("Warning messages must have end punctuation").endsWith(".");
+            assertThat(warnings.get(0)).as("Too many dots were appended").doesNotEndWith("..");
         }));
 
         return this;
@@ -951,10 +956,12 @@ public final class FunctionTestBuilder {
     /**
      * @param name
      * @param positionalArgs
+     * @param expectedWarningPattern a pattern that the warning message should match
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder warns(final String name, final List<TestingArgument> positionalArgs) {
-        return warns(name, positionalArgs, Map.of());
+    public FunctionTestBuilder warns(final String name, final List<TestingArgument> positionalArgs,
+        final String expectedWarningPattern) {
+        return warns(name, positionalArgs, Map.of(), expectedWarningPattern);
     }
 
     /**
@@ -964,10 +971,11 @@ public final class FunctionTestBuilder {
      * @param name display name of the test
      * @param positionalArgs
      * @param namedArgs
+     * @param expectedWarningPattern a pattern that the warning message should match
      * @return <code>this</code> for chaining
      */
     public FunctionTestBuilder missingAndWarns(final String name, final List<TestingArgument> positionalArgs,
-        final Map<String, TestingArgument> namedArgs) {
+        final Map<String, TestingArgument> namedArgs, final String expectedWarningPattern) {
 
         impl(name, positionalArgs, namedArgs);
 
@@ -980,7 +988,7 @@ public final class FunctionTestBuilder {
             .collect(Collectors.toMap(Map.Entry::getKey,
                 e -> new TestingArgument(e.getValue().m_value, e.getValue().m_isMissing)));
 
-        warns(name, copiedPositionalArgs, copiedNamedArgs);
+        warns(name, copiedPositionalArgs, copiedNamedArgs, expectedWarningPattern);
 
         return this;
     }
@@ -988,10 +996,12 @@ public final class FunctionTestBuilder {
     /**
      * @param name
      * @param positionalArgs
+     * @param expectedWarningPattern a pattern that the warning message should match
      * @return <code>this</code> for chaining
      */
-    public FunctionTestBuilder missingAndWarns(final String name, final List<TestingArgument> positionalArgs) {
-        return missingAndWarns(name, positionalArgs, Map.of());
+    public FunctionTestBuilder missingAndWarns(final String name, final List<TestingArgument> positionalArgs,
+        final String expectedWarningPattern) {
+        return missingAndWarns(name, positionalArgs, Map.of(), expectedWarningPattern);
     }
 
     /**
@@ -1072,6 +1082,8 @@ public final class FunctionTestBuilder {
                 exception = ex;
             }
             assertThat(exception).hasMessageMatching(expectedErrorPattern);
+            assertThat(exception).as("Warning messages must have end punctuation").hasMessageEndingWith(".");
+            assertThat(exception.getMessage()).as("Too many dots were appended").doesNotEndWith("..");
         }));
 
         return this;

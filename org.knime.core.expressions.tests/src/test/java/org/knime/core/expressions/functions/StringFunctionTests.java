@@ -436,8 +436,10 @@ final class StringFunctionTests {
             .typing("only STRING", List.of(STRING), STRING) //
             .illegalArgs("Integer instead of string", List.of(INTEGER)) //
             .illegalArgs("only optional length", List.of(), Map.of("length", INTEGER)) //)
-            .warns("negative length", List.of(arg("abcdefg"), arg(1), arg(-1))) //
-            .warns("non-positive start", List.of(arg("abcdefg"), arg(0), arg(3))) //
+            .warns("negative length", List.of(arg("abcdefg"), arg(1), arg(-1)),
+                "The length of a substring cannot be negative. The length will be set to 0.") //
+            .warns("non-positive start", List.of(arg("abcdefg"), arg(0), arg(3)),
+                "The start index is set to 1 because the index must be 1 or higher.") //
             .impl("substr", List.of(arg("abcdefg"), arg(2), arg(3)), "bcd") //
             .impl("length is MISSING", List.of(arg("abcdefg"), arg(0), misInteger()), "abcdefg") //))
             .impl("length is negative", List.of(arg("abcdefg"), arg(1), arg(-1)), "") //

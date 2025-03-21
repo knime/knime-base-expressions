@@ -172,7 +172,7 @@ public final class TemporalCreateExtractFunctions {
                 } catch (DateTimeException e) {
                     // A value was out of the valid range.
                     // In this case the exception message is quite clear even for the user.
-                    ctx.addWarning(e.getMessage().replace("dayOfMonth", "day"));
+                    ctx.addWarning(e.getMessage().replace("DayOfMonth", "day").replace("MonthOfYear", "month") + ".");
                     return Optional.empty();
                 }
             } catch (ArithmeticException e) {
@@ -236,7 +236,9 @@ public final class TemporalCreateExtractFunctions {
                 } catch (DateTimeException e) {
                     // A value was out of the valid range.
                     // In this case the exception message is quite clear even for the user.
-                    ctx.addWarning(e.getMessage().replace("nanoOfSecond", "nanosecond"));
+                    ctx.addWarning(
+                        e.getMessage().replace("NanoOfSecond", "nanosecond").replace("SecondOfMinute", "second")
+                            .replace("MinuteOfHour", "minute").replace("HourOfDay", "hour") + ".");
                     return Optional.empty();
                 }
             } catch (ArithmeticException e) {
@@ -321,7 +323,7 @@ public final class TemporalCreateExtractFunctions {
             try {
                 zoneId = ZoneId.of(zoneIdString);
             } catch (DateTimeException ex) {
-                ctx.addWarning("Invalid zone id '%s'".formatted(zoneIdString));
+                ctx.addWarning("Invalid zone id '%s'.".formatted(zoneIdString));
                 return Optional.empty();
             }
 
@@ -376,7 +378,7 @@ public final class TemporalCreateExtractFunctions {
                     .plusSeconds(seconds) //
                     .plusNanos(nanoseconds);
             } catch (ArithmeticException e) {
-                throw new ExpressionEvaluationException("Duration values are too large", e);
+                throw new ExpressionEvaluationException("Duration values are too large.", e);
             }
         };
 
@@ -420,7 +422,7 @@ public final class TemporalCreateExtractFunctions {
 
                 return Period.of(years, months, days);
             } catch (ArithmeticException ex) {
-                throw new ExpressionEvaluationException("Period values are too large", ex);
+                throw new ExpressionEvaluationException("Duration values are too large.", ex);
             }
         };
 

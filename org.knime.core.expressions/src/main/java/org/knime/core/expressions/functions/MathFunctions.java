@@ -1390,7 +1390,7 @@ public final class MathFunctions {
                 if (c.isMissing(ctx)) {
                     return true;
                 } else if (Double.isNaN(c.compute(ctx))) {
-                    ctx.addWarning("floor returned MISSING because argument is NaN");
+                    ctx.addWarning("floor returned MISSING because argument is NaN.");
                     return true;
                 } else {
                     return false;
@@ -1430,7 +1430,7 @@ public final class MathFunctions {
                 if (c.isMissing(ctx)) {
                     return true;
                 } else if (Double.isNaN(c.compute(ctx))) {
-                    ctx.addWarning("ceil returned MISSING because argument is NaN");
+                    ctx.addWarning("ceil returned MISSING because argument is NaN.");
                     return true;
                 } else {
                     return false;
@@ -1468,7 +1468,7 @@ public final class MathFunctions {
                 if (c.isMissing(ctx)) {
                     return true;
                 } else if (Double.isNaN(c.compute(ctx))) {
-                    ctx.addWarning("truncate returned MISSING because argument is NaN");
+                    ctx.addWarning("truncate returned MISSING because argument is NaN.");
                     return true;
                 } else {
                     return false;
@@ -1644,7 +1644,7 @@ public final class MathFunctions {
                     double value = c.compute(ctx);
 
                     if (Double.isNaN(value)) {
-                        ctx.addWarning("%s returned NaN because argument is NaN".formatted(functionName));
+                        ctx.addWarning("%s returned NaN because argument is NaN.".formatted(functionName));
                         return Double.NaN;
                     } else {
                         return BigDecimal.valueOf(value).setScale(scale, mode).doubleValue();
@@ -1658,7 +1658,7 @@ public final class MathFunctions {
                         if (c.isMissing(ctx)) {
                             return true;
                         } else if (Double.isNaN(c.compute(ctx))) {
-                            ctx.addWarning("%s returned MISSING because argument is NaN".formatted(functionName));
+                            ctx.addWarning("%s returned MISSING because argument is NaN.".formatted(functionName));
                             return true;
                         }
 
@@ -1696,7 +1696,7 @@ public final class MathFunctions {
                 if (c.isMissing(ctx)) {
                     return true;
                 } else if (Double.isNaN(c.compute(ctx))) {
-                    ctx.addWarning("sign returned MISSING because argument is NaN");
+                    ctx.addWarning("sign returned MISSING because argument is NaN.");
                     return true;
                 } else {
                     return false;
@@ -1974,17 +1974,17 @@ public final class MathFunctions {
             }
 
             if (r > n) {
-                ctx.addWarning("binomial returned zero because r > n");
+                ctx.addWarning("binomial returned zero because r > n.");
                 return 0;
             }
 
             if (r < 0) {
-                ctx.addWarning("binomial returned zero because r < 0");
+                ctx.addWarning("binomial returned zero because r < 0.");
                 return 0;
             }
 
             if (n < 0) {
-                ctx.addWarning("binomial returned zero because n < 0");
+                ctx.addWarning("binomial returned zero because n < 0.");
                 return 0;
             }
 
@@ -2063,7 +2063,7 @@ public final class MathFunctions {
             if (args.has("standard_deviation") && !args.get("standard_deviation").isMissing(ctx)) {
                 standardDeviation = toFloat(args.get("standard_deviation")).compute(ctx);
                 if (isNearZero(standardDeviation) || standardDeviation < 0) {
-                    ctx.addWarning("normal returned NaN because standard deviation <= 0");
+                    ctx.addWarning("normal returned NaN because standard deviation <= 0.");
                     return Float.NaN;
                 }
             }
@@ -2137,7 +2137,7 @@ public final class MathFunctions {
             if (args.has("standard_deviation") && !args.get("standard_deviation").isMissing(ctx)) {
                 standardDeviation = toFloat(args.get("standard_deviation")).compute(ctx);
                 if (isNearZero(standardDeviation) || standardDeviation < 0) {
-                    ctx.addWarning("error_function returned NaN because standard deviation <= 0");
+                    ctx.addWarning("error_function returned NaN because standard deviation <= 0.");
                     return Float.NaN;
                 }
             }

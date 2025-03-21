@@ -118,10 +118,13 @@ final class TemporalCreateExtractFunctionTests {
             .illegalArgs("2nd arg not INTEGER", List.of(INTEGER, STRING, INTEGER)) //
             .illegalArgs("3rd arg not INTEGER", List.of(INTEGER, INTEGER, STRING)) //
             .impl("valid date", List.of(arg(2001), arg(2), arg(3)), TEST_DATE) //
-            .missingAndWarns("invalid date", List.of(arg(2001), arg(2), arg(30))) //
-            .missingAndWarns("invalid month", List.of(arg(2001), arg(13), arg(1))) //
-            .missingAndWarns("negative date", List.of(arg(2001), arg(1), arg(-1))) //
-            .missingAndWarns("negative month", List.of(arg(2001), arg(-1), arg(1))) //
+            .missingAndWarns("invalid date", List.of(arg(2001), arg(2), arg(30)), "Invalid date 'FEBRUARY 30'.") //
+            .missingAndWarns("invalid month", List.of(arg(2001), arg(13), arg(1)),
+                "Invalid value for month \\(valid values 1 - 12\\): 13.") //
+            .missingAndWarns("negative date", List.of(arg(2001), arg(1), arg(-1)),
+                "Invalid value for day \\(valid values 1 - 28\\/31\\): -1.") //
+            .missingAndWarns("negative month", List.of(arg(2001), arg(-1), arg(1)),
+                "Invalid value for month \\(valid values 1 - 12\\): -1.") //
             .errors("overflow", List.of(arg(1L + Integer.MAX_VALUE), arg(1), arg(1)), ".*overflow.*") //
             .impl("missing argument", List.of(misInteger(), arg(2), arg(3))) //
             .tests();
@@ -144,14 +147,22 @@ final class TemporalCreateExtractFunctionTests {
             .impl("valid time with nanos", List.of(arg(12), arg(34), arg(56), arg(78)), TEST_TIME.withNano(78)) //
             .impl("missing nanos default to 0", List.of(arg(12), arg(34), arg(56), misInteger()), TEST_TIME) //
             .impl("missing seconds default to 0", List.of(arg(12), arg(34), misInteger()), TEST_TIME.withSecond(0)) //
-            .missingAndWarns("invalid second", List.of(arg(12), arg(34), arg(60))) //
-            .missingAndWarns("invalid minute", List.of(arg(12), arg(60), arg(56))) //
-            .missingAndWarns("invalid hour", List.of(arg(24), arg(34), arg(56))) //
-            .missingAndWarns("invalid nano", List.of(arg(12), arg(34), arg(56), arg(1_000_000_000))) //
-            .missingAndWarns("negative second", List.of(arg(12), arg(34), arg(-1))) //
-            .missingAndWarns("negative minute", List.of(arg(12), arg(-1), arg(56))) //
-            .missingAndWarns("negative hour", List.of(arg(-1), arg(34), arg(56))) //
-            .missingAndWarns("negative nano", List.of(arg(12), arg(34), arg(56), arg(-1))) //
+            .missingAndWarns("invalid second", List.of(arg(12), arg(34), arg(60)),
+                "Invalid value for second \\(valid values 0 - 59\\): 60.") //
+            .missingAndWarns("invalid minute", List.of(arg(12), arg(60), arg(56)),
+                "Invalid value for minute \\(valid values 0 - 59\\): 60.") //
+            .missingAndWarns("invalid hour", List.of(arg(24), arg(34), arg(56)),
+                "Invalid value for hour \\(valid values 0 - 23\\): 24.") //
+            .missingAndWarns("invalid nano", List.of(arg(12), arg(34), arg(56), arg(1_000_000_000)),
+                "Invalid value for nanosecond \\(valid values 0 - 999999999\\): 1000000000.") //
+            .missingAndWarns("negative second", List.of(arg(12), arg(34), arg(-1)),
+                "Invalid value for second \\(valid values 0 - 59\\): -1.") //
+            .missingAndWarns("negative minute", List.of(arg(12), arg(-1), arg(56)),
+                "Invalid value for minute \\(valid values 0 - 59\\): -1.") //
+            .missingAndWarns("negative hour", List.of(arg(-1), arg(34), arg(56)),
+                "Invalid value for hour \\(valid values 0 - 23\\): -1.") //
+            .missingAndWarns("negative nano", List.of(arg(12), arg(34), arg(56), arg(-1)),
+                "Invalid value for nanosecond \\(valid values 0 - 999999999\\): -1.") //
             .errors("overflow", List.of(arg(1L + Integer.MAX_VALUE), arg(1), arg(1)), ".*overflow.*") //
             .impl("missing argument", List.of(misInteger(), arg(34), arg(56))) //
             .tests();
@@ -184,7 +195,7 @@ final class TemporalCreateExtractFunctionTests {
             .impl("valid zoned datetime", List.of(arg(TEST_DATE_TIME), arg("Europe/Paris")), TEST_ZONED_ID) //
             .impl("missing datetime", List.of(misLocalDateTime(), arg("Europe/Paris"))) //
             .impl("missing zone", List.of(arg(TEST_DATE_TIME), misString())) //
-            .missingAndWarns("invalid zone", List.of(arg(TEST_DATE_TIME), arg("invalid"))) //
+            .missingAndWarns("invalid zone", List.of(arg(TEST_DATE_TIME), arg("invalid")), "Invalid zone id 'invalid'.") //
             .tests();
     }
 
