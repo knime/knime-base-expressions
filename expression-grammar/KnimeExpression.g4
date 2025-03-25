@@ -64,6 +64,8 @@ NOT: 'not';
 MISSING_FALLBACK: '??';
 
 // Identifier
+IF_KEYWORD: 'if';
+ELSE_KEYWORD: 'else';
 IDENTIFIER: [a-zA-Z] [a-zA-Z_0-9]*;
 COLUMN_IDENTIFIER: '$' [a-zA-Z_0-9]*;
 FLOW_VAR_IDENTIFIER: '$$' [a-zA-Z_0-9]*;
@@ -76,6 +78,8 @@ COMMA: ',';
 BRACKET_OPEN: '(' ;
 BRACKET_CLOSE: ')';
 
+CURLY_OPEN: '{' ;
+CURLY_CLOSE: '}';
 
 // PARSER RULES
 // This ruleset will be used to parse the tokenized input string
@@ -99,11 +103,58 @@ atom:
     | ROW_NUMBER
     | ROW_ID;
 
+
+/*
+
+match (
+    match(4 = 5 -> TRUE, 6 = 7 -> FALSE) -> match (
+        3 = 4 -> "true",
+        TRUE -> "true",
+    ),
+    TRUE -> "true",
+)
+
+
+switch ($col,
+    1 -> "bar",
+    2 -> "baz",
+    3 -> "foo",
+    MISSING
+)
+
+when (
+    $col == "foo" then 1,
+    $col == "bar" -> 2.2,
+    $col == "baz" -> MISSING
+    else exp(5),
+) # -> FLOAT | MISSING
+
+if 1 == 2 then 3 else 4        # 3 if 1 == 2 else 4
+if 1 == 2 -> 3 else 4
+if (1 == 2) then
+    if $condition then
+        5
+    else
+        4
+else
+    6
+
+if (1 == 2) then
+    4
+else if $condition then
+    5
+else
+    4
+
+*/
+
 // Any valid expression
 expr:
     (shortName = FLOW_VAR_IDENTIFIER |  FLOW_VARIABLE_ACCESS_START + longName = STRING ACCESS_END )                                              # flowVarAccess
     | (shortName = COLUMN_IDENTIFIER | COLUMN_ACCESS_START + longName = STRING (COMMA + (minus = MINUS)? offset = INTEGER )? ACCESS_END)         # colAccess
     | constant = IDENTIFIER                                                                                       # constant
+    | IF_KEYWORD BRACKET_OPEN condition = expr BRACKET_CLOSE CURLY_OPEN thenBranch = expr CURLY_CLOSE ELSE_KEYWORD CURLY_OPEN elseBranch = expr CURLY_CLOSE # ifElse
+    | name = IF_KEYWORD BRACKET_OPEN arguments? BRACKET_CLOSE                                                            # functionOrAggregationCall
     | name =  IDENTIFIER BRACKET_OPEN arguments? BRACKET_CLOSE                                                    # functionOrAggregationCall
     | expr op = MISSING_FALLBACK expr                                                                             # binaryOp
     | <assoc = right> expr op = EXPONENTIATE expr                                                                 # binaryOp

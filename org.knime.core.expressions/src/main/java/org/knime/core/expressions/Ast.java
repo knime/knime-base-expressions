@@ -65,6 +65,7 @@ import org.knime.core.expressions.Ast.ColumnAccess;
 import org.knime.core.expressions.Ast.ConstantAst;
 import org.knime.core.expressions.Ast.FlowVarAccess;
 import org.knime.core.expressions.Ast.FunctionCall;
+import org.knime.core.expressions.Ast.IfElseStatement;
 import org.knime.core.expressions.Ast.UnaryOp;
 import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.functions.ExpressionFunction;
@@ -76,8 +77,8 @@ import org.knime.core.expressions.functions.ExpressionFunction;
  * @author Tobias Pietzsch
  * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
  */
-public sealed interface Ast
-    permits ColumnAccess, FlowVarAccess, UnaryOp, BinaryOp, FunctionCall, AggregationCall, ConstantAst {
+public sealed interface Ast permits ColumnAccess, FlowVarAccess, UnaryOp, BinaryOp, FunctionCall, AggregationCall,
+    IfElseStatement, ConstantAst {
 
     sealed interface ConstantAst extends Ast
         permits MissingConstant, BooleanConstant, IntegerConstant, FloatConstant, StringConstant {
@@ -979,5 +980,13 @@ public sealed interface Ast
             return args.map(Ast.class::cast).toList();
         }
 
+    }
+
+    record IfElseStatement(Ast condition, Ast thenCase, Ast elseCase, Map<String, Object> data) implements Ast {
+
+        @Override
+        public <O, E extends Exception> O accept(final AstVisitor<O, E> visitor) throws E {
+            throw new IllegalStateException("nyi");
+        }
     }
 }

@@ -100,9 +100,12 @@ import org.knime.core.expressions.antlr.KnimeExpressionParser.ColAccessContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FlowVarAccessContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FullExprContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.FunctionOrAggregationCallContext;
+import org.knime.core.expressions.antlr.KnimeExpressionParser.IfElseContext;
+import org.knime.core.expressions.antlr.KnimeExpressionParser.IfFunctionCallContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.ParenthesisedExprContext;
 import org.knime.core.expressions.antlr.KnimeExpressionParser.UnaryOpContext;
 import org.knime.core.expressions.functions.BuiltInFunctions;
+import org.knime.core.expressions.functions.ControlFlowFunctions;
 import org.knime.core.expressions.functions.ExpressionFunction;
 
 /**
@@ -258,6 +261,33 @@ final class Parser {
     }
 
     private static final class ExpressionToAstVisitor extends KnimeExpressionBaseVisitor<Ast> {
+
+        @Override
+        public Ast visitIfElse(final IfElseContext ctx) {
+            var condition = ctx.condition.accept(this);
+            var thenCase = ctx.thenBranch.accept(this);
+            var elseCase = ctx.elseBranch.accept(this);
+
+            return new Ast.IfElseStatement(condition, thenCase, elseCase, createData(getLocation(ctx)));
+        }
+
+        @Override
+        public Ast visitIfFunctionCall(final IfFunctionCallContext ctx) {
+            // TODO reuse visitFunctionOrAggregationCall
+
+            Map<String, Ast> namedArgs = ctx.arguments() == null ? Map.of() //
+                : ctx.arguments().namedArgument().stream() //
+                    .collect(Collectors.toMap(arg -> arg.argName.getText(), arg -> arg.expr().accept(this)));
+
+            List<Ast> positionalArgs = ctx.arguments() == null ? List.of() //
+                : ctx.arguments().positionalArgument().stream() //
+                    .map(arg -> arg.accept(this)).toList();
+
+            var args = ControlFlowFunctions.IF.signature(positionalArgs, namedArgs)
+                .orElseThrow(cause -> syntaxError(cause, getLocation(ctx)));
+
+            return functionCall(ControlFlowFunctions.IF, args, createData(getLocation(ctx)));
+        }
 
         @Override
         public Ast visitFullExpr(final FullExprContext ctx) {

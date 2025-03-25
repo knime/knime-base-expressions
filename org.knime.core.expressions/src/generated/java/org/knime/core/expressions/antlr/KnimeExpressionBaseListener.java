@@ -1,4 +1,4 @@
-// Generated from KnimeExpression.g4 by ANTLR 4.13.1
+// Generated from KnimeExpression.g4 by ANTLR 4.13.2
 package org.knime.core.expressions.antlr;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -125,6 +125,18 @@ public class KnimeExpressionBaseListener implements KnimeExpressionListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterIfFunctionCall(KnimeExpressionParser.IfFunctionCallContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIfFunctionCall(KnimeExpressionParser.IfFunctionCallContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterUnaryOp(KnimeExpressionParser.UnaryOpContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -132,6 +144,18 @@ public class KnimeExpressionBaseListener implements KnimeExpressionListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitUnaryOp(KnimeExpressionParser.UnaryOpContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterIfElse(KnimeExpressionParser.IfElseContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIfElse(KnimeExpressionParser.IfElseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

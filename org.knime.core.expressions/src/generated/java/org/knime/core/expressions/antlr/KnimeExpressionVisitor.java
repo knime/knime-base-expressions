@@ -1,4 +1,4 @@
-// Generated from KnimeExpression.g4 by ANTLR 4.13.1
+// Generated from KnimeExpression.g4 by ANTLR 4.13.2
 package org.knime.core.expressions.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -72,12 +72,26 @@ public interface KnimeExpressionVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAtomExpr(KnimeExpressionParser.AtomExprContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code ifFunctionCall}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIfFunctionCall(KnimeExpressionParser.IfFunctionCallContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code unaryOp}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitUnaryOp(KnimeExpressionParser.UnaryOpContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ifElse}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIfElse(KnimeExpressionParser.IfElseContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link KnimeExpressionParser#arguments}.
 	 * @param ctx the parse tree

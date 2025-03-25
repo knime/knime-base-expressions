@@ -115,6 +115,10 @@ final class ParserTest {
 
     enum ValidExpr {
 
+            // IF Statements
+            IF_STATEMENT("if ($condition) { $thenCase } else { $elseCase }", FLOAT(0)), //
+            IF_FUNCTION("if($colname, $thenCase, $elseCase)", FLOAT(0)), //
+
             // Mathematical constants
             MATH_CONSTANT_E("E", FLOAT(Math.E)), //
             MATH_CONSTANT_PI("PI", FLOAT(Math.PI)), //

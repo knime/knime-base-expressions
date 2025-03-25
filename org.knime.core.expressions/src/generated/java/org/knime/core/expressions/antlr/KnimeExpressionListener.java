@@ -1,4 +1,4 @@
-// Generated from KnimeExpression.g4 by ANTLR 4.13.1
+// Generated from KnimeExpression.g4 by ANTLR 4.13.2
 package org.knime.core.expressions.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -112,6 +112,18 @@ public interface KnimeExpressionListener extends ParseTreeListener {
 	 */
 	void exitAtomExpr(KnimeExpressionParser.AtomExprContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code ifFunctionCall}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterIfFunctionCall(KnimeExpressionParser.IfFunctionCallContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code ifFunctionCall}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitIfFunctionCall(KnimeExpressionParser.IfFunctionCallContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code unaryOp}
 	 * labeled alternative in {@link KnimeExpressionParser#expr}.
 	 * @param ctx the parse tree
@@ -123,6 +135,18 @@ public interface KnimeExpressionListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitUnaryOp(KnimeExpressionParser.UnaryOpContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code ifElse}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterIfElse(KnimeExpressionParser.IfElseContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code ifElse}
+	 * labeled alternative in {@link KnimeExpressionParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitIfElse(KnimeExpressionParser.IfElseContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link KnimeExpressionParser#arguments}.
 	 * @param ctx the parse tree
