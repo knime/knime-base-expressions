@@ -71,7 +71,7 @@ import org.knime.core.data.columnar.table.VirtualTableExtensionTable;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
-import org.knime.core.data.v2.schema.DataTableValueSchema;
+import org.knime.core.data.v2.schema.DataTableValueSchemaUtils;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileError;
@@ -314,10 +314,14 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
             var output = ExpressionRunnerUtils.constructOutputTable(inputVirtualTable,
                 expressionResult.getVirtualTable(), newColumnPosition);
 
+            final DataTableSpec outputSpec = new DataTableSpecCreator(inputTable.getDataTableSpec()) //
+                .dropAllColumns() //
+                .addColumns(DataTableValueSchemaUtils.dataColumnSpecs(output.getSchema())) //
+                .createSpec();
+
             @SuppressWarnings("resource") // #close clears the table but we still want to keep the data for the output
             var outputExtensionTable =
-                new VirtualTableExtensionTable(new ReferenceTable[]{inRefTable, expressionResult}, output,
-                    DataTableValueSchema.createDataTableSpecWithInheritedMetadata(inputTable.getDataTableSpec(), output.getSchema()),
+                new VirtualTableExtensionTable(new ReferenceTable[]{inRefTable, expressionResult}, output, outputSpec,
                     nextInputTable.size(), Node.invokeGetDataRepository(exec).generateNewID());
 
             nextInputTable = outputExtensionTable.create(exec);
