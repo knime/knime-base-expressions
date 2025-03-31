@@ -525,11 +525,12 @@ public final class StringFunctions {
         var c3 = toInteger(args.get("group"));
 
         BooleanComputerResultSupplier isMissing = ctx -> anyMissing(args).applyAsBoolean(ctx) //
-            || extractGroupOrReturnNull(c1.compute(ctx), c2.compute(ctx), (int)c3.compute(ctx),
+            || extractGroupOrReturnNull(c1.compute(ctx), c2.compute(ctx),
+                FunctionUtils.toIntExact(c3.compute(ctx), "Group index out of bounds."),
                 computeIgnoreCase(args, ctx)) == null;
 
         ComputerResultSupplier<String> value = ctx -> extractGroupOrReturnNull(c1.compute(ctx), c2.compute(ctx),
-            (int)c3.compute(ctx), computeIgnoreCase(args, ctx));
+            FunctionUtils.toIntExact(c3.compute(ctx), "Group index out of bounds."), computeIgnoreCase(args, ctx));
 
         return StringComputer.of(value, isMissing);
     }
@@ -973,7 +974,8 @@ public final class StringFunctions {
     private static Computer padEndImpl(final Arguments<Computer> args) {
         ComputerResultSupplier<String> value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
-            int targetLength = (int)toInteger(args.get("length")).compute(ctx);
+            int targetLength =
+                FunctionUtils.toIntExact(toInteger(args.get("length")).compute(ctx), "Length argument too large.");
 
             String charToAppend = args.has("char") //
                 ? takeFirstChar(toString(args.get("char")).compute(ctx), " ") //
@@ -1034,13 +1036,14 @@ public final class StringFunctions {
         ComputerResultSupplier<String> value = ctx -> {
 
             String str = toString(args.get("string")).compute(ctx);
-            int targetLength = (int)toInteger(args.get("length")).compute(ctx);
+            int targetLength =
+                FunctionUtils.toIntExact(toInteger(args.get("length")).compute(ctx), "Length argument too large.");
 
             String charToPrepend = args.has("char") //
                 ? takeFirstChar(toString(args.get("char")).compute(ctx), " ") //
                 : " ";
 
-            StringBuilder output = new StringBuilder(targetLength);
+            StringBuilder output = new StringBuilder(Math.max(0, targetLength));
 
             for (int i = 0; i < targetLength - str.length(); ++i) {
                 output.append(charToPrepend);
@@ -1142,11 +1145,13 @@ public final class StringFunctions {
         ComputerResultSupplier<String> value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
 
-            var startingIndex = 1;
+            long startingIndex = 1;
 
             if (args.has("start")) {
                 var startArgument = args.get("start");
-                startingIndex = startArgument.isMissing(ctx) ? 1 : (int)toInteger(startArgument).compute(ctx);
+                startingIndex = startArgument.isMissing(ctx) //
+                    ? 1 //
+                    : toInteger(startArgument).compute(ctx);
 
                 if (startingIndex < 1) {
                     ctx.addWarning("The start index is set to 1 because the index must be 1 or higher.");
@@ -1154,18 +1159,18 @@ public final class StringFunctions {
                 }
             }
 
-            int length = str.length() - startingIndex + 1;
+            long length = str.length() - startingIndex + 1;
 
             if (args.has("length") && !args.get("length").isMissing(ctx)) {
-                length = (int)toInteger(args.get("length")).compute(ctx);
+                length = toInteger(args.get("length")).compute(ctx);
                 if (length < 0) {
                     ctx.addWarning("The length of a substring cannot be negative. The length will be set to 0.");
                     length = 0;
                 }
             }
 
-            int clampedStart = Math.min(startingIndex - 1, str.length());
-            int clampedEnd = Math.min(clampedStart + length, str.length());
+            int clampedStart = FunctionUtils.clamped(startingIndex - 1, 0, str.length());
+            int clampedEnd = FunctionUtils.clamped(clampedStart + length, 0, str.length());
 
             return str.substring(clampedStart, clampedEnd);
         };
@@ -1205,12 +1210,12 @@ public final class StringFunctions {
     private static Computer firstCharsImpl(final Arguments<Computer> args) {
         ComputerResultSupplier<String> value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
-            int numChars = (int)toInteger(args.get("n")).compute(ctx);
+            long numChars = toInteger(args.get("n")).compute(ctx);
 
             // Clamp indices rather than erroring
             return str.substring( //
                 0, //
-                Math.min(numChars, str.length()) //
+                FunctionUtils.clamped(numChars, 0, str.length()) //
             );
         };
 
@@ -1249,11 +1254,11 @@ public final class StringFunctions {
     private static Computer lastCharsImpl(final Arguments<Computer> args) {
         ComputerResultSupplier<String> value = ctx -> {
             String str = toString(args.get("string")).compute(ctx);
-            int numChars = (int)toInteger(args.get("n")).compute(ctx);
+            long numChars = toInteger(args.get("n")).compute(ctx);
 
             // Clamp indices rather than erroring
             return str.substring( //
-                Math.max(str.length() - numChars, 0), //
+                FunctionUtils.clamped(str.length() - numChars, 0, str.length()), //
                 str.length() //
             );
         };
@@ -2033,14 +2038,14 @@ public final class StringFunctions {
 
     private static Computer parseFloatImpl(final Arguments<Computer> args) {
         return FloatComputer.of( //
-            ctx -> Float.parseFloat(toString(args.get("string")).compute(ctx)), //
+            ctx -> Double.parseDouble(toString(args.get("string")).compute(ctx)), //
             ctx -> {
                 if (anyMissing(args).applyAsBoolean(ctx)) {
                     return true;
                 }
 
                 try {
-                    Float.parseFloat(toString(args.get("string")).compute(ctx));
+                    Double.parseDouble(toString(args.get("string")).compute(ctx));
                 } catch (NumberFormatException ex) {
                     return true;
                 }
@@ -2077,14 +2082,14 @@ public final class StringFunctions {
     private static Computer parseIntImpl(final Arguments<Computer> args) {
         var stringComputer = toString(args.get("string"));
         return IntegerComputer.of( //
-            ctx -> Integer.parseInt(stringComputer.compute(ctx)), //
+            ctx -> Long.parseLong(stringComputer.compute(ctx)), //
             ctx -> {
                 if (anyMissing(args).applyAsBoolean(ctx)) {
                     return true;
                 }
 
                 try {
-                    Integer.parseInt(stringComputer.compute(ctx));
+                    Long.parseLong(stringComputer.compute(ctx));
                 } catch (NumberFormatException ex) {
                     return true;
                 }

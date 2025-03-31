@@ -112,6 +112,7 @@ import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.OperatorCategory;
 import org.knime.core.expressions.functions.ExpressionFunction;
+import org.knime.core.expressions.functions.FunctionUtils;
 import org.knime.time.util.TimeBasedGranularityUnit;
 
 /**
@@ -161,21 +162,20 @@ public final class TemporalCreateExtractFunctions {
 
     private static Computer makeDateImpl(final Arguments<Computer> args) {
         ComputerResultSupplier<Optional<LocalDate>> valueSupplier = ctx -> {
-            try {
-                var year = Math.toIntExact(((IntegerComputer)args.get("year")).compute(ctx));
-                var month = Math.toIntExact(((IntegerComputer)args.get("month")).compute(ctx));
-                var day = Math.toIntExact(((IntegerComputer)args.get("day")).compute(ctx));
+            var year = FunctionUtils.toIntExact(((IntegerComputer)args.get("year")).compute(ctx),
+                "Year was too large to parse.");
+            var month = FunctionUtils.toIntExact(((IntegerComputer)args.get("month")).compute(ctx),
+                "Month was too large to parse.");
+            var day = FunctionUtils.toIntExact(((IntegerComputer)args.get("day")).compute(ctx),
+                "Day was too large to parse.");
 
-                try {
-                    return Optional.of(LocalDate.of(year, month, day));
-                } catch (DateTimeException e) {
-                    // A value was out of the valid range.
-                    // In this case the exception message is quite clear even for the user.
-                    ctx.addWarning(e.getMessage().replace("DayOfMonth", "day").replace("MonthOfYear", "month") + ".");
-                    return Optional.empty();
-                }
-            } catch (ArithmeticException e) {
-                throw new ExpressionEvaluationException("Numerical overflow encountered while creating date value.");
+            try {
+                return Optional.of(LocalDate.of(year, month, day));
+            } catch (DateTimeException e) {
+                // A value was out of the valid range.
+                // In this case the exception message is quite clear even for the user.
+                ctx.addWarning(e.getMessage().replace("DayOfMonth", "day").replace("MonthOfYear", "month") + ".");
+                return Optional.empty();
             }
         };
 
@@ -224,24 +224,21 @@ public final class TemporalCreateExtractFunctions {
         var nanoComputer = (IntegerComputer)args.get("nanosecond", IntegerComputer.ofConstant(0));
 
         ComputerResultSupplier<Optional<LocalTime>> valueSupplier = ctx -> {
-            try {
-                var hour = Math.toIntExact(hourComputer.compute(ctx));
-                var minute = Math.toIntExact(minuteComputer.compute(ctx));
-                var second = Math.toIntExact(secondComputer.isMissing(ctx) ? 0 : secondComputer.compute(ctx));
-                var nanosecond = Math.toIntExact(nanoComputer.isMissing(ctx) ? 0 : nanoComputer.compute(ctx));
+            var hour = FunctionUtils.toIntExact(hourComputer.compute(ctx), "Hour was too large to parse.");
+            var minute = FunctionUtils.toIntExact(minuteComputer.compute(ctx), "Minute was too large to parse.");
+            var second = FunctionUtils.toIntExact(secondComputer.isMissing(ctx) ? 0 : secondComputer.compute(ctx),
+                "Second was too large to parse.");
+            var nanosecond = FunctionUtils.toIntExact(nanoComputer.isMissing(ctx) ? 0 : nanoComputer.compute(ctx),
+                "Nanosecond was too large to parse.");
 
-                try {
-                    return Optional.of(LocalTime.of(hour, minute, second, nanosecond));
-                } catch (DateTimeException e) {
-                    // A value was out of the valid range.
-                    // In this case the exception message is quite clear even for the user.
-                    ctx.addWarning(
-                        e.getMessage().replace("NanoOfSecond", "nanosecond").replace("SecondOfMinute", "second")
-                            .replace("MinuteOfHour", "minute").replace("HourOfDay", "hour") + ".");
-                    return Optional.empty();
-                }
-            } catch (ArithmeticException e) {
-                throw new ExpressionEvaluationException("Numerical overflow encountered while creating time value.");
+            try {
+                return Optional.of(LocalTime.of(hour, minute, second, nanosecond));
+            } catch (DateTimeException e) {
+                // A value was out of the valid range.
+                // In this case the exception message is quite clear even for the user.
+                ctx.addWarning(e.getMessage().replace("NanoOfSecond", "nanosecond").replace("SecondOfMinute", "second")
+                    .replace("MinuteOfHour", "minute").replace("HourOfDay", "hour") + ".");
+                return Optional.empty();
             }
         };
 
@@ -417,15 +414,14 @@ public final class TemporalCreateExtractFunctions {
 
     private static Computer makePeriodImpl(final Arguments<Computer> args) {
         ComputerResultSupplier<Period> valueSupplier = ctx -> {
-            try {
-                var years = Math.toIntExact(((IntegerComputer)args.get("years")).compute(ctx));
-                var months = Math.toIntExact(((IntegerComputer)args.get("months")).compute(ctx));
-                var days = Math.toIntExact(((IntegerComputer)args.get("days")).compute(ctx));
+            var years = FunctionUtils.toIntExact(((IntegerComputer)args.get("years")).compute(ctx),
+                "Years was too large to parse.");
+            var months = FunctionUtils.toIntExact(((IntegerComputer)args.get("months")).compute(ctx),
+                "Months was too large to parse.");
+            var days = FunctionUtils.toIntExact(((IntegerComputer)args.get("days")).compute(ctx),
+                "Days was too large to parse.");
 
-                return Period.of(years, months, days);
-            } catch (ArithmeticException ex) {
-                throw new ExpressionEvaluationException("Duration values are too large.", ex);
-            }
+            return Period.of(years, months, days);
         };
 
         return DateDurationComputer.of( //

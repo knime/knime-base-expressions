@@ -125,7 +125,7 @@ final class TemporalCreateExtractFunctionTests {
                 "Invalid value for day \\(valid values 1 - 28\\/31\\): -1.") //
             .missingAndWarns("negative month", List.of(arg(2001), arg(-1), arg(1)),
                 "Invalid value for month \\(valid values 1 - 12\\): -1.") //
-            .errors("overflow", List.of(arg(1L + Integer.MAX_VALUE), arg(1), arg(1)), ".*overflow.*") //
+            .errors("overflow", List.of(arg(1L + Integer.MAX_VALUE), arg(1), arg(1)), ".*too large.*") //
             .impl("missing argument", List.of(misInteger(), arg(2), arg(3))) //
             .tests();
     }
@@ -163,7 +163,7 @@ final class TemporalCreateExtractFunctionTests {
                 "Invalid value for hour \\(valid values 0 - 23\\): -1.") //
             .missingAndWarns("negative nano", List.of(arg(12), arg(34), arg(56), arg(-1)),
                 "Invalid value for nanosecond \\(valid values 0 - 999999999\\): -1.") //
-            .errors("overflow", List.of(arg(1L + Integer.MAX_VALUE), arg(1), arg(1)), ".*overflow.*") //
+            .errors("overflow", List.of(arg(1L + Integer.MAX_VALUE), arg(1), arg(1)), ".*too large.*") //
             .impl("missing argument", List.of(misInteger(), arg(34), arg(56))) //
             .tests();
     }
@@ -226,7 +226,7 @@ final class TemporalCreateExtractFunctionTests {
             .illegalArgs("3rd arg not INTEGER", List.of(INTEGER, INTEGER, STRING)) //
             .impl("valid period", List.of(arg(1), arg(2), arg(3)), TEST_PERIOD) //
             .impl("missing argument", List.of(misInteger(), arg(2), arg(3))) //
-            .errors("period overflow", List.of(arg((long)Integer.MAX_VALUE + 1), arg(0), arg(0)), ".*too large.*") //
+            .errors("period overflow", List.of(arg(Integer.MAX_VALUE + 1L), arg(0), arg(0)), ".*too large.*") //
             .tests();
     }
 
