@@ -178,8 +178,8 @@ public final class TemporalZoneManipulationFunctions {
         );
     }
 
-    public static final ExpressionFunction HAS_SAME_INSTANT = functionBuilder() //
-        .name("has_same_instant") //
+    public static final ExpressionFunction IS_SAME_INSTANT = functionBuilder() //
+        .name("is_same_instant") //
         .description("""
                 Check if two `ZONED_DATE_TIME` values represent the same instant in time.
 
@@ -190,9 +190,9 @@ public final class TemporalZoneManipulationFunctions {
                 * The inputs are both non-missing and represent different instants, the function returns `false`.
                 """) //
         .examples("""
-                * `has_same_instant(parse_zoned("1970-01-01T00:00:00Z"), parse_zoned("1970-01-01T01:00:00+01:00"))`
+                * `is_same_instant(parse_zoned("1970-01-01T00:00:00Z"), parse_zoned("1970-01-01T01:00:00+01:00"))`
                   returns `true`
-                * `has_same_instant(parse_zoned("1970-01-01T00:00:00Z"), parse_zoned("1970-01-01T01:00:00Z"))`
+                * `is_same_instant(parse_zoned("1970-01-01T00:00:00Z"), parse_zoned("1970-01-01T01:00:00Z"))`
                     returns `false`
                 """) //
         .keywords("zoned", "equality", "equals") //
@@ -224,57 +224,6 @@ public final class TemporalZoneManipulationFunctions {
 
                 // Note: not .equals
                 return first.isEqual(second);
-            }
-        };
-
-        return BooleanComputer.of(value, ctx -> false);
-    }
-
-    public static final ExpressionFunction HAS_SAME_WALL_TIME = functionBuilder() //
-        .name("has_same_wall_time") //
-        .description("""
-                Check if two `ZONED_DATE_TIME` values represent the same wall time.
-
-                Note: the wall time is the time that would be displayed on a clock. For the example
-                `1970-01-01T12:34:56[Europe/Paris]`, the wall time is `12:34:56`.
-
-                If:
-                * Both inputs are missing, the function returns `true`.
-                * One input is missing, the function returns `false`.
-                * The inputs are both non-missing and represent the same wall time, the function returns `true`.
-                * The inputs are both non-missing and represent different wall times, the function returns `false`.
-                """) //
-        .examples("""
-                * `has_same_wall_time(parse_zoned("1970-01-01T01:00:00Z"), parse_zoned("1970-01-01T01:00:00+01:00"))`
-                  returns `true`
-                * `has_same_wall_time(parse_zoned("1970-01-01T00:00:00Z"), parse_zoned("1970-01-01T01:00:00+01:00"))`
-                    returns `false`
-                """) //
-        .keywords("zoned", "equality", "equals") //
-        .category(CATEGORY_ZONE_MANIPULATION) //
-        .args( //
-            arg(FIRST_ARG, "The first `ZONED_DATE_TIME` value to compare.", isZonedDateTimeOrOpt()), //
-            arg(SECOND_ARG, "The second `ZONED_DATE_TIME` value to compare.", isZonedDateTimeOrOpt()) //
-        ) //
-        .returnType("A boolean indicating if the two inputs represent the same wall time", RETURN_BOOLEAN,
-            args -> BOOLEAN) //
-        .impl(TemporalZoneManipulationFunctions::hasSameWallTimeImpl) //
-        .build();
-
-    private static Computer hasSameWallTimeImpl(final Arguments<Computer> args) {
-        BooleanComputerResultSupplier value = ctx -> {
-            var firstMissing = args.get(FIRST_ARG).isMissing(ctx);
-            var secondMissing = args.get(SECOND_ARG).isMissing(ctx);
-
-            if (firstMissing && secondMissing) {
-                return true;
-            } else if (firstMissing || secondMissing) {
-                return false;
-            } else {
-                var first = ((ZonedDateTimeComputer)args.get(FIRST_ARG)).compute(ctx);
-                var second = ((ZonedDateTimeComputer)args.get(SECOND_ARG)).compute(ctx);
-
-                return first.toLocalTime().equals(second.toLocalTime());
             }
         };
 

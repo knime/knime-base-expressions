@@ -244,8 +244,7 @@ public final class BuiltInFunctions {
         TemporalArithmeticFunctions.DAYS_BETWEEN, //
         // Temporal – Timezone manipulation
         TemporalZoneManipulationFunctions.CHANGE_ZONE, //
-        TemporalZoneManipulationFunctions.HAS_SAME_INSTANT, //
-        TemporalZoneManipulationFunctions.HAS_SAME_WALL_TIME //
+        TemporalZoneManipulationFunctions.IS_SAME_INSTANT //
     );
 
     /** Built-in functions as map */

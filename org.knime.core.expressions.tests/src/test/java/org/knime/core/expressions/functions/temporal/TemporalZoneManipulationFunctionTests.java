@@ -111,7 +111,7 @@ final class TemporalZoneManipulationFunctionTests {
     List<DynamicNode> hasSameInstant() {
         var testZoneId = ZoneId.of("America/Araguaina"); // GMT-3
 
-        return new FunctionTestBuilder(TemporalZoneManipulationFunctions.HAS_SAME_INSTANT) //
+        return new FunctionTestBuilder(TemporalZoneManipulationFunctions.IS_SAME_INSTANT) //
             .typing("ZONED_DATE_TIME × 2", List.of(ZONED_DATE_TIME, ZONED_DATE_TIME), BOOLEAN) //
             .typing("OPT ZONED_DATE_TIME × 2", List.of(OPT_ZONED_DATE_TIME, OPT_ZONED_DATE_TIME), BOOLEAN) //
             .illegalArgs("Not a zoned datetime", List.of(LOCAL_DATE_TIME, ZONED_DATE_TIME)) //
@@ -120,27 +120,6 @@ final class TemporalZoneManipulationFunctionTests {
                 List.of(arg(TEST_ZONED_ID), arg(TEST_ZONED_ID.withZoneSameInstant(testZoneId))), true) //
             .impl("same wall different instants",
                 List.of(arg(TEST_ZONED_ID), arg(TEST_ZONED_ID.withZoneSameLocal(testZoneId))), false) //
-            .impl("difference wall different instants",
-                List.of(arg(TEST_ZONED_ID), arg(TEST_ZONED_ID.withZoneSameLocal(testZoneId).plusHours(-6))), false) //
-            .impl("both missing", List.of(misZonedDateTime(), misZonedDateTime()), true) //
-            .impl("first missing", List.of(misZonedDateTime(), arg(TEST_ZONED_ID)), false) //
-            .impl("second missing", List.of(arg(TEST_ZONED_ID), misZonedDateTime()), false) //
-            .tests();
-    }
-
-    @TestFactory
-    List<DynamicNode> hasSameWallTime() {
-        var testZoneId = ZoneId.of("America/Araguaina"); // GMT-3
-
-        return new FunctionTestBuilder(TemporalZoneManipulationFunctions.HAS_SAME_WALL_TIME) //
-            .typing("ZONED_DATE_TIME × 2", List.of(ZONED_DATE_TIME, ZONED_DATE_TIME), BOOLEAN) //
-            .typing("OPT ZONED_DATE_TIME × 2", List.of(OPT_ZONED_DATE_TIME, OPT_ZONED_DATE_TIME), BOOLEAN) //
-            .illegalArgs("Not a zoned datetime", List.of(LOCAL_DATE_TIME, ZONED_DATE_TIME)) //
-            .impl("identical inputs", List.of(arg(TEST_ZONED_ID), arg(TEST_ZONED_ID)), true) //
-            .impl("different wall same instant",
-                List.of(arg(TEST_ZONED_ID), arg(TEST_ZONED_ID.withZoneSameInstant(testZoneId))), false) //
-            .impl("same wall different instants",
-                List.of(arg(TEST_ZONED_ID), arg(TEST_ZONED_ID.withZoneSameLocal(testZoneId))), true) //
             .impl("difference wall different instants",
                 List.of(arg(TEST_ZONED_ID), arg(TEST_ZONED_ID.withZoneSameLocal(testZoneId).plusHours(-6))), false) //
             .impl("both missing", List.of(misZonedDateTime(), misZonedDateTime()), true) //

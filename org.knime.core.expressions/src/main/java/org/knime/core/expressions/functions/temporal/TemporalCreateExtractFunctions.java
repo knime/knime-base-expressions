@@ -292,16 +292,18 @@ public final class TemporalCreateExtractFunctions {
     public static final ExpressionFunction MAKE_ZONED = functionBuilder() //
         .name("make_zoned") //
         .description("""
-                Creates a `ZONED_DATE_TIME` from the provided date, time, and zone values.
+                Creates a `ZONED_DATE_TIME` from the provided datetime, and zone values.
 
-                If the provided date, time, or zone is missing, the function returns `MISSING`. If the provided \
+                If the provided datetime or zone is missing, the function returns `MISSING`. If the provided \
                 zone is invalid, the function returns `MISSING` and a warning is emitted.
                 """) //
         .examples("""
-                * `make_zoned(make_date(1970, 1, 1), make_time(0, 0), 'UTC')` returns `1970-01-01T00:00:00Z`
-                * `make_zoned(make_date(1970, 1, 1), make_time(0, 0), 'Europe/Berlin')` \
+                * `make_zoned(make_datetime(make_date(1970, 1, 1), make_time(0, 0)), 'UTC')` \
+                returns `1970-01-01T00:00:00Z`
+                * `make_zoned(make_datetime(make_date(1970, 1, 1), make_time(0, 0)), 'Europe/Berlin')` \
                   returns `1970-01-01T00:00:00+01:00[Europe/Berlin]`
-                * `make_zoned(make_date(1970, 1, 1), make_time(0, 0), 'Invalid/Zone')` returns `MISSING`
+                * `make_zoned(make_datetime(make_date(1970, 1, 1), make_time(0, 0)), 'Invalid/Zone')` \
+                returns `MISSING`
                 """) //
         .keywords("make", "datetime", "zoned_date_time", "create") //
         .category(CATEGORY_CREATE_EXTRACT) //
