@@ -48,6 +48,10 @@
  */
 package org.knime.core.expressions.functions;
 
+import java.util.function.Supplier;
+
+import org.knime.core.expressions.ExpressionEvaluationException;
+
 /**
  * Utilities for implementing functions.
  *
@@ -60,5 +64,37 @@ public final class FunctionUtils {
 
     static IllegalStateException calledWithIllegalArgs() {
         return new IllegalStateException("Implementation error: called function with unsupported arguments.");
+    }
+
+    /**
+     * Convert a long to an int, throwing an exception if the value is out of range for an int.
+     *
+     * @param value the long value
+     * @param message the exception message
+     * @param formattingArgs the formatting arguments for the message. Will be forwarded to
+     *            {@link String#format(String, Object...)} along with the message. Can be empty.
+     * @return the int value
+     * @throws ExpressionEvaluationException if the value is out of range
+     */
+    public static int toIntExact(final long value, final String message, final Object... formattingArgs)
+        throws ExpressionEvaluationException {
+        return toIntExact(value, () -> String.format(message, formattingArgs));
+    }
+
+    /**
+     * Convert a long to an int, throwing an exception if the value is out of range for an int.
+     *
+     * @param value the long value
+     * @param messageSupplier a supplier for the exception message. Will only be called if the value is out of range.
+     * @return the int value
+     * @throws ExpressionEvaluationException if the value is out of range
+     */
+    public static int toIntExact(final long value, final Supplier<String> messageSupplier)
+        throws ExpressionEvaluationException {
+        try {
+            return Math.toIntExact(value);
+        } catch (ArithmeticException e) { // NOSONAR we don't need to rethrow this exception
+            throw new ExpressionEvaluationException(messageSupplier.get());
+        }
     }
 }

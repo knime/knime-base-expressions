@@ -445,8 +445,7 @@ final class MathFunctionTests {
             .impl("> 1", List.of(arg(1.1)), Float.NaN) //
             .impl("== 1", List.of(arg(1)), Float.POSITIVE_INFINITY) //
             .warns("< -1", List.of(arg(-2)), "atanh returned NaN because argument is outside the range \\[-1, 1\\].") //
-            .warns("> 1", List.of(arg(1.001)),
-                "atanh returned NaN because argument is outside the range \\[-1, 1\\].") //
+            .warns("> 1", List.of(arg(1.001)), "atanh returned NaN because argument is outside the range \\[-1, 1\\].") //
             .warns("== 1", List.of(arg(1)), "atanh returned Infinity because argument is 1.0.") //
             .tests();
     }
@@ -767,6 +766,7 @@ final class MathFunctionTests {
             .impl("NEG FLOAT", List.of(arg(-1.9)), -1) //
             .impl("missing INTEGER", List.of(misInteger())) //
             .impl("missing FLOAT", List.of(misFloat())) //
+            .impl("very large float", List.of(arg(2147483650.5)), 2147483651L) //
             .missingAndWarns("NaN", List.of(arg(Float.NaN)), "ceil returned MISSING because argument is NaN.") //
             .tests();
     }
@@ -825,8 +825,7 @@ final class MathFunctionTests {
             .impl("missing FLOAT", List.of(misFloat())) //
             .impl("NaN + precision", List.of(arg(Float.NaN), arg(1)), Float.NaN) //
             .impl("negative precision", List.of(arg(1234.5), arg(-1)), 1230.0) //
-            .missingAndWarns("NaN", List.of(arg(Float.NaN)),
-                "roundhalfdown returned MISSING because argument is NaN.") //
+            .missingAndWarns("NaN", List.of(arg(Float.NaN)), "roundhalfdown returned MISSING because argument is NaN.") //
             .tests();
     }
 
