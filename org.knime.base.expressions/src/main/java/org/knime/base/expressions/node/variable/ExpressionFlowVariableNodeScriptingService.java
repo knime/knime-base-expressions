@@ -48,7 +48,6 @@
  */
 package org.knime.base.expressions.node.variable;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -59,6 +58,7 @@ import java.util.stream.Collectors;
 
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
+import org.knime.base.expressions.node.ExpressionCodeAssistant.ExpressionType;
 import org.knime.base.expressions.node.ExpressionDiagnostic;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.ExpressionDiagnosticResult;
@@ -70,6 +70,7 @@ import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.scripting.editor.CodeGenerationRequest;
 import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.ScriptingService;
 import org.knime.scripting.editor.WorkflowControl;
@@ -111,15 +112,9 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
     public final class ExpressionNodeRpcService extends RpcService {
 
         @Override
-        protected String getCodeSuggestion(final String userPrompt, final String currentCode,
-            final InputOutputModel[] inputModels) throws IOException {
-            // NB: The AI button is disabled if the input is not available
-            return ExpressionCodeAssistant.generateCode( //
-                ExpressionCodeAssistant.ExpressionType.VARIABLE, //
-                userPrompt, //
-                currentCode, //
-                inputModels //
-            );
+        protected CodeGenerationRequest getCodeSuggestionRequest(final String userPrompt, final String currentCode,
+            final InputOutputModel[] inputModels) {
+            return ExpressionCodeAssistant.createCodeGenerationRequest(ExpressionType.VARIABLE, userPrompt, currentCode, inputModels);
         }
 
         /**

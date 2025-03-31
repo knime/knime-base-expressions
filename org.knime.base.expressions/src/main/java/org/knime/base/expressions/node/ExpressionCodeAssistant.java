@@ -48,13 +48,14 @@
  */
 package org.knime.base.expressions.node;
 
-import java.io.IOException;
-
 import org.eclipse.core.runtime.Platform;
+import org.knime.scripting.editor.CodeGenerationRequest;
+import org.knime.scripting.editor.CodeGenerationRequest.Inputs;
+import org.knime.scripting.editor.CodeGenerationRequest.Outputs;
+import org.knime.scripting.editor.CodeGenerationRequest.RequestBody;
 import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils;
 import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils.NameAndType;
-import org.knime.scripting.editor.ai.HubConnection;
 
 /**
  * This class provides methods to generate expressions with the help of AI
@@ -99,69 +100,32 @@ public final class ExpressionCodeAssistant {
     }
 
     /**
-     * Query the AI to generate expressions for the given prompt
+     * Create a request to generate expression code for the given prompt and the given inputs.
      *
      * @param type The type of expression to generate, allowing to specialize for the node type (row, filter or
      *            variable)
      * @param userPrompt The user prompt to instruct the AI what to do
      * @param oldCode The current code. Should not be null, but may be an empty string.
      * @param inputModels The input models that serve as context for the AI prompt
-     *
-     * @return The newly generated code
-     * @throws IOException
+     * @return a request for the code generation endpoint
      */
-    public static String generateCode( //
+    public static CodeGenerationRequest createCodeGenerationRequest( //
         final ExpressionType type, //
         final String userPrompt, //
         final String oldCode, //
         final InputOutputModel[] inputModels //
-    ) throws IOException {
-        return generateCode(//
-            type, //
-            userPrompt, //
-            oldCode, //
-            new NameAndType[][]{InputOutputModelNameAndTypeUtils.getAllSupportedTableColumns(inputModels)}, //
-            InputOutputModelNameAndTypeUtils.getSupportedFlowVariables(inputModels) //
+    ) {
+        var inputPorts = new NameAndType[][]{InputOutputModelNameAndTypeUtils.getAllSupportedTableColumns(inputModels)};
+        var flowVariables = InputOutputModelNameAndTypeUtils.getSupportedFlowVariables(inputModels);
+        return new CodeGenerationRequest( //
+            "/code_generation/" + type.m_endpoint, //
+            new RequestBody(//
+                oldCode, //
+                userPrompt, //
+                new Inputs(inputPorts, 0, flowVariables), //
+                new Outputs(0, 0, 0, false), //
+                EXPRESSION_CORE_PLUGIN_VERSION //
+            ) //
         );
-    }
-
-    /**
-     * Query the AI to generate expressions for the given prompt
-     *
-     * @param type The type of expression to generate, allowing to specialize for the node type (row, filter or
-     *            variable)
-     * @param userPrompt The user prompt to instruct the AI what to do
-     * @param oldCode The current code. Should not be null, but may be an empty string.
-     * @param inputPorts Names and Types of all input columns
-     * @param flowVariables The incoming flow variables
-     * @return The newly generated code
-     * @throws IOException
-     */
-    public static String generateCode( //
-        final ExpressionType type, //
-        final String userPrompt, //
-        final String oldCode, //
-        final NameAndType[][] inputPorts, //
-        final NameAndType[] flowVariables //
-    ) throws IOException {
-        var request = new CodeGenerationRequest(//
-            oldCode, //
-            userPrompt, //
-            new Inputs(inputPorts, 0, flowVariables), //
-            new Outputs(0, 0, 0, false), //
-            EXPRESSION_CORE_PLUGIN_VERSION //
-        );
-
-        return HubConnection.INSTANCE.sendRequest("/code_generation/" + type.m_endpoint, request);
-    }
-
-    private record Outputs(long num_tables, long num_objects, long num_images, boolean has_view) {
-    }
-
-    private record Inputs(NameAndType[][] tables, long num_objects, NameAndType[] flow_variables) { // NOSONAR: we don't need hash or equals here
-    }
-
-    private record CodeGenerationRequest(String code, String user_query, Inputs inputs, Outputs outputs,
-        String version) {
     }
 }
