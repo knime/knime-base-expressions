@@ -68,6 +68,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -118,10 +119,10 @@ final class Parser {
 
     private static final String LOCATION_DATA_KEY = "text_location";
 
+    private static final int EXPRESSION_MAX_DEPTH = 200;
+
     private Parser() {
     }
-
-    private static final ExpressionToAstVisitor EXPRESSION_TO_AST_VISITOR = new ExpressionToAstVisitor();
 
     static Ast parse(final String expression) throws ExpressionCompileException {
         return parseTreeToAst(parseToParseTree(expression));
@@ -233,7 +234,7 @@ final class Parser {
      */
     private static Ast parseTreeToAst(final FullExprContext parseTree) throws ExpressionCompileException {
         try {
-            return parseTree.accept(EXPRESSION_TO_AST_VISITOR);
+            return parseTree.accept(new ExpressionToAstVisitor());
         } catch (RuntimeSyntaxError ex) { // NOSONAR: RuntimeSyntaxError is just a wrapper
             throw ex.toExpressionCompileException();
         }
@@ -258,6 +259,11 @@ final class Parser {
     }
 
     private static final class ExpressionToAstVisitor extends KnimeExpressionBaseVisitor<Ast> {
+        private int m_depth;
+
+        public ExpressionToAstVisitor() {
+            m_depth = 0;
+        }
 
         @Override
         public Ast visitFullExpr(final FullExprContext ctx) {
@@ -266,26 +272,42 @@ final class Parser {
 
         @Override
         public Ast visitUnaryOp(final UnaryOpContext ctx) {
-            var arg = ctx.getChild(1).accept(this);
             var op = mapUnaryOperator(ctx.op);
-            // Handle unary minus on numbers
-            if (op == UnaryOperator.MINUS) {
-                if (arg instanceof IntegerConstant intArg) {
-                    return integerConstant(-intArg.value(), createData(getLocation(ctx)));
+            return runWithDepthGuard(() -> {
+                var arg = ctx.getChild(1).accept(this);
+                // Handle unary minus on numbers
+                if (op == UnaryOperator.MINUS) {
+                    if (arg instanceof IntegerConstant intArg) {
+                        return integerConstant(-intArg.value(), createData(getLocation(ctx)));
+                    }
+                    if (arg instanceof FloatConstant floatArg) {
+                        return floatConstant(-floatArg.value(), createData(getLocation(ctx)));
+                    }
                 }
-                if (arg instanceof FloatConstant floatArg) {
-                    return floatConstant(-floatArg.value(), createData(getLocation(ctx)));
+                return unaryOp(op, arg, createData(getLocation(ctx)));
+            });
+        }
+
+        private <V> V runWithDepthGuard(final Supplier<V> run) {
+            try {
+                m_depth++;
+                if (m_depth > EXPRESSION_MAX_DEPTH) {
+                    throw depthError();
                 }
+                return run.get();
+            } finally {
+                m_depth--;
             }
-            return unaryOp(op, arg, createData(getLocation(ctx)));
         }
 
         @Override
         public Ast visitBinaryOp(final BinaryOpContext ctx) {
-            var arg1 = ctx.getChild(0).accept(this);
-            var arg2 = ctx.getChild(2).accept(this);
-            var op = mapBinaryOperator(ctx.op);
-            return binaryOp(op, arg1, arg2, createData(getLocation(ctx)));
+            return runWithDepthGuard(() -> {
+                var arg1 = ctx.getChild(0).accept(this);
+                var arg2 = ctx.getChild(2).accept(this);
+                var op = mapBinaryOperator(ctx.op);
+                return binaryOp(op, arg1, arg2, createData(getLocation(ctx)));
+            });
         }
 
         @Override
@@ -386,54 +408,57 @@ final class Parser {
             return true;
         }
 
-        public Ast visitFunctionCall(final FunctionOrAggregationCallContext ctx, final ExpressionFunction function) {
+        private Ast visitFunctionCall(final FunctionOrAggregationCallContext ctx, final ExpressionFunction function) {
+            var args = runWithDepthGuard(() -> {
+                Map<String, Ast> namedArgs = ctx.arguments() == null ? Map.of() //
+                    : ctx.arguments().namedArgument().stream() //
+                        .collect(Collectors.toMap(arg -> arg.argName.getText(), arg -> arg.expr().accept(this)));
 
-            Map<String, Ast> namedArgs = ctx.arguments() == null ? Map.of() //
-                : ctx.arguments().namedArgument().stream() //
-                    .collect(Collectors.toMap(arg -> arg.argName.getText(), arg -> arg.expr().accept(this)));
+                List<Ast> positionalArgs = ctx.arguments() == null ? List.of() //
+                    : ctx.arguments().positionalArgument().stream() //
+                        .map(arg -> arg.accept(this)).toList();
 
-            List<Ast> positionalArgs = ctx.arguments() == null ? List.of() //
-                : ctx.arguments().positionalArgument().stream() //
-                    .map(arg -> arg.accept(this)).toList();
-
-            var args = function.signature(positionalArgs, namedArgs)
-                .orElseThrow(cause -> syntaxError(cause, getLocation(ctx)));
+                return function.signature(positionalArgs, namedArgs)
+                    .orElseThrow(cause -> syntaxError(cause, getLocation(ctx)));
+            });
 
             return functionCall(function, args, createData(getLocation(ctx)));
         }
 
-        public static Ast visitAggregationCall(final FunctionOrAggregationCallContext ctx,
+        private Ast visitAggregationCall(final FunctionOrAggregationCallContext ctx,
             final ColumnAggregation aggregation) {
 
-            List<ConstantAst> positionalArgs = ctx.arguments() == null ? List.of() //
-                : ctx.arguments().positionalArgument() //
-                    .stream() //
-                    .map(arg -> visitAggregationArg(arg.expr())) //
-                    .toList();
+            var args = runWithDepthGuard(() -> {
+                List<ConstantAst> positionalArgs = ctx.arguments() == null ? List.of() //
+                    : ctx.arguments().positionalArgument() //
+                        .stream() //
+                        .map(arg -> visitAggregationArg(arg.expr())) //
+                        .toList();
 
-            Map<String, ConstantAst> namedArgs = ctx.arguments() == null ? Map.of() //
-                : ctx.arguments().namedArgument() //
-                    .stream() //
-                    .collect( //
-                        Collectors.toMap( //
-                            arg -> arg.argName.getText(), //
-                            arg -> visitAggregationArg(arg.expr()) //
-                        ) //
-                    );
+                Map<String, ConstantAst> namedArgs = ctx.arguments() == null ? Map.of() //
+                    : ctx.arguments().namedArgument() //
+                        .stream() //
+                        .collect( //
+                            Collectors.toMap( //
+                                arg -> arg.argName.getText(), //
+                                arg -> visitAggregationArg(arg.expr()) //
+                ) //
+                );
 
-            var args = aggregation.signature(positionalArgs, namedArgs)
-                .orElseThrow(cause -> syntaxError(cause, getLocation(ctx)));
+                return aggregation.signature(positionalArgs, namedArgs)
+                    .orElseThrow(cause -> syntaxError(cause, getLocation(ctx)));
+            });
 
             return aggregationCall(aggregation, args, createData(getLocation(ctx)));
         }
 
-        private static ConstantAst visitAggregationArg(final KnimeExpressionParser.ExprContext expr) {
+        private ConstantAst visitAggregationArg(final KnimeExpressionParser.ExprContext expr) {
             if (isSpecialColumnAccessor(expr)) {
                 throw typingError(
                     "`ROW_ID`, `ROW_INDEX` and `ROW_NUMBER` cannot be used as arguments for aggregation functions.",
                     getLocation(expr));
             }
-            if (expr.accept(EXPRESSION_TO_AST_VISITOR) instanceof ConstantAst constantAst) {
+            if (expr.accept(this) instanceof ConstantAst constantAst) {
                 return constantAst;
             }
 
@@ -594,6 +619,11 @@ final class Parser {
         /** Create a {@link RuntimeSyntaxError} to throw (will result in a {@link ExpressionCompileException}) */
         private static RuntimeSyntaxError typingError(final String message, final TextRange location) {
             return new RuntimeSyntaxError(ExpressionCompileError.typingError(message, location));
+        }
+
+        /** Create a {@link RuntimeSyntaxError} to throw (will result in a {@link ExpressionCompileException}) */
+        private static RuntimeSyntaxError depthError() {
+            return new RuntimeSyntaxError(ExpressionCompileError.depthError());
         }
 
         /** Create a data map containing location data to attach to the Ast */

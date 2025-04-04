@@ -117,6 +117,12 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
             CompileErrorType.EXPRESSION_EMPTY, location);
     }
 
+    static ExpressionCompileError depthError() {
+        return new ExpressionCompileError(
+            "The expression is too long or complex. Simplify the expression or split it up into multiple expressions.",
+            CompileErrorType.EXPRESSION_DEPTH, null);
+    }
+
     /** Types of compile errors */
     public enum CompileErrorType {
 
@@ -141,11 +147,8 @@ public record ExpressionCompileError(String message, CompileErrorType type, Text
              */
             AGG_NOT_IMPLEMENTED("Aggregation not implemented error"),
 
-            /**
-             * Indicates that the expression is too deeply nested or complex, causing a stack overflow during
-             * evaluation.
-             */
-            EXPRESSION_DEPTH("Expression depth exceeded error");
+            /** Indicates that the expression is too complex, which could cause a StackOverflowError. */
+            EXPRESSION_DEPTH("Expression depth error");
 
         private final String m_title;
 

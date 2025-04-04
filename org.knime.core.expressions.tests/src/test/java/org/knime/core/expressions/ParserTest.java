@@ -82,10 +82,12 @@ import static org.knime.core.expressions.AstTestUtils.STR;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.knime.core.expressions.Ast.UnaryOperator;
+import org.knime.core.expressions.ExpressionCompileError.CompileErrorType;
 import org.knime.core.expressions.aggregations.BuiltInAggregations;
 import org.knime.core.expressions.functions.MathFunctions;
 import org.knime.core.expressions.functions.StringFunctions;
@@ -277,7 +279,7 @@ final class ParserTest {
                 AGG(BuiltInAggregations.AVERAGE, List.of(STR("column name")), Map.of("ignore_nan", BOOL(true)))), //
             COL_AGG_ONLY_NAMED_ARGS("COLUMN_AVERAGE(column=\"column name\", ignore_nan=TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, List.of(),
-                    Map.of("column", STR("column name"),"ignore_nan", BOOL(true)))), //
+                    Map.of("column", STR("column name"), "ignore_nan", BOOL(true)))), //
             COL_AGG_ONLY_POS_ARGS("COLUMN_AVERAGE(\"column name\", TRUE)",
                 AGG(BuiltInAggregations.AVERAGE, STR("column name"), BOOL(true))), //
 
@@ -489,5 +491,31 @@ final class ParserTest {
     private static void assertTextLocation(final int expectedStart, final int expectedStop, final Ast node) {
         assertEquals(new TextRange(expectedStart, expectedStop), Parser.getTextLocation(node),
             "should have correct location");
+    }
+
+    @ParameterizedTest
+    @EnumSource(TooDeepExpr.class)
+    void testTooDeepExpr(final TooDeepExpr expr) {
+        var e = Assertions.assertThrows(ExpressionCompileException.class, () -> Parser.parse(expr.m_expr),
+            "Should not parse too deep expr");
+        assertEquals(1, e.getErrors().size(), "should have one error");
+        assertEquals(CompileErrorType.EXPRESSION_DEPTH, e.getErrors().get(0).type(),
+            "error type should be expression depth");
+    }
+
+    enum TooDeepExpr {
+            BINARY_OP("1" + "+1".repeat(201)), //
+            UNARY_OP("-".repeat(201) + "10"), //
+            FUNCTION_CALL("sqrt(".repeat(201) + "10_000" + ")".repeat(201)), //
+            // NOTE: Aggregation calls only accept constants, however, if it should still count towards the total depth
+            AGGREGATION_CALL("-".repeat(200) + "COLUMN_MAX('foo')"), //
+            FUNCTION_CALL_AND_UNARY_OP("-sqrt(".repeat(100) + "-1000" + ")".repeat(100)), //
+        ;
+
+        private String m_expr;
+
+        private TooDeepExpr(final String expr) {
+            m_expr = expr;
+        }
     }
 }
