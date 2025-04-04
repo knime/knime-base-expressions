@@ -295,7 +295,11 @@ public final class TemporalCreateExtractFunctions {
 
                 If the provided datetime or zone is missing, the function returns `MISSING`. If the provided \
                 zone is invalid, the function returns `MISSING` and a warning is emitted.
-                """) //
+
+                The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is \
+                case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset \
+                can be provided (e.g. `+02:00`, `-5`, `UTC+07:15`, `GMT-3`, etc.).
+                """.formatted(TemporalFunctionUtils.URL_TIMEZONE_LIST)) //
         .examples("""
                 * `make_zoned(make_datetime(make_date(1970, 1, 1), make_time(0, 0)), 'UTC')` \
                 returns `1970-01-01T00:00:00Z`
