@@ -301,12 +301,11 @@ public final class TemporalCreateExtractFunctions {
                 can be provided (e.g. `+02:00`, `-5`, `UTC+07:15`, `GMT-3`, etc.).
                 """.formatted(TemporalFunctionUtils.URL_TIMEZONE_LIST)) //
         .examples("""
-                * `make_zoned(make_datetime(make_date(1970, 1, 1), make_time(0, 0)), 'UTC')` \
-                returns `1970-01-01T00:00:00Z`
-                * `make_zoned(make_datetime(make_date(1970, 1, 1), make_time(0, 0)), 'Europe/Berlin')` \
-                  returns `1970-01-01T00:00:00+01:00[Europe/Berlin]`
-                * `make_zoned(make_datetime(make_date(1970, 1, 1), make_time(0, 0)), 'Invalid/Zone')` \
-                returns `MISSING`
+                In these examples, $datetime is a `LOCAL_DATE_TIME` equals to `1970-01-01T00:00:00`.
+
+                * `make_zoned($datetime, 'UTC')` returns `1970-01-01T00:00:00Z`
+                * `make_zoned($datetime, 'Europe/Berlin')` returns `1970-01-01T00:00:00+01:00[Europe/Berlin]`
+                * `make_zoned($datetime, 'Invalid/Zone')` returns `MISSING`
                 """) //
         .keywords("make", "datetime", "zoned_date_time", "create") //
         .category(CATEGORY_CREATE_EXTRACT) //
