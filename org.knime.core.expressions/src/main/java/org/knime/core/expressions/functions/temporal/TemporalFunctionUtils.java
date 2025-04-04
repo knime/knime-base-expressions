@@ -48,6 +48,12 @@
  */
 package org.knime.core.expressions.functions.temporal;
 
+import java.time.ZoneId;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 /**
  * @author David Hickey, TNG Technology Consulting GmbH
  */
@@ -57,4 +63,17 @@ final class TemporalFunctionUtils {
     }
 
     public static final String TEMPORAL_META_CATEGORY_NAME = "Temporal";
+
+    private static final Map<String, ZoneId> LOWER_CASE_ZONE_IDS = ZoneId.getAvailableZoneIds().stream() //
+        .collect(Collectors.toUnmodifiableMap(String::toLowerCase, ZoneId::of));
+
+    /**
+     * Parses the given zone id, ignoring its case.
+     *
+     * @param zoneId the zone id to parse
+     * @return the parsed zone id, or empty if the zone id is not valid
+     */
+    public static Optional<ZoneId> parseZoneIdCaseInsensitive(final String zoneId) {
+        return Optional.ofNullable(LOWER_CASE_ZONE_IDS.get(zoneId.toLowerCase(Locale.ROOT)));
+    }
 }

@@ -61,7 +61,6 @@ import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.any
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
 
 import java.time.DateTimeException;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
@@ -148,10 +147,8 @@ public final class TemporalZoneManipulationFunctions {
         ComputerResultSupplier<Optional<ZonedDateTime>> valueSupplier = ctx -> {
             var zoneIdName = ((StringComputer)args.get(ZONE_ARG)).compute(ctx);
 
-            ZoneId zoneId;
-            try {
-                zoneId = ZoneId.of(zoneIdName);
-            } catch (DateTimeException ex) {
+            var zoneId = TemporalFunctionUtils.parseZoneIdCaseInsensitive(zoneIdName);
+            if (zoneId.isEmpty()) {
                 ctx.addWarning("Invalid time zone ID: %s.".formatted(zoneIdName));
                 return Optional.empty();
             }
@@ -160,7 +157,7 @@ public final class TemporalZoneManipulationFunctions {
 
             if (adjustWallTime.compute(ctx)) {
                 try {
-                    return Optional.of(zoned.withZoneSameInstant(zoneId));
+                    return Optional.of(zoned.withZoneSameInstant(zoneId.get()));
                 } catch (DateTimeException ex) {
                     // means that we just exceeded the supported range
                     throw new ExpressionEvaluationException(
@@ -168,7 +165,7 @@ public final class TemporalZoneManipulationFunctions {
                         ex);
                 }
             } else {
-                return Optional.of(zoned.withZoneSameLocal(zoneId));
+                return Optional.of(zoned.withZoneSameLocal(zoneId.get()));
             }
         };
 

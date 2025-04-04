@@ -88,7 +88,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalField;
@@ -321,15 +320,13 @@ public final class TemporalCreateExtractFunctions {
             var datetime = ((LocalDateTimeComputer)args.get("datetime")).compute(ctx);
             var zoneIdString = ((StringComputer)args.get("zone")).compute(ctx);
 
-            ZoneId zoneId;
-            try {
-                zoneId = ZoneId.of(zoneIdString);
-            } catch (DateTimeException ex) {
+            var zoneId = TemporalFunctionUtils.parseZoneIdCaseInsensitive(zoneIdString);
+            if (zoneId.isEmpty()) {
                 ctx.addWarning("Invalid zone id '%s'.".formatted(zoneIdString));
                 return Optional.empty();
             }
 
-            return Optional.of(ZonedDateTime.of(datetime, zoneId));
+            return Optional.of(ZonedDateTime.of(datetime, zoneId.get()));
         };
 
         return ZonedDateTimeComputer.of( //

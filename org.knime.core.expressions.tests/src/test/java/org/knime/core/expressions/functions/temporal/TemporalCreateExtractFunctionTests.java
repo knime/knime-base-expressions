@@ -195,6 +195,7 @@ final class TemporalCreateExtractFunctionTests {
             .impl("valid zoned datetime", List.of(arg(TEST_DATE_TIME), arg("Europe/Paris")), TEST_ZONED_ID) //
             .impl("missing datetime", List.of(misLocalDateTime(), arg("Europe/Paris"))) //
             .impl("missing zone", List.of(arg(TEST_DATE_TIME), misString())) //
+            .impl("zone is case insensitive", List.of(arg(TEST_DATE_TIME), arg("europe/paris")), TEST_ZONED_ID) //
             .missingAndWarns("invalid zone", List.of(arg(TEST_DATE_TIME), arg("invalid")), "Invalid zone id 'invalid'.") //
             .tests();
     }
