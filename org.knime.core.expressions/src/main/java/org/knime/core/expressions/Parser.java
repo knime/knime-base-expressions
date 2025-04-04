@@ -68,6 +68,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -118,10 +119,10 @@ final class Parser {
 
     private static final String LOCATION_DATA_KEY = "text_location";
 
+    private static final int EXPRESSION_MAX_DEPTH = 120;
+
     private Parser() {
     }
-
-    private static final ExpressionToAstVisitor EXPRESSION_TO_AST_VISITOR = new ExpressionToAstVisitor();
 
     static Ast parse(final String expression) throws ExpressionCompileException {
         return parseTreeToAst(parseToParseTree(expression));
@@ -233,7 +234,7 @@ final class Parser {
      */
     private static Ast parseTreeToAst(final FullExprContext parseTree) throws ExpressionCompileException {
         try {
-            return parseTree.accept(EXPRESSION_TO_AST_VISITOR);
+            return parseTree.accept(new ExpressionToAstVisitor());
         } catch (RuntimeSyntaxError ex) { // NOSONAR: RuntimeSyntaxError is just a wrapper
             throw ex.toExpressionCompileException();
         }
@@ -258,6 +259,11 @@ final class Parser {
     }
 
     private static final class ExpressionToAstVisitor extends KnimeExpressionBaseVisitor<Ast> {
+        private int m_depth;
+
+        public ExpressionToAstVisitor() {
+            m_depth = 0;
+        }
 
         @Override
         public Ast visitFullExpr(final FullExprContext ctx) {
@@ -280,12 +286,26 @@ final class Parser {
             return unaryOp(op, arg, createData(getLocation(ctx)));
         }
 
+        <V> V runWithDepthGuard(final Supplier<V> run) {
+            try {
+                m_depth++;
+                if (m_depth > EXPRESSION_MAX_DEPTH) {
+                    throw depthError();
+                }
+                return run.get();
+            } finally {
+                m_depth--;
+            }
+        }
+
         @Override
         public Ast visitBinaryOp(final BinaryOpContext ctx) {
-            var arg1 = ctx.getChild(0).accept(this);
-            var arg2 = ctx.getChild(2).accept(this);
-            var op = mapBinaryOperator(ctx.op);
-            return binaryOp(op, arg1, arg2, createData(getLocation(ctx)));
+            return runWithDepthGuard(() -> {
+                var arg1 = ctx.getChild(0).accept(this);
+                var arg2 = ctx.getChild(2).accept(this);
+                var op = mapBinaryOperator(ctx.op);
+                return binaryOp(op, arg1, arg2, createData(getLocation(ctx)));
+            });
         }
 
         @Override
@@ -433,7 +453,7 @@ final class Parser {
                     "`ROW_ID`, `ROW_INDEX` and `ROW_NUMBER` cannot be used as arguments for aggregation functions.",
                     getLocation(expr));
             }
-            if (expr.accept(EXPRESSION_TO_AST_VISITOR) instanceof ConstantAst constantAst) {
+            if (expr.accept(new ExpressionToAstVisitor()) instanceof ConstantAst constantAst) {
                 return constantAst;
             }
 
@@ -594,6 +614,11 @@ final class Parser {
         /** Create a {@link RuntimeSyntaxError} to throw (will result in a {@link ExpressionCompileException}) */
         private static RuntimeSyntaxError typingError(final String message, final TextRange location) {
             return new RuntimeSyntaxError(ExpressionCompileError.typingError(message, location));
+        }
+
+        /** Create a {@link RuntimeSyntaxError} to throw (will result in a {@link ExpressionCompileException}) */
+        private static RuntimeSyntaxError depthError() {
+            return new RuntimeSyntaxError(ExpressionCompileError.depthError());
         }
 
         /** Create a data map containing location data to attach to the Ast */
