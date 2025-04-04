@@ -76,4 +76,6 @@ final class TemporalFunctionUtils {
     public static Optional<ZoneId> parseZoneIdCaseInsensitive(final String zoneId) {
         return Optional.ofNullable(LOWER_CASE_ZONE_IDS.get(zoneId.toLowerCase(Locale.ROOT)));
     }
+
+    public static final String URL_TIMEZONE_LIST = "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones";
 }
