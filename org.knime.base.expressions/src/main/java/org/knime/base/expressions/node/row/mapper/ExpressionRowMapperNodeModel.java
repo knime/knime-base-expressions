@@ -73,7 +73,6 @@ import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTable;
 import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.EvaluationContext;
-import org.knime.core.expressions.ExpressionCompileError;
 import org.knime.core.expressions.ExpressionCompileException;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
@@ -108,7 +107,6 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
 
     /**
      * @return the typed Ast for the configured expression
-     * @throws ExpressionCompileError
      */
     private static Ast getPreparedExpression(final String expression, final DataTableSpec inSpec,
         final Map<String, FlowVariable> availableFlowVariables) throws ExpressionCompileException {
@@ -170,10 +168,6 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         } catch (final ExpressionCompileException e) {
             throw new InvalidSettingsException(
                 "Error in Expression %d: %s".formatted(indexInScripts + 1, e.getMessage()), e);
-        } catch (StackOverflowError e) { // NOSONAR - Stack overflows here are caused by too complex expressions
-            throw new InvalidSettingsException(
-                "Error in Expression %s: The expression is too complex and must be simplified "
-                    + "before it can be evaluated".formatted(indexInScripts + 1));
         }
     }
 
@@ -270,26 +264,19 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         for (int i = 0; i < numberOfExpressions; ++i) {
             var subExec = exec.createSubExecutionContext(1.0 / numberOfExpressions);
 
-            ReferenceTable inRefTable;
-            Ast expression;
-            try {
-                // Parse the expression and infer the types
-                expression = getPreparedExpression(expressions.get(i), nextInputTable.getDataTableSpec(),
-                    availableFlowVariables);
+            // Parse the expression and infer the types
+            var expression =
+                getPreparedExpression(expressions.get(i), nextInputTable.getDataTableSpec(), availableFlowVariables);
 
-                // Create a reference table for the input table
-                inRefTable =
-                    ExpressionRunnerUtils.createReferenceTable(nextInputTable, subExec.createSubExecutionContext(0.33));
+            // Create a reference table for the input table
+            var inRefTable =
+                ExpressionRunnerUtils.createReferenceTable(nextInputTable, subExec.createSubExecutionContext(0.33));
 
-                // Pre-evaluate the aggregations
-                // NB: We use the inRefTable because it is guaranteed to be a columnar table
-                ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(),
-                    subExec.createSubProgress(0.33));
-            } catch (StackOverflowError e) { // NOSONAR
-                ExpressionEvaluationException cause = new ExpressionEvaluationException(
-                    "The expression is too complex and must be simplified before it can be evaluated.");
-                throw WithIndexExpressionException.forEvaluationException(i, cause);
-            }
+            // Pre-evaluate the aggregations
+            // NB: We use the inRefTable because it is guaranteed to be a columnar table
+            ExpressionRunnerUtils.evaluateAggregations(expression, inRefTable.getBufferedTable(),
+                subExec.createSubProgress(0.33));
+
             // Evaluate the expression and materialize the result
             final var finalI = i;
             EvaluationContext ctx = warning -> setWarning.accept(finalI, warning);
@@ -298,7 +285,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
             try {
                 expressionResult = ExpressionRunnerUtils.applyAndMaterializeExpression(inRefTable, expression,
                     newColumnPosition.columnName(), exec, subExec.createSubProgress(0.34), additionalInputs, ctx);
-            } catch (ExpressionEvaluationException e) { // NOSONAR
+            } catch (ExpressionEvaluationException e) {
                 throw WithIndexExpressionException.forEvaluationException(i, e);
             }
 

@@ -555,10 +555,10 @@ public final class ExpressionRunnerUtils {
         final EvaluationContext ctx //
     ) throws CanceledExecutionException, VirtualTableIncompatibleException, ExpressionEvaluationException {
         var numRows = refTable.getBufferedTable().size();
-        try {
-            var expressionResultVirtual = applyExpression(refTable.getVirtualTable(), numRows, expression,
-                outputColumnName, additionalInputs, ctx);
 
+        var expressionResultVirtual =
+            applyExpression(refTable.getVirtualTable(), numRows, expression, outputColumnName, additionalInputs, ctx);
+        try {
             return ColumnarVirtualTableMaterializer.materializer() //
                 .sources(refTable.getSources()) //
                 .materializeRowKey(false) //
@@ -571,9 +571,6 @@ public final class ExpressionRunnerUtils {
                 .materialize(expressionResultVirtual);
         } catch (ExpressionEvaluationRuntimeException e) { // NOSONAR - throwing only the cause is intended
             throw e.getCause();
-        } catch (StackOverflowError e) { // NOSONAR
-            throw new ExpressionEvaluationException(
-                "The expression is too complex and must be simplified before it can be evaluated.");
         }
     }
 

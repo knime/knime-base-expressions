@@ -62,7 +62,6 @@ import org.knime.base.expressions.node.NodeExpressionAdditionalInputs;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
-import org.knime.core.data.columnar.table.virtual.reference.ReferenceTable;
 import org.knime.core.expressions.Ast;
 import org.knime.core.expressions.ExpressionCompileException;
 import org.knime.core.expressions.ExpressionEvaluationException;
@@ -130,9 +129,6 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
             }
         } catch (final ExpressionCompileException e) {
             throw new InvalidSettingsException("Error in Expression: %s".formatted(e.getMessage()), e);
-        } catch (StackOverflowError e) { // NOSONAR
-            throw new InvalidSettingsException(
-                "The expression is too complex and must be simplified before it can be evaluated");
         }
 
         return new DataTableSpec[]{inputSpec};
@@ -189,23 +185,16 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
         var numRows = inputTable.size();
         exec.setProgress(0, "Evaluating expression");
 
-        Ast ast;
-        ReferenceTable inRefTable;
-        try {
-            // Parse the expression and infer the types
-            ast = getPreparedExpression(expression, inputTable.getDataTableSpec(), availableFlowVariables);
+        // Parse the expression and infer the types
+        var ast = getPreparedExpression(expression, inputTable.getDataTableSpec(), availableFlowVariables);
 
-            // Create a reference table for the input table
-            inRefTable = ExpressionRunnerUtils.createReferenceTable(inputTable, exec.createSubExecutionContext(0.33));
+        // Create a reference table for the input table
+        var inRefTable = ExpressionRunnerUtils.createReferenceTable(inputTable, exec.createSubExecutionContext(0.33));
 
-            // Pre-evaluate the aggregations
-            // NB: We use the inRefTable because it is guaranteed to be a columnar table
-            ExpressionRunnerUtils.evaluateAggregations(ast, inRefTable.getBufferedTable(),
-                exec.createSubProgress(0.33));
-        } catch (StackOverflowError e) { // NOSONAR
-            throw new ExpressionEvaluationException(
-                "The expression is too complex and must be simplified before it can be evaluated.");
-        }
+        // Pre-evaluate the aggregations
+        // NB: We use the inRefTable because it is guaranteed to be a columnar table
+        ExpressionRunnerUtils.evaluateAggregations(ast, inRefTable.getBufferedTable(), exec.createSubProgress(0.33));
+
         // Evaluate the expression and materialize the result
         var additionalInputs = new NodeExpressionAdditionalInputs(availableFlowVariables);
 
@@ -226,9 +215,6 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
                 .getBufferedTable();
         } catch (ExpressionEvaluationRuntimeException e) { // NOSONAR - throwing only the cause is intended
             throw e.getCause();
-        } catch (StackOverflowError e) { // NOSONAR
-            throw new ExpressionEvaluationException(
-                "The expression is too complex and must be simplified before it can be evaluated.");
         }
     }
 

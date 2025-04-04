@@ -48,7 +48,6 @@
  */
 package org.knime.base.expressions.node;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -100,14 +99,6 @@ public record ExpressionDiagnostic(String message, String shortMessage, Diagnost
      */
     public static List<ExpressionDiagnostic> fromException(final ExpressionCompileException exception) {
         return exception.getErrors().stream().map(ExpressionDiagnostic::fromError).toList();
-    }
-
-    /**
-     * @return diagnostic for a StackOverFlowError
-     */
-    public static List<ExpressionDiagnostic> fromStackOverflow() {
-        final String msg = "This expression is too complex and must be simplified before it can be evaluated.";
-        return Arrays.asList(ExpressionDiagnostic.withSameMessage(msg, DiagnosticSeverity.ERROR, null));
     }
 
     /**
