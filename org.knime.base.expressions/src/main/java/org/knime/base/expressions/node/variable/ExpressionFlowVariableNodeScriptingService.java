@@ -254,10 +254,6 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                                 ExpressionRunnerUtils.mapValueTypeToVariableType(inferredType))));
 
                     }
-                } catch (StackOverflowError ex) { // NOSONAR
-                    availableFlowVariables.put(allNewFlowVariableNames[i],
-                        invalidExpressionType(i, allNewFlowVariableNames[i]));
-                    diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromStackOverflow());
                 } catch (ExpressionCompileException ex) {
                     availableFlowVariables.put(allNewFlowVariableNames[i],
                         invalidExpressionType(i, allNewFlowVariableNames[i]));

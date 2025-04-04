@@ -167,10 +167,6 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             } catch (ExpressionCompileException e) {
                 throw new InvalidSettingsException( //
                     "Error in Expression " + (i + 1) + ": " + e.getMessage(), e);
-            } catch (StackOverflowError e) { // NOSONAR - stack overflows here are caused by too complex expressions
-                throw new InvalidSettingsException(
-                    "Error in Expression %s: The expression is too complex and must be simplified "
-                        + "before it can be evaluated".formatted(i + 1));
             }
         }
     }
@@ -279,27 +275,20 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             var expression = expressions.get(i);
             var name = names.get(i);
 
-            Computer resultComputer;
-            try {
-                // Prepare - parse and infer types
-                var ast = Expressions.parse(expression);
-                Expressions.inferTypes(ast, //
-                    ExpressionFlowVariableNodeModel::columnTypeResolver,
-                    flowVarName -> toValueType(availableFlowVariables, flowVarName) //
-                );
+            // Prepare - parse and infer types
+            var ast = Expressions.parse(expression);
+            Expressions.inferTypes(ast, //
+                ExpressionFlowVariableNodeModel::columnTypeResolver,
+                flowVarName -> toValueType(availableFlowVariables, flowVarName) //
+            );
 
-                // Evaluate
-                resultComputer = Expressions.evaluate( //
-                    ast, //
-                    column -> Optional.empty(), //
-                    flowVar -> toComputer(availableFlowVariables, flowVar), //
-                    aggregation -> Optional.empty() //
-                );
-            } catch (StackOverflowError e) { // NOSONAR
-                ExpressionEvaluationException cause = new ExpressionEvaluationException(
-                    "The expression is too complex and must be simplified before it can be evaluated.");
-                throw WithIndexExpressionException.forEvaluationException(i, cause);
-            }
+            // Evaluate
+            var resultComputer = Expressions.evaluate( //
+                ast, //
+                column -> Optional.empty(), //
+                flowVar -> toComputer(availableFlowVariables, flowVar), //
+                aggregation -> Optional.empty() //
+            );
 
             final var finalI = i;
             var outputVariable = createFlowVariableFromComputer( //
