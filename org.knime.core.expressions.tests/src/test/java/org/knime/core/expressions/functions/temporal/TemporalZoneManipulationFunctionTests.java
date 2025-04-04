@@ -99,6 +99,8 @@ final class TemporalZoneManipulationFunctionTests {
                 List.of(arg(TEST_ZONED_ID), arg("America/New_York"), arg(true)),
                 ZonedDateTime.of(TEST_DATE_TIME.minusHours(6), ZoneId.of("America/New_York"))) //
             .impl("missing zoned datetime", List.of(misZonedDateTime(), arg("America/New_York"))) //
+            .impl("zone id is case insensitive", List.of(arg(TEST_ZONED_ID), arg("aMeRiCa/NeW_YoRk")),
+                ZonedDateTime.of(TEST_DATE_TIME, ZoneId.of("America/New_York"))) //
             .errors("wall time shifted out of valid range",
                 List.of(arg(ZonedDateTime.of(LocalDateTime.MIN, ZoneId.of("UTC"))), arg("America/New_York"), arg(true)),
                 ".*range.*") //

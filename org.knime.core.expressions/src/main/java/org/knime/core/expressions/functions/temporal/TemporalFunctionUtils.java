@@ -48,6 +48,13 @@
  */
 package org.knime.core.expressions.functions.temporal;
 
+import java.time.DateTimeException;
+import java.time.ZoneId;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 /**
  * @author David Hickey, TNG Technology Consulting GmbH
  */
@@ -57,4 +64,35 @@ final class TemporalFunctionUtils {
     }
 
     public static final String TEMPORAL_META_CATEGORY_NAME = "Temporal";
+
+    /**
+     * Package private - only intended for use by this file and by tests.
+     *
+     * <p>
+     * The list of supported zone ids, converted to lower case for a quick case-insensitive lookup. Note that not
+     * everything that is supported by {@link ZoneId#of(String)} is included here, only the region-based ones.
+     * Offset-based ones aren't included here.
+     * </p>
+     */
+    static final Map<String, ZoneId> LOWER_CASE_ZONE_IDS = ZoneId.getAvailableZoneIds().stream() //
+        .collect(Collectors.toUnmodifiableMap(k -> k.toLowerCase(Locale.ROOT), ZoneId::of));
+
+    /**
+     * Parses the given zone id, ignoring its case. The given ZoneId may be region or offset based.
+     *
+     * @param zoneId the zone id to parse
+     * @return the parsed zone id, or empty if the zone id is not valid
+     */
+    public static Optional<ZoneId> parseZoneIdCaseInsensitive(final String zoneId) {
+        // Since LOWER_CASE_ZONE_IDS only includes geographical zone ids, we
+        // try ZoneId.of iff the zone id is not found in the map.
+        return Optional.ofNullable(LOWER_CASE_ZONE_IDS.get(zoneId.toLowerCase(Locale.ROOT))) //
+            .or(() -> {
+                try {
+                    return Optional.of(ZoneId.of(zoneId.toUpperCase(Locale.ROOT)));
+                } catch (DateTimeException e) { // NOSONAR don't need to log or rethrow
+                    return Optional.empty();
+                }
+            });
+    }
 }
