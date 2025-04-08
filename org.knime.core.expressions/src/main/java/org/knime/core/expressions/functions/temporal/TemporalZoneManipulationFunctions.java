@@ -51,10 +51,8 @@ package org.knime.core.expressions.functions.temporal;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_BOOLEAN;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_ZONED_DATE_TIME_MISSING;
 import static org.knime.core.expressions.SignatureUtils.arg;
-import static org.knime.core.expressions.SignatureUtils.isBoolean;
 import static org.knime.core.expressions.SignatureUtils.isStringOrOpt;
 import static org.knime.core.expressions.SignatureUtils.isZonedDateTimeOrOpt;
-import static org.knime.core.expressions.SignatureUtils.optarg;
 import static org.knime.core.expressions.ValueType.BOOLEAN;
 import static org.knime.core.expressions.ValueType.OPT_ZONED_DATE_TIME;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
@@ -99,24 +97,21 @@ public final class TemporalZoneManipulationFunctions {
         new OperatorCategory(TemporalFunctionUtils.TEMPORAL_META_CATEGORY_NAME, "Zone Manipulation",
             "Functions for manipulating time zones.");
 
-    public static final ExpressionFunction CHANGE_ZONE = functionBuilder() //
-        .name("change_zone") //
+    public static final ExpressionFunction CONVERT_TO_ZONE = functionBuilder() //
+        .name("convert_to_zone") //
         .description("""
                 Changes the time zone of a `ZONED_DATE_TIME` value to the provided
-                time zone ID.
-
-                Depending on the value of the `adjust_wall_time` parameter, the wall time
-                can be adjusted to keep the instant the same. If `adjust_wall_time` is `false`,
-                the local time will be the same as the input value, but the time zone will be
-                changed. If `adjust_wall_time` is `true`, the wall time will be adjusted so that
-                the instant remains the same.
+                time zone ID, modifying the wall time (and potentially also the date)
+                if necessary to keep the instant represented the same.
 
                 Note: the wall time is the time that would be displayed on a clock. For the example
                 `1970-01-01T12:34:56[Europe/Paris]`, the wall time is `12:34:56`.
 
                 If the provided value is missing, the function returns `MISSING`.
                 If the provided zone ID is invalid, the function returns `MISSING`
-                and a warning is emitted.
+                and a warning is emitted. If it is impossible to convert the zone, e.g. because
+                the resulting date-time would exceed the representable range, the function throws an
+                error.
 
                 The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is \
                 case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset \
@@ -127,27 +122,21 @@ public final class TemporalZoneManipulationFunctions {
 
                 * `change_zone($["input"], "Europe/Paris")`
                   returns `1970-01-01T00:00:00+01:00[Europe/Paris]`
-                * `change_zone($["input"], "Europe/Paris", false)`
-                  returns `1970-01-01T00:00:00+01:00[Europe/Paris]`
-                * `change_zone($["input"], "Europe/Paris", true)`
-                  returns `1970-01-01T01:00:00+01:00[Europe/Paris]`
+                * `change_zone($["input"], "America/New_York")`
+                  returns `1969-12-31T19:00:00-05:00[America/New_York]`
                 """) //
         .keywords("change", "zone", "timezone") //
         .category(CATEGORY_ZONE_MANIPULATION) //
         .args( //
             arg(ZONED_ARG, "The `ZONED_DATE_TIME` value to change the zone of.", isZonedDateTimeOrOpt()), //
-            arg(ZONE_ARG, "The ID of the new time zone.", isStringOrOpt()), //
-            optarg("adjust_wall_time", "Whether to adjust the wall time to keep the instant the same. False by default",
-                isBoolean()) //
+            arg(ZONE_ARG, "The ID of the new time zone.", isStringOrOpt()) //
         ) //
         .returnType("The input value with the time zone changed", RETURN_ZONED_DATE_TIME_MISSING,
             args -> OPT_ZONED_DATE_TIME) //
-        .impl(TemporalZoneManipulationFunctions::changeZoneImpl) //
+        .impl(TemporalZoneManipulationFunctions::convertZoneImpl) //
         .build();
 
-    private static Computer changeZoneImpl(final Arguments<Computer> args) {
-        var adjustWallTime = (BooleanComputer)args.get("adjust_wall_time", BooleanComputer.ofConstant(false));
-
+    private static Computer convertZoneImpl(final Arguments<Computer> args) {
         ComputerResultSupplier<Optional<ZonedDateTime>> valueSupplier = ctx -> {
             var zoneIdName = ((StringComputer)args.get(ZONE_ARG)).compute(ctx);
 
@@ -159,18 +148,74 @@ public final class TemporalZoneManipulationFunctions {
 
             var zoned = ((ZonedDateTimeComputer)args.get(ZONED_ARG)).compute(ctx);
 
-            if (adjustWallTime.compute(ctx)) {
-                try {
-                    return Optional.of(zoned.withZoneSameInstant(zoneId.get()));
-                } catch (DateTimeException ex) {
-                    // means that we just exceeded the supported range
-                    throw new ExpressionEvaluationException(
-                        "Adjusting the zone of this ZONED_DATE_TIME would cause it to exceed the representable range.",
-                        ex);
-                }
-            } else {
-                return Optional.of(zoned.withZoneSameLocal(zoneId.get()));
+            try {
+                return Optional.of(zoned.withZoneSameInstant(zoneId.get()));
+            } catch (DateTimeException ex) {
+                // means that we just exceeded the supported range
+                throw new ExpressionEvaluationException(
+                    "Adjusting the zone of this ZONED_DATE_TIME would cause it to exceed the representable range.", ex);
             }
+        };
+
+        return ZonedDateTimeComputer.of( //
+            ctx -> valueSupplier.apply(ctx).get(), //
+            ctx -> anyMissing(args).applyAsBoolean(ctx) || valueSupplier.apply(ctx).isEmpty() //
+        );
+    }
+
+    public static final ExpressionFunction REPLACE_ZONE = functionBuilder() //
+        .name("replace_zone") //
+        .description("""
+                Changes the time zone of a `ZONED_DATE_TIME` value to the provided
+                time zone ID, keeping the wall time and date the same. There are some rare instances
+                where the time will change, for example when changing close to daylight saving
+                transitions where the target time does not exist.
+
+                Note: the wall time is the time that would be displayed on a clock. For the example
+                `1970-01-01T12:34:56[Europe/Paris]`, the wall time is `12:34:56`.
+
+                If the provided value is missing, the function returns `MISSING`.
+                If the provided zone ID is invalid, the function returns `MISSING`
+                and a warning is emitted. If it is impossible to convert the zone, e.g. because
+                the resulting date-time would exceed the representable range, the function throws an
+                error.
+
+                The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is \
+                case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset \
+                can be provided (e.g. `+02:00`, `-5`, `UTC+07:15`, `GMT-3`, etc.).
+                """) //
+        .examples("""
+                In these examples, the input value is the `ZONED_DATE_TIME` `1970-01-01T00:00:00Z`.
+
+                * `replace_zone($["input"], "Europe/Paris")`
+                  returns `1970-01-01T00:00:00+01:00[Europe/Paris]`
+                  * `replace_zone($["input"], "America/New_York")`
+                  returns `1970-01-01T00:00:00-05:00[America/New_York]`
+                """) //
+        .keywords("replace", "zone", "timezone") //
+        .category(CATEGORY_ZONE_MANIPULATION) //
+        .args( //
+            arg(ZONED_ARG, "The `ZONED_DATE_TIME` value to change the zone of.", isZonedDateTimeOrOpt()), //
+            arg(ZONE_ARG, "The ID of the new time zone.", isStringOrOpt()) //
+        ) //
+        .returnType("The input value with the time zone changed", RETURN_ZONED_DATE_TIME_MISSING,
+            args -> OPT_ZONED_DATE_TIME) //
+        .impl(TemporalZoneManipulationFunctions::replaceZoneImpl) //
+        .build();
+
+    private static Computer replaceZoneImpl(final Arguments<Computer> args) {
+        ComputerResultSupplier<Optional<ZonedDateTime>> valueSupplier = ctx -> {
+            var zoneIdName = ((StringComputer)args.get(ZONE_ARG)).compute(ctx);
+
+            var zoneId = TemporalFunctionUtils.parseZoneIdCaseInsensitive(zoneIdName);
+            if (zoneId.isEmpty()) {
+                ctx.addWarning("Invalid time zone ID: %s.".formatted(zoneIdName));
+                return Optional.empty();
+            }
+
+            var zoned = ((ZonedDateTimeComputer)args.get(ZONED_ARG)).compute(ctx);
+
+            return Optional.of(zoned.withZoneSameLocal(zoneId.get()));
         };
 
         return ZonedDateTimeComputer.of( //

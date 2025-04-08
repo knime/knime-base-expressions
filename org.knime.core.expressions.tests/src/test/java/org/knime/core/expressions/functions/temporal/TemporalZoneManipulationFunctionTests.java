@@ -84,26 +84,35 @@ final class TemporalZoneManipulationFunctionTests {
     private static final ZonedDateTime TEST_ZONED_ID = ZonedDateTime.of(TEST_DATE_TIME, ZoneId.of("Europe/Paris"));
 
     @TestFactory
-    List<DynamicNode> changeZone() {
-        return new FunctionTestBuilder(TemporalZoneManipulationFunctions.CHANGE_ZONE) //
+    List<DynamicNode> convertZone() {
+        return new FunctionTestBuilder(TemporalZoneManipulationFunctions.CONVERT_TO_ZONE) //
             .typing("ZONED_DATE_TIME, STRING", List.of(ZONED_DATE_TIME, STRING), OPT_ZONED_DATE_TIME) //
             .typing("OPT ZONED_DATE_TIME, STRING", List.of(OPT_ZONED_DATE_TIME, STRING), OPT_ZONED_DATE_TIME) //
-            .typing("with boolean argument", List.of(ZONED_DATE_TIME, STRING, BOOLEAN), OPT_ZONED_DATE_TIME) //
             .illegalArgs("Not a zoned datetime", List.of(LOCAL_DATE_TIME, STRING)) //
             .impl("valid zoned datetime", List.of(arg(TEST_ZONED_ID), arg("America/New_York")),
-                ZonedDateTime.of(TEST_DATE_TIME, ZoneId.of("America/New_York"))) //
-            .impl("valid zoned datetime with no adjustment of wall time",
-                List.of(arg(TEST_ZONED_ID), arg("America/New_York"), arg(false)),
-                ZonedDateTime.of(TEST_DATE_TIME, ZoneId.of("America/New_York"))) //
-            .impl("valid zoned datetime with adjustment of wall time",
-                List.of(arg(TEST_ZONED_ID), arg("America/New_York"), arg(true)),
                 ZonedDateTime.of(TEST_DATE_TIME.minusHours(6), ZoneId.of("America/New_York"))) //
             .impl("missing zoned datetime", List.of(misZonedDateTime(), arg("America/New_York"))) //
             .impl("zone id is case insensitive", List.of(arg(TEST_ZONED_ID), arg("aMeRiCa/NeW_YoRk")),
-                ZonedDateTime.of(TEST_DATE_TIME, ZoneId.of("America/New_York"))) //
+                ZonedDateTime.of(TEST_DATE_TIME.minusHours(6), ZoneId.of("America/New_York"))) //
             .errors("wall time shifted out of valid range",
-                List.of(arg(ZonedDateTime.of(LocalDateTime.MIN, ZoneId.of("UTC"))), arg("America/New_York"), arg(true)),
+                List.of(arg(ZonedDateTime.of(LocalDateTime.MIN, ZoneId.of("UTC"))), arg("America/New_York")),
                 ".*range.*") //
+            .missingAndWarns("invalid zone", List.of(arg(TEST_ZONED_ID), arg("invalid")),
+                "Invalid time zone ID: invalid.") //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> replaceZone() {
+        return new FunctionTestBuilder(TemporalZoneManipulationFunctions.REPLACE_ZONE) //
+            .typing("ZONED_DATE_TIME, STRING", List.of(ZONED_DATE_TIME, STRING), OPT_ZONED_DATE_TIME) //
+            .typing("OPT ZONED_DATE_TIME, STRING", List.of(OPT_ZONED_DATE_TIME, STRING), OPT_ZONED_DATE_TIME) //
+            .illegalArgs("Not a zoned datetime", List.of(LOCAL_DATE_TIME, STRING)) //
+            .impl("valid zoned datetime", List.of(arg(TEST_ZONED_ID), arg("America/New_York")),
+                ZonedDateTime.of(TEST_DATE_TIME, ZoneId.of("America/New_York"))) //
+            .impl("missing zoned datetime", List.of(misZonedDateTime(), arg("America/New_York"))) //
+            .impl("zone id is case insensitive", List.of(arg(TEST_ZONED_ID), arg("aMeRiCa/NeW_YoRk")),
+                ZonedDateTime.of(TEST_DATE_TIME, ZoneId.of("America/New_York"))) //
             .missingAndWarns("invalid zone", List.of(arg(TEST_ZONED_ID), arg("invalid")),
                 "Invalid time zone ID: invalid.") //
             .tests();

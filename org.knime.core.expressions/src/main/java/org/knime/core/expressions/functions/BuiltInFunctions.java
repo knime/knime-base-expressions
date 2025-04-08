@@ -254,7 +254,8 @@ public final class BuiltInFunctions {
         TemporalArithmeticFunctions.MONTHS_BETWEEN, //
         TemporalArithmeticFunctions.DAYS_BETWEEN, //
         // Temporal – Timezone manipulation
-        TemporalZoneManipulationFunctions.CHANGE_ZONE, //
+        TemporalZoneManipulationFunctions.CONVERT_TO_ZONE, //
+        TemporalZoneManipulationFunctions.REPLACE_ZONE, //
         TemporalZoneManipulationFunctions.IS_SAME_INSTANT //
     );
 
