@@ -313,7 +313,7 @@ final class TemporalParseFormatFunctionTests {
             .impl("iso format", List.of(arg("PT1H2M3S")), TEST_DURATION) //
             .impl("long format", List.of(arg("1 hour 2 minutes 3 seconds")), TEST_DURATION) //
             .impl("short format", List.of(arg("1h2m3s")), TEST_DURATION) //
-            .impl("missing duration", List.of(FunctionTestBuilder.misDuration())) //
+            .impl("missing duration", List.of(FunctionTestBuilder.misString())) //
             .tests();
     }
 
@@ -328,7 +328,7 @@ final class TemporalParseFormatFunctionTests {
             .impl("iso format", List.of(arg("P1Y2M3D")), TEST_PERIOD) //
             .impl("long format", List.of(arg("1 year 2 months 3 days")), TEST_PERIOD) //
             .impl("short format", List.of(arg("1y2M3d")), TEST_PERIOD) //
-            .impl("missing period", List.of(FunctionTestBuilder.misPeriod())) //
+            .impl("missing period", List.of(FunctionTestBuilder.misString())) //
             .tests();
     }
 
