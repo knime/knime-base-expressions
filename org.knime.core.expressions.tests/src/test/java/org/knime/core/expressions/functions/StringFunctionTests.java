@@ -760,8 +760,8 @@ final class StringFunctionTests {
             .illegalArgs("INTEGER", List.of(FLOAT)) //
             .illegalArgs("MISSING", List.of(MISSING)) //
             .illegalArgs("2 STRINGs", List.of(STRING, STRING)) //
-            .impl("valid", List.of(arg("-1.24")), Double.parseDouble("-1.24")) //
-            .impl("valid int", List.of(arg("10")), Double.parseDouble("10.0")) //
+            .impl("valid", List.of(arg("-1.24")), -1.24) //
+            .impl("valid int", List.of(arg("10")), 10.0) //
             .impl("invalid", List.of(arg("1.3a"))) //
             .impl("MISSING", List.of(misString())) //
             .impl("very large float", List.of(arg("3e39")), 3e39) //
