@@ -60,10 +60,10 @@ public enum BenchmarkExpression {
         /** Binary operations with two constants */
         SIMPLE_ARITHMETIC("1 + 2 # A basic arithmetic operation with a comment", rowIdx -> 1 + 2), //
 
-        /** Binary operations building a deep tree */
-        DEEP_AST("1" + "+1".repeat(2_000), DeepAstJavaImpl::run), //
+        /** Binary operations building a deep tree (exactly the depth limit) */
+        DEEP_AST("1" + "+1".repeat(200), DeepAstJavaImpl::run), //
 
-        /** Nests a function call 200 times */
+        /** Nests a function call 200 times (exactly the depth limit) */
         DEEP_FN_CALLS("sqrt(".repeat(200) + "10_000" + ")".repeat(200), DeepFnCallsJavaImpl::run), //
 
         /** Medium complexity expression with function calls logic operators and string concatenation */
