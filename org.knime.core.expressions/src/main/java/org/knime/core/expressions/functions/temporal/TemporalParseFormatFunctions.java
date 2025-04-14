@@ -270,7 +270,7 @@ public final class TemporalParseFormatFunctions {
             arg(DATE_ARG, "The string to parse into a date.", isStringOrOpt()), //
             optarg(FORMAT_ARG, "The format to use for parsing the date. If not specified, the default format is used.",
                 isString()), //
-            optarg(LOCALE_ARG, "The local to use for parsing the date. If not specified, the locale en-US is used.",
+            optarg(LOCALE_ARG, "The locale to use for parsing the date. If not specified, `en-US` is used.", //
                 isString()) //
         ) //
         .returnType("A `LOCAL_DATE` representing the provided string argument", RETURN_LOCAL_DATE_MISSING,
@@ -362,7 +362,7 @@ public final class TemporalParseFormatFunctions {
             arg(TIME_ARG, "The string to parse into a time.", isStringOrOpt()), //
             optarg(FORMAT_ARG, "The format to use for parsing the time. If not specified, the default format is used.",
                 isString()), //
-            optarg(LOCALE_ARG, "The local to use for parsing the date. If not specified, the system default is used.",
+            optarg(LOCALE_ARG, "The locale to use for parsing the time. If not specified, `en-US` is used.", //
                 isString()) //
         ) //
         .returnType("A `LOCAL_TIME` representing the provided string argument", RETURN_LOCAL_TIME_MISSING,
@@ -454,7 +454,7 @@ public final class TemporalParseFormatFunctions {
             optarg(FORMAT_ARG,
                 "The format to use for parsing the date time. If not specified, the default format is used.",
                 isString()), //
-            optarg(LOCALE_ARG, "The local to use for parsing the date. If not specified, the system default is used.",
+            optarg(LOCALE_ARG, "The locale to use for parsing the date and time. If not specified, `en-US` is used.",
                 isString()) //
         ) //
         .returnType("A `LOCAL_DATE_TIME` representing the provided string argument", RETURN_LOCAL_DATE_TIME_MISSING,
@@ -548,7 +548,7 @@ public final class TemporalParseFormatFunctions {
             optarg(FORMAT_ARG,
                 "The format to use for parsing the zoned date time. If not specified, the default format is used.",
                 isString()), //
-            optarg(LOCALE_ARG, "The local to use for parsing the date. If not specified, the system default is used.",
+            optarg(LOCALE_ARG, "The locale to use for parsing the date and time. If not specified, `en-US` is used.",
                 isString()) //
         ) //
         .returnType("A `ZONED_DATE_TIME` representing the provided string argument", RETURN_ZONED_DATE_TIME_MISSING,
@@ -779,8 +779,8 @@ public final class TemporalParseFormatFunctions {
         .args( //
             arg(DATE_ARG, "The date to format as a string.", isLocalDateOrOpt()), //
             arg(FORMAT_ARG, "The format to use for formatting the temporal value.", isString()), //
-            optarg(LOCALE_ARG,
-                "The local to use for formatting the date. If not specified, the system default is used.", isString())//
+            optarg(LOCALE_ARG, "The locale to use for formatting the date. If not specified, `en-US` is used.",
+                isString())//
         ) //
         .returnType("A string representing the provided `LOCAL_DATE`", RETURN_STRING_MISSING, args -> OPT_STRING) //
         .impl(formatTemporalImpl(DATE_ARG, LocalDate::from)) //
@@ -817,8 +817,8 @@ public final class TemporalParseFormatFunctions {
         .args( //
             arg(TIME_ARG, "The time value to format as a string.", isLocalTimeOrOpt()), //
             arg(FORMAT_ARG, "The format to use.", isString()), //
-            optarg(LOCALE_ARG,
-                "The local to use for formatting the time. If not specified, the system default is used.", isString())//
+            optarg(LOCALE_ARG, "The locale to use for formatting the time. If not specified, `en-US` is used.",
+                isString())//
         ) //
         .returnType("A string representing the provided `LOCAL_TIME`", RETURN_STRING_MISSING, args -> OPT_STRING) //
         .impl(formatTemporalImpl(TIME_ARG, LocalTime::from)) //
@@ -856,8 +856,7 @@ public final class TemporalParseFormatFunctions {
         .args( //
             arg(DATE_TIME_ARG, "The date time value to format as a string.", hasDateAndTimeInformationOrOpt()), //
             arg(FORMAT_ARG, "The format to use.", isString()), //
-            optarg(LOCALE_ARG,
-                "The local to use for formatting the date time. If not specified, the system default is used.",
+            optarg(LOCALE_ARG, "The locale to use for formatting the date and time. If not specified, `en-US` is used.",
                 isString()) //
         ) //
         .returnType("A string representing the provided date-time", RETURN_STRING_MISSING, args -> OPT_STRING) //
