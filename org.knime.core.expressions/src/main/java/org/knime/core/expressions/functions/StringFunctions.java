@@ -74,7 +74,9 @@ import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.OptionalDouble;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -2024,6 +2026,7 @@ public final class StringFunctions {
         .examples("""
                 * `parse_float("3.14")` returns 3.14
                 * `parse_float("3")` returns 3.0
+                * `parse_float("314_159.265_358")` returns 314159.265358
                 * `parse_float("hello")` returns `MISSING`
                 """) //
         .keywords("cast", "types") //
@@ -2037,21 +2040,21 @@ public final class StringFunctions {
         .build();
 
     private static Computer parseFloatImpl(final Arguments<Computer> args) {
+        ComputerResultSupplier<OptionalDouble> value = ctx -> {
+            var computedString = toString(args.get("string")) //
+                .compute(ctx) //
+                .replace("_", "");
+            try {
+                return OptionalDouble.of(Double.parseDouble(computedString));
+            } catch (NumberFormatException ex) {
+                return OptionalDouble.empty();
+            }
+        };
+
         return FloatComputer.of( //
-            ctx -> Double.parseDouble(toString(args.get("string")).compute(ctx)), //
-            ctx -> {
-                if (anyMissing(args).applyAsBoolean(ctx)) {
-                    return true;
-                }
-
-                try {
-                    Double.parseDouble(toString(args.get("string")).compute(ctx));
-                } catch (NumberFormatException ex) {
-                    return true;
-                }
-
-                return false;
-            });
+            ctx -> value.apply(ctx).orElseThrow(), //
+            ctx -> anyMissing(args).applyAsBoolean(ctx) || value.apply(ctx).isEmpty() //
+        );
     }
 
     public static final ExpressionFunction PARSE_INT = functionBuilder() //
@@ -2066,6 +2069,7 @@ public final class StringFunctions {
                 """) //
         .examples("""
                 * `parse_int("123")` returns 123
+                * `parse_int("123_456")` returns 123456
                 * `parse_int("123.0")` returns `MISSING`
                 * `parse_int("hello")` returns `MISSING`
                 """) //
@@ -2080,22 +2084,21 @@ public final class StringFunctions {
         .build();
 
     private static Computer parseIntImpl(final Arguments<Computer> args) {
-        var stringComputer = toString(args.get("string"));
+        ComputerResultSupplier<OptionalLong> value = ctx -> {
+            var computedString = toString(args.get("string")) //
+                .compute(ctx) //
+                .replace("_", "");
+            try {
+                return OptionalLong.of(Long.parseLong(computedString));
+            } catch (NumberFormatException ex) {
+                return OptionalLong.empty();
+            }
+        };
+
         return IntegerComputer.of( //
-            ctx -> Long.parseLong(stringComputer.compute(ctx)), //
-            ctx -> {
-                if (anyMissing(args).applyAsBoolean(ctx)) {
-                    return true;
-                }
-
-                try {
-                    Long.parseLong(stringComputer.compute(ctx));
-                } catch (NumberFormatException ex) {
-                    return true;
-                }
-
-                return false;
-            });
+            ctx -> value.apply(ctx).orElseThrow(), //
+            ctx -> anyMissing(args).applyAsBoolean(ctx) || value.apply(ctx).isEmpty() //
+        );
     }
 
     public static final ExpressionFunction PARSE_BOOL = functionBuilder() //

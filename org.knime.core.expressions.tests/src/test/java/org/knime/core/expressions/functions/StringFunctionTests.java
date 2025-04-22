@@ -765,6 +765,7 @@ final class StringFunctionTests {
             .impl("invalid", List.of(arg("1.3a"))) //
             .impl("MISSING", List.of(misString())) //
             .impl("very large float", List.of(arg("3e39")), 3e39) //
+            .impl("with underscores", List.of(arg("314_159.265_358")), 314_159.265_358) //
             .tests();
     }
 
@@ -781,6 +782,7 @@ final class StringFunctionTests {
             .impl("invalid", List.of(arg("1.3"))) //
             .impl("MISSING", List.of(misString())) //
             .impl("very large int", List.of(arg(String.valueOf(Integer.MAX_VALUE + 11L))), 11 + (long)Integer.MAX_VALUE) //)
+            .impl("with underscores", List.of(arg("1_000_000")), 1000000) //
             .tests();
     }
 
