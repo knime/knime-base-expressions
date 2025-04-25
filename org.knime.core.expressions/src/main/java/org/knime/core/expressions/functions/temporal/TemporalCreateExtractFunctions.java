@@ -722,7 +722,7 @@ public final class TemporalCreateExtractFunctions {
                 * `to_hours(parse_duration("PT1H"))` returns `1.0`
                 * `to_hours(parse_duration("PT1H30M"))` returns `1.5`
                 """) //
-        .keywords("convert", "hours") //
+        .keywords("convert", "hours", "interval") //
         .category(CATEGORY_CREATE_EXTRACT) //
         .args( //
             arg("duration", "The duration to convert to hours.", isTimeDurationOrOpt()) //
@@ -744,7 +744,7 @@ public final class TemporalCreateExtractFunctions {
                 * `to_minutes(parse_duration("PT1H"))` returns `60.0`
                 * `to_minutes(parse_duration("PT1H30M"))` returns `90.0`
                 """) //
-        .keywords("convert", "minutes") //
+        .keywords("convert", "minutes", "interval") //
         .category(CATEGORY_CREATE_EXTRACT) //
         .args( //
             arg("duration", "The duration to convert to minutes.", isTimeDurationOrOpt()) //
@@ -766,7 +766,7 @@ public final class TemporalCreateExtractFunctions {
                 * `to_seconds(parse_duration("PT1H"))` returns `3600.0`
                 * `to_seconds(parse_duration("PT1H30M"))` returns `5400.0`
                 """) //
-        .keywords("convert", "seconds") //
+        .keywords("convert", "seconds", "interval") //
         .category(CATEGORY_CREATE_EXTRACT) //
         .args( //
             arg("duration", "The duration to convert to seconds.", isTimeDurationOrOpt()) //

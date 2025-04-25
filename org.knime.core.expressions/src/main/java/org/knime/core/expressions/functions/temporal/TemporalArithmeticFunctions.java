@@ -320,7 +320,7 @@ public final class TemporalArithmeticFunctions {
                 * `add_time_duration(parse_datetime("1970-01-01T12:30:00"), parse_time_duration("PT1H20S"))` \
                 returns `1970-01-01T12:31:20`
                 """) //
-        .keywords("add", "time", DURATION_ARG) //
+        .keywords("add", "time", "duration", "interval") //
         .category(CATEGORY_ARITHMETIC) //
         .args( //
             arg(START_ARG, "The time to add the duration to.", hasTimeInformationOrOpt()), //
@@ -379,7 +379,7 @@ public final class TemporalArithmeticFunctions {
                 * `add_date_duration(parse_date("1970-01-01"), parse_date_duration("P1D"))` returns `1970-01-02`
                 * `add_date_duration(parse_date("1970-01-01"), parse_date_duration("P1M"))` returns `1970-02-01`
                 """) //
-        .keywords("add", "date", "duration") //
+        .keywords("add", "date", "duration", "interval") //
         .category(CATEGORY_ARITHMETIC) //
         .args( //
             arg(START_ARG, "The date-time to add the duration to.", hasDateInformationOrOpt()), //
