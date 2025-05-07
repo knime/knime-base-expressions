@@ -79,7 +79,7 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
     static final String DEFAULT_SCRIPT = """
             # Examples:
             # 1. Remove every other row:
-            #  $ROW_INDEX %2 = 0
+            #  $[ROW_INDEX] %2 = 0
             # 2. Remove rows negative values
             #  $["My Column"] > 0
             # 3. Remove rows where the difference between adjacent rows is negative:
