@@ -49,22 +49,39 @@
 package org.knime.core.expressions.functions;
 
 import static org.knime.core.expressions.ValueType.BOOLEAN;
+import static org.knime.core.expressions.ValueType.DATE_DURATION;
 import static org.knime.core.expressions.ValueType.FLOAT;
 import static org.knime.core.expressions.ValueType.INTEGER;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE;
+import static org.knime.core.expressions.ValueType.LOCAL_DATE_TIME;
+import static org.knime.core.expressions.ValueType.LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.MISSING;
 import static org.knime.core.expressions.ValueType.OPT_BOOLEAN;
 import static org.knime.core.expressions.ValueType.STRING;
+import static org.knime.core.expressions.ValueType.TIME_DURATION;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.knime.core.expressions.Arguments;
 import org.knime.core.expressions.Computer;
 import org.knime.core.expressions.Computer.BooleanComputer;
+import org.knime.core.expressions.Computer.BooleanComputerResultSupplier;
+import org.knime.core.expressions.Computer.ComputerResultSupplier;
+import org.knime.core.expressions.Computer.DateDurationComputer;
+import org.knime.core.expressions.Computer.FloatComputer;
 import org.knime.core.expressions.Computer.IntegerComputer;
+import org.knime.core.expressions.Computer.LocalDateComputer;
+import org.knime.core.expressions.Computer.LocalDateTimeComputer;
+import org.knime.core.expressions.Computer.LocalTimeComputer;
 import org.knime.core.expressions.Computer.StringComputer;
+import org.knime.core.expressions.Computer.TimeDurationComputer;
+import org.knime.core.expressions.Computer.ZonedDateTimeComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.OperatorCategory;
@@ -72,6 +89,7 @@ import org.knime.core.expressions.OperatorDescription;
 import org.knime.core.expressions.OperatorDescription.Argument;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.expressions.ValueType.NativeValueType;
 
 /**
  * Implementation of built-in functions that control the flow.
@@ -197,7 +215,7 @@ public final class ControlFlowFunctions {
 
         @Override
         public Computer apply(final Arguments<Computer> arguments) {
-            return Computer.createTypedResultComputer(ctx -> computeMatchingBranchIf(arguments, ctx),
+            return createTypedResultComputer(ctx -> computeMatchingBranchIf(arguments, ctx),
                 ifReturnTypeFromComputer(arguments).getValue());
         }
 
@@ -328,7 +346,7 @@ public final class ControlFlowFunctions {
 
         @Override
         public Computer apply(final Arguments<Computer> arguments) {
-            return Computer.createTypedResultComputer(ctx -> computeMatchingCaseSwitch(arguments, ctx),
+            return createTypedResultComputer(ctx -> computeMatchingCaseSwitch(arguments, ctx),
                 switchReturnTypeFromComputer(arguments).getValue());
         }
 
@@ -373,7 +391,8 @@ public final class ControlFlowFunctions {
 
     // Utilities that are re-used by both control flow functions
 
-    static ReturnResult<ValueType> calculateReturnTypeFromBranchExpressionValues(final List<ValueType> expressions) {
+    private static ReturnResult<ValueType>
+        calculateReturnTypeFromBranchExpressionValues(final List<ValueType> expressions) {
         if (expressions.stream().allMatch(type -> type == MISSING)) {
             return ReturnResult.failure("All branch expressions are missing. "
                 + "At least one branch has to be present to infer the return type for conditional functions.");
@@ -402,4 +421,63 @@ public final class ControlFlowFunctions {
             || typeToCheck == MISSING || typeToCompare == MISSING;
     }
 
+    /**
+     * Helper method to create a Typed Computer from a Computer Supplier and the intended return type {@link ValueType}.
+     * This is helpful when the computer supplier needs to compute in order to supply the resulting computer.
+     *
+     * Note that the return type FLOAT supports {@link IntegerComputer}. In this case, the result value is cast to 64bit
+     * floating point which can lead to loss of precision.
+     *
+     * @param computerSupplier a supplier for the computer that computes the result and therefore needs to be delayed
+     * @param returnType the intended return type of the computer; will be cast to the baseType if necessary
+     * @return a {@link Computer} of the {@link ValueType} of return type
+     */
+    private static Computer createTypedResultComputer(final ComputerResultSupplier<Computer> computerSupplier,
+        final ValueType returnType) {
+
+        BooleanComputerResultSupplier isMissing = ctx -> computerSupplier.apply(ctx).isMissing(ctx);
+
+        if (returnType.baseType() == BOOLEAN) {
+            return BooleanComputer.of(ctx -> ((BooleanComputer)computerSupplier.apply(ctx)).compute(ctx), isMissing);
+        }
+        if (returnType.baseType() == INTEGER) {
+            return IntegerComputer.of(ctx -> ((IntegerComputer)computerSupplier.apply(ctx)).compute(ctx), isMissing);
+        }
+        if (returnType.baseType() == FLOAT) {
+            return FloatComputer.of(ctx -> Computer.toFloat(computerSupplier.apply(ctx)).compute(ctx), isMissing);
+        }
+        if (returnType.baseType() == STRING) {
+            return StringComputer.of(ctx -> ((StringComputer)computerSupplier.apply(ctx)).compute(ctx), isMissing);
+        }
+        if (returnType.baseType() == LOCAL_DATE) {
+            return LocalDateComputer.of(ctx -> ((LocalDateComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+        if (returnType.baseType() == LOCAL_TIME) {
+            return LocalTimeComputer.of(ctx -> ((LocalTimeComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+        if (returnType.baseType() == LOCAL_DATE_TIME) {
+            return LocalDateTimeComputer.of(ctx -> ((LocalDateTimeComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+        if (returnType.baseType() == ZONED_DATE_TIME) {
+            return ZonedDateTimeComputer.of(ctx -> ((ZonedDateTimeComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+        if (returnType.baseType() == TIME_DURATION) {
+            return TimeDurationComputer.of(ctx -> ((TimeDurationComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+        if (returnType.baseType() == DATE_DURATION) {
+            return DateDurationComputer.of(ctx -> ((DateDurationComputer)computerSupplier.apply(ctx)).compute(ctx),
+                isMissing);
+        }
+
+        var commaSeparatedNames = Arrays.stream(NativeValueType.values()) //
+            .map(ValueType::name) //
+            .collect(Collectors.joining(", "));
+        throw new IllegalStateException("Type of Expression is unknown: " + returnType + " not in "
+            + commaSeparatedNames + ". This in an implementation error.");
+    }
 }

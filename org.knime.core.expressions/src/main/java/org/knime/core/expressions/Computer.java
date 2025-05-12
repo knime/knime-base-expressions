@@ -68,10 +68,6 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
-import org.knime.core.expressions.ValueType.NativeValueType;
 
 /**
  * A supplier of computation results for expressions.
@@ -671,63 +667,6 @@ public interface Computer {
         } else {
             return MISSING;
         }
-    }
-
-    /**
-     * Helper method to create a Typed Computer from a Computer Supplier and the intended return type {@link ValueType}.
-     * This is helpful when the computer supplier needs to compute in order to supply the resulting computer
-     *
-     * @param computerSupplier a supplier for the computer that computes the result and therefore needs to be delayed
-     * @param returnType the intended return type of the computer; will be cast to the baseType if necessary
-     * @return a {@link Computer} of the {@link ValueType} of return type
-     */
-    static Computer createTypedResultComputer(final ComputerResultSupplier<Computer> computerSupplier,
-        final ValueType returnType) {
-
-        BooleanComputerResultSupplier isMissing = ctx -> computerSupplier.apply(ctx).isMissing(ctx);
-
-        if (returnType.baseType() == BOOLEAN) {
-            return BooleanComputer.of(ctx -> ((BooleanComputer)computerSupplier.apply(ctx)).compute(ctx), isMissing);
-        }
-        if (returnType.baseType() == INTEGER) {
-            return IntegerComputer.of(ctx -> ((IntegerComputer)computerSupplier.apply(ctx)).compute(ctx), isMissing);
-        }
-        if (returnType.baseType() == FLOAT) {
-            return FloatComputer.of(ctx -> toFloat(computerSupplier.apply(ctx)).compute(ctx), isMissing);
-        }
-        if (returnType.baseType() == STRING) {
-            return StringComputer.of(ctx -> ((StringComputer)computerSupplier.apply(ctx)).compute(ctx), isMissing);
-        }
-        if (returnType.baseType() == LOCAL_DATE) {
-            return LocalDateComputer.of(ctx -> ((LocalDateComputer)computerSupplier.apply(ctx)).compute(ctx),
-                isMissing);
-        }
-        if (returnType.baseType() == LOCAL_TIME) {
-            return LocalTimeComputer.of(ctx -> ((LocalTimeComputer)computerSupplier.apply(ctx)).compute(ctx),
-                isMissing);
-        }
-        if (returnType.baseType() == LOCAL_DATE_TIME) {
-            return LocalDateTimeComputer.of(ctx -> ((LocalDateTimeComputer)computerSupplier.apply(ctx)).compute(ctx),
-                isMissing);
-        }
-        if (returnType.baseType() == ZONED_DATE_TIME) {
-            return ZonedDateTimeComputer.of(ctx -> ((ZonedDateTimeComputer)computerSupplier.apply(ctx)).compute(ctx),
-                isMissing);
-        }
-        if (returnType.baseType() == TIME_DURATION) {
-            return TimeDurationComputer.of(ctx -> ((TimeDurationComputer)computerSupplier.apply(ctx)).compute(ctx),
-                isMissing);
-        }
-        if (returnType.baseType() == DATE_DURATION) {
-            return DateDurationComputer.of(ctx -> ((DateDurationComputer)computerSupplier.apply(ctx)).compute(ctx),
-                isMissing);
-        }
-
-        var commaSeparatedNames = Arrays.stream(NativeValueType.values()) //
-            .map(ValueType::name) //
-            .collect(Collectors.joining(", "));
-        throw new IllegalStateException("Type of Expression is unknown: " + returnType + " not in "
-            + commaSeparatedNames + ". This in an implementation error.");
     }
 
     /**
