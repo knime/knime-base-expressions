@@ -690,7 +690,7 @@ public interface Computer {
             return BooleanComputer.of(ctx -> ((BooleanComputer)computerSupplier.apply(ctx)).compute(ctx), isMissing);
         }
         if (returnType.baseType() == INTEGER) {
-            return IntegerComputer.of(ctx -> Math.round(toFloat(computerSupplier.apply(ctx)).compute(ctx)), isMissing);
+            return IntegerComputer.of(ctx -> ((IntegerComputer)computerSupplier.apply(ctx)).compute(ctx), isMissing);
         }
         if (returnType.baseType() == FLOAT) {
             return FloatComputer.of(ctx -> toFloat(computerSupplier.apply(ctx)).compute(ctx), isMissing);

@@ -76,6 +76,9 @@ import org.junit.jupiter.api.TestFactory;
 @SuppressWarnings("static-method")
 final class ControlFlowFunctionTests {
 
+    /** A large long value for which <code>(double)(LARGE_NUMBER) != LARGE_NUMBER</code> */
+    private static final long LARGE_NUMBER = 9007199254740995L;
+
     @TestFactory
     List<DynamicNode> ifFunction() {
         return new FunctionTestBuilder(ControlFlowFunctions.IF) //
@@ -125,6 +128,8 @@ final class ControlFlowFunctionTests {
                 List.of(misBoolean(), arg("true branch"), arg("false branch")), "false branch") //
             .impl("MISSING counts as false (2 conditions)", List.of(arg(false), arg(0), misBoolean(), arg(1), arg(3)),
                 3) //
+            .impl("large integer must not lose precision", List.of(arg(true), arg(LARGE_NUMBER), arg(20)), LARGE_NUMBER) //
+            .impl("integer cast to float", List.of(arg(true), arg(LARGE_NUMBER), arg(20.0)), (double)LARGE_NUMBER) //
             .tests();
     }
 
@@ -175,6 +180,10 @@ final class ControlFlowFunctionTests {
                 true) //
             .impl("missing string case #2", List.of(arg("b"), arg("a"), arg(1), mis(), arg(2), arg(3)), 3) //
             .impl("MISSING case expression", List.of(misString(), arg("a"), arg("column is a"), mis())) //
+            .impl("large integer must not lose precision",
+                List.of(arg("a"), arg("a"), arg(LARGE_NUMBER), arg("b"), arg(20)), LARGE_NUMBER) //
+            .impl("integer cast to float", List.of(arg("a"), arg("a"), arg(LARGE_NUMBER), arg("b"), arg(20.0)),
+                (double)LARGE_NUMBER) //
             .tests();
     }
 }
