@@ -83,6 +83,7 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
@@ -203,14 +204,26 @@ final class TemporalCreateExtractFunctionTests {
     @TestFactory
     List<DynamicNode> makeTimeDuration() {
         return new FunctionTestBuilder(TemporalCreateExtractFunctions.MAKE_TIME_DURATION) //
-            .typing("INTEGER x 3", List.of(INTEGER, INTEGER, INTEGER), TIME_DURATION) //
-            .typing("OPT INTEGER x 3", List.of(OPT_INTEGER, OPT_INTEGER, OPT_INTEGER), OPT_TIME_DURATION) //
+            .typing("INTEGER x 2", List.of(INTEGER, INTEGER), TIME_DURATION)
+            .typing("INTEGER x 3", List.of(INTEGER, INTEGER, INTEGER), TIME_DURATION)
+            .typing("INTEGER x 4", List.of(INTEGER, INTEGER, INTEGER, INTEGER), TIME_DURATION)
+            .typing("OPT INTEGER x 2", List.of(OPT_INTEGER, OPT_INTEGER), OPT_TIME_DURATION)
+            .typing("OPT INTEGER x 3", List.of(OPT_INTEGER, OPT_INTEGER, OPT_INTEGER), OPT_TIME_DURATION)
+            .typing("OPT INTEGER x 4", List.of(OPT_INTEGER, OPT_INTEGER, OPT_INTEGER, OPT_INTEGER), OPT_TIME_DURATION)
             .typing("mix of opt and non-opt", List.of(OPT_INTEGER, INTEGER, OPT_INTEGER), OPT_TIME_DURATION) //
             .illegalArgs("1st arg not INTEGER", List.of(STRING, INTEGER, INTEGER)) //
             .illegalArgs("2nd arg not INTEGER", List.of(INTEGER, STRING, INTEGER)) //
             .illegalArgs("3rd arg not INTEGER", List.of(INTEGER, INTEGER, STRING)) //
-            .impl("valid duration", List.of(arg(1), arg(2), arg(3)), TEST_DURATION) //
-            .impl("missing argument", List.of(misInteger(), arg(2), arg(3))) //
+            .impl("all args given", List.of(arg(1), arg(2), arg(3), arg(4)), TEST_DURATION.withNanos(4)) //
+            .impl("seconds & nanos omitted default to 0", List.of(arg(1), arg(2)), Duration.parse("PT1H2M"))
+            .impl("seconds given, nanos omitted default to 0", List.of(arg(1), arg(2), arg(3)),
+                Duration.parse("PT1H2M3S"))
+            .impl("seconds omitted default to 0, nanos given", List.of(arg(1), arg(2)), Map.of("nanoseconds", arg(4)),
+                Duration.parse("PT1H2M").withNanos(4))
+            .impl("seconds MISSING", List.of(arg(1), arg(2), misInteger(), arg(4)))
+            .impl("nanoseconds MISSING", List.of(arg(1), arg(2), arg(3), misInteger()))
+            .impl("seconds & nanos MISSING", List.of(arg(1), arg(2), misInteger(), misInteger()))
+            .impl("hours missing", List.of(misInteger(), arg(2), arg(3))) //
             .errors("duration overflow", List.of(arg(Long.MAX_VALUE), arg(1), arg(1)), ".*too large.*") //
             .tests();
     }

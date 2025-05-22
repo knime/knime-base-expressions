@@ -341,10 +341,11 @@ public final class TemporalCreateExtractFunctions {
         .description("""
                 Creates a `TIME_DURATION` from the provided hours, minutes, seconds, and nanoseconds.
 
-                The seconds and nanoseconds are optional, and default to 0 if `MISSING` or not provided. However, \
-                if any of the other provided values are missing, the function returns `MISSING`. If the provided \
-                values would result in a duration that cannot be represented (i.e. if it would total to more than \
-                `MAX_INTEGER` or less than `MIN_INTEGER` seconds), the function emits an error.
+                The seconds and nanoseconds arguments are optional and default to 0 if not specified. However, if any
+                provided argument—including optional ones—has a `MISSING` value, the function returns `MISSING`.
+
+                If the resulting duration exceeds the representable range (i.e., the total number of seconds is greater
+                than `MAX_INTEGER` or less than `MIN_INTEGER`), the function returns an error.
                 """) //
         .examples("""
                 * `make_time_duration(1, 2, 3, 4)` returns `PT1H2M3.000000004S`
