@@ -146,8 +146,11 @@ final class TemporalCreateExtractFunctionTests {
             .impl("valid time", List.of(arg(12), arg(34)), TEST_TIME.withSecond(0)) //
             .impl("valid time with seconds", List.of(arg(12), arg(34), arg(56)), TEST_TIME) //
             .impl("valid time with nanos", List.of(arg(12), arg(34), arg(56), arg(78)), TEST_TIME.withNano(78)) //
-            .impl("missing nanos default to 0", List.of(arg(12), arg(34), arg(56), misInteger()), TEST_TIME) //
-            .impl("missing seconds default to 0", List.of(arg(12), arg(34), misInteger()), TEST_TIME.withSecond(0)) //
+            .impl("valid time with nanos but no seconds", List.of(arg(12), arg(34)), Map.of("nanosecond", arg(78)),
+                TEST_TIME.withSecond(0).withNano(78)) //
+            .impl("hour MISSING", List.of(misInteger(), arg(34), arg(56))) //
+            .impl("seconds MISSING", List.of(arg(12), arg(34), misInteger())) //
+            .impl("nanos MISSING", List.of(arg(12), arg(34), arg(56), misInteger())) //
             .missingAndWarns("invalid second", List.of(arg(12), arg(34), arg(60)),
                 "Invalid value for second \\(valid values 0 - 59\\): 60.") //
             .missingAndWarns("invalid minute", List.of(arg(12), arg(60), arg(56)),

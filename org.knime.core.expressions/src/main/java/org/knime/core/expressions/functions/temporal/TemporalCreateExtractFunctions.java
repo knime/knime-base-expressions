@@ -191,10 +191,10 @@ public final class TemporalCreateExtractFunctions {
         .description("""
                 Creates a `LOCAL_TIME` from the provided hour, minute, second, and nanosecond values.
 
-                If the hour or minute value are missing, the function returns `MISSING`. If any provided \
-                values are invalid (e.g. the hour is greater than 23), the function returns \
-                `MISSING` and a warning is emitted. Note that the seconds and nanoseconds are optional. If \
-                they are `MISSING` or not provided, they will take their default values of 0.
+                The second and nanosecond arguments are optional and default to 0 if not specified. However, if any
+                provided argument—including optional ones—has a `MISSING` value, the function returns `MISSING`.
+                If any provided values are invalid (e.g. the hour is greater than 23), the function returns `MISSING`
+                and a warning is emitted.
 
                 If any of the provided values are so big that numeric overflow would occur (i.e. they are larger than \
                 2^31 - 1 or smaller than -2^31), the function throws an error.
@@ -213,7 +213,7 @@ public final class TemporalCreateExtractFunctions {
             optarg("nanosecond", "The nanosecond to use for the time (0-999999999).", isIntegerOrOpt()) //
         ) //
         .returnType("A `LOCAL_TIME` representing the provided hour, minute, second, and nanosecond values",
-            RETURN_LOCAL_TIME_MISSING, args -> OPT_LOCAL_TIME) //
+            RETURN_LOCAL_TIME_MISSING, args -> OPT_LOCAL_TIME) // optional because MISSING in case of out of range
         .impl(TemporalCreateExtractFunctions::makeTimeImpl) //
         .build();
 
@@ -226,10 +226,8 @@ public final class TemporalCreateExtractFunctions {
         ComputerResultSupplier<Optional<LocalTime>> valueSupplier = ctx -> {
             var hour = FunctionUtils.toIntExact(hourComputer.compute(ctx), "Hour was too large to parse.");
             var minute = FunctionUtils.toIntExact(minuteComputer.compute(ctx), "Minute was too large to parse.");
-            var second = FunctionUtils.toIntExact(secondComputer.isMissing(ctx) ? 0 : secondComputer.compute(ctx),
-                "Second was too large to parse.");
-            var nanosecond = FunctionUtils.toIntExact(nanoComputer.isMissing(ctx) ? 0 : nanoComputer.compute(ctx),
-                "Nanosecond was too large to parse.");
+            var second = FunctionUtils.toIntExact(secondComputer.compute(ctx), "Second was too large to parse.");
+            var nanosecond = FunctionUtils.toIntExact(nanoComputer.compute(ctx), "Nanosecond was too large to parse.");
 
             try {
                 return Optional.of(LocalTime.of(hour, minute, second, nanosecond));
@@ -244,7 +242,7 @@ public final class TemporalCreateExtractFunctions {
 
         return LocalTimeComputer.of( //
             ctx -> valueSupplier.apply(ctx).get(), //
-            ctx -> hourComputer.isMissing(ctx) || minuteComputer.isMissing(ctx) || valueSupplier.apply(ctx).isEmpty() //
+            ctx -> args.anyMatch(a -> a.isMissing(ctx)) || valueSupplier.apply(ctx).isEmpty() //
         );
     }
 
