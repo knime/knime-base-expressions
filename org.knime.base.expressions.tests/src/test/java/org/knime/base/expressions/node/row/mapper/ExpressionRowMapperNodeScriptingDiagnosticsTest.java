@@ -217,6 +217,21 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
     }
 
     @Test
+    void testNullFlowVariable() {
+        var vars = new java.util.HashMap<>(FLOW_VARIABLES);
+        vars.put("null_var", new FlowVariable("null_var", StringType.INSTANCE, null));
+        var service = createService(getWorkflowControl(TABLE_SPECS, vars));
+        var result = service.getRowMapperDiagnostics(new String[]{"$$null_var"}, new String[]{"out"});
+
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for null flow variable.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
+            "Expected error severity for null flow variable.");
+        assertEquals("The STRING flow variable 'null_var' has the value null. This is not supported by expressions.",
+            result.get(0).diagnostics().get(0).message(), "Expected null flow variable error message.");
+    }
+
+    @Test
     void testExpressionEvaluatesToMissing() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
         var result = service.getRowMapperDiagnostics(new String[]{"MISSING"}, new String[]{"out"});
