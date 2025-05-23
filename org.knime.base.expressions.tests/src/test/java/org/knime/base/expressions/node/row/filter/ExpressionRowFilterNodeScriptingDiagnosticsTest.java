@@ -186,6 +186,21 @@ final class ExpressionRowFilterNodeScriptingDiagnosticsTest {
     }
 
     @Test
+    void testNullFlowVariable() {
+        var vars = new java.util.HashMap<>(FLOW_VARIABLES);
+        vars.put("null_var", new FlowVariable("null_var", StringType.INSTANCE, null));
+        var service = createService(getWorkflowControl(TABLE_SPECS, vars));
+        var diagnostics = service.getRowFilterDiagnostics("$$null_var = 'x'");
+
+        assertFalse(diagnostics.isEmpty(), "Expected error for null flow variable.");
+        assertEquals(1, diagnostics.size(), "Expected exactly one diagnostic.");
+        assertEquals(DiagnosticSeverity.ERROR, diagnostics.get(0).severity(),
+            "Expected error severity for null flow variable.");
+        assertEquals("The STRING flow variable 'null_var' has the value null. This is not supported by expressions.",
+            diagnostics.get(0).message(), "Expected null flow variable error message.");
+    }
+
+    @Test
     void testExpressionEvaluatesToInt() {
         var service = createService(getWorkflowControl(TABLE_SPECS, FLOW_VARIABLES));
         var diagnostics = service.getRowFilterDiagnostics("$int + 1");

@@ -641,9 +641,24 @@ public final class ExpressionRunnerUtils {
         flowVarToTypeForTypeInference(final Map<String, FlowVariable> flowVars) {
         return name -> ReturnResult
             .fromNullable(flowVars.get(name), "No flow variable with the name '" + name + "' is available.") //
-            .map(FlowVariable::getVariableType) //
-            .flatMap(type -> ReturnResult.fromNullable(mapVariableToValueType(type),
-                "Flow variables of the type '" + type + "' are not supported"));
+            .flatMap(ExpressionRunnerUtils::mapVariableToResultValueType); //
+    }
+
+    /**
+     * Maps a {@link FlowVariable} to the appropriate {@link ValueType}.
+     *
+     * @param flowVar the flow variable
+     * @return the value type result or Result.failure if the flow variable is not supported
+     */
+    public static ReturnResult<ValueType> mapVariableToResultValueType(final FlowVariable flowVar) {
+        if (flowVar.getVariableType() == VariableType.StringType.INSTANCE
+            && flowVar.getValue(VariableType.StringType.INSTANCE) == null) {
+            return ReturnResult.failure("The STRING flow variable '" + flowVar.getName() + "' has the value null. "
+                + "This is not supported by expressions.");
+        }
+
+        return ReturnResult.fromNullable(mapVariableToValueType(flowVar.getVariableType()),
+            "Flow variables of the type '" + flowVar.getVariableType() + "' are not supported.");
     }
 
     /**

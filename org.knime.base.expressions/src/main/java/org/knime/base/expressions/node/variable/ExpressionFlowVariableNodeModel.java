@@ -148,7 +148,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                 var ast = Expressions.parse(expression);
                 var inferredType = Expressions.inferTypes(ast, //
                     ExpressionFlowVariableNodeModel::columnTypeResolver, //
-                    flowVarName -> ExpressionFlowVariableNodeModel.toValueType(availableFlowVariables, flowVarName) //
+                    ExpressionRunnerUtils.flowVarToTypeForTypeInference(availableFlowVariables) //
                 );
 
                 var columnAccesses = ExpressionRunnerUtils.collectColumnAccesses(ast);
@@ -280,7 +280,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
             var ast = Expressions.parse(expression);
             Expressions.inferTypes(ast, //
                 ExpressionFlowVariableNodeModel::columnTypeResolver,
-                flowVarName -> toValueType(availableFlowVariables, flowVarName) //
+                ExpressionRunnerUtils.flowVarToTypeForTypeInference(availableFlowVariables) //
             );
 
             // Evaluate
@@ -384,15 +384,6 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
     /** Helper to return a failure message on column access */
     static ReturnResult<ValueType> columnTypeResolver(@SuppressWarnings("unused") final String colName) {
         return ReturnResult.failure("No row values are available. Use '$$' to access flow variables.");
-    }
-
-    /** Helper to get the ValueType of a flow variable from the given map (use for type inference) */
-    static ReturnResult<ValueType> toValueType(final Map<String, FlowVariable> flowVariables, final String name) {
-        return ReturnResult
-            .fromNullable(flowVariables.get(name), "No flow variable with the name '" + name + "' is available.") //
-            .map(FlowVariable::getVariableType) //
-            .flatMap(type -> ReturnResult.fromNullable(ExpressionRunnerUtils.mapVariableToValueType(type),
-                "Flow variables of the type '" + type + "' are not supported in expressions."));
     }
 
     private static Optional<Computer> toComputer(final Map<String, FlowVariable> flowVariables,
