@@ -114,7 +114,8 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
         @Override
         protected CodeGenerationRequest getCodeSuggestionRequest(final String userPrompt, final String currentCode,
             final InputOutputModel[] inputModels) {
-            return ExpressionCodeAssistant.createCodeGenerationRequest(ExpressionType.VARIABLE, userPrompt, currentCode, inputModels);
+            return ExpressionCodeAssistant.createCodeGenerationRequest(ExpressionType.VARIABLE, userPrompt, currentCode,
+                inputModels);
         }
 
         /**
@@ -314,11 +315,7 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                 return ReturnResult.failure("No flow variable with the name '" + name + "' is available.");
             }
 
-            return flowVariableResult //
-                .flatMap(flowVariable -> ReturnResult.fromNullable(
-                    ExpressionRunnerUtils.mapVariableToValueType(flowVariable.getVariableType()),
-                    "Flow variables of the type '" + flowVariable.getVariableType()
-                        + "' are not supported in expressions."));
+            return flowVariableResult.flatMap(ExpressionRunnerUtils::mapVariableToResultValueType);
         }
 
     }
