@@ -317,7 +317,7 @@ public final class TemporalArithmeticFunctions {
         .examples("""
                 * `add_time_duration(parse_time("01:02:03"), parse_time_duration("PT1H"))` returns `02:02:03`
                 * `add_time_duration(parse_time("00:00:00"), parse_time_duration("PT1H30M"))` returns `01:30:00`
-                * `add_time_duration(parse_datetime("1970-01-01T12:30:00"), parse_time_duration("PT1H20S"))` \
+                * `add_time_duration(parse_datetime("1970-01-01T12:30:00"), parse_time_duration("PT1H20S"))`
                 returns `1970-01-01T12:31:20`
                 """) //
         .keywords("add", "time", "duration", "interval") //

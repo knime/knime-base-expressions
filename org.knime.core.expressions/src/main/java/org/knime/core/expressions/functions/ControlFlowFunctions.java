@@ -118,9 +118,9 @@ public final class ControlFlowFunctions {
                 **Conditional expression:**  \s
                 `if(condition_1, value_1, ...<condition_N, value_N>, value_if_all_false)`  \s
 
-                The first expression after a fulfilled condition will be returned. \
-                If no condition evaluates to `TRUE` the `else` case, i.e. `value_if_all_false` will be returned.   \
-                Conditions need to be boolean expressions and all `value_N` expressions have to return the same type. \
+                The first expression after a fulfilled condition will be returned.
+                If no condition evaluates to `TRUE` the `else` case, i.e. `value_if_all_false` will be returned.
+                Conditions need to be boolean expressions and all `value_N` expressions have to return the same type.
                 Integers will be automatically cast to floats if necessary.  \s
 
                 Note that `MISSING` conditions are considered to be `FALSE` for the purposes of this function.
@@ -244,13 +244,13 @@ public final class ControlFlowFunctions {
                 **Switch expression:**  \s
                 `switch(expression, case_1, value_1, case_2, value_2,..., optional value_if_none_matched)`  \s
 
-                The switch function executes different expressions based on the value of a given input. \
-                It compares the `value` against each provided `case` in order until a match is found. \
-                The `expression` and `case` must have the same type (either string or integer). \
-                If a match is found, the corresponding `value_N` is executed and returned. \
-                If no match is found the `value_if_none_matched` expression is returned, if provided. \
-                Otherwise, the function returns `MISSING`. \
-                All `value_N` expressions have to return the same type. \
+                The switch function executes different expressions based on the value of a given input.
+                It compares the `value` against each provided `case` in order until a match is found.
+                The `expression` and `case` must have the same type (either string or integer).
+                If a match is found, the corresponding `value_N` is executed and returned.
+                If no match is found the `value_if_none_matched` expression is returned, if provided.
+                Otherwise, the function returns `MISSING`.
+                All `value_N` expressions have to return the same type.
                 If integer expressions are used, they will be cast to float expressions if necessary.  \s
                 """;
 

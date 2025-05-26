@@ -137,11 +137,11 @@ public final class TemporalCreateExtractFunctions {
         .description("""
                 Creates a `LOCAL_DATE` from the provided year, month, and day values.
 
-                If the provided year, month, or day is missing, the function returns `MISSING`. If the provided \
-                year, month, or day is invalid (e.g. the month is greater than 12), the function returns `MISSING` \
+                If the provided year, month, or day is missing, the function returns `MISSING`. If the provided
+                year, month, or day is invalid (e.g. the month is greater than 12), the function returns `MISSING`
                 and a warning is emitted.
 
-                If any of the provided values are so big that numeric overflow would occur (i.e. they are larger than \
+                If any of the provided values are so big that numeric overflow would occur (i.e. they are larger than
                 2^31 - 1 or smaller than -2^31), the node execution fails with an error.
                 """) //
         .examples("""
@@ -196,7 +196,7 @@ public final class TemporalCreateExtractFunctions {
                 If any provided values are invalid (e.g. the hour is greater than 23), the function returns `MISSING`
                 and a warning is emitted.
 
-                If any of the provided values are so big that numeric overflow would occur (i.e. they are larger than \
+                If any of the provided values are so big that numeric overflow would occur (i.e. they are larger than
                 2^31 - 1 or smaller than -2^31), the node execution fails with an error.
                 """) //
         .examples("""
@@ -288,11 +288,11 @@ public final class TemporalCreateExtractFunctions {
         .description("""
                 Creates a `ZONED_DATE_TIME` from the provided datetime, and zone values.
 
-                If the provided datetime or zone is missing, the function returns `MISSING`. If the provided \
+                If the provided datetime or zone is missing, the function returns `MISSING`. If the provided
                 zone is invalid, the function returns `MISSING` and a warning is emitted.
 
-                The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is \
-                case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset \
+                The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is
+                case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset
                 can be provided (e.g. `+02:00`, `-5`, `UTC+07:15`, `GMT-3`, etc.).
                 """.formatted(TemporalFunctionUtils.URL_TIMEZONE_LIST)) //
         .examples("""
@@ -392,7 +392,7 @@ public final class TemporalCreateExtractFunctions {
         .description("""
                 Creates a `DATE_DURATION` from the provided year, month, and day values.
 
-                If any of the provided values are missing, the function returns `MISSING`. If any of the provided \
+                If any of the provided values are missing, the function returns `MISSING`. If any of the provided
                 values is greater than `2^31 - 1` or less than `-2^31`, the node execution fails with an error.
                 """) //
         .examples("""
@@ -449,7 +449,7 @@ public final class TemporalCreateExtractFunctions {
         .description("""
                 Extracts the year from a date-time value with date information.
 
-                Note that this year represents the proleptic year in the Gregorian calendar. Years before 0 A.D. \
+                Note that this year represents the proleptic year in the Gregorian calendar. Years before 0 A.D.
                 are represented with negative values.
                 """) //
         .examples("""
@@ -661,15 +661,15 @@ public final class TemporalCreateExtractFunctions {
     public static final ExpressionFunction EXTRACT_DATETIME = functionBuilder() //
         .name("extract_datetime") //
         .description("""
-                Extracts the date and time part of a `ZONED_DATE_TIME` value. This is equivalent to \
-                removing the time zone information from the provided value. The wall time will not \
+                Extracts the date and time part of a `ZONED_DATE_TIME` value. This is equivalent to
+                removing the time zone information from the provided value. The wall time will not
                 be adjusted.
 
                 If the provided value is missing, the function returns `MISSING`.
                 """) //
         .examples("""
                 * `extract_datetime(parse_zoned("1970-01-01T00:00:00Z"))` returns `1970-01-01T00:00:00`
-                * `extract_datetime(parse_zoned("1970-01-01T00:00:00+01:00[Europe/Berlin]"))` \
+                * `extract_datetime(parse_zoned("1970-01-01T00:00:00+01:00[Europe/Berlin]"))`
                   returns `1970-01-01T00:00:00`
                 """) //
         .keywords("extract", "datetime", "remove", "zone", "remove_zone") //

@@ -127,7 +127,7 @@ public final class TemporalParseFormatFunctions {
     /** The Temporal - Parsing & Formatting category */
     public static final OperatorCategory CATEGORY_PARSE_FORMAT =
         new OperatorCategory(TemporalFunctionUtils.TEMPORAL_META_CATEGORY_NAME, "Parsing & Formatting", """
-                Functions for parsing and formatting temporal data to and from strings, such as dates, times, \
+                Functions for parsing and formatting temporal data to and from strings, such as dates, times,
                 and date- and time-based durations.
                 """);
 
@@ -241,21 +241,21 @@ public final class TemporalParseFormatFunctions {
     public static final ExpressionFunction PARSE_DATE = functionBuilder() //
         .name("parse_date") //
         .description("""
-                Parses a string into a `LOCAL_DATE` using the provided format. See [here](%s) for more \
-                information about the format patterns. If the format is not specified, the default format \
+                Parses a string into a `LOCAL_DATE` using the provided format. See [here](%s) for more
+                information about the format patterns. If the format is not specified, the default format
                 (`yyyy-MM-dd`) is used.
 
-                If the provided date string does not match the provided \
-                format, the function returns `MISSING` and a warning is emitted. The function also returns \
+                If the provided date string does not match the provided
+                format, the function returns `MISSING` and a warning is emitted. The function also returns
                 `MISSING` if the date string is missing.
                 If the format string is invalid, the node execution fails with an error.
 
-                Note that it is possible to use an overspecified format here. For example, one may parse to a \
-                `LOCAL_DATE` using a format like `yyyy-MM-dd HH:mm:ss` which includes time information, which is \
-                not used by a `LOCAL_DATE`. The extra information is simply ignored and discarded. However, an \
+                Note that it is possible to use an overspecified format here. For example, one may parse to a
+                `LOCAL_DATE` using a format like `yyyy-MM-dd HH:mm:ss` which includes time information, which is
+                not used by a `LOCAL_DATE`. The extra information is simply ignored and discarded. However, an
                 underspecified format (e.g. `yyyy`) will cause the function to return `MISSING` and give a warning.
 
-                An optional locale can be provided in [IETF format](%s) to parse the date in a specific locale. The \
+                An optional locale can be provided in [IETF format](%s) to parse the date in a specific locale. The
                 default locale is `en-US`. This will affect things like month or day names, for example.
                 """.formatted(JAVADOC_URL_DATE_FORMAT, IETF_FORMAT_URL)) //
         .examples("""
@@ -331,22 +331,22 @@ public final class TemporalParseFormatFunctions {
     public static final ExpressionFunction PARSE_TIME = functionBuilder() //
         .name("parse_time") //
         .description("""
-                Parses a string into a `LOCAL_TIME` using the provided format. See [here](%s) for more \
-                information about the format patterns. If the format is not specified, the default format \
-                is used, in which the hours and minutes are required but but seconds and subseconds are \
+                Parses a string into a `LOCAL_TIME` using the provided format. See [here](%s) for more
+                information about the format patterns. If the format is not specified, the default format
+                is used, in which the hours and minutes are required but but seconds and subseconds are
                 optional. See the examples for more information.
 
-                If the provided time string does not match the provided \
-                format, the function returns `MISSING` and a warning is emitted. The function also returns \
+                If the provided time string does not match the provided
+                format, the function returns `MISSING` and a warning is emitted. The function also returns
                 `MISSING` if the time string is missing.
                 If the format string is invalid, the node execution fails with an error.
 
-                Note that it is possible to use an overspecified format here. For example, one may parse to a \
-                `LOCAL_TIME` using a format like `yyyy-MM-dd HH:mm:ss` which includes date information, which is \
-                not used by a `LOCAL_TIME`. The extra information is simply ignored and discarded. However, an \
+                Note that it is possible to use an overspecified format here. For example, one may parse to a
+                `LOCAL_TIME` using a format like `yyyy-MM-dd HH:mm:ss` which includes date information, which is
+                not used by a `LOCAL_TIME`. The extra information is simply ignored and discarded. However, an
                 underspecified format (e.g. `mm`) will cause the function to return `MISSING` and give a warning.
 
-                An optional locale can be provided in [IETF format](%s) to parse the date in a specific locale. The \
+                An optional locale can be provided in [IETF format](%s) to parse the date in a specific locale. The
                 default locale is `en-US`. This will affect things like month or day names, for example.
                 """.formatted(JAVADOC_URL_DATE_FORMAT, IETF_FORMAT_URL)) //
         .examples("""
@@ -424,23 +424,23 @@ public final class TemporalParseFormatFunctions {
     public static final ExpressionFunction PARSE_DATE_TIME = functionBuilder() //
         .name("parse_datetime") //
         .description("""
-                Parses a string into a `LOCAL_DATE_TIME` using the provided format. See [here](%s) for more \
-                information about the format patterns. If the format is not specified, the default format \
-                is used, which is the default format for `parse_date` and the default format for `parse_time` \
+                Parses a string into a `LOCAL_DATE_TIME` using the provided format. See [here](%s) for more
+                information about the format patterns. If the format is not specified, the default format
+                is used, which is the default format for `parse_date` and the default format for `parse_time`
                 concatenated together, separated by a T. See the examples for more information.
 
-                If the provided date time string does not match the provided \
-                format, the function returns `MISSING` and a warning is emitted. The function also returns \
+                If the provided date time string does not match the provided
+                format, the function returns `MISSING` and a warning is emitted. The function also returns
                 `MISSING` if the date time string is missing.
                 If the format string is invalid, the node execution fails with an error.
 
-                Note that it is possible to use an overspecified format here. For example, one may parse to a \
-                `LOCAL_DATE_TIME` using a format like `yyyy-MM-dd HH:mm:ss VV` which includes a time zone ID, \
-                which is not required for a `LOCAL_DATE_TIME`. The extra information is simply ignored and \
-                discarded. However, an underspecified format (e.g. `yyyy`) will cause the function to return \
+                Note that it is possible to use an overspecified format here. For example, one may parse to a
+                `LOCAL_DATE_TIME` using a format like `yyyy-MM-dd HH:mm:ss VV` which includes a time zone ID,
+                which is not required for a `LOCAL_DATE_TIME`. The extra information is simply ignored and
+                discarded. However, an underspecified format (e.g. `yyyy`) will cause the function to return
                 `MISSING` and give a warning.
 
-                An optional locale can be provided in [IETF format](%s) to parse the date in a specific locale. The \
+                An optional locale can be provided in [IETF format](%s) to parse the date in a specific locale. The
                 default locale is `en-US`. This will affect things like month or day names, for example.
                 """.formatted(JAVADOC_URL_DATE_FORMAT, IETF_FORMAT_URL)) //
         .examples("""
@@ -518,28 +518,28 @@ public final class TemporalParseFormatFunctions {
     public static final ExpressionFunction PARSE_ZONED_DATE_TIME = functionBuilder() //
         .name("parse_zoned_datetime") //
         .description("""
-                Parses a string into a `ZONED_DATE_TIME` using the provided format. See [here](%s) for more \
-                information about the format patterns. If the format is not specified, the default format \
-                is used, which is the default format for `parse_datetime` with the addition of a required \
-                offset and optional zone ID (where `Z` is shorthand for UTC). See the examples for more \
+                Parses a string into a `ZONED_DATE_TIME` using the provided format. See [here](%s) for more
+                information about the format patterns. If the format is not specified, the default format
+                is used, which is the default format for `parse_datetime` with the addition of a required
+                offset and optional zone ID (where `Z` is shorthand for UTC). See the examples for more
                 information.
 
-                If the provided zoned date time string does not match the \
-                provided format, the function returns `MISSING` and a warning is emitted. The function also \
+                If the provided zoned date time string does not match the
+                provided format, the function returns `MISSING` and a warning is emitted. The function also
                 returns `MISSING` if the zoned date time string is missing.
                 If the format string is invalid, the node execution fails with an error.
 
-                Note that an underspecified format (e.g. `yyyy`) will cause the function to return `MISSING` \
+                Note that an underspecified format (e.g. `yyyy`) will cause the function to return `MISSING`
                 and give a warning.
 
-                An optional locale can be provided in [IETF format](%s) to parse the date in a specific locale. The \
+                An optional locale can be provided in [IETF format](%s) to parse the date in a specific locale. The
                 default locale is `en-US`. This will affect things like month or day names, for example.
                 """.formatted(JAVADOC_URL_DATE_FORMAT, IETF_FORMAT_URL)) //
         .examples("""
                 * `parse_zoned_datetime("1970-01-01T00:00:00Z")` returns `1970-01-01T00:00:00Z`
                 * `parse_zoned_datetime("1970-01-01 00:00:00Z", "yyyy-MM-dd HH:mm:ssX")` returns `1970-01-01T00:00:00Z`
                 * `parse_zoned_datetime("1970-01-01T00:00:00+01:00")` returns `1970-01-01T00:00:00+01:00`
-                * `parse_zoned_datetime("1970-01-01T00:00:00+01:00[Europe/Paris]")` returns \
+                * `parse_zoned_datetime("1970-01-01T00:00:00+01:00[Europe/Paris]")` returns
                 `1970-01-01T00:00:00+01:00[Europe/Paris]`
                 * `parse_zoned_datetime("1970-01-01T00:00:00Z", "invalid format")` causes an error (invalid format)
                 * `parse_zoned_datetime("invalid zoned datetime")` returns `MISSING`
@@ -755,27 +755,27 @@ public final class TemporalParseFormatFunctions {
     public static final ExpressionFunction FORMAT_DATE = functionBuilder() //
         .name("format_date") //
         .description("""
-                Formats a `LOCAL_DATE` to a string using the provided format. See [here](%s) for more \
+                Formats a `LOCAL_DATE` to a string using the provided format. See [here](%s) for more
                 information about the format patterns.
 
-                The function returns `MISSING` \
-                and emits a warning if the provided date cannot be formatted using the provided format. \
+                The function returns `MISSING`
+                and emits a warning if the provided date cannot be formatted using the provided format.
                 If any input is missing, the function returns `MISSING`.
                 If the format string is invalid, the node execution fails with an error.
 
-                Note that it is not required that the format include all fields of the date. For example, \
-                one may format a date using the format string "yyyy" to get just the years. However, the \
-                format must not include fields that are not present in the provided date, such as formatting \
+                Note that it is not required that the format include all fields of the date. For example,
+                one may format a date using the format string "yyyy" to get just the years. However, the
+                format must not include fields that are not present in the provided date, such as formatting
                 a `LOCAL_DATE` with a format that includes time information.
 
-                Additionally, a locale can be provided in [IETF format](%s) to format the date according to \
-                the rules of a specific locale. If no locale is provided, the locale `en-US` is used. \
+                Additionally, a locale can be provided in [IETF format](%s) to format the date according to
+                the rules of a specific locale. If no locale is provided, the locale `en-US` is used.
                 If the locale provided is invalid, the function returns `MISSING` and emits a warning.
                 """.formatted(JAVADOC_URL_DATE_FORMAT, IETF_FORMAT_URL)) //
         .examples("""
                 * `format_date(parse_date("1970-01-01"), "dd/MM/yyyy")` returns `01/01/1970`
                 * `format_date(parse_date("invalid date"), "dd/MM/yyyy")` returns `MISSING` and emits a warning
-                * `format_date(parse_date("1970-01-01"), "yyyy-MM-dd HH")` returns `MISSING` and a warning \
+                * `format_date(parse_date("1970-01-01"), "yyyy-MM-dd HH")` returns `MISSING` and a warning
                 (overspecified format)
                 * `format_date(parse_date("1970-01-01"), "invalid format")` causes an error (invalid format)
                 """) //
@@ -794,27 +794,27 @@ public final class TemporalParseFormatFunctions {
     public static final ExpressionFunction FORMAT_TIME = functionBuilder() //
         .name("format_time") //
         .description("""
-                Formats a `LOCAL_TIME` to a string using the provided format. See [here](%s) for more \
+                Formats a `LOCAL_TIME` to a string using the provided format. See [here](%s) for more
                 information about the format patterns.
 
-                The function returns `MISSING` \
-                and emits a warning if the provided time cannot be formatted using the provided format. \
+                The function returns `MISSING`
+                and emits a warning if the provided time cannot be formatted using the provided format.
                 If any input is missing, the function returns `MISSING`.
                 If the format string is invalid, the node execution fails with an error.
 
-                Note that it is not required that the format include all fields of the time. For example, \
-                one may format a time using the format string "HH" to get just the hours. However, the \
-                format must not include fields that are not present in the provided time, such as formatting \
+                Note that it is not required that the format include all fields of the time. For example,
+                one may format a time using the format string "HH" to get just the hours. However, the
+                format must not include fields that are not present in the provided time, such as formatting
                 a `LOCAL_TIME` with a format that includes date information.
 
-                Additionally, a locale can be provided in [IETF format](%s) to format the time according to \
-                the rules of a specific locale. If no locale is provided, the locale `en-US` is used. \
+                Additionally, a locale can be provided in [IETF format](%s) to format the time according to
+                the rules of a specific locale. If no locale is provided, the locale `en-US` is used.
                 If the locale provided is invalid, the function returns `MISSING` and emits a warning.
                 """.formatted(JAVADOC_URL_DATE_FORMAT, IETF_FORMAT_URL)) //
         .examples("""
                 * `format_time(parse_time("12:34:56"), "HH:mm")` returns `12:34`
                 * `format_time(parse_time("invalid time"), "HH:mm:ss")` returns `MISSING` and emits a warning
-                * `format_time(parse_time("12:34"), "invalid format")` returns `MISSING` and a warning \
+                * `format_time(parse_time("12:34"), "invalid format")` returns `MISSING` and a warning
                 (invalid format)
                 * `format_time(parse_time("12:34"), "HH:mm dd/MM/yyyy")` causes an error (overspecified format)
                 """) //
@@ -833,29 +833,29 @@ public final class TemporalParseFormatFunctions {
     public static final ExpressionFunction FORMAT_DATE_TIME = functionBuilder() //
         .name("format_datetime") //
         .description("""
-                Formats a `LOCAL_DATE_TIME` or `ZONED_DATE_TIME` to a string using the provided format. \
+                Formats a `LOCAL_DATE_TIME` or `ZONED_DATE_TIME` to a string using the provided format.
                 See [here](%s) for more information about the format patterns.
 
-                The function returns `MISSING` \
-                and emits a warning if the provided date time cannot be formatted using the provided format. \
+                The function returns `MISSING`
+                and emits a warning if the provided date time cannot be formatted using the provided format.
                 If any input is missing, the function returns `MISSING`.
                 If the format string is invalid, the node execution fails with an error.
 
-                Note that it is not required that the format include all fields of the date-time. For example, \
-                one may format a date-time using the format string "yyyy" to get just the years. However, the \
-                format must not include fields that are not present in the provided date-time, such as formatting \
+                Note that it is not required that the format include all fields of the date-time. For example,
+                one may format a date-time using the format string "yyyy" to get just the years. However, the
+                format must not include fields that are not present in the provided date-time, such as formatting
                 a `LOCAL_DATE_TIME` with a format that includes time zone information.
 
-                Additionally, a locale can be provided in [IETF format](%s) to format the date-time according to \
-                the rules of a specific locale. If no locale is provided, the locale `en-US` is used. \
+                Additionally, a locale can be provided in [IETF format](%s) to format the date-time according to
+                the rules of a specific locale. If no locale is provided, the locale `en-US` is used.
                 If the locale provided is invalid, the function returns `MISSING` and emits a warning.
                 """.formatted(JAVADOC_URL_DATE_FORMAT, IETF_FORMAT_URL)) //
         .examples("""
-                * `format_datetime($["my_datetime_col"], "dd/MM/yyyy HH:mm:ss")` returns \
+                * `format_datetime($["my_datetime_col"], "dd/MM/yyyy HH:mm:ss")` returns
                 `01/01/1970 00:00:00`
                 * `format_datetime($["my_zoned_col"], "VV")` returns `Europe/Paris`
                 * `format_datetime($["my_datetime_col"], "invalid format")` causes an error (invalid format)
-                * `format_datetime($["my_datetime_col"], "dd/MM/yyyy HH:mm:ss VV")` returns `MISSING` and a \
+                * `format_datetime($["my_datetime_col"], "dd/MM/yyyy HH:mm:ss VV")` returns `MISSING` and a
                 warning (overspecified format)
                 """) //
         .keywords("format", "datetime", "string", "zoned", "format_zoned") //
@@ -892,11 +892,11 @@ public final class TemporalParseFormatFunctions {
         .description("""
                 Formats a `DATE_DURATION` or `TIME_DURATION` to a string.
 
-                The function supports three formats: `short`, `long`, and `iso`. The `short` and `long` formats \
-                are used for formatting date durations in a human-readable format, such as `1y` or `1 year`. The \
-                `iso` format is used for formatting date durations in the ISO-8601 format, such as `P1Y`. \
+                The function supports three formats: `short`, `long`, and `iso`. The `short` and `long` formats
+                are used for formatting date durations in a human-readable format, such as `1y` or `1 year`. The
+                `iso` format is used for formatting date durations in the ISO-8601 format, such as `P1Y`.
 
-                If the provided format is not one of the supported formats, the node execution fails with an error. \
+                If the provided format is not one of the supported formats, the node execution fails with an error.
                 The function also returns `MISSING` if the duration is missing.
                 """) //
         .examples("""
@@ -904,7 +904,7 @@ public final class TemporalParseFormatFunctions {
                 * `format_duration(parse_date_duration("P1Y"), "long")` returns `1 year`
                 * `format_duration(parse_date_duration("PT1H"), "iso")` returns `PT1H`
                 * `format_duration(parse_time_duration("PT1S"), "short")` returns `1s`
-                * `format_duration(parse_time_duration("PT1H"), "invalid format")` returns `MISSING` and a warning \
+                * `format_duration(parse_time_duration("PT1H"), "invalid format")` returns `MISSING` and a warning
                 (invalid format)
                 """) //
         .keywords("format", "interval", "duration", "period") //

@@ -112,8 +112,8 @@ public final class TemporalZoneManipulationFunctions {
                 and a warning is emitted. If it is impossible to convert the zone, e.g. because
                 the resulting date-time would exceed the representable range, the node execution fails with an error.
 
-                The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is \
-                case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset \
+                The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is
+                case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset
                 can be provided (e.g. `+02:00`, `-5`, `UTC+07:15`, `GMT-3`, etc.).
                 """.formatted(TemporalFunctionUtils.URL_TIMEZONE_LIST)) //
         .examples("""
@@ -178,8 +178,8 @@ public final class TemporalZoneManipulationFunctions {
                 and a warning is emitted. If it is impossible to convert the zone, e.g. because
                 the resulting date-time would exceed the representable range, the node execution fails with an error.
 
-                The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is \
-                case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset \
+                The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is
+                case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset
                 can be provided (e.g. `+02:00`, `-5`, `UTC+07:15`, `GMT-3`, etc.).
                 """) //
         .examples("""
