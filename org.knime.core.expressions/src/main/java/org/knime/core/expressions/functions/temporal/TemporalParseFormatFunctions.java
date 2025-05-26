@@ -245,9 +245,10 @@ public final class TemporalParseFormatFunctions {
                 information about the format patterns. If the format is not specified, the default format \
                 (`yyyy-MM-dd`) is used.
 
-                If the format string is invalid, or the provided date string does not match the provided \
+                If the provided date string does not match the provided \
                 format, the function returns `MISSING` and a warning is emitted. The function also returns \
                 `MISSING` if the date string is missing.
+                If the format string is invalid, the node execution fails with an error.
 
                 Note that it is possible to use an overspecified format here. For example, one may parse to a \
                 `LOCAL_DATE` using a format like `yyyy-MM-dd HH:mm:ss` which includes time information, which is \
@@ -335,9 +336,10 @@ public final class TemporalParseFormatFunctions {
                 is used, in which the hours and minutes are required but but seconds and subseconds are \
                 optional. See the examples for more information.
 
-                If the format string is invalid, or the provided time string does not match the provided \
+                If the provided time string does not match the provided \
                 format, the function returns `MISSING` and a warning is emitted. The function also returns \
                 `MISSING` if the time string is missing.
+                If the format string is invalid, the node execution fails with an error.
 
                 Note that it is possible to use an overspecified format here. For example, one may parse to a \
                 `LOCAL_TIME` using a format like `yyyy-MM-dd HH:mm:ss` which includes date information, which is \
@@ -427,9 +429,10 @@ public final class TemporalParseFormatFunctions {
                 is used, which is the default format for `parse_date` and the default format for `parse_time` \
                 concatenated together, separated by a T. See the examples for more information.
 
-                If the format string is invalid, or the provided date time string does not match the provided \
+                If the provided date time string does not match the provided \
                 format, the function returns `MISSING` and a warning is emitted. The function also returns \
                 `MISSING` if the date time string is missing.
+                If the format string is invalid, the node execution fails with an error.
 
                 Note that it is possible to use an overspecified format here. For example, one may parse to a \
                 `LOCAL_DATE_TIME` using a format like `yyyy-MM-dd HH:mm:ss VV` which includes a time zone ID, \
@@ -521,9 +524,10 @@ public final class TemporalParseFormatFunctions {
                 offset and optional zone ID (where `Z` is shorthand for UTC). See the examples for more \
                 information.
 
-                If the format string is invalid, or the provided zoned date time string does not match the \
+                If the provided zoned date time string does not match the \
                 provided format, the function returns `MISSING` and a warning is emitted. The function also \
                 returns `MISSING` if the zoned date time string is missing.
+                If the format string is invalid, the node execution fails with an error.
 
                 Note that an underspecified format (e.g. `yyyy`) will cause the function to return `MISSING` \
                 and give a warning.
