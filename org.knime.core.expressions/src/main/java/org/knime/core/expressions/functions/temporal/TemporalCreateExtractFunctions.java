@@ -142,7 +142,7 @@ public final class TemporalCreateExtractFunctions {
                 and a warning is emitted.
 
                 If any of the provided values are so big that numeric overflow would occur (i.e. they are larger than \
-                2^31 - 1 or smaller than -2^31), the function throws an error.
+                2^31 - 1 or smaller than -2^31), the node execution fails with an error.
                 """) //
         .examples("""
                 * `make_date(1970, 1, 1)` returns `1970-01-01`
@@ -197,7 +197,7 @@ public final class TemporalCreateExtractFunctions {
                 and a warning is emitted.
 
                 If any of the provided values are so big that numeric overflow would occur (i.e. they are larger than \
-                2^31 - 1 or smaller than -2^31), the function throws an error.
+                2^31 - 1 or smaller than -2^31), the node execution fails with an error.
                 """) //
         .examples("""
                 * `make_time(1, 2, 3, 4)` returns `01:02:03.000000004`
@@ -343,12 +343,12 @@ public final class TemporalCreateExtractFunctions {
                 provided argument—including optional ones—has a `MISSING` value, the function returns `MISSING`.
 
                 If the resulting duration exceeds the representable range (i.e., the total number of seconds is greater
-                than `MAX_INTEGER` or less than `MIN_INTEGER`), the function returns an error.
+                than `MAX_INTEGER` or less than `MIN_INTEGER`), the node execution fails with an error.
                 """) //
         .examples("""
                 * `make_time_duration(1, 2, 3, 4)` returns `PT1H2M3.000000004S`
                 * `make_time_duration(1, 2)` returns `PT1H2M`
-                * `make_time_duration(1, 2, 3, MAX_INTEGER)` emits an error
+                * `make_time_duration(1, 2, 3, MAX_INTEGER)` node execution fails with an error
                 """) //
         .keywords("make", "duration", "interval", "create") //
         .category(CATEGORY_CREATE_EXTRACT) //
@@ -393,11 +393,11 @@ public final class TemporalCreateExtractFunctions {
                 Creates a `DATE_DURATION` from the provided year, month, and day values.
 
                 If any of the provided values are missing, the function returns `MISSING`. If any of the provided \
-                values is greater than `2^31 - 1` or less than `-2^31`, the function emits an error.
+                values is greater than `2^31 - 1` or less than `-2^31`, the node execution fails with an error.
                 """) //
         .examples("""
                 * `make_date_duration(1, 2, 3)` returns `P1Y2M3D`
-                * `make_date_duration(1, 2, MAX_INTEGER)` emits an error.
+                * `make_date_duration(1, 2, MAX_INTEGER)` node execution fails with an error
                 """) //
         .keywords("make", "period", "interval", "create") //
         .category(CATEGORY_CREATE_EXTRACT) //

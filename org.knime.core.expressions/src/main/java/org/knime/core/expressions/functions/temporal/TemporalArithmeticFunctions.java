@@ -311,8 +311,8 @@ public final class TemporalArithmeticFunctions {
                 Adds a `TIME_DURATION` to a date-time value with time information.
 
                 If either the date-time or the duration is missing, the function returns `MISSING`. It is
-                possible that the resulting time is too large to be represented, in which case the function
-                will emit an error.
+                possible that the resulting time is too large to be represented, in which case the node execution fails
+                with an error.
                 """) //
         .examples("""
                 * `add_time_duration(parse_time("01:02:03"), parse_time_duration("PT1H"))` returns `02:02:03`

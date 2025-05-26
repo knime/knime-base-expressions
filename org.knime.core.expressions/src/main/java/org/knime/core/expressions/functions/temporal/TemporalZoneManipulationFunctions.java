@@ -110,8 +110,7 @@ public final class TemporalZoneManipulationFunctions {
                 If the provided value is missing, the function returns `MISSING`.
                 If the provided zone ID is invalid, the function returns `MISSING`
                 and a warning is emitted. If it is impossible to convert the zone, e.g. because
-                the resulting date-time would exceed the representable range, the function throws an
-                error.
+                the resulting date-time would exceed the representable range, the node execution fails with an error.
 
                 The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is \
                 case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset \
@@ -177,8 +176,7 @@ public final class TemporalZoneManipulationFunctions {
                 If the provided value is missing, the function returns `MISSING`.
                 If the provided zone ID is invalid, the function returns `MISSING`
                 and a warning is emitted. If it is impossible to convert the zone, e.g. because
-                the resulting date-time would exceed the representable range, the function throws an
-                error.
+                the resulting date-time would exceed the representable range, the node execution fails with an error.
 
                 The provided zone is in the IANA time zone format (e.g. `Europe/Berlin` or `UTC`) and is \
                 case insensitive. See [here](%s) for a list of valid time zones. Alternatively, a zone offset \

@@ -754,9 +754,10 @@ public final class TemporalParseFormatFunctions {
                 Formats a `LOCAL_DATE` to a string using the provided format. See [here](%s) for more \
                 information about the format patterns.
 
-                If the format string is invalid, an error is emitted. The function also returns `MISSING` \
+                The function returns `MISSING` \
                 and emits a warning if the provided date cannot be formatted using the provided format. \
                 If any input is missing, the function returns `MISSING`.
+                If the format string is invalid, the node execution fails with an error.
 
                 Note that it is not required that the format include all fields of the date. For example, \
                 one may format a date using the format string "yyyy" to get just the years. However, the \
@@ -792,9 +793,10 @@ public final class TemporalParseFormatFunctions {
                 Formats a `LOCAL_TIME` to a string using the provided format. See [here](%s) for more \
                 information about the format patterns.
 
-                If the format string is invalid, an error is emitted. The function also returns `MISSING` \
+                The function returns `MISSING` \
                 and emits a warning if the provided time cannot be formatted using the provided format. \
                 If any input is missing, the function returns `MISSING`.
+                If the format string is invalid, the node execution fails with an error.
 
                 Note that it is not required that the format include all fields of the time. For example, \
                 one may format a time using the format string "HH" to get just the hours. However, the \
@@ -830,9 +832,10 @@ public final class TemporalParseFormatFunctions {
                 Formats a `LOCAL_DATE_TIME` or `ZONED_DATE_TIME` to a string using the provided format. \
                 See [here](%s) for more information about the format patterns.
 
-                If the format string is invalid, an error is emitted. The function also returns `MISSING` \
+                The function returns `MISSING` \
                 and emits a warning if the provided date time cannot be formatted using the provided format. \
                 If any input is missing, the function returns `MISSING`.
+                If the format string is invalid, the node execution fails with an error.
 
                 Note that it is not required that the format include all fields of the date-time. For example, \
                 one may format a date-time using the format string "yyyy" to get just the years. However, the \
@@ -889,7 +892,7 @@ public final class TemporalParseFormatFunctions {
                 are used for formatting date durations in a human-readable format, such as `1y` or `1 year`. The \
                 `iso` format is used for formatting date durations in the ISO-8601 format, such as `P1Y`. \
 
-                If the provided format is not one of the supported formats, the function will emit an error. \
+                If the provided format is not one of the supported formats, the node execution fails with an error. \
                 The function also returns `MISSING` if the duration is missing.
                 """) //
         .examples("""

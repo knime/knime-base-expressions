@@ -422,8 +422,8 @@ public final class StringFunctions {
         .description("""
                   Checks if a string matches the given regular expression pattern.
 
-                  Raises an error if the regex is invalid. If any of the arguments
-                  are `MISSING`, the result is also `MISSING`.
+                  If any of the arguments are `MISSING`, the result is also `MISSING`.
+                  If the regex pattern is invalid, the node execution fails with an error.
 
                   The optional `modifiers` argument can be used to specify case-insensitive
                   matching.
@@ -477,9 +477,9 @@ public final class StringFunctions {
                 refers to the entire match. Note that if multiple substrings of
                 the input match the regex, only the first match is considered.
 
-                Raises an error if the regex is invalid. If the group index is out
-                of bounds, the regex does not match, or any of the arguments are
-                `MISSING`, returns `MISSING`.
+                If the group index is out of bounds, the regex does not match, or any of the arguments are `MISSING`,
+                returns `MISSING`.
+                If the regex is invalid, the node execution fails with an error.
 
                 The optional `modifiers` argument can be used to specify case-insensitive
                 matching.
@@ -548,8 +548,8 @@ public final class StringFunctions {
                 etc., allowing for some very flexible usage. See the examples for
                 more detail.
 
-                Raises an error if the regex is invalid, and returns `MISSING` if
-                any of the arguments are `MISSING`.
+                The function returns `MISSING` if any of the arguments are `MISSING`.
+                If the regex is invalid, the node execution fails with an error.
 
                 The optional `modifiers` argument can be used to tune the search:
                 * "i" for case-insensitive matching
