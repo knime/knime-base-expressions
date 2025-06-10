@@ -209,6 +209,7 @@ final class ParserTest {
             OP_UNARY_MINUS_1("-10", INT(-10)), //
             OP_UNARY_MINUS_2("- 10", INT(-10)), //
             OP_UNARY_NOT("not 10", OP(UnaryOperator.NOT, INT(10))), //
+            OP_UNARY_NOT_UPPER_CASE("NOT 10", OP(UnaryOperator.NOT, INT(10))), //
 
             // Binary Operator
             // Arithmetics
@@ -231,7 +232,9 @@ final class ParserTest {
             OP_NOT_EQUAL_TO_2("10 <> 20", OP(INT(10), NOT_EQUAL_TO, INT(20))), //
             // Logical
             OP_CONDITIONAL_AND("10 and 20", OP(INT(10), CONDITIONAL_AND, INT(20))), //
+            OP_CONDITIONAL_AND_UPPER_CASE("10 AND 20", OP(INT(10), CONDITIONAL_AND, INT(20))), //
             OP_CONDITIONAL_OR("10 or 20", OP(INT(10), CONDITIONAL_OR, INT(20))), //
+            OP_CONDITIONAL_OR_UPPER_CASE("10 OR 20", OP(INT(10), CONDITIONAL_OR, INT(20))), //
 
             // Operator precedence
             OP_PREC_PLUS_MULTIPLY("1+2*3", OP(INT(1), PLUS, OP(INT(2), MULTIPLY, INT(3)))), //

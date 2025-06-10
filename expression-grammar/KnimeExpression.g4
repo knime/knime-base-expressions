@@ -56,9 +56,9 @@ DBL_EQUAL: '==';
 NOT_EQUAL: '!=' | '<>';
 
 // Logical
-AND: 'and';
-OR: 'or';
-NOT: 'not';
+AND: 'and' | 'AND';
+OR: 'or' | 'OR';
+NOT: 'not' | 'NOT';
 
 // Missing fallback operator
 MISSING_FALLBACK: '??';
