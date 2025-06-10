@@ -4,16 +4,19 @@ This folder contains the grammar definiton for the KNIME Expression Language usi
 
 Install the `antlr4-tools`:
 ```bash
-$ conda create -n antlr4 -c conda-forge antlr4-tools
+$ pixi install
 ```
 
 Trying the parser
-```bash
-$ antlr4-parse KnimeExpression.g4 fullExpr -tree
-```
+* ```bash
+    $ pixi run dev
+    ```
+* Enter an expression
+* Press CTRL+D
+
 
 ## Generating the Parser
 
 ```bash
-$ antlr4 -o ../org.knime.core.expressions/src/generated/java/org/knime/core/expressions/antlr -package org.knime.core.expressions.antlr -visitor KnimeExpression.g4
+$ pixi run build
 ```

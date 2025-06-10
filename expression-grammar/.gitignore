@@ -1,2 +1,6 @@
 # Folder created by the ANTLR4 plugin for VSCode
 .antlr
+
+# pixi environments
+.pixi
+*.egg-info
