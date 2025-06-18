@@ -85,18 +85,9 @@ class ExpressionRowMapperSettings extends ScriptingNodeSettings implements Gener
      * The script shown in a new expression node.
      */
     static final String DEFAULT_SCRIPT = """
-            # Examples:
-            # 1. Calculate the sine of values in column "My Column":
-            #  sin($["My Column"])
-            # 2. Divide column values by a flow variable:
-            #  $["My Column"] / $$["My Flow Variable"]
-            # 3. Concatenate strings using the + operator:
-            #  substring($["firstname"], 1, 1) + ". " + $["lastname"]
-            # 4. Difference between adjacent rows:
-            #  $["My Column"] - $["My Column", -1]
-            #
-            # If you need help, try the "Ask K-AI" button,
-            # or have a look at the node description!
+            # Write a row-wise expression, e.g.
+            #   if($["sales"] > 1000, "High", "Low")
+            # See node description for full syntax
             """;
 
     /**

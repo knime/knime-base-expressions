@@ -85,16 +85,9 @@ class ExpressionFlowVariableSettings extends ScriptingNodeSettings implements Ge
      * The script shown in a new expression node.
      */
     static final String DEFAULT_SCRIPT = """
-            # Examples:
-            # 1. Calculate the sine of flow variable "My Flow Variable":
-            #  sin($$["My Flow Variable"])
-            # 2. Divide two flow variables:
-            #  $$["My First Flow Variable"] / $$["My Second Flow Variable"]
-            # 3. Concatenate strings using the + operator:
+            # Write a flow variable expression, e.g.
             #  substring($$["firstname"], 1, 1) + ". " + $$["lastname"]
-            #
-            # If you need help, try the "Ask K-AI" button,
-            # or have a look at the node description!
+            # See node description for full syntax
             """;
 
     /**

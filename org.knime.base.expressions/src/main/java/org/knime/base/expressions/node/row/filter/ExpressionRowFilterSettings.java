@@ -77,16 +77,9 @@ class ExpressionRowFilterSettings extends ScriptingNodeSettings implements Gener
      * The script shown in a new expression node.
      */
     static final String DEFAULT_SCRIPT = """
-            # Examples:
-            # 1. Remove every other row:
-            #  $[ROW_INDEX] %2 = 0
-            # 2. Remove rows negative values
-            #  $["My Column"] > 0
-            # 3. Remove rows where the difference between adjacent rows is negative:
-            #  $["My Column"] - $["My Column", -1] > 0
-            #
-            # If you need help, try the "Ask K-AI" button,
-            # or have a look at the node description!
+            # Write a BOOLEAN filter, e.g.
+            #   $["sales"] > 1000 and $["region"] = "North"
+            # See node description for full syntax
             """;
 
     private static final String CFG_KEY_SCRIPT = "script";
