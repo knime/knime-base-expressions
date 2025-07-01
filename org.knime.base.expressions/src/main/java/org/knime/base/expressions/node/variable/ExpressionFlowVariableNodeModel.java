@@ -164,7 +164,15 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                         "Expression " + (i + 1) + " evaluates to a type that can be MISSING. "
                             + "Use the missing coalescing operator '??' to define a default value.");
                 }
-                putFlowVariableForTypeCheck(availableFlowVariables, name, inferredType);
+                var variableType = ExpressionRunnerUtils.mapValueTypeToVariableType(inferredType);
+                if (variableType.isError()) {
+                    throw new InvalidSettingsException("Expression " + (i + 1)
+                        + " evaluates to a type that is not supported by flow variables: " + inferredType + ".");
+                }
+
+                // Add the flow variable to the map for type checking of the later expressions
+                // NB: The value is not important for type checking
+                availableFlowVariables.put(name, new FlowVariable(name, variableType.getValue()));
             } catch (ExpressionCompileException e) {
                 throw new InvalidSettingsException( //
                     "Error in Expression " + (i + 1) + ": " + e.getMessage(), e);
@@ -187,16 +195,6 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
         if (!exists && isReplace) {
             throw new InvalidSettingsException(
                 "The flow variable " + name + " does not exist. Choose 'append' to create a new flow variable.");
-        }
-    }
-
-    /** Add a flow variable without a value to the given map */
-    static void putFlowVariableForTypeCheck(final Map<String, FlowVariable> availableFlowVariables, final String name,
-        final ValueType valueType) {
-        if (name != null && !name.isEmpty()) {
-            var variableType = ExpressionRunnerUtils.mapValueTypeToVariableType(valueType);
-            // NB: The value is not important for type checking
-            availableFlowVariables.put(name, new FlowVariable(name, variableType));
         }
     }
 

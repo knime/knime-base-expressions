@@ -245,9 +245,17 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                             Expressions.getTextLocation(ast) //
                         ));
                     } else {
-                        availableFlowVariables.put(allNewFlowVariableNames[i],
-                            ReturnResult.success(new FlowVariable(allNewFlowVariableNames[i],
-                                ExpressionRunnerUtils.mapValueTypeToVariableType(inferredType))));
+                        var variableType = ExpressionRunnerUtils.mapValueTypeToVariableType(inferredType);
+                        if (variableType.isOk()) {
+                            availableFlowVariables.put(allNewFlowVariableNames[i], ReturnResult
+                                .success(new FlowVariable(allNewFlowVariableNames[i], variableType.getValue())));
+                        } else {
+                            diagnosticsForThisExpression.add(ExpressionDiagnostic.withSameMessage( //
+                                variableType.getErrorMessage(), //
+                                DiagnosticSeverity.ERROR, //
+                                Expressions.getTextLocation(ast) //
+                            ));
+                        }
 
                     }
                 } catch (ExpressionCompileException ex) {
