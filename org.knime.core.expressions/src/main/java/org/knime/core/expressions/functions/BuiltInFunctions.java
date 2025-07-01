@@ -221,6 +221,7 @@ public final class BuiltInFunctions {
         TemporalCreateExtractFunctions.MAKE_ZONED, //
         TemporalCreateExtractFunctions.MAKE_TIME_DURATION, //
         TemporalCreateExtractFunctions.MAKE_DATE_DURATION, //
+        TemporalCreateExtractFunctions.NOW, //
         TemporalCreateExtractFunctions.EXTRACT_YEAR, //
         TemporalCreateExtractFunctions.EXTRACT_MONTH, //
         TemporalCreateExtractFunctions.EXTRACT_DAY_OF_MONTH, //

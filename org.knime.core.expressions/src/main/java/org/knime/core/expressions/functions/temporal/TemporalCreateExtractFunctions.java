@@ -55,6 +55,7 @@ import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_DAT
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_DATE_TIME_MISSING;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_TIME_MISSING;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_TIME_DURATION_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_ZONED_DATE_TIME;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_ZONED_DATE_TIME_MISSING;
 import static org.knime.core.expressions.SignatureUtils.arg;
 import static org.knime.core.expressions.SignatureUtils.hasDateAndTimeInformationOrOpt;
@@ -78,6 +79,7 @@ import static org.knime.core.expressions.ValueType.OPT_LOCAL_DATE;
 import static org.knime.core.expressions.ValueType.OPT_LOCAL_TIME;
 import static org.knime.core.expressions.ValueType.OPT_ZONED_DATE_TIME;
 import static org.knime.core.expressions.ValueType.TIME_DURATION;
+import static org.knime.core.expressions.ValueType.ZONED_DATE_TIME;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyMissing;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.anyOptional;
 import static org.knime.core.expressions.functions.ExpressionFunctionBuilder.functionBuilder;
@@ -773,5 +775,28 @@ public final class TemporalCreateExtractFunctions {
         .returnType("A `FLOAT` representing the duration in seconds", RETURN_FLOAT_MISSING,
             args -> FLOAT(anyOptional(args))) //
         .impl(TemporalCreateExtractFunctions.convertDurationImpl(TimeBasedGranularityUnit.SECONDS)) //
+        .build();
+
+    /**
+     * Returns the current zoned date time at the start of node execution. The value is constant for all rows and all
+     * expressions of an Expression node.
+     */
+    public static final ExpressionFunction NOW = functionBuilder() //
+        .name("now") //
+        .description("""
+                Returns the current zoned date time at the start of node execution.
+
+                The value is constant for all rows and all expressions of an Expression node
+                (i.e., the node execution start time).
+                """) //
+        .examples("""
+                * `now()` returns the node execution start time as a `ZONED_DATE_TIME`
+                """) //
+        .keywords("now", "current", "date", "time", "zoned_date_time") //
+        .category(CATEGORY_CREATE_EXTRACT) //
+        .args() //
+        .returnType("A `ZONED_DATE_TIME` representing the node execution start time", RETURN_ZONED_DATE_TIME,
+            args -> ZONED_DATE_TIME) //
+        .impl(args -> ZonedDateTimeComputer.of(ctx -> ctx.getExecutionStartTime(), ctx -> false)) //
         .build();
 }
