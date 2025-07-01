@@ -87,6 +87,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.TestFactory;
+import org.knime.core.expressions.TestUtils;
 import org.knime.core.expressions.functions.FunctionTestBuilder;
 
 /**
@@ -421,6 +422,15 @@ final class TemporalCreateExtractFunctionTests {
             .illegalArgs("Not a duration", List.of(LOCAL_DATE)) //
             .implWithTolerance("valid duration", List.of(arg(TEST_DURATION)), 1 * 3600.0 + 2 * 60.0 + 3) //
             .impl("missing duration", List.of(misDuration())) //
+            .tests();
+    }
+
+    @TestFactory
+    List<DynamicNode> nowFunction() {
+        return new FunctionTestBuilder(TemporalCreateExtractFunctions.NOW) //
+            .typing("no args", List.of(), ZONED_DATE_TIME) //
+            .illegalArgs("unexpected arg", List.of(INTEGER)) //
+            .impl("returns time from evaluation context", List.of(), TestUtils.DUMMY_EXECUTION_START_TIME) //
             .tests();
     }
 }
