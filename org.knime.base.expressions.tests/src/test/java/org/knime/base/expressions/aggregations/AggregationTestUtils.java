@@ -83,6 +83,7 @@ import org.knime.core.expressions.Computer.IntegerComputer;
 import org.knime.core.expressions.Computer.StringComputer;
 import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionEvaluationException;
+import org.knime.core.expressions.TestUtils;
 import org.knime.core.expressions.aggregations.ColumnAggregation;
 import org.knime.core.expressions.aggregations.TestColumnAggregationArgumentSource;
 
@@ -114,10 +115,6 @@ public class AggregationTestUtils {
     public static final class AggregationTestBuilder {
 
         // ======= STATIC MEMBERS =======
-
-        /** Warning listener that throws away any warnings */
-        private static final EvaluationContext DUMMY_WML = w -> {
-        };
 
         /** Index of the long column in the test table */
         public static final int LONG_COL_IDX = 0;
@@ -765,7 +762,7 @@ public class AggregationTestUtils {
                 ).createResultComputer();
 
                 List<String> warnings = new ArrayList<String>();
-                EvaluationContext ctx = warnings::add;
+                var ctx = EvaluationContext.of(TestUtils.DUMMY_EXECUTION_START_TIME, warnings::add);
 
                 if (!actualResult.isMissing(ctx)) {
                     computeGenericComputer(actualResult, ctx);
@@ -856,10 +853,10 @@ public class AggregationTestUtils {
                 ).createResultComputer();
 
                 if (expectedResult == null) {
-                    assertTrue(actualResult.isMissing(DUMMY_WML),
+                    assertTrue(actualResult.isMissing(TestUtils.DUMMY_EVAL_CTX),
                         "Expected column aggregation to return missing value. Args: %s".formatted(args));
                 } else {
-                    assertFalse(actualResult.isMissing(DUMMY_WML),
+                    assertFalse(actualResult.isMissing(TestUtils.DUMMY_EVAL_CTX),
                         "Expected column aggregation to return non-missing value. Args: %s".formatted(args));
 
                     if (expectedResult instanceof Integer) {
@@ -903,7 +900,7 @@ public class AggregationTestUtils {
          * @return the result of the computer's compute method
          */
         private static Object computeGenericComputer(final Computer c) throws ExpressionEvaluationException {
-            return computeGenericComputer(c, DUMMY_WML);
+            return computeGenericComputer(c, TestUtils.DUMMY_EVAL_CTX);
         }
 
         /**

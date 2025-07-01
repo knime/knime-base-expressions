@@ -161,7 +161,7 @@ final class EvaluationTest {
         );
 
         assertNotNull(result, "should output result");
-        EvaluationContext ctx = c -> fail("should not warn");
+        var ctx = EvaluationContext.of(TestUtils.DUMMY_EXECUTION_START_TIME, c -> fail("should not warn"));
         Assertions.assertFalse(result.isMissing(ctx));
 
         var intResult = assertInstanceOf(IntegerComputer.class, result);

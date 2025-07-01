@@ -48,6 +48,9 @@
  */
 package org.knime.core.expressions;
 
+import java.time.ZonedDateTime;
+import java.util.function.Consumer;
+
 /**
  * Interface for registering warnings emitted during expression evaluation.
  *
@@ -65,4 +68,33 @@ public interface EvaluationContext {
      * @param warning the warning to add
      */
     void addWarning(final String warning);
+
+    /**
+     * Returns the node execution start time as a {@link ZonedDateTime}. This is used by functions like now().
+     *
+     * @return the node execution start time, not <code>null</code>
+     */
+    ZonedDateTime getExecutionStartTime();
+
+    /**
+     * Creates an {@link EvaluationContext} that uses the given {@link ZonedDateTime} as the execution start time and
+     * forwards warnings to the given consumer.
+     *
+     * @param executionStartTime the execution start time, not <code>null</code>
+     * @param warningConsumer a consumer for warnings, not <code>null</code>
+     * @return a new {@link EvaluationContext}
+     */
+    static EvaluationContext of(final ZonedDateTime executionStartTime, final Consumer<String> warningConsumer) {
+        return new EvaluationContext() {
+            @Override
+            public void addWarning(final String warning) {
+                warningConsumer.accept(warning);
+            }
+
+            @Override
+            public ZonedDateTime getExecutionStartTime() {
+                return executionStartTime;
+            }
+        };
+    }
 }

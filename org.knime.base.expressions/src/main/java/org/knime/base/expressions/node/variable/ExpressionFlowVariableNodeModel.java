@@ -50,6 +50,7 @@ package org.knime.base.expressions.node.variable;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -268,6 +269,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
     ) throws ExpressionCompileException, WithIndexExpressionException {
         var availableFlowVariables = new HashMap<String, FlowVariable>(existingVariables);
         var outputVariables = new ArrayList<FlowVariable>();
+        var executionStartTime = ZonedDateTime.now();
 
         for (int i = 0; i < expressions.size(); i++) {
             updateProgress.accept(i);
@@ -296,7 +298,7 @@ final class ExpressionFlowVariableNodeModel extends NodeModel {
                 name, //
                 resultComputer, //
                 returnTypes.get(finalI), //
-                warning -> setWarning.accept(finalI, warning) //
+                EvaluationContext.of(executionStartTime, warning -> setWarning.accept(finalI, warning)) //
             );
 
             availableFlowVariables.put(name, outputVariable);
