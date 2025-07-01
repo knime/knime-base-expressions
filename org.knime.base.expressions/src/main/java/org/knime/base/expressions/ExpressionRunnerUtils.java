@@ -631,17 +631,18 @@ public final class ExpressionRunnerUtils {
      * @param valueType the {@link ValueType} to map to a {@link VariableType}
      * @return the variable type or {@code null} if the type is not supported
      */
-    public static VariableType<?> mapValueTypeToVariableType(final ValueType valueType) { // NOSONAR
+    public static ReturnResult<VariableType<?>> mapValueTypeToVariableType(final ValueType valueType) { // NOSONAR
         if (valueType == ValueType.FLOAT) {
-            return VariableType.DoubleType.INSTANCE;
+            return ReturnResult.success(VariableType.DoubleType.INSTANCE);
         } else if (valueType == ValueType.BOOLEAN) {
-            return VariableType.BooleanType.INSTANCE;
+            return ReturnResult.success(VariableType.BooleanType.INSTANCE);
         } else if (valueType == ValueType.INTEGER) {
-            return VariableType.LongType.INSTANCE;
+            return ReturnResult.success(VariableType.LongType.INSTANCE);
         } else if (valueType == ValueType.STRING) {
-            return VariableType.StringType.INSTANCE;
+            return ReturnResult.success(VariableType.StringType.INSTANCE);
         } else {
-            return null;
+            return ReturnResult.failure(
+                "The expression evaluates to '" + valueType + "', but this type is not supported by flow variables.");
         }
     }
 

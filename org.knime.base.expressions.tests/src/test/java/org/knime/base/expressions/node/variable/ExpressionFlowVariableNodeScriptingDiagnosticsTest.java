@@ -286,4 +286,18 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
             "Expected invalid expression error message." //
         );
     }
+
+    @Test
+    void testUnsupportedReturnType() {
+        var service = createService(getWorkflowControl(FLOW_VARIABLES));
+        var result = service.getFlowVariableDiagnostics(new String[]{"now()"}, new String[]{"out"});
+
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertFalse(result.get(0).diagnostics().isEmpty(), "Expected error for unsupported return type.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).diagnostics().get(0).severity(),
+            "Expected error severity for unsupported return type.");
+        assertEquals("The expression evaluates to 'ZONED_DATE_TIME', but this type is not supported by flow variables.",
+            result.get(0).diagnostics().get(0).message(), "Expected unsupported return type error message.");
+    }
+
 }
