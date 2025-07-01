@@ -51,6 +51,7 @@ package org.knime.core.expressions.functions.temporal;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_DATE_DURATION_MISSING;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_FLOAT_MISSING;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_INTEGER_MISSING;
+import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_DATE;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_DATE_MISSING;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_DATE_TIME_MISSING;
 import static org.knime.core.expressions.ReturnTypeDescriptions.RETURN_LOCAL_TIME_MISSING;
@@ -798,5 +799,27 @@ public final class TemporalCreateExtractFunctions {
         .returnType("A `ZONED_DATE_TIME` representing the node execution start time", RETURN_ZONED_DATE_TIME,
             args -> ZONED_DATE_TIME) //
         .impl(args -> ZonedDateTimeComputer.of(ctx -> ctx.getExecutionStartTime(), ctx -> false)) //
+        .build();
+
+    /**
+     * Returns the current local date at the start of node execution. The value is constant for all rows and all
+     * expressions of an Expression node.
+     */
+    public static final ExpressionFunction TODAY = functionBuilder() //
+        .name("today") //
+        .description("""
+                Returns the current local date at the start of node execution.
+
+                The value is constant for all rows and all expressions of an Expression node even if the date changes
+                during the node execution.
+                """) //
+        .examples("""
+                * `today()` returns the date of node execution start as a `LOCAL_DATE`
+                """) //
+        .keywords("current", "date", "time", "zoned_date_time") //
+        .category(CATEGORY_CREATE_EXTRACT) //
+        .args() //
+        .returnType("The date of the node execution", RETURN_LOCAL_DATE, args -> LOCAL_DATE) //
+        .impl(args -> LocalDateComputer.of(ctx -> ctx.getExecutionStartTime().toLocalDate(), ctx -> false)) //
         .build();
 }

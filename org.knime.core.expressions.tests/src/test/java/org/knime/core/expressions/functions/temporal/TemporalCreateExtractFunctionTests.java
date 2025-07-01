@@ -433,4 +433,13 @@ final class TemporalCreateExtractFunctionTests {
             .impl("returns time from evaluation context", List.of(), TestUtils.DUMMY_EXECUTION_START_TIME) //
             .tests();
     }
+
+    @TestFactory
+    List<DynamicNode> todayFunction() {
+        return new FunctionTestBuilder(TemporalCreateExtractFunctions.TODAY) //
+            .typing("no args", List.of(), LOCAL_DATE) //
+            .illegalArgs("unexpected arg", List.of(INTEGER)) //
+            .impl("returns date from evaluation context", List.of(), TestUtils.DUMMY_EXECUTION_START_TIME.toLocalDate()) //
+            .tests();
+    }
 }
