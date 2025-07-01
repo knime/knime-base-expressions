@@ -98,9 +98,6 @@ import org.knime.core.expressions.ValueType;
  */
 public final class FunctionTestBuilder {
 
-    private static final EvaluationContext DUMMY_WML = w -> {
-    };
-
     // == Arguments for testing functions ==
 
     /**
@@ -435,7 +432,7 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(Computer.class, c, m_function.name() + " should eval to Computer");
             try {
-                assertTrue(c.isMissing(DUMMY_WML), m_function.name() + " should be missing");
+                assertTrue(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should be missing");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
                 fail("unexpected evaluation error", ex); // NOSONAR
@@ -466,10 +463,10 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(BooleanComputer.class, c, m_function.name() + " should eval to BOOLEAN");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                assertFalse(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should not be missing");
                 positionalArgs.forEach(TestingArgument::resetAccessed);
                 namedArgs.values().forEach(TestingArgument::resetAccessed);
-                assertEquals(expected, ((BooleanComputer)c).compute(DUMMY_WML),
+                assertEquals(expected, ((BooleanComputer)c).compute(TestUtils.DUMMY_EVAL_CTX),
                     m_function.name() + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -503,10 +500,10 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(IntegerComputer.class, c, m_function.name() + " should eval to INTEGER");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                assertFalse(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should not be missing");
                 positionalArgs.forEach(TestingArgument::resetAccessed);
                 namedArgs.values().forEach(TestingArgument::resetAccessed);
-                assertEquals(expected, ((IntegerComputer)c).compute(DUMMY_WML),
+                assertEquals(expected, ((IntegerComputer)c).compute(TestUtils.DUMMY_EVAL_CTX),
                     m_function.name() + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -540,10 +537,10 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(FloatComputer.class, c, m_function.name() + " should eval to FLOAT");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                assertFalse(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should not be missing");
                 positionalArgs.forEach(TestingArgument::resetAccessed);
                 namedArgs.values().forEach(TestingArgument::resetAccessed);
-                assertEquals(expected, ((FloatComputer)c).compute(DUMMY_WML),
+                assertEquals(expected, ((FloatComputer)c).compute(TestUtils.DUMMY_EVAL_CTX),
                     m_function.name() + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -577,10 +574,10 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(StringComputer.class, c, m_function.name() + " should eval to STRING");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                assertFalse(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should not be missing");
                 positionalArgs.forEach(TestingArgument::resetAccessed);
                 namedArgs.values().forEach(TestingArgument::resetAccessed);
-                assertEquals(expected, ((StringComputer)c).compute(DUMMY_WML),
+                assertEquals(expected, ((StringComputer)c).compute(TestUtils.DUMMY_EVAL_CTX),
                     m_function.name() + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -612,10 +609,10 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(LocalDateComputer.class, c, m_function.name() + " should eval to LOCAL_DATE");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                assertFalse(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should not be missing");
                 positionalArgs.forEach(TestingArgument::resetAccessed);
                 namedArgs.values().forEach(TestingArgument::resetAccessed);
-                assertEquals(expected, ((LocalDateComputer)c).compute(DUMMY_WML),
+                assertEquals(expected, ((LocalDateComputer)c).compute(TestUtils.DUMMY_EVAL_CTX),
                     m_function.name() + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -647,10 +644,10 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(LocalTimeComputer.class, c, m_function.name() + " should eval to LOCAL_TIME");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                assertFalse(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should not be missing");
                 positionalArgs.forEach(TestingArgument::resetAccessed);
                 namedArgs.values().forEach(TestingArgument::resetAccessed);
-                assertEquals(expected, ((LocalTimeComputer)c).compute(DUMMY_WML),
+                assertEquals(expected, ((LocalTimeComputer)c).compute(TestUtils.DUMMY_EVAL_CTX),
                     m_function.name() + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -682,10 +679,10 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(LocalDateTimeComputer.class, c, m_function.name() + " should eval to LOCAL_DATE_TIME");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                assertFalse(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should not be missing");
                 positionalArgs.forEach(TestingArgument::resetAccessed);
                 namedArgs.values().forEach(TestingArgument::resetAccessed);
-                assertEquals(expected, ((LocalDateTimeComputer)c).compute(DUMMY_WML),
+                assertEquals(expected, ((LocalDateTimeComputer)c).compute(TestUtils.DUMMY_EVAL_CTX),
                     m_function.name() + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -717,10 +714,10 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(ZonedDateTimeComputer.class, c, m_function.name() + " should eval to ZONED_DATE_TIME");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                assertFalse(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should not be missing");
                 positionalArgs.forEach(TestingArgument::resetAccessed);
                 namedArgs.values().forEach(TestingArgument::resetAccessed);
-                assertEquals(expected, ((ZonedDateTimeComputer)c).compute(DUMMY_WML),
+                assertEquals(expected, ((ZonedDateTimeComputer)c).compute(TestUtils.DUMMY_EVAL_CTX),
                     m_function.name() + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -752,10 +749,10 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(TimeDurationComputer.class, c, m_function.name() + " should eval to TIME_DURATION");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                assertFalse(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should not be missing");
                 positionalArgs.forEach(TestingArgument::resetAccessed);
                 namedArgs.values().forEach(TestingArgument::resetAccessed);
-                assertEquals(expected, ((TimeDurationComputer)c).compute(DUMMY_WML),
+                assertEquals(expected, ((TimeDurationComputer)c).compute(TestUtils.DUMMY_EVAL_CTX),
                     m_function.name() + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -787,10 +784,10 @@ public final class FunctionTestBuilder {
         return impl(name, positionalArgs, namedArgs, c -> {
             assertInstanceOf(DateDurationComputer.class, c, m_function.name() + " should eval to DATE_DURATION");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), m_function.name() + " should not be missing");
+                assertFalse(c.isMissing(TestUtils.DUMMY_EVAL_CTX), m_function.name() + " should not be missing");
                 positionalArgs.forEach(TestingArgument::resetAccessed);
                 namedArgs.values().forEach(TestingArgument::resetAccessed);
-                assertEquals(expected, ((DateDurationComputer)c).compute(DUMMY_WML),
+                assertEquals(expected, ((DateDurationComputer)c).compute(TestUtils.DUMMY_EVAL_CTX),
                     m_function.name() + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -913,7 +910,7 @@ public final class FunctionTestBuilder {
             args.stream().forEach(TestingArgument::setOpen);
 
             var warnings = new ArrayList<String>();
-            EvaluationContext ctx = w -> warnings.add(w);
+            var ctx = EvaluationContext.of(TestUtils.DUMMY_EXECUTION_START_TIME, warnings::add);
 
             // Compute the computer
             if (!resultComputer.isMissing(ctx)) {
@@ -1042,38 +1039,48 @@ public final class FunctionTestBuilder {
 
             ExpressionEvaluationException exception;
             try {
-                assertFalse(result.isMissing(DUMMY_WML), "expected error but was missing");
+                assertFalse(result.isMissing(TestUtils.DUMMY_EVAL_CTX), "expected error but was missing");
 
                 // TODO(AP-24022): use pattern matching for exhaustive case switches
                 if (result instanceof IntegerComputer ic) {
-                    exception = assertThrows(ExpressionEvaluationException.class, () -> ic.compute(DUMMY_WML),
+                    exception =
+                        assertThrows(ExpressionEvaluationException.class, () -> ic.compute(TestUtils.DUMMY_EVAL_CTX),
                         "evaluation should throw an error");
                 } else if (result instanceof FloatComputer fc) {
-                    exception = assertThrows(ExpressionEvaluationException.class, () -> fc.compute(DUMMY_WML),
+                    exception =
+                        assertThrows(ExpressionEvaluationException.class, () -> fc.compute(TestUtils.DUMMY_EVAL_CTX),
                         "evaluation should throw an error");
                 } else if (result instanceof BooleanComputer bc) {
-                    exception = assertThrows(ExpressionEvaluationException.class, () -> bc.compute(DUMMY_WML),
+                    exception =
+                        assertThrows(ExpressionEvaluationException.class, () -> bc.compute(TestUtils.DUMMY_EVAL_CTX),
                         "evaluation should throw an error");
                 } else if (result instanceof StringComputer sc) {
-                    exception = assertThrows(ExpressionEvaluationException.class, () -> sc.compute(DUMMY_WML),
+                    exception =
+                        assertThrows(ExpressionEvaluationException.class, () -> sc.compute(TestUtils.DUMMY_EVAL_CTX),
                         "evaluation should throw an error");
                 } else if (result instanceof LocalDateComputer ldc) {
-                    exception = assertThrows(ExpressionEvaluationException.class, () -> ldc.compute(DUMMY_WML),
+                    exception =
+                        assertThrows(ExpressionEvaluationException.class, () -> ldc.compute(TestUtils.DUMMY_EVAL_CTX),
                         "evaluation should throw an error");
                 } else if (result instanceof LocalTimeComputer ltc) {
-                    exception = assertThrows(ExpressionEvaluationException.class, () -> ltc.compute(DUMMY_WML),
+                    exception =
+                        assertThrows(ExpressionEvaluationException.class, () -> ltc.compute(TestUtils.DUMMY_EVAL_CTX),
                         "evaluation should throw an error");
                 } else if (result instanceof LocalDateTimeComputer ldtc) {
-                    exception = assertThrows(ExpressionEvaluationException.class, () -> ldtc.compute(DUMMY_WML),
+                    exception =
+                        assertThrows(ExpressionEvaluationException.class, () -> ldtc.compute(TestUtils.DUMMY_EVAL_CTX),
                         "evaluation should throw an error");
                 } else if (result instanceof ZonedDateTimeComputer zdtc) {
-                    exception = assertThrows(ExpressionEvaluationException.class, () -> zdtc.compute(DUMMY_WML),
+                    exception =
+                        assertThrows(ExpressionEvaluationException.class, () -> zdtc.compute(TestUtils.DUMMY_EVAL_CTX),
                         "evaluation should throw an error");
                 } else if (result instanceof TimeDurationComputer tdc) {
-                    exception = assertThrows(ExpressionEvaluationException.class, () -> tdc.compute(DUMMY_WML),
+                    exception =
+                        assertThrows(ExpressionEvaluationException.class, () -> tdc.compute(TestUtils.DUMMY_EVAL_CTX),
                         "evaluation should throw an error");
                 } else if (result instanceof DateDurationComputer ddc) {
-                    exception = assertThrows(ExpressionEvaluationException.class, () -> ddc.compute(DUMMY_WML),
+                    exception = assertThrows(ExpressionEvaluationException.class,
+                        () -> ddc.compute(TestUtils.DUMMY_EVAL_CTX),
                         "evaluation should throw an error");
                 } else {
                     fail("unexpected computer type");

@@ -52,6 +52,7 @@ import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForT
 
 import java.io.File;
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -260,6 +261,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
         var numberOfExpressions = expressions.size();
         var nextInputTable = inputTable;
         var outputTables = new ArrayList<BufferedDataTable>();
+        var executionStartTime = ZonedDateTime.now();
 
         for (int i = 0; i < numberOfExpressions; ++i) {
             var subExec = exec.createSubExecutionContext(1.0 / numberOfExpressions);
@@ -279,7 +281,7 @@ final class ExpressionRowMapperNodeModel extends NodeModel {
 
             // Evaluate the expression and materialize the result
             final var finalI = i;
-            EvaluationContext ctx = warning -> setWarning.accept(finalI, warning);
+            var ctx = EvaluationContext.of(executionStartTime, warning -> setWarning.accept(finalI, warning));
             ReferenceTable expressionResult;
             var newColumnPosition = newColumnPositions.get(i);
             try {

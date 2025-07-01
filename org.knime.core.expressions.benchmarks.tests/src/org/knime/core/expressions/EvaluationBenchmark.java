@@ -48,6 +48,7 @@
  */
 package org.knime.core.expressions;
 
+import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -104,8 +105,8 @@ public class EvaluationBenchmark {
     @OperationsPerInvocation(BenchmarkTable.NUM_ROWS)
     public void evaluate(final Blackhole bh) throws ExpressionEvaluationException {
 
-        EvaluationContext ctx = warning -> {
-        };
+        EvaluationContext ctx = EvaluationContext.of(ZonedDateTime.now(), warning -> {
+        });
 
         if (m_resultComputer instanceof BooleanComputer c) {
             for (int i = 0; i < BenchmarkTable.NUM_ROWS; i++) {

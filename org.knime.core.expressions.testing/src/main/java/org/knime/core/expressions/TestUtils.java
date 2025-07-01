@@ -89,9 +89,19 @@ import org.knime.core.expressions.functions.ExpressionFunction;
  */
 public final class TestUtils {
 
-    // Listener that just ignores any warnings
-    private static final EvaluationContext DUMMY_WML = w -> {
-    };
+    /**
+     * Dummy execution start time for tests, set to 2024-04-05T12:00:00+02:00[Europe/Berlin]. Used by the
+     * {@link TestUtils#DUMMY_EVAL_CTX}
+     */
+    public static final ZonedDateTime DUMMY_EXECUTION_START_TIME =
+        ZonedDateTime.parse("2024-04-05T12:00:00+02:00[Europe/Berlin]");
+
+    /**
+     * Dummy {@link EvaluationContext} that ignores warnings and has the execution start time
+     * {@link TestUtils#DUMMY_EXECUTION_START_TIME}
+     */
+    public static final EvaluationContext DUMMY_EVAL_CTX = EvaluationContext.of(DUMMY_EXECUTION_START_TIME, w -> {
+    });
 
     /** Function that maps from a {@link ColumnId} to its {{@link ColumnId}} */
     public static Function<ColumnAccess, ColumnId> COLUMN_ID = ColumnAccess::columnId;
@@ -172,7 +182,7 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(Computer.class, c, computerDesc + " should eval to Computer");
             try {
-                assertTrue(c.isMissing(DUMMY_WML), computerDesc + " should be missing");
+                assertTrue(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should be missing");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
                 fail("unexpected evaluation error", ex); // NOSONAR
@@ -189,8 +199,8 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(BooleanComputer.class, c, computerDesc + " should eval to BOOLEAN");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
-                assertEquals(expected, ((BooleanComputer)c).compute(DUMMY_WML),
+                assertFalse(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should not be missing");
+                assertEquals(expected, ((BooleanComputer)c).compute(DUMMY_EVAL_CTX),
                     computerDesc + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -208,8 +218,8 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(IntegerComputer.class, c, computerDesc + " should eval to INTEGER");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
-                assertEquals(expected, ((IntegerComputer)c).compute(DUMMY_WML),
+                assertFalse(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should not be missing");
+                assertEquals(expected, ((IntegerComputer)c).compute(DUMMY_EVAL_CTX),
                     computerDesc + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -229,8 +239,8 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(FloatComputer.class, c, computerDesc + " should eval to FLOAT");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
-                assertEquals(expected, ((FloatComputer)c).compute(DUMMY_WML), tolerance,
+                assertFalse(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should not be missing");
+                assertEquals(expected, ((FloatComputer)c).compute(DUMMY_EVAL_CTX), tolerance,
                     computerDesc + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -257,8 +267,9 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(StringComputer.class, c, computerDesc + " should eval to STRING");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
-                assertEquals(expected, ((StringComputer)c).compute(DUMMY_WML), computerDesc + " should eval correctly");
+                assertFalse(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should not be missing");
+                assertEquals(expected, ((StringComputer)c).compute(DUMMY_EVAL_CTX),
+                    computerDesc + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
                 fail("unexpected evaluation error", ex); // NOSONAR
@@ -275,8 +286,8 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(TimeDurationComputer.class, c, computerDesc + " should eval to TIME_DURATION");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
-                assertEquals(expected, ((TimeDurationComputer)c).compute(DUMMY_WML),
+                assertFalse(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should not be missing");
+                assertEquals(expected, ((TimeDurationComputer)c).compute(DUMMY_EVAL_CTX),
                     computerDesc + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -294,8 +305,8 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(DateDurationComputer.class, c, computerDesc + " should eval to DATE_DURATION");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
-                assertEquals(expected, ((DateDurationComputer)c).compute(DUMMY_WML),
+                assertFalse(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should not be missing");
+                assertEquals(expected, ((DateDurationComputer)c).compute(DUMMY_EVAL_CTX),
                     computerDesc + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -313,8 +324,8 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(LocalDateComputer.class, c, computerDesc + " should eval to LOCAL_DATE");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
-                assertEquals(expected, ((LocalDateComputer)c).compute(DUMMY_WML),
+                assertFalse(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should not be missing");
+                assertEquals(expected, ((LocalDateComputer)c).compute(DUMMY_EVAL_CTX),
                     computerDesc + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -332,8 +343,8 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(LocalTimeComputer.class, c, computerDesc + " should eval to LOCAL_TIME");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
-                assertEquals(expected, ((LocalTimeComputer)c).compute(DUMMY_WML),
+                assertFalse(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should not be missing");
+                assertEquals(expected, ((LocalTimeComputer)c).compute(DUMMY_EVAL_CTX),
                     computerDesc + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -351,8 +362,8 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(LocalDateTimeComputer.class, c, computerDesc + " should eval to LOCAL_DATE_TIME");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
-                assertEquals(expected, ((LocalDateTimeComputer)c).compute(DUMMY_WML),
+                assertFalse(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should not be missing");
+                assertEquals(expected, ((LocalDateTimeComputer)c).compute(DUMMY_EVAL_CTX),
                     computerDesc + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer
@@ -370,8 +381,8 @@ public final class TestUtils {
         return c -> {
             assertInstanceOf(ZonedDateTimeComputer.class, c, computerDesc + " should eval to ZONED_DATE_TIME");
             try {
-                assertFalse(c.isMissing(DUMMY_WML), computerDesc + " should not be missing");
-                assertEquals(expected, ((ZonedDateTimeComputer)c).compute(DUMMY_WML),
+                assertFalse(c.isMissing(DUMMY_EVAL_CTX), computerDesc + " should not be missing");
+                assertEquals(expected, ((ZonedDateTimeComputer)c).compute(DUMMY_EVAL_CTX),
                     computerDesc + " should eval correctly");
             } catch (ExpressionEvaluationException ex) {
                 // SONAR wants to add exec to signature but this would require special interface instead of Consumer

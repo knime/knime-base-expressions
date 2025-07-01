@@ -52,6 +52,7 @@ import static org.knime.base.expressions.ExpressionRunnerUtils.flowVarToTypeForT
 
 import java.io.File;
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -63,6 +64,7 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.data.columnar.table.virtual.ColumnarVirtualTableMaterializer;
 import org.knime.core.expressions.Ast;
+import org.knime.core.expressions.EvaluationContext;
 import org.knime.core.expressions.ExpressionCompileException;
 import org.knime.core.expressions.ExpressionEvaluationException;
 import org.knime.core.expressions.Expressions;
@@ -183,6 +185,7 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
     ) throws ExpressionCompileException, CanceledExecutionException, VirtualTableIncompatibleException,
         ExpressionEvaluationException {
         var numRows = inputTable.size();
+        var executionStartTime = ZonedDateTime.now();
         exec.setProgress(0, "Evaluating expression");
 
         // Parse the expression and infer the types
@@ -198,8 +201,9 @@ final class ExpressionRowFilterNodeModel extends NodeModel {
         // Evaluate the expression and materialize the result
         var additionalInputs = new NodeExpressionAdditionalInputs(availableFlowVariables);
 
+        var ctx = EvaluationContext.of(executionStartTime, setWarning::accept);
         var filteredTable = ExpressionRunnerUtils.filterTableByExpression(inRefTable.getVirtualTable(), ast,
-            inputTable.size(), setWarning::accept, additionalInputs);
+            inputTable.size(), ctx, additionalInputs);
 
         var materializeProgress = exec.createSubProgress(0.34);
         try {
