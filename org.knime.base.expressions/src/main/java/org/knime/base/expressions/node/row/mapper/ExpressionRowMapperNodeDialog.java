@@ -76,7 +76,7 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
 
     @Override
     public Page getPage() {
-        return ExpressionNodeDialogUtils.expressionPageBuilder("row-mapper.html").build();
+        return ExpressionNodeDialogUtils.createExpressionPage("row-mapper.html");
     }
 
     @Override
