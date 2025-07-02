@@ -63,7 +63,6 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.ui.CoreUIPlugin;
 import org.knime.core.webui.page.Page;
-import org.knime.core.webui.page.PageBuilder;
 import org.knime.scripting.editor.GenericInitialDataBuilder.DataSupplier;
 import org.knime.scripting.editor.WorkflowControl;
 import org.osgi.framework.Bundle;
@@ -85,9 +84,10 @@ public final class ExpressionNodeDialogUtils {
      * @param entryPoint the entry point of the expression node dialog
      * @return a page builder for the expression node dialog
      */
-    public static PageBuilder expressionPageBuilder(final String entryPoint) {
+    public static Page createExpressionPage(final String entryPoint) {
         return Page //
-            .builder(ExpressionNodeDialogUtils.class, "js-src/dist", entryPoint) //
+            .create().fromFile().bundleClass(ExpressionNodeDialogUtils.class).basePath("js-src/dist")
+            .relativeFilePath(entryPoint) //
             .addResourceDirectory("assets") //
             .addResourceDirectory("monacoeditorwork") //
             .addResources(ExpressionNodeDialogUtils::getCoreUIResource, "core-ui", true);

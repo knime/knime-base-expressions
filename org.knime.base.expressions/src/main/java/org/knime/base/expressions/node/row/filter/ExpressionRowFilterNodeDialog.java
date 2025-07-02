@@ -76,7 +76,7 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
 
     @Override
     public Page getPage() {
-        return ExpressionNodeDialogUtils.expressionPageBuilder("row-filter.html").build();
+        return ExpressionNodeDialogUtils.createExpressionPage("row-filter.html");
     }
 
     @Override
