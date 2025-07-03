@@ -1,0 +1,75 @@
+{
+  ".stylelintrc.cjs": {
+    "no-undef": {
+      "count": 1
+    }
+  },
+  "postcss.config.cjs": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 1
+    }
+  },
+  "src/__mocks__/mock-data.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/common/functions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/components/function-catalog/FunctionCatalog.vue": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-asserted-optional-chain": {
+      "count": 2
+    }
+  },
+  "src/flowVariableApp/ExpressionFlowVariableApp.vue": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/flowVariableApp/OutputPreviewFlowVariable.vue": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/flowVariableApp/__mocks__/browser-mock-flow-variable-services.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/languageSupport/autoComplete.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/languageSupport/registerKnimeExpressionLanguage.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "src/rowFilterApp/__mocks__/browser-mock-row-filter-services.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/rowMapperApp/ExpressionRowMapperApp.vue": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/rowMapperApp/__mocks__/browser-mock-row-mapper-services.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "vite.config.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  }
+}
