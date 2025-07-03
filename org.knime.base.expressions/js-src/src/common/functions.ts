@@ -19,7 +19,7 @@ export const setupConsola = () => {
   });
   const globalObject = typeof global === "object" ? global : window;
 
-  // @ts-expect-error
+  // @ts-expect-error TODO how to tell TS that consola is a global?
   globalObject.consola = consola;
 };
 

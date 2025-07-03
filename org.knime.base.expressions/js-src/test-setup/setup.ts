@@ -11,7 +11,7 @@ export const consola = new Consola({
   level: LogLevel.Log,
 });
 
-// @ts-expect-error
+// @ts-expect-error TODO how to tell TS that consola is a global?
 window.consola = consola;
 
 // Mock the scrollIntoView method, which is not implemented in jsdom.
