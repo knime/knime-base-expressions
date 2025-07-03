@@ -1,6 +1,6 @@
 import "vitest-canvas-mock";
 import { vi } from "vitest";
-import { Consola, LogLevel } from "consola";
+import { Consola, LogLevels } from "consola";
 
 import {
   DEFAULT_INITIAL_DATA,
@@ -8,7 +8,7 @@ import {
 } from "../src/__mocks__/mock-data";
 
 export const consola = new Consola({
-  level: LogLevel.Log,
+  level: LogLevels.log,
 });
 
 // @ts-expect-error TODO how to tell TS that consola is a global?
