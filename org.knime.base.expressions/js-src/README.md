@@ -36,8 +36,10 @@ Start KNIME Analytics Platform with the arguments
 
 ```
 -Dchromium.remote_debugging_port=8988
--Dorg.knime.ui.dev.node.dialog.url=http://localhost:5173/
+-Dorg.knime.ui.dev.node.dialog.url=http://localhost:5173/row-mapper.html
 ```
+
+(or use one of the other HTML outputs for the other expression nodes)
 
 Run the development server
 
