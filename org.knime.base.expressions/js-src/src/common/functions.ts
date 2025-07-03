@@ -1,4 +1,4 @@
-import { BrowserReporter, Consola, LogLevel } from "consola";
+import { Consola, LogLevels } from "consola";
 import { Selection } from "monaco-editor";
 
 import {
@@ -14,8 +14,7 @@ import { FUNCTION_INSERTION_EVENT } from "@/components/function-catalog/Function
 
 export const setupConsola = () => {
   const consola = new Consola({
-    level: import.meta.env.DEV ? LogLevel.Trace : LogLevel.Error,
-    reporters: [new BrowserReporter()],
+    level: import.meta.env.DEV ? LogLevels.trace : LogLevels.error,
   });
   const globalObject = typeof global === "object" ? global : window;
 
