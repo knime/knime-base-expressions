@@ -60,7 +60,7 @@ const apiLayer: UIExtensionAPILayer = {
   publishData: noop,
   sendAlert: (alert) => {
     AlertingService.getInstance().then((service) =>
-      // @ts-expect-error
+      // @ts-expect-error baseService is not API but it exists
       service.baseService.sendAlert(alert),
     );
   },
@@ -71,14 +71,14 @@ const apiLayer: UIExtensionAPILayer = {
 };
 
 const updateExtensionConfig = async (config: ExtensionConfig) => {
-  // @ts-ignore
+  // @ts-expect-error baseUrl is not part of the type but it exists
   resourceLocation.value = `${config.resourceInfo.baseUrl}${config.resourceInfo.path.split("/").slice(0, -1).join("/")}/core-ui/TableView.js`;
 
   extensionConfig.value = await makeExtensionConfig(
     config.nodeId,
     config.projectId,
     config.workflowId,
-    // @ts-ignore
+    // @ts-expect-error baseUrl is not part of the type but it exists
     config.resourceInfo.baseUrl,
   );
 };
@@ -86,8 +86,6 @@ const updateExtensionConfig = async (config: ExtensionConfig) => {
 onMounted(async () => {
   const jsonService = await JsonDataService.getInstance();
   const baseService = (jsonService as any).baseService;
-
-  // @ts-ignore
   const extensionConfigLoaded = await baseService.getConfig();
 
   await updateExtensionConfig(extensionConfigLoaded);

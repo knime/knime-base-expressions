@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   type ComponentPublicInstance,
+  type WatchHandle,
   computed,
   nextTick,
   onMounted,
@@ -60,8 +61,8 @@ export type EditorStates = {
   activeEditorKey: string | null;
 };
 type EditorStateWatchers = {
-  columnStateUnwatchHandle: Function;
-  editorStateUnwatchHandle: Function;
+  columnStateUnwatchHandle: WatchHandle;
+  editorStateUnwatchHandle: WatchHandle;
 };
 export type MultiEditorContainerExposes = {
   getOrderedEditorStates: () => EditorState[];

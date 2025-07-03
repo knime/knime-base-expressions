@@ -202,7 +202,7 @@ onKeyStroke("z", (e) => {
 });
 
 const onMenuItemClicked = (item: ButtonItem) => {
-  // @ts-ignore TS doesn't like dyanmic event names
+  // @ts-expect-error TS doesn't like dyanmic event names
   emit(item.eventName, props.fileName);
 };
 
@@ -230,7 +230,7 @@ onMounted(() => {
   editorState.editor.value?.onDidChangeModelContent(updateEditorHeight);
 });
 
-// TODO(AP-23655) This is a workaround. Empty expressions are currently errors with this message.
+// TODO AP-23655 This is a workaround. Empty expressions are currently errors with this message.
 // However, we want to display them differenetly. This should be handled properly in the future.
 const isEmptyExpr = computed(
   () =>
