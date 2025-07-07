@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.knime.maven</groupId>
 		<artifactId>ap.parent</artifactId>
-		<version>5.5.0</version>
+		<version>5.6.0</version>
 	</parent>
 
 	<groupId>org.knime</groupId>
@@ -47,7 +47,7 @@
 	</modules>
 
 	<properties>
-		<revision>5.5.0</revision>
+		<revision>5.6.0</revision>
 		<changelist>-SNAPSHOT</changelist>
 		<changelog.baseref>3f178f6</changelog.baseref>
 		<feature-branch-extension.branchListProperty>git.branch</feature-branch-extension.branchListProperty>
