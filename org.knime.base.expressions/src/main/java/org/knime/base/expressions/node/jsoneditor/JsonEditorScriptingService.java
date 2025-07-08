@@ -49,7 +49,12 @@
 package org.knime.base.expressions.node.jsoneditor;
 
 import org.knime.scripting.editor.CodeGenerationRequest;
+import org.knime.scripting.editor.CodeGenerationRequest.Inputs;
+import org.knime.scripting.editor.CodeGenerationRequest.Outputs;
+import org.knime.scripting.editor.CodeGenerationRequest.RequestBody;
 import org.knime.scripting.editor.InputOutputModel;
+import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils;
+import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils.NameAndType;
 import org.knime.scripting.editor.ScriptingService;
 
 /**
@@ -76,9 +81,17 @@ final class JsonEditorScriptingService extends ScriptingService {
         @Override
         protected CodeGenerationRequest getCodeSuggestionRequest(final String userPrompt, final String currentCode,
             final InputOutputModel[] inputModels) {
-            // TODO implement code suggestion request
-            throw new UnsupportedOperationException(
-                "Code suggestion is not implemented for JsonEditorScriptingService yet.");
+            var flowVariables = InputOutputModelNameAndTypeUtils.getSupportedFlowVariables(inputModels);
+            return new CodeGenerationRequest( //
+                "/code_generation/json", //
+                new RequestBody( //
+                    currentCode, //
+                    userPrompt, //
+                    new Inputs(new NameAndType[0][0], 0, flowVariables), //
+                    new Outputs(0, 0, 0, false), //
+                    "0.0.0" // TODO real version
+                ) //
+            );
         }
     }
 }
