@@ -21,6 +21,12 @@
       		deprecated="false"
       		hidden="false">
       	</node>
+      	<node
+      		category-path="/"
+      		factory-class="org.knime.base.expressions.node.jsoneditor.JsonEditorNodeFactory"
+      		deprecated="false"
+      		hidden="false">
+      	</node>
    </extension>  
     
    <extension 

@@ -88,6 +88,16 @@
 			<url>${knime.svg.p2}</url>
 		</repository>
 		<repository>
+			<id>p2-knime-json</id>
+			<layout>p2</layout>
+			<url>${knime.json.p2}</url>
+		</repository>
+		<repository>
+			<id>p2-knime-javasnippet</id>
+			<layout>p2</layout>
+			<url>${knime.javasnippet.p2}</url>
+		</repository>
+		<repository>
 			<id>p2-knime-core-ui</id>
 			<layout>p2</layout>
 			<url>${knime.core.ui.p2}</url>

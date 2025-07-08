@@ -19,5 +19,6 @@ Require-Bundle: org.knime.workbench.repository;bundle-version="[5.5.0,6.0.0)",
  org.knime.core.expressions;bundle-version="[5.5.0,6.0.0)",
  com.fasterxml.jackson.core.jackson-core;bundle-version="2.13.2",
  com.fasterxml.jackson.core.jackson-annotations;bundle-version="2.13.2",
- com.fasterxml.jackson.core.jackson-databind;bundle-version="2.13.2"
+ com.fasterxml.jackson.core.jackson-databind;bundle-version="2.13.2",
+ org.knime.json;bundle-version="[5.6.0,6.0.0)"
 Bundle-ClassPath: knime-base-expressions.jar

@@ -89,12 +89,6 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.table.virtual.spec.SourceTableProperties.CursorType;
 
-/**
- * The node model for the Expression node.
- *
- * @author Benjamin Wilhelm, KNIME GmbH, Berlin, Germany
- * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
- */
 @SuppressWarnings("restriction") // the columnar table API is not public yet
 final class ExpressionRowMapperNodeModel extends NodeModel {
 
