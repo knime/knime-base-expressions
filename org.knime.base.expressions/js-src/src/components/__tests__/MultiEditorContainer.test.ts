@@ -321,6 +321,8 @@ describe("MultiEditorContainer", () => {
     await addEditorAndFocus(wrapper);
     expect(getActiveEditorIdxFromWrapper(wrapper)).toBe(3);
 
+    const changeEventsBeforeDelete = wrapper.emitted("on-change")!.length;
+
     // Delete editor at index 1 - should not change active editor or call focus events
     const editorToDelete = 1;
     wrapper
@@ -341,6 +343,10 @@ describe("MultiEditorContainer", () => {
     // The last editor should still be active
     // (it was at index 3 but now is at index 2 because of the deletion)
     expect(getActiveEditorIdxFromWrapper(wrapper)).toBe(2);
+
+    // Check that the change event was emitted
+    const changeEventsAfterDelete = wrapper.emitted("on-change")!.length;
+    expect(changeEventsAfterDelete - changeEventsBeforeDelete).toBe(1);
   });
 
   it("should set next editor active if active editor is deleted", async () => {

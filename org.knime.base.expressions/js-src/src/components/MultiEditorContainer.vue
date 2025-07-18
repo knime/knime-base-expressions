@@ -325,6 +325,10 @@ const onEditorRequestedDelete = (key: string) => {
     // Now that the editor is gone, set the one below as active. Do not focus it.
     // setActiveEditor will emit the change event
     nextTick().then(() => setActiveEditor(keyToFocus));
+  } else {
+    // The active editor can stay the same but we need still need to emit the
+    // change event
+    emitOnChange();
   }
 };
 
