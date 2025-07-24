@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Benchmarks the KNIME Expressions Backend
 Bundle-SymbolicName: org.knime.core.expressions.benchmarks.tests;singleton:=true
-Bundle-Version: 5.5.0.qualifier
+Bundle-Version: 5.5.1.qualifier
 Automatic-Module-Name: org.knime.core.expressions.benchmarks.tests
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Fragment-Host: org.knime.core.expressions;bundle-version="[5.5.0, 6.0.0)"
