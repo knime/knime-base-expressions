@@ -16,19 +16,30 @@ const noDataMessage = ref<string | null>(null);
 
 const emit = defineEmits(["output-preview-updated"]);
 
+const getInitialData = async () => {
+  const dataService = await JsonDataService.getInstance();
+  try {
+    const initialData = await dataService.data<string>({
+      method: "FlowVariablePreviewInitialDataSupplier.getInitialData",
+    });
+
+    return initialData === undefined ? initialData : JSON.parse(initialData);
+  } catch (error) {
+    consola.error("OutputPreviewFlowVariable:: Failed to get initial data", {
+      method: "FlowVariablePreviewInitialDataSupplier.getInitialData",
+      error,
+    });
+    return undefined;
+  }
+};
+
 const makeExtensionConfig = async (
   nodeId: string,
   projectId: string,
   workflowId: string,
   baseUrl: string,
 ): Promise<ExtensionConfig> => {
-  const initialData = JSON.parse(
-    await (
-      await JsonDataService.getInstance()
-    ).data({
-      method: "FlowVariablePreviewInitialDataSupplier.getInitialData",
-    }),
-  );
+  const initialData = await getInitialData();
 
   return {
     nodeId,

@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-  type FunctionalComponent,
-  type SVGAttributes,
-  computed,
-  nextTick,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
+import { type Component, computed, nextTick, onMounted, ref, watch } from "vue";
 import { onKeyStroke } from "@vueuse/core";
 import { editor as monaco } from "monaco-editor";
 
@@ -80,7 +72,7 @@ const readOnly = useReadonlyStore();
 
 type ButtonItem = {
   text: string;
-  icon: FunctionalComponent<SVGAttributes>;
+  icon: Component;
   eventName: string;
   disabled?: boolean;
 };
