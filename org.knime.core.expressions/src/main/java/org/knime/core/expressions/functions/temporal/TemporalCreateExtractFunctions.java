@@ -791,9 +791,10 @@ public final class TemporalCreateExtractFunctions {
                 (i.e., the node execution start time).
                 """) //
         .examples("""
-                * `now()` returns the node execution start time as a `ZONED_DATE_TIME`
+                * `now()` returns the date and time of the node execution start as a `ZONED_DATE_TIME`
+                * `extract_time(now())` returns the time of the node execution start as a `LOCAL_TIME`
                 """) //
-        .keywords("now", "current", "date", "time", "zoned_date_time") //
+        .keywords("current", "date", "time", "zoned_date_time", "execution_datetime", "execution_time") //
         .category(CATEGORY_CREATE_EXTRACT) //
         .args() //
         .returnType("A `ZONED_DATE_TIME` representing the node execution start time", RETURN_ZONED_DATE_TIME,
@@ -816,7 +817,7 @@ public final class TemporalCreateExtractFunctions {
         .examples("""
                 * `today()` returns the date of node execution start as a `LOCAL_DATE`
                 """) //
-        .keywords("current", "date", "time", "zoned_date_time") //
+        .keywords("current", "date", "execution_date") //
         .category(CATEGORY_CREATE_EXTRACT) //
         .args() //
         .returnType("The date of the node execution", RETURN_LOCAL_DATE, args -> LOCAL_DATE) //
