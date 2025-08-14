@@ -22,7 +22,6 @@
 				<activeByDefault>true</activeByDefault>
 			</activation>
 			<modules>
-				<module>org.knime.base.expressions.tests/libs/fetch_jars</module>
 				<module>org.knime.core.expressions.tests</module>
 				<module>org.knime.base.expressions.tests</module>
 			</modules>
