@@ -78,6 +78,7 @@ import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.scripting.editor.CodeGenerationRequest;
@@ -208,12 +209,14 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         public List<ExpressionDiagnosticResult> getRowMapperDiagnostics(final String[] expressions,
             final String[] allNewColumnNames) {
 
-            var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
-            if (spec == null) {
-                // No input table, so no columns
-                return Collections.nCopies(expressions.length,
-                    new ExpressionDiagnosticResult(ExpressionDiagnostic.NO_INPUT_CONNECTED_DIAGNOSTICS, "UNKNOWN"));
+            var inputSpec = getWorkflowControl().getInputSpec()[0];
+            if (!(inputSpec instanceof DataTableSpec)) { // null or inactive branch
+                var diagnostic = inputSpec instanceof InactiveBranchPortObjectSpec
+                    ? ExpressionDiagnostic.INACTIVE_INPUT_CONNECTED_DIAGNOSTICS
+                    : ExpressionDiagnostic.NO_INPUT_CONNECTED_DIAGNOSTICS;
+                return Collections.nCopies(expressions.length, new ExpressionDiagnosticResult(diagnostic, "UNKNOWN"));
             }
+            var spec = (DataTableSpec)inputSpec;
 
             List<ExpressionDiagnosticResult> diagnostics = new ArrayList<>();
 

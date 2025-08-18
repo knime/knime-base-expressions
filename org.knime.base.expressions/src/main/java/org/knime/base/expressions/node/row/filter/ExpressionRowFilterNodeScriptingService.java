@@ -71,6 +71,7 @@ import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.scripting.editor.CodeGenerationRequest;
@@ -169,9 +170,11 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
          */
         public List<ExpressionDiagnostic> getRowFilterDiagnostics(final String expression) {
 
-            if ((DataTableSpec)getWorkflowControl().getInputSpec()[0] == null) {
-                // No input table, so no column
-                return ExpressionDiagnostic.NO_INPUT_CONNECTED_DIAGNOSTICS;
+            var inputSpec = getWorkflowControl().getInputSpec()[0];
+            if (!(inputSpec instanceof DataTableSpec)) { // null or inactive branch
+                return inputSpec instanceof InactiveBranchPortObjectSpec
+                    ? ExpressionDiagnostic.INACTIVE_INPUT_CONNECTED_DIAGNOSTICS
+                    : ExpressionDiagnostic.NO_INPUT_CONNECTED_DIAGNOSTICS;
             }
 
             List<ExpressionDiagnostic> diagnostics = new ArrayList<>();

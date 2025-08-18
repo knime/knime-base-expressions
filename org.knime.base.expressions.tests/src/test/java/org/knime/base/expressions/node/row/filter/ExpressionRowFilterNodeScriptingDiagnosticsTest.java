@@ -59,6 +59,7 @@ import org.junit.jupiter.api.Test;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.row.filter.ExpressionRowFilterNodeScriptingService.ExpressionNodeRpcService;
 import org.knime.core.data.vector.bitvector.DenseBitVectorCell;
+import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType.StringType;
 import org.knime.scripting.editor.WorkflowControl;
@@ -92,6 +93,17 @@ final class ExpressionRowFilterNodeScriptingDiagnosticsTest {
         assertEquals(1, diagnostics.size(), "Expected 1 expressions to be analyzed.");
         assertTrue(diagnostics.get(0).message().contains("No input"),
             "Expected \"No input...\" error message, got \"" + diagnostics.get(0).message() + "\".");
+    }
+
+    @Test
+    void testInactiveInput() {
+        var service = createService(getWorkflowControl(InactiveBranchPortObjectSpec.INSTANCE, FLOW_VARIABLES));
+        var result = service.getRowFilterDiagnostics("$int > 1");
+        assertEquals(1, result.size(), "Expected one error for inactive branches.");
+        assertEquals(DiagnosticSeverity.ERROR, result.get(0).severity(),
+            "Expected error severity for inactive branches.");
+        assertEquals("The input connection is inactive. Connect an active table.", result.get(0).message(),
+            "Expected inactive branches error message.");
     }
 
     @Test

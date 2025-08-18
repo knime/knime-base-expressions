@@ -60,7 +60,8 @@ import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.data.def.StringCell;
 import org.knime.core.data.vector.bitvector.DenseBitVectorCell;
-import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.workflow.FlowObjectStack;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType.BooleanType;
@@ -129,15 +130,15 @@ public final class DiagnosticsTestUtils {
      * @param flowVariables the flow variables to return from the mocked
      * @return a mocked {@link WorkflowControl} that returns the given table specs and flow variables
      */
-    public static WorkflowControl getWorkflowControl(final DataTableSpec tableSpecs,
+    public static WorkflowControl getWorkflowControl(final PortObjectSpec tableSpecs,
         final Map<String, FlowVariable> flowVariables) {
 
         var flowObjectStack = Mockito.mock(FlowObjectStack.class);
         Mockito.when(flowObjectStack.getAllAvailableFlowVariables()).thenReturn(flowVariables);
 
         var workflowControl = Mockito.mock(WorkflowControl.class);
-        Mockito.when(workflowControl.getInputSpec()).thenReturn(new DataTableSpec[]{tableSpecs});
-        Mockito.when(workflowControl.getInputData()).thenReturn(new BufferedDataTable[]{null});
+        Mockito.when(workflowControl.getInputSpec()).thenReturn(new PortObjectSpec[]{tableSpecs});
+        Mockito.when(workflowControl.getInputData()).thenReturn(new PortObject[]{null});
         Mockito.when(workflowControl.getFlowObjectStack()).thenReturn(flowObjectStack);
         return workflowControl;
     }

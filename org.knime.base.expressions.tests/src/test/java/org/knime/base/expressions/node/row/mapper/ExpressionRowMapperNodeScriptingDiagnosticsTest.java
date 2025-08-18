@@ -62,6 +62,7 @@ import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.row.mapper.ExpressionRowMapperNodeScriptingService.ExpressionNodeRpcService;
 import org.knime.core.data.vector.bitvector.DenseBitVectorCell;
 import org.knime.core.expressions.ValueType;
+import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType.StringType;
 import org.knime.scripting.editor.WorkflowControl;
@@ -110,6 +111,19 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
         assertEquals(1, result.size(), "Expected 1 expressions to be analyzed.");
         assertTrue(result.get(0).diagnostics().get(0).message().contains("No input"),
             "Expected \"No input...\" error message, got \"" + result.get(0).diagnostics().get(0).message() + "\".");
+    }
+
+    @Test
+    void testInactiveInput() {
+        var service = createService(getWorkflowControl(InactiveBranchPortObjectSpec.INSTANCE, FLOW_VARIABLES));
+        var result = service.getRowMapperDiagnostics(new String[]{"$int + 1"}, new String[]{"out"});
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertEquals("UNKNOWN", result.get(0).returnType(), "Expected no return type for inactive branches.");
+        assertEquals(1, result.get(0).diagnostics().size(), "Expected one error for inactive branches.");
+        var diagnostic = result.get(0).diagnostics().get(0);
+        assertEquals(DiagnosticSeverity.ERROR, diagnostic.severity(), "Expected error severity for inactive branches.");
+        assertEquals("The input connection is inactive. Connect an active table.", diagnostic.message(),
+            "Expected inactive branches error message.");
     }
 
     @Test
