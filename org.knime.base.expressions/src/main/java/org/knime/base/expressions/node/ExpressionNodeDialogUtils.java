@@ -102,6 +102,7 @@ public final class ExpressionNodeDialogUtils {
     public static DataSupplier getColumnNamesSupplier(final WorkflowControl workflowControl) {
         return () -> Optional.ofNullable(workflowControl.getInputInfo()[0]) //
             .flatMap(info -> Optional.ofNullable(info.portSpec())) //
+            .filter(DataTableSpec.class::isInstance) // can be InactiveBranchPortObjectSpec if the input is inactive
             .map(DataTableSpec.class::cast) //
             .map(DataTableSpec::getColumnNames) //
             .orElseGet(() -> new String[0]);
