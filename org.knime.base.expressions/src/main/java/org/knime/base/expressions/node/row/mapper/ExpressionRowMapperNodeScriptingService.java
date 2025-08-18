@@ -133,7 +133,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         @Override
         protected CodeGenerationRequest getCodeSuggestionRequest(final String userPrompt, final String currentCode,
             final InputOutputModel[] inputModels) {
-            return ExpressionCodeAssistant.createCodeGenerationRequest(ExpressionType.ROW, userPrompt, currentCode, inputModels);
+            return ExpressionCodeAssistant.createCodeGenerationRequest(ExpressionType.ROW, userPrompt, currentCode,
+                inputModels);
         }
 
         /**

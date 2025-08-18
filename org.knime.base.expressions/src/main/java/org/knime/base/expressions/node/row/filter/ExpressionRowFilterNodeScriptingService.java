@@ -141,7 +141,8 @@ final class ExpressionRowFilterNodeScriptingService extends ScriptingService {
         @Override
         protected CodeGenerationRequest getCodeSuggestionRequest(final String userPrompt, final String currentCode,
             final InputOutputModel[] inputModels) {
-            return ExpressionCodeAssistant.createCodeGenerationRequest(ExpressionType.FILTER, userPrompt, currentCode, inputModels);
+            return ExpressionCodeAssistant.createCodeGenerationRequest(ExpressionType.FILTER, userPrompt, currentCode,
+                inputModels);
         }
 
         /** @return the typed Ast for the configured expression */
