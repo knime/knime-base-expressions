@@ -105,7 +105,11 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         m_tablePreview = tablePreview;
         var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
         m_exec = nodeContainer.createExecutionContext();
-        m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0], m_exec);
+
+        var input = getWorkflowControl().getInputData()[0];
+        if (input instanceof BufferedDataTable inputTable) {
+            m_inputTableCache = new InputTableCache(inputTable, m_exec);
+        }
     }
 
     /** For testing with a mocked {@link WorkflowControl} only */
