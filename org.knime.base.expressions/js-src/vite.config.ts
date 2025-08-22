@@ -40,6 +40,7 @@ export default defineConfig({
   },
   base: "./",
   build: {
+    target: "esnext",
     rollupOptions: {
       input: [
         fileURLToPath(new URL("./row-mapper.html", import.meta.url)),
