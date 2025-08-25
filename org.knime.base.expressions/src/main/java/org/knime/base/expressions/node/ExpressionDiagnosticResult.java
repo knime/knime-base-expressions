@@ -42,7 +42,7 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
- * 
+ *
  * History
  *   Sep 25, 2024 (kampmann): created
  */
@@ -50,11 +50,14 @@ package org.knime.base.expressions.node;
 
 import java.util.List;
 
+import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
+
 /**
  * Combines a list of diagnostics for an expression with the return type of the expression.
  *
  * @param diagnostics
  * @param returnType
  */
-public record ExpressionDiagnosticResult(List<ExpressionDiagnostic> diagnostics, String returnType) {
+public record ExpressionDiagnosticResult(List<ExpressionDiagnostic> diagnostics,
+    InputOutputModelSubItemType returnType) {
 }

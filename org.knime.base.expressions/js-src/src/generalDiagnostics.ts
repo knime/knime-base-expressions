@@ -1,6 +1,6 @@
 import { editor as MonacoEditor, Range } from "monaco-editor";
 
-import type { UseCodeEditorReturn } from "@knime/scripting-editor";
+import type { SubItemType, UseCodeEditorReturn } from "@knime/scripting-editor";
 
 import {
   DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY,
@@ -29,12 +29,12 @@ export type ExpressionDiagnostic = {
 
 export type ExpressionDiagnosticResult = {
   diagnostics: ExpressionDiagnostic[];
-  returnType: ExpressionReturnType;
+  returnType: SubItemType<ExpressionReturnType>;
 };
 
 export type Diagnostic = {
   errorState: EditorErrorState;
-  returnType: ExpressionReturnType;
+  returnType: SubItemType<ExpressionReturnType>;
 };
 
 export const markDiagnosticsInEditor = (

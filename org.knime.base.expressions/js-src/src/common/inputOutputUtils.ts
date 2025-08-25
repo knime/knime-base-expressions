@@ -1,6 +1,10 @@
 import { shallowRef } from "vue";
 
-import type { InputOutputModel, SubItem } from "@knime/scripting-editor";
+import type {
+  InputOutputModel,
+  SubItem,
+  SubItemType,
+} from "@knime/scripting-editor";
 
 import type { IconRendererProps } from "@/components/IconRenderer.vue";
 import IconRenderer from "@/components/IconRenderer.vue";
@@ -9,7 +13,7 @@ import type { SelectorState } from "@/components/OutputSelector.vue";
 export type SubItemState = {
   selectorState: SelectorState;
   key: string;
-  returnType: string;
+  returnType: SubItemType;
 };
 
 export const replaceSubItems = (

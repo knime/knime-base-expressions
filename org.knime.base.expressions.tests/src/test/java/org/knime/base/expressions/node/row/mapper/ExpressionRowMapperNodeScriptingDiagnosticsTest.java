@@ -58,6 +58,7 @@ import static org.knime.base.expressions.node.DiagnosticsTestUtils.getWorkflowCo
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.knime.base.expressions.ColumnOutputUtils;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.row.mapper.ExpressionRowMapperNodeScriptingService.ExpressionNodeRpcService;
 import org.knime.core.data.vector.bitvector.DenseBitVectorCell;
@@ -65,6 +66,7 @@ import org.knime.core.expressions.ValueType;
 import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType.StringType;
+import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
 import org.knime.scripting.editor.WorkflowControl;
 
 /**
@@ -77,6 +79,11 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
 
     private static ExpressionNodeRpcService createService(final WorkflowControl workflowControl) {
         return new ExpressionRowMapperNodeScriptingService(workflowControl).getJsonRpcService();
+    }
+
+    private static InputOutputModelSubItemType createInOutModelSubItemType(final ValueType valueType) {
+        final var colSpec = ColumnOutputUtils.valueTypeToDataColumnSpec(valueType, "temp");
+        return InputOutputModelSubItemType.fromColSpec(colSpec, valueType.name());
     }
 
     @Test
@@ -94,10 +101,14 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
         assertEquals(List.of(), diagnostics.get(2).diagnostics(), "Expected no diagnostics for the third expression.");
         assertEquals(List.of(), diagnostics.get(3).diagnostics(), "Expected no diagnostics for the fourth expression.");
 
-        assertEquals(ValueType.INTEGER.name(), diagnostics.get(0).returnType(), "Expected integer type.");
-        assertEquals(ValueType.FLOAT.name(), diagnostics.get(1).returnType(), "Expected float type.");
-        assertEquals(ValueType.STRING.name(), diagnostics.get(2).returnType(), "Expected string type.");
-        assertEquals(ValueType.BOOLEAN.name(), diagnostics.get(3).returnType(), "Expected boolean type.");
+        assertEquals(createInOutModelSubItemType(ValueType.INTEGER), diagnostics.get(0).returnType(),
+            "Expected integer type.");
+        assertEquals(createInOutModelSubItemType(ValueType.FLOAT), diagnostics.get(1).returnType(),
+            "Expected float type.");
+        assertEquals(createInOutModelSubItemType(ValueType.STRING), diagnostics.get(2).returnType(),
+            "Expected string type.");
+        assertEquals(createInOutModelSubItemType(ValueType.BOOLEAN), diagnostics.get(3).returnType(),
+            "Expected boolean type.");
     }
 
     @Test
@@ -118,7 +129,8 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
         var service = createService(getWorkflowControl(InactiveBranchPortObjectSpec.INSTANCE, FLOW_VARIABLES));
         var result = service.getRowMapperDiagnostics(new String[]{"$int + 1"}, new String[]{"out"});
         assertEquals(1, result.size(), "Expected diagnostics for one expression.");
-        assertEquals("UNKNOWN", result.get(0).returnType(), "Expected no return type for inactive branches.");
+        assertEquals(InputOutputModelSubItemType.fromDisplayName("UNKNOWN"), result.get(0).returnType(),
+            "Expected no return type for inactive branches.");
         assertEquals(1, result.get(0).diagnostics().size(), "Expected one error for inactive branches.");
         var diagnostic = result.get(0).diagnostics().get(0);
         assertEquals(DiagnosticSeverity.ERROR, diagnostic.severity(), "Expected error severity for inactive branches.");

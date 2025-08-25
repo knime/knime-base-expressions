@@ -8,6 +8,7 @@ import {
   OutputTablePreview,
   ScriptingEditor,
   type SubItem,
+  type SubItemType,
   consoleHandler,
   getScriptingService,
   useReadonlyStore,
@@ -63,7 +64,7 @@ const getInitialItems = (): InputOutputModel[] => {
 
 const refreshInputOutputItems = (
   { states, activeEditorKey }: EditorStates,
-  returnTypes: string[],
+  returnTypes: SubItemType[],
 ) => {
   if (!activeEditorKey) {
     return;
@@ -124,7 +125,7 @@ const refreshInputOutputItems = (
 
 const runDiagnosticsFunction = async ({
   states,
-}: EditorStates): Promise<string[]> => {
+}: EditorStates): Promise<SubItemType[]> => {
   const diagnostics = await runRowMapperDiagnostics(
     states.map((state) => state.monacoState),
     states.map((state) =>

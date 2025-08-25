@@ -82,7 +82,9 @@ const getInputsCompletions = (
       // If the item has an insertion text, use that and only that
       // This is the case for ROW_ID, ROW_INDEX, ROW_NUMBER
       if (item.insertionText) {
-        return [getInputItemCompletion(item.insertionText, item.type)];
+        return [
+          getInputItemCompletion(item.insertionText, item.type.displayName),
+        ];
       }
 
       const longForm = `${prefix}[${quote}${escapeName(item.name, quote)}${quote}]`;
@@ -91,11 +93,11 @@ const getInputsCompletions = (
       if (/^[_a-zA-Z]\w*$/.test(item.name)) {
         const shortForm = `${prefix}${item.name}`;
         return [
-          getInputItemCompletion(longForm, item.type),
-          getInputItemCompletion(shortForm, item.type),
+          getInputItemCompletion(longForm, item.type.displayName),
+          getInputItemCompletion(shortForm, item.type.displayName),
         ];
       } else {
-        return [getInputItemCompletion(longForm, item.type)];
+        return [getInputItemCompletion(longForm, item.type.displayName)];
       }
     });
 
