@@ -20,15 +20,15 @@ export const INPUT_OBJECTS: InputOutputModel[] = [
   {
     name: "Input table 1",
     subItems: [
-      { name: "Column 1", type: "int", supported: true },
-      { name: "Column 2", type: "int", supported: true },
-      { name: "Column 3", type: "int", supported: true },
-      { name: "Column 4", type: "int", supported: true },
-      { name: "Column 5", type: "something weird", supported: false },
-      { name: "Column_6", type: "string", supported: true },
-      { name: "Column_7", type: "boolean", supported: true },
-      { name: "%<a&b>", type: "problem", supported: true },
-      { name: 'b\\lah"blah', type: "problem", supported: true },
+      { name: "Column 1", type: { displayName: "int", id: "number-integer-datatype", title: "Number (Integer)" }, supported: true },
+      { name: "Column 2", type: { displayName: "int", id: "number-integer-datatype", title: "Number (Integer)" }, supported: true },
+      { name: "Column 3", type: { displayName: "int", id: "number-integer-datatype", title: "Number (Integer)" }, supported: true },
+      { name: "Column 4", type: { displayName: "int", id: "number-integer-datatype", title: "Number (Integer)" }, supported: true },
+      { name: "Column 5", type: { displayName: "something weird", id: "unknown-datatype", title: "Something weird" }, supported: false },
+      { name: "Column_6", type: { displayName: "string", id: "string-datatype", title: "String" }, supported: true },
+      { name: "Column_7", type: { displayName: "boolean", id: "boolean-datatype", title: "Boolean" }, supported: true },
+      { name: "%<a&b>", type: { displayName: "problem" }, supported: true },
+      { name: 'b\\lah"blah', type: { displayName: "problem" }, supported: true },
     ],
     multiSelection: false,
     subItemCodeAliasTemplate: `
@@ -300,19 +300,19 @@ export const BASE_INITIAL_DATA: GenericExpressionInitialData = {
 const ROW_INFO_SUBITEMS: SubItem<Record<string, any>>[] = [
   {
     name: "ROW_NUMBER",
-    type: "INTEGER",
+    type: { displayName: "INTEGER"},
     supported: true,
     insertionText: "$[ROW_NUMBER]",
   },
   {
     name: "ROW_INDEX",
-    type: "INTEGER",
+    type: { displayName: "INTEGER"},
     supported: true,
     insertionText: "$[ROW_INDEX]",
   },
   {
     name: "ROW_ID",
-    type: "STRING",
+    type: { displayName: "STRING"},
     supported: true,
     insertionText: "$[ROW_ID]",
   },

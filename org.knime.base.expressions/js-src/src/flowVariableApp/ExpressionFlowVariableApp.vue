@@ -7,6 +7,7 @@ import {
   InputOutputPane,
   ScriptingEditor,
   type SubItem,
+  type SubItemType,
   getScriptingService,
   useReadonlyStore,
 } from "@knime/scripting-editor";
@@ -61,7 +62,7 @@ const getInitialItems = (): InputOutputModel[] => {
 
 const refreshInputOutputItems = (
   { states, activeEditorKey }: EditorStates,
-  returnTypes: string[],
+  returnTypes: SubItemType[],
 ) => {
   if (!activeEditorKey) {
     return;
@@ -123,7 +124,7 @@ const refreshInputOutputItems = (
 
 const runDiagnosticsFunction = async ({
   states,
-}: EditorStates): Promise<string[]> => {
+}: EditorStates): Promise<SubItemType[]> => {
   const diagnostics = await runFlowVariableDiagnostics(
     states.map((state) => state.monacoState),
     states.map((state) =>
@@ -158,7 +159,7 @@ const runDiagnosticsFunction = async ({
 
     multiEditorContainerRef.value?.setCurrentExpressionReturnType(
       state.key,
-      diagnostics[index].returnType,
+      diagnostics[index].returnType.displayName,
     );
   }
 

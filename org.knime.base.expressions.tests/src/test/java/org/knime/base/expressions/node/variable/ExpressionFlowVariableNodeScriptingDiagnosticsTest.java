@@ -61,7 +61,9 @@ import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.variable.ExpressionFlowVariableNodeScriptingService.ExpressionNodeRpcService;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableType.StringType;
+import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
 import org.knime.scripting.editor.WorkflowControl;
 
 /**
@@ -91,10 +93,18 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
         assertEquals(List.of(), diagnostics.get(2).diagnostics(), "Expected no diagnostics for the third expression.");
         assertEquals(List.of(), diagnostics.get(3).diagnostics(), "Expected no diagnostics for the fourth expression.");
 
-        assertEquals(ValueType.INTEGER.name(), diagnostics.get(0).returnType(), "Expected integer type.");
-        assertEquals(ValueType.FLOAT.name(), diagnostics.get(1).returnType(), "Expected float type.");
-        assertEquals(ValueType.STRING.name(), diagnostics.get(2).returnType(), "Expected string type.");
-        assertEquals(ValueType.BOOLEAN.name(), diagnostics.get(3).returnType(), "Expected boolean type.");
+        assertEquals(
+            InputOutputModelSubItemType.fromVariableType(VariableType.LongType.INSTANCE, ValueType.INTEGER.name()),
+            diagnostics.get(0).returnType(), "Expected integer type.");
+        assertEquals(
+            InputOutputModelSubItemType.fromVariableType(VariableType.DoubleType.INSTANCE, ValueType.FLOAT.name()),
+            diagnostics.get(1).returnType(), "Expected float type.");
+        assertEquals(
+            InputOutputModelSubItemType.fromVariableType(VariableType.StringType.INSTANCE, ValueType.STRING.name()),
+            diagnostics.get(2).returnType(), "Expected string type.");
+        assertEquals(
+            InputOutputModelSubItemType.fromVariableType(VariableType.BooleanType.INSTANCE, ValueType.BOOLEAN.name()),
+            diagnostics.get(3).returnType(), "Expected boolean type.");
     }
 
     @Test
