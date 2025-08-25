@@ -2,8 +2,10 @@ import "vitest-canvas-mock";
 import { vi } from "vitest";
 import { Consola, LogLevels } from "consola";
 
+import { initMocked } from "@knime/scripting-editor";
+
 import {
-  DEFAULT_INITIAL_DATA,
+  BASE_INITIAL_DATA,
   DEFAULT_INITIAL_SETTINGS,
 } from "../src/__mocks__/mock-data";
 
@@ -18,20 +20,15 @@ window.consola = consola;
 // https://github.com/vuejs/vue-test-utils/issues/1219
 Element.prototype.scrollIntoView = vi.fn();
 
-// NB: We do not use importActual here, because we want to ensure everything is mocked.
-// Not mocking something can lead randomly appearing timeout errors because of the
-// `getConfig` call of the ui-extension-service.
+// TODO(AP-24858) adapt the mock or remove it
+// NB: We do not use importActual here, because we want to ensure that no original code of
+// @knime/ui-extension-service is used. The original code could cause unexpected timeouts on
+// `getConfig`.
 vi.mock("@knime/ui-extension-service", () => ({
-  ExtensionTypes: { DIALOG: "dialog", VIEW: "view" },
   JsonDataService: {
     getInstance: vi.fn(() =>
       Promise.resolve({
-        initialData: vi.fn(() =>
-          Promise.resolve({
-            settings: DEFAULT_INITIAL_SETTINGS,
-            initialData: DEFAULT_INITIAL_DATA,
-          }),
-        ),
+        // We only need to mock the baseService used by the embedded UI Extensions
         baseService: {
           getConfig: vi.fn(() =>
             Promise.resolve({
@@ -44,33 +41,30 @@ vi.mock("@knime/ui-extension-service", () => ({
               },
             }),
           ),
-          callNodeDataService: vi.fn(() => Promise.resolve({})),
         },
-        data: vi.fn(() => {
-          // This promise never resolves, so this method will never return.
-          // This stops the EventPoller from getting an unexpected event,
-          // which would cause it to throw an error and crash the test.
-          return new Promise(() => {});
-        }),
-      }),
-    ),
-  },
-  ReportingService: {},
-  AlertingService: {
-    getInstance: vi.fn(() =>
-      Promise.resolve({
-        sendAlert: vi.fn(),
-      }),
-    ),
-  },
-  DialogService: {
-    getInstance: vi.fn(() =>
-      Promise.resolve({
-        registerSettings: vi.fn(() => () => ({ setValue: vi.fn() })),
-        setApplyListener: vi.fn(),
-        getInitialDisplayMode: vi.fn(() => "large"),
-        addOnDisplayModeChangeCallback: vi.fn(),
       }),
     ),
   },
 }));
+
+// Initialize @knime/scripting-editor with mock data
+initMocked({
+  scriptingService: {
+    sendToService: vi.fn(),
+    getOutputPreviewTableInitialData: vi.fn(() => Promise.resolve(undefined)),
+    registerEventHandler: vi.fn(),
+    connectToLanguageServer: vi.fn(),
+    isKaiEnabled: vi.fn(),
+    isLoggedIntoHub: vi.fn(),
+    getAiDisclaimer: vi.fn(),
+    getAiUsage: vi.fn(),
+    isCallKnimeUiApiAvailable: vi.fn(() => Promise.resolve(false)),
+  },
+  settingsService: {
+    getSettings: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_SETTINGS)),
+    registerSettingsGetterForApply: vi.fn(),
+    registerSettings: vi.fn(() => vi.fn()),
+  },
+  initialData: BASE_INITIAL_DATA,
+  displayMode: "small",
+});
