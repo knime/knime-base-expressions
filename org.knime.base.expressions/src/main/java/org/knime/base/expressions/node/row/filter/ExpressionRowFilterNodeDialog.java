@@ -100,8 +100,7 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
                 return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(flowVariables);
             }) //
             .addDataSupplier("outputObjects", List::of) //
-            .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN) //
-            .addDataSupplier("columnNames", ExpressionNodeDialogUtils.getColumnNamesSupplier(workflowControl));
+            .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN);
 
         return new ScriptingNodeSettingsService( //
             ExpressionRowFilterSettings::new, //

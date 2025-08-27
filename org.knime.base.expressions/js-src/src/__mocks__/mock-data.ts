@@ -15,6 +15,7 @@ import type {
   FunctionCatalogData,
   FunctionCatalogEntryData,
 } from "@/components/functionCatalogTypes";
+import type { AllowedDropDownValue } from "@/components/OutputSelector.vue";
 
 export const INPUT_OBJECTS: InputOutputModel[] = [
   {
@@ -41,8 +42,8 @@ export const INPUT_OBJECTS: InputOutputModel[] = [
   },
 ];
 
-export const COLUMN_NAMES: string[] =
-  INPUT_OBJECTS[0].subItems?.map((subItem) => subItem.name) ?? [];
+export const COLUMN_NAMES_AND_TYPES: AllowedDropDownValue[] =
+  INPUT_OBJECTS[0].subItems?.map((subItem) => ({id: subItem.name, text: subItem.name, ...(subItem.type.id && subItem.type.title && {type: {id: subItem.type.id, text: subItem.type.title}})})) ?? [];
 
 export const FLOW_VARIABLES: InputOutputModel = {
   ...DEFAULT_FLOW_VARIABLE_INPUTS,
@@ -327,7 +328,7 @@ export const ROW_MAPPER_INITIAL_DATA: RowMapperInitialData = {
     },
     ...INPUT_OBJECTS.slice(1),
   ],
-  columnNames: COLUMN_NAMES,
+  columnNamesAndTypes: COLUMN_NAMES_AND_TYPES,
 };
 
 export const ROW_FILTER_INITIAL_DATA: RowFilterInitialData = {
@@ -339,7 +340,6 @@ export const ROW_FILTER_INITIAL_DATA: RowFilterInitialData = {
     },
     ...INPUT_OBJECTS.slice(1),
   ],
-  columnNames: COLUMN_NAMES,
 };
 
 export const FLOW_VARIABLE_INITIAL_DATA: FlowVariableInitialData = {

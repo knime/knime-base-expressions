@@ -27,7 +27,6 @@ import MultiEditorContainer, {
   type EditorStates,
 } from "@/components/MultiEditorContainer.vue";
 import type {
-  AllowedDropDownValue,
   SelectorState,
 } from "@/components/OutputSelector.vue";
 import RunButton from "@/components/RunButton.vue";
@@ -156,6 +155,11 @@ const runDiagnosticsFunction = async ({
     multiEditorContainerRef.value?.setEditorErrorState(
       state.key,
       diagnostics[index].errorState,
+    );
+
+    multiEditorContainerRef.value?.setCurrentExpressionReturnType(
+      state.key,
+      diagnostics[index].returnType,
     );
   }
 
@@ -300,14 +304,7 @@ getRowMapperSettingsService().registerSettingsGetterForApply(
                 } satisfies SelectorState,
               }))
             "
-            :replaceable-items-in-input-table="
-              initialData!.columnNames.map(
-                (name): AllowedDropDownValue => ({
-                  id: name,
-                  text: name,
-                }),
-              ) ?? []
-            "
+            :replaceable-items-in-input-table="initialData?.columnNamesAndTypes ?? []"
             @on-change="onChange"
             @run-expressions="
               (states) =>

@@ -1,6 +1,7 @@
 import type { GenericInitialData } from "@knime/scripting-editor";
 
 import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
+import type { AllowedDropDownValue } from "@/components/OutputSelector.vue";
 
 export type OutputInsertionMode = "APPEND" | "REPLACE_EXISTING";
 
@@ -18,9 +19,7 @@ export type GenericExpressionInitialData = GenericInitialData & {
 export type FlowVariableInitialData = GenericExpressionInitialData; // NOSONAR this type is here for consistency
 
 export type RowMapperInitialData = GenericExpressionInitialData & {
-  columnNames: string[];
+  columnNamesAndTypes: AllowedDropDownValue[];
 };
 
-export type RowFilterInitialData = GenericExpressionInitialData & {
-  columnNames: string[];
-};
+export type RowFilterInitialData = GenericExpressionInitialData; // NOSONAR this type is here for consistency

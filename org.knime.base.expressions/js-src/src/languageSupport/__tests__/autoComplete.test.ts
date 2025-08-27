@@ -3,7 +3,6 @@ import * as monaco from "monaco-editor";
 
 import type { FunctionCatalogEntryData } from "@/components/functionCatalogTypes";
 import { registerCompletionItemProvider } from "../autoComplete";
-import { displayMode } from "@knime/scripting-editor";
 
 const FUNCTION_ITEMS = [
   {

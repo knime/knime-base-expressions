@@ -63,6 +63,7 @@ import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.ui.CoreUIPlugin;
 import org.knime.core.webui.page.Page;
+import org.knime.node.parameters.widget.choices.TypedStringChoice;
 import org.knime.scripting.editor.GenericInitialDataBuilder.DataSupplier;
 import org.knime.scripting.editor.WorkflowControl;
 import org.osgi.framework.Bundle;
@@ -99,13 +100,13 @@ public final class ExpressionNodeDialogUtils {
      * @param workflowControl the workflow control
      * @return the data supplier
      */
-    public static DataSupplier getColumnNamesSupplier(final WorkflowControl workflowControl) {
+    public static DataSupplier getColumnNamesAndTypesSupplier(final WorkflowControl workflowControl) {
         return () -> Optional.ofNullable(workflowControl.getInputInfo()[0]) //
             .flatMap(info -> Optional.ofNullable(info.portSpec())) //
             .filter(DataTableSpec.class::isInstance) // can be InactiveBranchPortObjectSpec if the input is inactive
             .map(DataTableSpec.class::cast) //
-            .map(DataTableSpec::getColumnNames) //
-            .orElseGet(() -> new String[0]);
+            .map((spec) -> spec.stream().map(colSpec -> TypedStringChoice.fromColSpec(colSpec)).toArray()) //
+            .orElseGet(() -> new TypedStringChoice[0]);
     }
 
     /**

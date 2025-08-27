@@ -83,7 +83,6 @@ import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.node.workflow.VariableTypeRegistry;
 import org.knime.scripting.editor.CodeGenerationRequest;
 import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;

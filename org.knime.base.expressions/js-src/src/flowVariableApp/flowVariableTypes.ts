@@ -1,4 +1,5 @@
 import type { AllowedReturnTypes } from "@/components/ReturnTypeSelector.vue";
+import type { SubItemType } from "@knime/scripting-editor";
 
 export type ExpressionReturnType =
   | "UNKNOWN"
@@ -16,9 +17,9 @@ export type FlowVariableType =
   | "Unknown";
 
 export const mapExpressionTypeToFlowVariableType = (
-  type: ExpressionReturnType,
+  type: SubItemType<ExpressionReturnType>,
 ): FlowVariableType => {
-  switch (type) {
+  switch (type.displayName) {
     case "STRING":
       return "String";
     case "INTEGER":
@@ -33,17 +34,25 @@ export const mapExpressionTypeToFlowVariableType = (
 };
 
 export const getDropDownValuesForCurrentType = (
-  type: ExpressionReturnType,
+  type: SubItemType<ExpressionReturnType>,
 ): AllowedReturnTypes[] => {
-  if (type === "INTEGER") {
+  if (type.displayName === "INTEGER") {
     return [
       {
         id: "Long",
         text: "Long",
+        type: {
+          id: "variable-integer",
+          text: "LongType"
+        }
       },
       {
         id: "Integer",
         text: "Integer",
+        type: {
+          id: "variable-integer",
+          text: "IntType"
+        }
       },
     ];
   }
@@ -53,6 +62,10 @@ export const getDropDownValuesForCurrentType = (
     {
       id: flowVariableType,
       text: flowVariableType,
+      type: {
+        id: type.id ?? "UNKNOWN",
+        text: type.title ?? "Unknown variable type"
+      }
     },
   ];
 };

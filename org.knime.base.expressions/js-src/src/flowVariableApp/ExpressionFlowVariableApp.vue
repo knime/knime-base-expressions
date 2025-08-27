@@ -159,7 +159,7 @@ const runDiagnosticsFunction = async ({
 
     multiEditorContainerRef.value?.setCurrentExpressionReturnType(
       state.key,
-      diagnostics[index].returnType.displayName,
+      diagnostics[index].returnType,
     );
   }
 
@@ -305,6 +305,7 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
                   (c): AllowedDropDownValue => ({
                     id: c.name,
                     text: c.name,
+                    ... (c.type.id && c.type.title && { type: { id: c.type.id, text: c.type.title } }),
                   }),
                 ) ?? []
             "
