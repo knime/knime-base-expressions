@@ -1,7 +1,7 @@
 import type { GenericInitialData } from "@knime/scripting-editor";
 
-import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 import type { AllowedDropDownValue } from "@/components/OutputSelector.vue";
+import type { FunctionCatalogData } from "@/components/functionCatalogTypes";
 
 export type OutputInsertionMode = "APPEND" | "REPLACE_EXISTING";
 

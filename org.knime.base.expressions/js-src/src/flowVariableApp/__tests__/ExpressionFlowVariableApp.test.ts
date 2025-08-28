@@ -44,7 +44,7 @@ vi.mock("@/flowVariableApp/expressionFlowVariableDiagnostics", () => ({
     Promise.resolve([
       {
         errorState: { level: "OK" },
-        returnType: { displayName: "BOOLEAN"},
+        returnType: { displayName: "BOOLEAN" },
       } satisfies Diagnostic,
     ]),
   ),

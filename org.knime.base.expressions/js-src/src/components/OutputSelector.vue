@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { computed, watch } from "vue";
 
-import {DataType} from "@knime/kds-components";
-
 import { Dropdown, InputField, ValueSwitch } from "@knime/components";
+import { DataType } from "@knime/kds-components";
 import {
   useReadonlyStore,
   useShouldFocusBePainted,
 } from "@knime/scripting-editor";
 
-import type { OutputInsertionMode } from "@/common/types";
 import { UNKNOWN_COLUMN_TYPE, UNKNOWN_VARIABLE_TYPE } from "@/common/constants";
+import type { OutputInsertionMode } from "@/common/types";
 
 export type SelectorState = {
   outputMode: OutputInsertionMode;
@@ -68,9 +67,7 @@ const allowedOperationModes = [
 ];
 
 const fallbackType = computed(() =>
-  props.itemType === 'column'
-    ? UNKNOWN_COLUMN_TYPE
-    : UNKNOWN_VARIABLE_TYPE
+  props.itemType === "column" ? UNKNOWN_COLUMN_TYPE : UNKNOWN_VARIABLE_TYPE,
 );
 
 const isStringFalsy = (s: string | null | undefined): boolean =>
@@ -78,14 +75,15 @@ const isStringFalsy = (s: string | null | undefined): boolean =>
 
 const paintFocus = useShouldFocusBePainted();
 
-const dropdownChoices = computed(() => props.allowedReplacementEntities.map((entity) => ({
+const dropdownChoices = computed(() =>
+  props.allowedReplacementEntities.map((entity) => ({
     ...entity,
     slotData: {
       text: entity.text,
       typeId: entity.type?.id,
       typeText: entity.type?.text,
-    }
-  }))
+    },
+  })),
 );
 </script>
 
@@ -130,22 +128,18 @@ const dropdownChoices = computed(() => props.allowedReplacementEntities.map((ent
         :is-valid="isValid"
         :disabled="readOnly"
         compact
-      ><template
-      #option="{ slotData = {}, selectedValue, isMissing }"
-    >
-    <div
-          class="with-type"
-        >
-        <DataType
-        size="small"
-        :icon-name="slotData.typeId ?? fallbackType.id"
-        :icon-title="slotData.typeText ?? fallbackType.text"
-        />
-        <span v-if="isMissing">(MISSING) {{ selectedValue }}</span>
-        <span v-else>{{ slotData.text }}</span>
-      </div>
-      </template>
-    </Dropdown>
+        ><template #option="{ slotData = {}, selectedValue, isMissing }">
+          <div class="with-type">
+            <DataType
+              size="small"
+              :icon-name="slotData.typeId ?? fallbackType.id"
+              :icon-title="slotData.typeText ?? fallbackType.text"
+            />
+            <span v-if="isMissing">(MISSING) {{ selectedValue }}</span>
+            <span v-else>{{ slotData.text }}</span>
+          </div>
+        </template>
+      </Dropdown>
     </div>
   </span>
 </template>

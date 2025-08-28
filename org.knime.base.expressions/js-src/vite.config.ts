@@ -57,7 +57,9 @@ export default defineConfig({
     environment: "jsdom",
     reporters: ["default"],
     root: fileURLToPath(new URL("./", import.meta.url)),
-    server: { deps: { inline: ["@knime/scripting-editor", "@knime/kds-components"] } },
+    server: {
+      deps: { inline: ["@knime/scripting-editor", "@knime/kds-components"] },
+    },
     alias: {
       "monaco-editor": fileURLToPath(
         new URL("./src/__mocks__/monaco-editor", import.meta.url),

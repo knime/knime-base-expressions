@@ -256,21 +256,34 @@ const createElementReferencePusher = (key: string) => {
   };
 };
 
-const extractType = (editorState: EditorStateWithoutMonaco) => editorState.expressionReturnType.id && editorState.expressionReturnType.title ? { id: editorState.expressionReturnType.id, text: editorState.expressionReturnType.title } : null;
+const extractType = (editorState: EditorStateWithoutMonaco) =>
+  editorState.expressionReturnType.id && editorState.expressionReturnType.title
+    ? {
+        id: editorState.expressionReturnType.id,
+        text: editorState.expressionReturnType.title,
+      }
+    : null;
 
-const getAppendedColumns = (index: number) => orderedEditorKeys
+const getAppendedColumns = (index: number) =>
+  orderedEditorKeys
     .slice(0, index)
     .filter((key) => editorStates[key].selectorState.outputMode === "APPEND")
     .map((key) => {
       const editorState = editorStates[key];
       const column = editorState.selectorState.create;
       const type = extractType(editorState);
-      return type === null ? { id: column, text: column } : { id: column, text: column, type };
+      return type === null
+        ? { id: column, text: column }
+        : { id: column, text: column, type };
     });
 
-  const getReplacedColumns = (index: number) => orderedEditorKeys
+const getReplacedColumns = (index: number) =>
+  orderedEditorKeys
     .slice(0, index)
-    .filter((key) => editorStates[key].selectorState.outputMode === "REPLACE_EXISTING")
+    .filter(
+      (key) =>
+        editorStates[key].selectorState.outputMode === "REPLACE_EXISTING",
+    )
     .reduce<Record<string, IdAndText | null>>((acc, key) => {
       const editorState = editorStates[key];
       const column = editorState.selectorState.replace;
@@ -287,15 +300,21 @@ const getAvailableColumnsForReplacement = (
   const appendedColumnsFromPreviousEditors = getAppendedColumns(index);
   const replacedColumnsFromPreviousEditors = getReplacedColumns(index);
 
-  const replaceableItemsInInputTableWithAdaptedTypes = props.replaceableItemsInInputTable.map((item) => {
-    const replacedType = replacedColumnsFromPreviousEditors[item.id];
-    if (replacedType === undefined) {
-      return item;
-    }
-    return replacedType === null ? { id: item.id, text: item.text } : { ...item, type: replacedType };
-  });
+  const replaceableItemsInInputTableWithAdaptedTypes =
+    props.replaceableItemsInInputTable.map((item) => {
+      const replacedType = replacedColumnsFromPreviousEditors[item.id];
+      if (replacedType === undefined) {
+        return item;
+      }
+      return replacedType === null
+        ? { id: item.id, text: item.text }
+        : { ...item, type: replacedType };
+    });
 
-  return [...replaceableItemsInInputTableWithAdaptedTypes, ...appendedColumnsFromPreviousEditors]
+  return [
+    ...replaceableItemsInInputTableWithAdaptedTypes,
+    ...appendedColumnsFromPreviousEditors,
+  ]
     .filter((flowVariableName) => !flowVariableName.text.startsWith("knime"))
     .filter((flowVariableName) => flowVariableName.text.trim() !== "");
 };
@@ -486,7 +505,7 @@ onMounted(async () => {
       .getEditorState()
       .setInitialText(props.settings[i].initialScript);
     editorStates[key].selectorState = props.settings[i].initialSelectorState;
-    editorStates[key].expressionReturnType = { displayName: "UNKNOWN"};
+    editorStates[key].expressionReturnType = { displayName: "UNKNOWN" };
     editorStates[key].selectedFlowVariableOutputType =
       props.settings[i].initialOutputReturnType;
   }

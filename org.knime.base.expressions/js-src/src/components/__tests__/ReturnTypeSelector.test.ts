@@ -2,11 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 
 import { Dropdown } from "@knime/components";
+import { DataType } from "@knime/kds-components";
 
 import type { AllowedReturnTypes } from "@/components/ReturnTypeSelector.vue";
 import ReturnTypeSelector from "@/components/ReturnTypeSelector.vue";
 import { type FlowVariableType } from "@/flowVariableApp/flowVariableTypes";
-import { DataType } from "@knime/kds-components";
 
 describe("ReturnTypeSelector", () => {
   enableAutoUnmount(afterEach);
@@ -102,10 +102,11 @@ describe("ReturnTypeSelector", () => {
     const wrapper = doMount("String", stringReturnType);
     const dataType = wrapper.findComponent(DataType);
     expect(dataType.exists()).toBe(true);
-    expect(dataType.props()).toStrictEqual(expect.objectContaining({
-
-      iconName: "StringId",
-      iconTitle: "StringText",
-    }));
+    expect(dataType.props()).toStrictEqual(
+      expect.objectContaining({
+        iconName: "StringId",
+        iconTitle: "StringText",
+      }),
+    );
   });
 });

@@ -11,5 +11,11 @@ export const DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY = {
 export const LANGUAGE = "knime-expression";
 export const DEFAULT_NUMBER_OF_ROWS_TO_RUN = 10;
 
-export const UNKNOWN_COLUMN_TYPE = { id: "unknown-datatype", text: "Unknown data type" };
-export const UNKNOWN_VARIABLE_TYPE = { id: "UNKNOWN", text: "Unknown variable type" };
+export const UNKNOWN_COLUMN_TYPE = {
+  id: "unknown-datatype",
+  text: "Unknown data type",
+};
+export const UNKNOWN_VARIABLE_TYPE = {
+  id: "UNKNOWN",
+  text: "Unknown variable type",
+};

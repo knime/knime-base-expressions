@@ -26,9 +26,7 @@ import MultiEditorContainer, {
   type EditorState,
   type EditorStates,
 } from "@/components/MultiEditorContainer.vue";
-import type {
-  SelectorState,
-} from "@/components/OutputSelector.vue";
+import type { SelectorState } from "@/components/OutputSelector.vue";
 import RunButton from "@/components/RunButton.vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
@@ -304,7 +302,9 @@ getRowMapperSettingsService().registerSettingsGetterForApply(
                 } satisfies SelectorState,
               }))
             "
-            :replaceable-items-in-input-table="initialData?.columnNamesAndTypes ?? []"
+            :replaceable-items-in-input-table="
+              initialData?.columnNamesAndTypes ?? []
+            "
             @on-change="onChange"
             @run-expressions="
               (states) =>

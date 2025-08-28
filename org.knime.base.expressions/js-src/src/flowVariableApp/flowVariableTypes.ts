@@ -1,5 +1,6 @@
-import type { AllowedReturnTypes } from "@/components/ReturnTypeSelector.vue";
 import type { SubItemType } from "@knime/scripting-editor";
+
+import type { AllowedReturnTypes } from "@/components/ReturnTypeSelector.vue";
 
 export type ExpressionReturnType =
   | "UNKNOWN"
@@ -43,16 +44,16 @@ export const getDropDownValuesForCurrentType = (
         text: "Long",
         type: {
           id: "variable-integer",
-          text: "LongType"
-        }
+          text: "LongType",
+        },
       },
       {
         id: "Integer",
         text: "Integer",
         type: {
           id: "variable-integer",
-          text: "IntType"
-        }
+          text: "IntType",
+        },
       },
     ];
   }
@@ -64,8 +65,8 @@ export const getDropDownValuesForCurrentType = (
       text: flowVariableType,
       type: {
         id: type.id ?? "UNKNOWN",
-        text: type.title ?? "Unknown variable type"
-      }
+        text: type.title ?? "Unknown variable type",
+      },
     },
   ];
 };

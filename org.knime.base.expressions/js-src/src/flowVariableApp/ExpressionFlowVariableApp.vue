@@ -305,7 +305,10 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
                   (c): AllowedDropDownValue => ({
                     id: c.name,
                     text: c.name,
-                    ... (c.type.id && c.type.title && { type: { id: c.type.id, text: c.type.title } }),
+                    ...(c.type.id &&
+                      c.type.title && {
+                        type: { id: c.type.id, text: c.type.title },
+                      }),
                   }),
                 ) ?? []
             "

@@ -2,12 +2,13 @@
 import { computed, ref, watch } from "vue";
 
 import { Dropdown } from "@knime/components";
+import { DataType } from "@knime/kds-components";
 import { useReadonlyStore } from "@knime/scripting-editor";
 
-import { type FlowVariableType } from "@/flowVariableApp/flowVariableTypes";
-import type { IdAndText } from "./OutputSelector.vue";
-import { DataType } from "@knime/kds-components";
 import { UNKNOWN_VARIABLE_TYPE } from "@/common/constants";
+import { type FlowVariableType } from "@/flowVariableApp/flowVariableTypes";
+
+import type { IdAndText } from "./OutputSelector.vue";
 
 export type AllowedReturnTypes = {
   id: FlowVariableType;
@@ -64,8 +65,16 @@ watch(
   },
 );
 
-const possibleValues = computed(() => props.allowedReturnTypes.map((item) => ({ ...item, slotData: { text: item.text, typeId: item.type?.id, typeText: item.type?.text} })));
-
+const possibleValues = computed(() =>
+  props.allowedReturnTypes.map((item) => ({
+    ...item,
+    slotData: {
+      text: item.text,
+      typeId: item.type?.id,
+      typeText: item.type?.text,
+    },
+  })),
+);
 </script>
 
 <template>
@@ -78,20 +87,16 @@ const possibleValues = computed(() => props.allowedReturnTypes.map((item) => ({ 
     direction="up"
     :disabled="readOnly || allowedReturnTypes.length <= 1"
     compact
-  ><template
-      #option="{ slotData = {} }"
-    >
-        <div
-          class="with-type"
-        >
+    ><template #option="{ slotData = {} }">
+      <div class="with-type">
         <DataType
-        :icon-name="slotData.typeId ?? UNKNOWN_VARIABLE_TYPE.id"
-        :icon-title="slotData.typeText ?? UNKNOWN_VARIABLE_TYPE.text"
-        size="small"
+          :icon-name="slotData.typeId ?? UNKNOWN_VARIABLE_TYPE.id"
+          :icon-title="slotData.typeText ?? UNKNOWN_VARIABLE_TYPE.text"
+          size="small"
         />
         <span>{{ slotData.text }}</span>
       </div>
-      </template>
+    </template>
   </Dropdown>
 </template>
 
@@ -100,4 +105,5 @@ const possibleValues = computed(() => props.allowedReturnTypes.map((item) => ({ 
   display: flex;
   align-items: center;
   gap: var(--space-4);
-}</style>
+}
+</style>

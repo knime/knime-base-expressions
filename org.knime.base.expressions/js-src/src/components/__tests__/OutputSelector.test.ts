@@ -2,16 +2,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 
 import { Dropdown, InputField, ValueSwitch } from "@knime/components";
+import { DataType } from "@knime/kds-components";
 
 import OutputSelector, { type SelectorState } from "../OutputSelector.vue";
-import { DataType } from "@knime/kds-components";
 
 describe("OutputSelector", () => {
   enableAutoUnmount(afterEach);
 
   const columnsToReplace = [
-    { id: "a", text: "A", type: { id: "a", text: "A"} },
-    { id: "b", text: "B", type: { id: "b", text: "B"} },
+    { id: "a", text: "A", type: { id: "a", text: "A" } },
+    { id: "b", text: "B", type: { id: "b", text: "B" } },
     { id: "c", text: "C" },
     { id: "d", text: "D" },
   ];
@@ -77,24 +77,35 @@ describe("OutputSelector", () => {
       replace: "c",
     });
     expect(wrapper.find(".with-type").text()).toBe("C");
-    const columnChoices = wrapper.find("#dropdown-box-to-select-entity").find("ul")
+    const columnChoices = wrapper
+      .find("#dropdown-box-to-select-entity")
+      .find("ul");
     const columnDataTypeComponents = columnChoices.findAllComponents(DataType);
     expect(columnDataTypeComponents).toHaveLength(4);
-    expect(columnDataTypeComponents.at(0)?.props()).toStrictEqual(expect.objectContaining({iconName: "a", iconTitle: "A"}))
-    expect(columnDataTypeComponents.at(2)?.props("iconName")).toBe("unknown-datatype")
+    expect(columnDataTypeComponents.at(0)?.props()).toStrictEqual(
+      expect.objectContaining({ iconName: "a", iconTitle: "A" }),
+    );
+    expect(columnDataTypeComponents.at(2)?.props("iconName")).toBe(
+      "unknown-datatype",
+    );
 
     await wrapper.setProps({
-      itemType: "flow variable"
-    })
+      itemType: "flow variable",
+    });
 
-    const variableChoices = wrapper.find("#dropdown-box-to-select-entity").find("ul")
-    const variableDataTypeComponents = variableChoices.findAllComponents(DataType);
+    const variableChoices = wrapper
+      .find("#dropdown-box-to-select-entity")
+      .find("ul");
+    const variableDataTypeComponents =
+      variableChoices.findAllComponents(DataType);
     expect(variableDataTypeComponents).toHaveLength(4);
-    expect(variableDataTypeComponents.at(0)?.props()).toStrictEqual(expect.objectContaining({iconName: "a", iconTitle: "A"}))
-    expect(variableDataTypeComponents.at(2)?.props("iconName")).toBe("UNKNOWN")
+    expect(variableDataTypeComponents.at(0)?.props()).toStrictEqual(
+      expect.objectContaining({ iconName: "a", iconTitle: "A" }),
+    );
+    expect(variableDataTypeComponents.at(2)?.props("iconName")).toBe("UNKNOWN");
   });
 
-  it("shows missing values in REPLACE mode", async () => {
+  it("shows missing values in REPLACE mode", () => {
     const wrapper = doMount({
       outputMode: "REPLACE_EXISTING",
       create: "a1",
