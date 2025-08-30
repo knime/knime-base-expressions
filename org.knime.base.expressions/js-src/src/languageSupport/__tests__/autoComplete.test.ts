@@ -36,13 +36,13 @@ const FUNCTION_ITEMS = [
 const SPECIAL_COLUMNS_ITEMS = [
   {
     name: "ROW_ID",
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     insertionText: "$[ROW_ID]",
   },
   {
     name: "ROW_NUMBER",
-    type: "number",
+    type: { displayName: "number" },
     supported: true,
     insertionText: "$[ROW_NUMBER]",
   },
@@ -50,7 +50,7 @@ const SPECIAL_COLUMNS_ITEMS = [
 const COLUMNS_ITEMS = [
   {
     name: "input1",
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     expectedCompletion: "$input1",
     expectedSingleQuoteCompletion: "$['input1']",
@@ -58,12 +58,12 @@ const COLUMNS_ITEMS = [
   },
   {
     name: "input2",
-    type: "not supported",
+    type: { displayName: "not supported" },
     supported: false,
   },
   {
     name: "_input3",
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     expectedCompletion: "$_input3",
     expectedSingleQuoteCompletion: "$['_input3']",
@@ -71,21 +71,21 @@ const COLUMNS_ITEMS = [
   },
   {
     name: "input 4",
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     expectedSingleQuoteCompletion: "$['input 4']",
     expectedDoubleQuoteCompletion: '$["input 4"]',
   },
   {
     name: "input'5'",
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     expectedSingleQuoteCompletion: "$['input\\'5\\'']",
     expectedDoubleQuoteCompletion: "$[\"input'5'\"]",
   },
   {
     name: 'input"6"',
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     expectedSingleQuoteCompletion: "$['input\"6\"']",
     expectedDoubleQuoteCompletion: '$["input\\"6\\""]',
@@ -95,7 +95,7 @@ const COLUMNS_ITEMS = [
 const FLOW_VARIABLES_ITEMS = [
   {
     name: "flowVar1",
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     expectedCompletion: "$$flowVar1",
     expectedSingleQuoteCompletion: "$$['flowVar1']",
@@ -103,12 +103,12 @@ const FLOW_VARIABLES_ITEMS = [
   },
   {
     name: "flowVar2",
-    type: "not supported",
+    type: { displayName: "not supported" },
     supported: false,
   },
   {
     name: "_flowVar3",
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     expectedCompletion: "$$_flowVar3",
     expectedSingleQuoteCompletion: "$$['_flowVar3']",
@@ -116,21 +116,21 @@ const FLOW_VARIABLES_ITEMS = [
   },
   {
     name: "flowVar 4",
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     expectedSingleQuoteCompletion: "$$['flowVar 4']",
     expectedDoubleQuoteCompletion: '$$["flowVar 4"]',
   },
   {
     name: "flowVar'5'",
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     expectedSingleQuoteCompletion: "$$['flowVar\\'5\\'']",
     expectedDoubleQuoteCompletion: "$$[\"flowVar'5'\"]",
   },
   {
     name: 'flowVar"6"',
-    type: "string",
+    type: { displayName: "string" },
     supported: true,
     expectedSingleQuoteCompletion: "$$['flowVar\"6\"']",
     expectedDoubleQuoteCompletion: '$$["flowVar\\"6\\""]',

@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { Dropdown } from "@knime/components";
+import { DataType } from "@knime/kds-components";
 import { useReadonlyStore } from "@knime/scripting-editor";
 
+import { UNKNOWN_VARIABLE_TYPE } from "@/common/constants";
 import { type FlowVariableType } from "@/flowVariableApp/flowVariableTypes";
+
+import type { IdAndText } from "./OutputSelector.vue";
 
 export type AllowedReturnTypes = {
   id: FlowVariableType;
   text: string;
+  type?: IdAndText;
 };
 
 type PropType = { allowedReturnTypes: AllowedReturnTypes[] };
@@ -59,6 +64,17 @@ watch(
     }
   },
 );
+
+const possibleValues = computed(() =>
+  props.allowedReturnTypes.map((item) => ({
+    ...item,
+    slotData: {
+      text: item.text,
+      typeId: item.type?.id,
+      typeText: item.type?.text,
+    },
+  })),
+);
 </script>
 
 <template>
@@ -67,11 +83,27 @@ watch(
     id="dropdown-box-to-select-entity"
     v-model="selectorModel"
     ariaLabel="return type selection"
-    :possible-values="allowedReturnTypes"
+    :possible-values="possibleValues"
     direction="up"
     :disabled="readOnly || allowedReturnTypes.length <= 1"
     compact
-  />
+    ><template #option="{ slotData = {} }">
+      <div class="with-type">
+        <DataType
+          :icon-name="slotData.typeId ?? UNKNOWN_VARIABLE_TYPE.id"
+          :icon-title="slotData.typeText ?? UNKNOWN_VARIABLE_TYPE.text"
+          size="small"
+        />
+        <span>{{ slotData.text }}</span>
+      </div>
+    </template>
+  </Dropdown>
 </template>
 
-<style scoped lang="postcss"></style>
+<style scoped lang="postcss">
+.with-type {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+</style>

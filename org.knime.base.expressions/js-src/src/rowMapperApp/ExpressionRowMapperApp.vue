@@ -8,6 +8,7 @@ import {
   OutputTablePreview,
   ScriptingEditor,
   type SubItem,
+  type SubItemType,
   consoleHandler,
   getScriptingService,
   useReadonlyStore,
@@ -25,10 +26,7 @@ import MultiEditorContainer, {
   type EditorState,
   type EditorStates,
 } from "@/components/MultiEditorContainer.vue";
-import type {
-  AllowedDropDownValue,
-  SelectorState,
-} from "@/components/OutputSelector.vue";
+import type { SelectorState } from "@/components/OutputSelector.vue";
 import RunButton from "@/components/RunButton.vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
 import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
@@ -63,7 +61,7 @@ const getInitialItems = (): InputOutputModel[] => {
 
 const refreshInputOutputItems = (
   { states, activeEditorKey }: EditorStates,
-  returnTypes: string[],
+  returnTypes: SubItemType[],
 ) => {
   if (!activeEditorKey) {
     return;
@@ -124,7 +122,7 @@ const refreshInputOutputItems = (
 
 const runDiagnosticsFunction = async ({
   states,
-}: EditorStates): Promise<string[]> => {
+}: EditorStates): Promise<SubItemType[]> => {
   const diagnostics = await runRowMapperDiagnostics(
     states.map((state) => state.monacoState),
     states.map((state) =>
@@ -155,6 +153,11 @@ const runDiagnosticsFunction = async ({
     multiEditorContainerRef.value?.setEditorErrorState(
       state.key,
       diagnostics[index].errorState,
+    );
+
+    multiEditorContainerRef.value?.setCurrentExpressionReturnType(
+      state.key,
+      diagnostics[index].returnType,
     );
   }
 
@@ -300,12 +303,7 @@ getRowMapperSettingsService().registerSettingsGetterForApply(
               }))
             "
             :replaceable-items-in-input-table="
-              initialData!.columnNames.map(
-                (name): AllowedDropDownValue => ({
-                  id: name,
-                  text: name,
-                }),
-              ) ?? []
+              initialData?.columnNamesAndTypes ?? []
             "
             @on-change="onChange"
             @run-expressions="

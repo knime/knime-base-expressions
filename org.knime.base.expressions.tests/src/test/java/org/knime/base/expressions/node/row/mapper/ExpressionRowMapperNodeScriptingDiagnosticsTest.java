@@ -51,34 +51,23 @@ package org.knime.base.expressions.node.row.mapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.knime.base.expressions.node.DiagnosticsTestUtils.FLOW_VARIABLES;
+import static org.knime.base.expressions.node.DiagnosticsTestUtils.TABLE_SPECS;
+import static org.knime.base.expressions.node.DiagnosticsTestUtils.getWorkflowControl;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.knime.base.expressions.ColumnOutputUtils;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.row.mapper.ExpressionRowMapperNodeScriptingService.ExpressionNodeRpcService;
-import org.knime.core.data.DataColumnSpec;
-import org.knime.core.data.DataColumnSpecCreator;
-import org.knime.core.data.DataTableSpec;
-import org.knime.core.data.DataType;
-import org.knime.core.data.def.BooleanCell;
-import org.knime.core.data.def.DoubleCell;
-import org.knime.core.data.def.IntCell;
-import org.knime.core.data.def.LongCell;
-import org.knime.core.data.def.StringCell;
 import org.knime.core.data.vector.bitvector.DenseBitVectorCell;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.workflow.FlowObjectStack;
+import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.VariableType.BooleanType;
-import org.knime.core.node.workflow.VariableType.DoubleType;
-import org.knime.core.node.workflow.VariableType.IntType;
-import org.knime.core.node.workflow.VariableType.LongType;
 import org.knime.core.node.workflow.VariableType.StringType;
+import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
 import org.knime.scripting.editor.WorkflowControl;
-import org.mockito.Mockito;
 
 /**
  * Test getRowMapperDiagnostics of ExpressionRowMapperNodeScriptingService.
@@ -88,42 +77,13 @@ import org.mockito.Mockito;
 @SuppressWarnings("static-method")
 final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
 
-    private static DataColumnSpec col(final String name, final DataType type) {
-        return new DataColumnSpecCreator(name, type).createSpec();
-    }
-
-    private static final DataTableSpec TABLE_SPECS = new DataTableSpec( //
-        col("int", IntCell.TYPE), //
-        col("long", LongCell.TYPE), //
-        col("double", DoubleCell.TYPE), //
-        col("string", StringCell.TYPE), //
-        col("bool", BooleanCell.TYPE), //
-        col("unsupported", DenseBitVectorCell.TYPE) //
-    );
-
-    private static final Map<String, FlowVariable> FLOW_VARIABLES = Map.of( //
-        "int_flow_var", new FlowVariable("int_flow_var", IntType.INSTANCE, 42), //
-        "long_flow_var", new FlowVariable("long_flow_var", LongType.INSTANCE, 42L), //
-        "double_flow_var", new FlowVariable("double_flow_var", DoubleType.INSTANCE, 3.14), //
-        "string_flow_var", new FlowVariable("string_flow_var", StringType.INSTANCE, "foo"), //
-        "bool_flow_var", new FlowVariable("bool_flow_var", BooleanType.INSTANCE, true) //
-    );
-
-    private static WorkflowControl getWorkflowControl(final DataTableSpec tableSpecs,
-        final Map<String, FlowVariable> flowVariables) {
-
-        var flowObjectStack = Mockito.mock(FlowObjectStack.class);
-        Mockito.when(flowObjectStack.getAllAvailableFlowVariables()).thenReturn(flowVariables);
-
-        var workflowControl = Mockito.mock(WorkflowControl.class);
-        Mockito.when(workflowControl.getInputSpec()).thenReturn(new DataTableSpec[]{tableSpecs});
-        Mockito.when(workflowControl.getInputData()).thenReturn(new BufferedDataTable[]{null});
-        Mockito.when(workflowControl.getFlowObjectStack()).thenReturn(flowObjectStack);
-        return workflowControl;
-    }
-
     private static ExpressionNodeRpcService createService(final WorkflowControl workflowControl) {
         return new ExpressionRowMapperNodeScriptingService(workflowControl).getJsonRpcService();
+    }
+
+    private static InputOutputModelSubItemType createInOutModelSubItemType(final ValueType valueType) {
+        final var colSpec = ColumnOutputUtils.valueTypeToDataColumnSpec(valueType, "temp");
+        return InputOutputModelSubItemType.fromColSpec(colSpec, valueType.name());
     }
 
     @Test
@@ -141,10 +101,14 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
         assertEquals(List.of(), diagnostics.get(2).diagnostics(), "Expected no diagnostics for the third expression.");
         assertEquals(List.of(), diagnostics.get(3).diagnostics(), "Expected no diagnostics for the fourth expression.");
 
-        assertEquals(ValueType.INTEGER.name(), diagnostics.get(0).returnType(), "Expected integer type.");
-        assertEquals(ValueType.FLOAT.name(), diagnostics.get(1).returnType(), "Expected float type.");
-        assertEquals(ValueType.STRING.name(), diagnostics.get(2).returnType(), "Expected string type.");
-        assertEquals(ValueType.BOOLEAN.name(), diagnostics.get(3).returnType(), "Expected boolean type.");
+        assertEquals(createInOutModelSubItemType(ValueType.INTEGER), diagnostics.get(0).returnType(),
+            "Expected integer type.");
+        assertEquals(createInOutModelSubItemType(ValueType.FLOAT), diagnostics.get(1).returnType(),
+            "Expected float type.");
+        assertEquals(createInOutModelSubItemType(ValueType.STRING), diagnostics.get(2).returnType(),
+            "Expected string type.");
+        assertEquals(createInOutModelSubItemType(ValueType.BOOLEAN), diagnostics.get(3).returnType(),
+            "Expected boolean type.");
     }
 
     @Test
@@ -158,6 +122,20 @@ final class ExpressionRowMapperNodeScriptingDiagnosticsTest {
         assertEquals(1, result.size(), "Expected 1 expressions to be analyzed.");
         assertTrue(result.get(0).diagnostics().get(0).message().contains("No input"),
             "Expected \"No input...\" error message, got \"" + result.get(0).diagnostics().get(0).message() + "\".");
+    }
+
+    @Test
+    void testInactiveInput() {
+        var service = createService(getWorkflowControl(InactiveBranchPortObjectSpec.INSTANCE, FLOW_VARIABLES));
+        var result = service.getRowMapperDiagnostics(new String[]{"$int + 1"}, new String[]{"out"});
+        assertEquals(1, result.size(), "Expected diagnostics for one expression.");
+        assertEquals(InputOutputModelSubItemType.fromDisplayName("UNKNOWN"), result.get(0).returnType(),
+            "Expected no return type for inactive branches.");
+        assertEquals(1, result.get(0).diagnostics().size(), "Expected one error for inactive branches.");
+        var diagnostic = result.get(0).diagnostics().get(0);
+        assertEquals(DiagnosticSeverity.ERROR, diagnostic.severity(), "Expected error severity for inactive branches.");
+        assertEquals("The input connection is inactive. Connect an active table.", diagnostic.message(),
+            "Expected inactive branches error message.");
     }
 
     @Test

@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { watch } from "vue";
+import { computed, watch } from "vue";
 
 import { Dropdown, InputField, ValueSwitch } from "@knime/components";
+import { DataType } from "@knime/kds-components";
 import {
   useReadonlyStore,
   useShouldFocusBePainted,
 } from "@knime/scripting-editor";
 
+import { UNKNOWN_COLUMN_TYPE, UNKNOWN_VARIABLE_TYPE } from "@/common/constants";
 import type { OutputInsertionMode } from "@/common/types";
 
 export type SelectorState = {
@@ -15,9 +17,13 @@ export type SelectorState = {
   replace: string;
 };
 
-export type AllowedDropDownValue = {
+export type IdAndText = {
   id: string;
   text: string;
+};
+
+export type AllowedDropDownValue = IdAndText & {
+  type?: IdAndText;
 };
 
 export type ItemType = "flow variable" | "column";
@@ -60,10 +66,25 @@ const allowedOperationModes = [
   { id: "REPLACE_EXISTING", text: "Replace" },
 ];
 
+const fallbackType = computed(() =>
+  props.itemType === "column" ? UNKNOWN_COLUMN_TYPE : UNKNOWN_VARIABLE_TYPE,
+);
+
 const isStringFalsy = (s: string | null | undefined): boolean =>
   !s || s.trim() === "";
 
 const paintFocus = useShouldFocusBePainted();
+
+const dropdownChoices = computed(() =>
+  props.allowedReplacementEntities.map((entity) => ({
+    ...entity,
+    slotData: {
+      text: entity.text,
+      typeId: entity.type?.id,
+      typeText: entity.type?.text,
+    },
+  })),
+);
 </script>
 
 <template>
@@ -101,13 +122,24 @@ const paintFocus = useShouldFocusBePainted();
         id="dropdown-box-to-select-entity"
         v-model="modelValue.replace"
         :ariaLabel="`${itemType} selection`"
-        :possible-values="allowedReplacementEntities"
+        :possible-values="dropdownChoices"
         direction="up"
         class="input"
         :is-valid="isValid"
         :disabled="readOnly"
         compact
-      />
+        ><template #option="{ slotData = {}, selectedValue, isMissing }">
+          <div class="with-type">
+            <DataType
+              size="small"
+              :icon-name="slotData.typeId ?? fallbackType.id"
+              :icon-title="slotData.typeText ?? fallbackType.text"
+            />
+            <span v-if="isMissing">(MISSING) {{ selectedValue }}</span>
+            <span v-else>{{ slotData.text }}</span>
+          </div>
+        </template>
+      </Dropdown>
     </div>
   </span>
 </template>
@@ -132,5 +164,11 @@ const paintFocus = useShouldFocusBePainted();
 
 .switch-button.focus-painted:focus-within {
   outline: 2px solid var(--knime-cornflower);
+}
+
+.with-type {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 </style>

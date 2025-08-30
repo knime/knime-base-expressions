@@ -70,8 +70,10 @@ import org.knime.core.expressions.Expressions;
 import org.knime.core.expressions.ReturnResult;
 import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.node.workflow.VariableType;
 import org.knime.scripting.editor.CodeGenerationRequest;
 import org.knime.scripting.editor.InputOutputModel;
+import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
 import org.knime.scripting.editor.ScriptingService;
 import org.knime.scripting.editor.WorkflowControl;
 
@@ -192,6 +194,7 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                 List<ExpressionDiagnostic> diagnosticsForThisExpression = new ArrayList<>();
 
                 var inferredType = ValueType.MISSING;
+                VariableType<?> inferredVariableType = null;
                 try {
                     var ast = Expressions.parse(expression);
 
@@ -249,6 +252,7 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                         if (variableType.isOk()) {
                             availableFlowVariables.put(allNewFlowVariableNames[i], ReturnResult
                                 .success(new FlowVariable(allNewFlowVariableNames[i], variableType.getValue())));
+                            inferredVariableType = variableType.getValue();
                         } else {
                             diagnosticsForThisExpression.add(ExpressionDiagnostic.withSameMessage( //
                                 variableType.getErrorMessage(), //
@@ -263,8 +267,10 @@ final class ExpressionFlowVariableNodeScriptingService extends ScriptingService 
                         invalidExpressionType(i, allNewFlowVariableNames[i]));
                     diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromException(ex));
                 } finally {
-                    diagnostics
-                        .add(new ExpressionDiagnosticResult(diagnosticsForThisExpression, inferredType.toString()));
+                    var resultType =
+                        inferredVariableType == null ? InputOutputModelSubItemType.fromDisplayName("UNKNOWN")
+                            : InputOutputModelSubItemType.fromVariableType(inferredVariableType, inferredType.name());
+                    diagnostics.add(new ExpressionDiagnosticResult(diagnosticsForThisExpression, resultType));
                 }
             }
 

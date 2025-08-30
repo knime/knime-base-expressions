@@ -44,7 +44,7 @@ vi.mock("@/rowMapperApp/expressionRowMapperDiagnostics", () => ({
     Promise.resolve([
       {
         errorState: { level: "OK" },
-        returnType: "BOOLEAN",
+        returnType: { displayName: "BOOLEAN" },
       } satisfies Diagnostic,
     ]),
   ),

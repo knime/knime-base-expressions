@@ -58,6 +58,7 @@ import org.knime.core.expressions.ValueType;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.scripting.editor.InputOutputModel;
 import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItem;
+import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
 import org.knime.scripting.editor.WorkflowControl.InputPortInfo;
 
 import com.google.common.base.Preconditions;
@@ -70,10 +71,12 @@ import com.google.common.base.Preconditions;
 public final class ExpressionNodeScriptingInputOutputModelUtils {
 
     private static final List<InputOutputModelSubItem> ROW_INFO_SUB_ITEMS = List.of( //
-        new InputOutputModelSubItem("ROW_NUMBER", ValueType.INTEGER.name(), true, "$[ROW_NUMBER]"), //
-        new InputOutputModelSubItem("ROW_INDEX", ValueType.INTEGER.name(), true, "$[ROW_INDEX]"), //
-        new InputOutputModelSubItem("ROW_ID", ValueType.STRING.name(), true, "$[ROW_ID]") //
-    );
+        new InputOutputModelSubItem( //
+            "ROW_NUMBER", InputOutputModelSubItemType.fromDisplayName(ValueType.INTEGER.name()), true, "$[ROW_NUMBER]"),
+        new InputOutputModelSubItem( //
+            "ROW_INDEX", InputOutputModelSubItemType.fromDisplayName(ValueType.INTEGER.name()), true, "$[ROW_INDEX]"),
+        new InputOutputModelSubItem( //
+            "ROW_ID", InputOutputModelSubItemType.fromDisplayName(ValueType.STRING.name()), true, "$[ROW_ID]"));
 
     // escapeDblQuotes is a Handlebars.js helper registered in the frontend
     private static final String COLUMN_ALIAS_TEMPLATE = """

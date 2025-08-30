@@ -26,11 +26,12 @@
     "postinstall": "license-check -c"
   },
   "dependencies": {
-    "@knime/components": "1.32.0",
-    "@knime/scripting-editor": "0.0.105",
+    "@knime/components": "1.37.0",
+    "@knime/kds-components": "0.0.5",
+    "@knime/scripting-editor": "0.0.109",
     "@knime/styles": "1.10.0",
-    "@knime/ui-extension-renderer": "2.2.0",
-    "@knime/ui-extension-service": "2.4.0",
+    "@knime/ui-extension-renderer": "2.3.8",
+    "@knime/ui-extension-service": "2.4.1",
     "@vueuse/core": "13.5.0",
     "consola": "3.4.2",
     "markdown-it": "14.1.0",
@@ -69,7 +70,7 @@
     "vite-svg-loader": "5.1.0",
     "vitest": "2.1.9",
     "vitest-canvas-mock": "0.3.3",
-    "vue-tsc": "2.2.12"
+    "vue-tsc": "3.0.4"
   },
   "engines": {
     "node": "22.x"

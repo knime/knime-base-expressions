@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { FunctionButton } from "@knime/components";
 import {
+  type SubItemType,
   type UseCodeEditorReturn,
   getScriptingService,
   getSettingsService,
@@ -31,6 +32,7 @@ import ExpressionEditorPane, {
 } from "@/components/ExpressionEditorPane.vue";
 import OutputSelector, {
   type AllowedDropDownValue,
+  type IdAndText,
   type ItemType,
   type SelectorState,
 } from "@/components/OutputSelector.vue";
@@ -49,7 +51,7 @@ type EditorStateWithoutMonaco = {
   selectorState: SelectorState;
   editorErrorState: EditorErrorState;
   selectorErrorState: EditorErrorState;
-  expressionReturnType: ExpressionReturnType;
+  expressionReturnType: SubItemType<ExpressionReturnType>;
   selectedFlowVariableOutputType?: FlowVariableType;
 };
 export type EditorState = EditorStateWithoutMonaco & {
@@ -70,7 +72,7 @@ export type MultiEditorContainerExposes = {
   setSelectorErrorState: (key: string, errorState: EditorErrorState) => void;
   setCurrentExpressionReturnType: (
     key: string,
-    returnType: ExpressionReturnType,
+    returnType: SubItemType<ExpressionReturnType>,
   ) => void;
 
   /**
@@ -196,7 +198,7 @@ defineExpose<MultiEditorContainerExposes>({
   },
   setCurrentExpressionReturnType(
     key: string,
-    returnType: ExpressionReturnType,
+    returnType: SubItemType<ExpressionReturnType>,
   ) {
     editorStates[key].expressionReturnType = returnType;
   },
@@ -218,7 +220,7 @@ const pushNewEditorState = ({
     },
     editorErrorState: { level: "OK" },
     selectorErrorState: { level: "OK" },
-    expressionReturnType: "UNKNOWN",
+    expressionReturnType: { displayName: "UNKNOWN" },
   };
   editorControlsExpanded.value[key] = expandControls;
   editorStates[key] = newState;
@@ -254,21 +256,65 @@ const createElementReferencePusher = (key: string) => {
   };
 };
 
+const extractType = (editorState: EditorStateWithoutMonaco) =>
+  editorState.expressionReturnType.id && editorState.expressionReturnType.title
+    ? {
+        id: editorState.expressionReturnType.id,
+        text: editorState.expressionReturnType.title,
+      }
+    : null;
+
+const getAppendedColumns = (index: number) =>
+  orderedEditorKeys
+    .slice(0, index)
+    .filter((key) => editorStates[key].selectorState.outputMode === "APPEND")
+    .map((key) => {
+      const editorState = editorStates[key];
+      const column = editorState.selectorState.create;
+      const type = extractType(editorState);
+      return type === null
+        ? { id: column, text: column }
+        : { id: column, text: column, type };
+    });
+
+const getReplacedColumns = (index: number) =>
+  orderedEditorKeys
+    .slice(0, index)
+    .filter(
+      (key) =>
+        editorStates[key].selectorState.outputMode === "REPLACE_EXISTING",
+    )
+    .reduce<Record<string, IdAndText | null>>((acc, key) => {
+      const editorState = editorStates[key];
+      const column = editorState.selectorState.replace;
+      const type = extractType(editorState);
+      return { ...acc, [column]: type };
+    }, {});
+
 // Input columns helpers
 const getAvailableColumnsForReplacement = (
   key: string,
 ): AllowedDropDownValue[] => {
   const index = orderedEditorKeys.indexOf(key);
 
-  const columnsFromPreviousEditors = orderedEditorKeys
-    .slice(0, index)
-    .filter((key) => editorStates[key].selectorState.outputMode === "APPEND")
-    .map((key) => editorStates[key].selectorState.create)
-    .map((column) => {
-      return { id: column, text: column };
+  const appendedColumnsFromPreviousEditors = getAppendedColumns(index);
+  const replacedColumnsFromPreviousEditors = getReplacedColumns(index);
+
+  const replaceableItemsInInputTableWithAdaptedTypes =
+    props.replaceableItemsInInputTable.map((item) => {
+      const replacedType = replacedColumnsFromPreviousEditors[item.id];
+      if (replacedType === undefined) {
+        return item;
+      }
+      return replacedType === null
+        ? { id: item.id, text: item.text }
+        : { ...item, type: replacedType };
     });
 
-  return [...props.replaceableItemsInInputTable, ...columnsFromPreviousEditors]
+  return [
+    ...replaceableItemsInInputTableWithAdaptedTypes,
+    ...appendedColumnsFromPreviousEditors,
+  ]
     .filter((flowVariableName) => !flowVariableName.text.startsWith("knime"))
     .filter((flowVariableName) => flowVariableName.text.trim() !== "");
 };
@@ -459,7 +505,7 @@ onMounted(async () => {
       .getEditorState()
       .setInitialText(props.settings[i].initialScript);
     editorStates[key].selectorState = props.settings[i].initialSelectorState;
-    editorStates[key].expressionReturnType = "UNKNOWN";
+    editorStates[key].expressionReturnType = { displayName: "UNKNOWN" };
     editorStates[key].selectedFlowVariableOutputType =
       props.settings[i].initialOutputReturnType;
   }

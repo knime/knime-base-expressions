@@ -51,24 +51,20 @@ package org.knime.base.expressions.node.variable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.knime.base.expressions.node.DiagnosticsTestUtils.FLOW_VARIABLES;
+import static org.knime.base.expressions.node.DiagnosticsTestUtils.getWorkflowControl;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.knime.base.expressions.node.ExpressionDiagnostic.DiagnosticSeverity;
 import org.knime.base.expressions.node.variable.ExpressionFlowVariableNodeScriptingService.ExpressionNodeRpcService;
 import org.knime.core.expressions.ValueType;
-import org.knime.core.node.workflow.FlowObjectStack;
 import org.knime.core.node.workflow.FlowVariable;
-import org.knime.core.node.workflow.VariableType.BooleanType;
-import org.knime.core.node.workflow.VariableType.DoubleType;
-import org.knime.core.node.workflow.VariableType.IntArrayType;
-import org.knime.core.node.workflow.VariableType.IntType;
-import org.knime.core.node.workflow.VariableType.LongType;
+import org.knime.core.node.workflow.VariableType;
 import org.knime.core.node.workflow.VariableType.StringType;
+import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
 import org.knime.scripting.editor.WorkflowControl;
-import org.mockito.Mockito;
 
 /**
  * Test getRowMapperDiagnostics of ExpressionRowMapperNodeScriptingService.
@@ -77,25 +73,6 @@ import org.mockito.Mockito;
  */
 @SuppressWarnings("static-method")
 final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
-
-    private static final Map<String, FlowVariable> FLOW_VARIABLES = Map.of( //
-        "int_flow_var", new FlowVariable("int_flow_var", IntType.INSTANCE, 42), //
-        "long_flow_var", new FlowVariable("long_flow_var", LongType.INSTANCE, 42L), //
-        "double_flow_var", new FlowVariable("double_flow_var", DoubleType.INSTANCE, 3.14), //
-        "string_flow_var", new FlowVariable("string_flow_var", StringType.INSTANCE, "foo"), //
-        "bool_flow_var", new FlowVariable("bool_flow_var", BooleanType.INSTANCE, true), //
-        "unsupported_flow_var", new FlowVariable("unsupported_flow_var", IntArrayType.INSTANCE) // no value needed
-    );
-
-    private static WorkflowControl getWorkflowControl(final Map<String, FlowVariable> flowVariables) {
-
-        var flowObjectStack = Mockito.mock(FlowObjectStack.class);
-        Mockito.when(flowObjectStack.getAllAvailableFlowVariables()).thenReturn(flowVariables);
-
-        var workflowControl = Mockito.mock(WorkflowControl.class);
-        Mockito.when(workflowControl.getFlowObjectStack()).thenReturn(flowObjectStack);
-        return workflowControl;
-    }
 
     private static ExpressionNodeRpcService createService(final WorkflowControl workflowControl) {
         return new ExpressionFlowVariableNodeScriptingService(null, workflowControl).getJsonRpcService();
@@ -116,10 +93,18 @@ final class ExpressionFlowVariableNodeScriptingDiagnosticsTest {
         assertEquals(List.of(), diagnostics.get(2).diagnostics(), "Expected no diagnostics for the third expression.");
         assertEquals(List.of(), diagnostics.get(3).diagnostics(), "Expected no diagnostics for the fourth expression.");
 
-        assertEquals(ValueType.INTEGER.name(), diagnostics.get(0).returnType(), "Expected integer type.");
-        assertEquals(ValueType.FLOAT.name(), diagnostics.get(1).returnType(), "Expected float type.");
-        assertEquals(ValueType.STRING.name(), diagnostics.get(2).returnType(), "Expected string type.");
-        assertEquals(ValueType.BOOLEAN.name(), diagnostics.get(3).returnType(), "Expected boolean type.");
+        assertEquals(
+            InputOutputModelSubItemType.fromVariableType(VariableType.LongType.INSTANCE, ValueType.INTEGER.name()),
+            diagnostics.get(0).returnType(), "Expected integer type.");
+        assertEquals(
+            InputOutputModelSubItemType.fromVariableType(VariableType.DoubleType.INSTANCE, ValueType.FLOAT.name()),
+            diagnostics.get(1).returnType(), "Expected float type.");
+        assertEquals(
+            InputOutputModelSubItemType.fromVariableType(VariableType.StringType.INSTANCE, ValueType.STRING.name()),
+            diagnostics.get(2).returnType(), "Expected string type.");
+        assertEquals(
+            InputOutputModelSubItemType.fromVariableType(VariableType.BooleanType.INSTANCE, ValueType.BOOLEAN.name()),
+            diagnostics.get(3).returnType(), "Expected boolean type.");
     }
 
     @Test

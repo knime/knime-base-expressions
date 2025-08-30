@@ -100,7 +100,8 @@ final class ExpressionRowMapperNodeDialog implements NodeDialog {
                 return ExpressionNodeScriptingInputOutputModelUtils.getFlowVariableInputs(flowVariables);
             }) //
             .addDataSupplier("functionCatalog", () -> FunctionCatalogData.BUILT_IN) //
-            .addDataSupplier("columnNames", ExpressionNodeDialogUtils.getColumnNamesSupplier(workflowControl));
+            .addDataSupplier("columnNamesAndTypes",
+                ExpressionNodeDialogUtils.getColumnNamesAndTypesSupplier(workflowControl));
 
         return new ScriptingNodeSettingsService( //
             ExpressionRowMapperSettings::new, //

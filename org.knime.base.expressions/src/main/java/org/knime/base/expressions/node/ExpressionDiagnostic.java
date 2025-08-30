@@ -73,6 +73,12 @@ public record ExpressionDiagnostic(String message, String shortMessage, Diagnost
         null //
     ));
 
+    public static final List<ExpressionDiagnostic> INACTIVE_INPUT_CONNECTED_DIAGNOSTICS = List.of(withSameMessage( //
+        "The input connection is inactive. Connect an active table.", //
+        DiagnosticSeverity.ERROR, //
+        null //
+    ));
+
     /**
      * @param error the error to convert to a diagnostic
      * @return a diagnostic for the given error

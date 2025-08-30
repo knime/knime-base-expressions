@@ -7,6 +7,7 @@ import {
   InputOutputPane,
   ScriptingEditor,
   type SubItem,
+  type SubItemType,
   getScriptingService,
   useReadonlyStore,
 } from "@knime/scripting-editor";
@@ -61,7 +62,7 @@ const getInitialItems = (): InputOutputModel[] => {
 
 const refreshInputOutputItems = (
   { states, activeEditorKey }: EditorStates,
-  returnTypes: string[],
+  returnTypes: SubItemType[],
 ) => {
   if (!activeEditorKey) {
     return;
@@ -107,7 +108,7 @@ const refreshInputOutputItems = (
       statesUntilActiveWithReturnTypes,
       focusEditorActionBuilder,
       {
-        name: "appended flow variables",
+        name: "Created flow variables",
         portType: "flowVariable",
         subItemCodeAliasTemplate:
           currentInputOutputItems.value[0].subItemCodeAliasTemplate,
@@ -123,7 +124,7 @@ const refreshInputOutputItems = (
 
 const runDiagnosticsFunction = async ({
   states,
-}: EditorStates): Promise<string[]> => {
+}: EditorStates): Promise<SubItemType[]> => {
   const diagnostics = await runFlowVariableDiagnostics(
     states.map((state) => state.monacoState),
     states.map((state) =>
@@ -304,6 +305,10 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
                   (c): AllowedDropDownValue => ({
                     id: c.name,
                     text: c.name,
+                    ...(c.type.id &&
+                      c.type.title && {
+                        type: { id: c.type.id, text: c.type.title },
+                      }),
                   }),
                 ) ?? []
             "

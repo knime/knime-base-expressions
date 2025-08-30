@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.knime.base.expressions.ColumnInputUtils;
+import org.knime.base.expressions.ColumnOutputUtils;
 import org.knime.base.expressions.ExpressionRunnerUtils;
 import org.knime.base.expressions.InsertionMode;
 import org.knime.base.expressions.node.ExpressionCodeAssistant;
@@ -67,6 +68,7 @@ import org.knime.base.expressions.node.ExpressionDiagnosticResult;
 import org.knime.base.expressions.node.WithIndexExpressionException;
 import org.knime.base.expressions.node.row.InputTableCache;
 import org.knime.base.expressions.node.row.OutputTablePreview;
+import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.columnar.table.VirtualTableIncompatibleException;
 import org.knime.core.expressions.Ast;
@@ -78,10 +80,12 @@ import org.knime.core.expressions.ValueType;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
 import org.knime.scripting.editor.CodeGenerationRequest;
 import org.knime.scripting.editor.InputOutputModel;
+import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
 import org.knime.scripting.editor.ScriptingService;
 import org.knime.scripting.editor.WorkflowControl;
 
@@ -105,7 +109,11 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         m_tablePreview = tablePreview;
         var nodeContainer = (NativeNodeContainer)NodeContext.getContext().getNodeContainer();
         m_exec = nodeContainer.createExecutionContext();
-        m_inputTableCache = new InputTableCache((BufferedDataTable)getWorkflowControl().getInputData()[0], m_exec);
+
+        var input = getWorkflowControl().getInputData()[0];
+        if (input instanceof BufferedDataTable inputTable) {
+            m_inputTableCache = new InputTableCache(inputTable, m_exec);
+        }
     }
 
     /** For testing with a mocked {@link WorkflowControl} only */
@@ -133,7 +141,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         @Override
         protected CodeGenerationRequest getCodeSuggestionRequest(final String userPrompt, final String currentCode,
             final InputOutputModel[] inputModels) {
-            return ExpressionCodeAssistant.createCodeGenerationRequest(ExpressionType.ROW, userPrompt, currentCode, inputModels);
+            return ExpressionCodeAssistant.createCodeGenerationRequest(ExpressionType.ROW, userPrompt, currentCode,
+                inputModels);
         }
 
         /**
@@ -203,12 +212,15 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
         public List<ExpressionDiagnosticResult> getRowMapperDiagnostics(final String[] expressions,
             final String[] allNewColumnNames) {
 
-            var spec = (DataTableSpec)getWorkflowControl().getInputSpec()[0];
-            if (spec == null) {
-                // No input table, so no columns
+            var inputSpec = getWorkflowControl().getInputSpec()[0];
+            if (!(inputSpec instanceof DataTableSpec)) { // null or inactive branch
+                var diagnostic = inputSpec instanceof InactiveBranchPortObjectSpec
+                    ? ExpressionDiagnostic.INACTIVE_INPUT_CONNECTED_DIAGNOSTICS
+                    : ExpressionDiagnostic.NO_INPUT_CONNECTED_DIAGNOSTICS;
                 return Collections.nCopies(expressions.length,
-                    new ExpressionDiagnosticResult(ExpressionDiagnostic.NO_INPUT_CONNECTED_DIAGNOSTICS, "UNKNOWN"));
+                    new ExpressionDiagnosticResult(diagnostic, InputOutputModelSubItemType.fromDisplayName("UNKNOWN")));
             }
+            var spec = (DataTableSpec)inputSpec;
 
             List<ExpressionDiagnosticResult> diagnostics = new ArrayList<>();
 
@@ -232,6 +244,7 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                 List<ExpressionDiagnostic> diagnosticsForThisExpression = new ArrayList<>();
 
                 var successfulInferredTypeName = "UNKNOWN";
+                DataColumnSpec successfulInferredColSpec = null;
 
                 try {
                     var ast = Expressions.parse(expression);
@@ -256,6 +269,8 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
                             DiagnosticSeverity.ERROR, //
                             Expressions.getTextLocation(ast) //
                         ));
+                    } else {
+                        successfulInferredColSpec = ColumnOutputUtils.valueTypeToDataColumnSpec(inferredType, "temp");
                     }
 
                     successfulInferredTypeName = inferredType.baseType().name();
@@ -267,11 +282,12 @@ final class ExpressionRowMapperNodeScriptingService extends ScriptingService {
 
                     diagnosticsForThisExpression.addAll(ExpressionDiagnostic.fromException(ex));
                 } finally {
-                    diagnostics
-                        .add(new ExpressionDiagnosticResult(diagnosticsForThisExpression, successfulInferredTypeName));
+                    var resultType = successfulInferredColSpec == null
+                        ? InputOutputModelSubItemType.fromDisplayName("UNKNOWN") : InputOutputModelSubItemType
+                            .fromColSpec(successfulInferredColSpec, successfulInferredTypeName);
+                    diagnostics.add(new ExpressionDiagnosticResult(diagnosticsForThisExpression, resultType));
                 }
             }
-
             return diagnostics;
         }
 

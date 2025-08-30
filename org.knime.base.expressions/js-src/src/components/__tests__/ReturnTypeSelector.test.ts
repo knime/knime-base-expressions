@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 
 import { Dropdown } from "@knime/components";
+import { DataType } from "@knime/kds-components";
 
 import type { AllowedReturnTypes } from "@/components/ReturnTypeSelector.vue";
 import ReturnTypeSelector from "@/components/ReturnTypeSelector.vue";
@@ -14,10 +15,12 @@ describe("ReturnTypeSelector", () => {
     {
       id: "Long",
       text: "B",
+      type: { id: "LongId", text: "LongText" },
     },
     {
       id: "Integer",
       text: "A",
+      type: { id: "IntegerId", text: "IntegerText" },
     },
   ];
 
@@ -25,6 +28,7 @@ describe("ReturnTypeSelector", () => {
     {
       id: "Unknown",
       text: "Unknown",
+      type: { id: "UnknownId", text: "UnknownText" },
     },
   ];
 
@@ -32,6 +36,7 @@ describe("ReturnTypeSelector", () => {
     {
       id: "String",
       text: "String",
+      type: { id: "StringId", text: "StringText" },
     },
   ];
 
@@ -91,5 +96,17 @@ describe("ReturnTypeSelector", () => {
 
     expect(dropdown.props().modelValue).equals("String");
     expect(dropdown.props().disabled).toBe(true);
+  });
+
+  it("renders the data type component", () => {
+    const wrapper = doMount("String", stringReturnType);
+    const dataType = wrapper.findComponent(DataType);
+    expect(dataType.exists()).toBe(true);
+    expect(dataType.props()).toStrictEqual(
+      expect.objectContaining({
+        iconName: "StringId",
+        iconTitle: "StringText",
+      }),
+    );
   });
 });
