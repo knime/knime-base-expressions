@@ -14,8 +14,11 @@ import {
   useReadonlyStore,
 } from "@knime/scripting-editor";
 
-import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
-import { mapConnectionInfoToErrorMessage } from "@/common/functions";
+import {
+  DEFAULT_NUMBER_OF_ROWS_TO_RUN,
+  INITIAL_PANE_SIZES,
+  LANGUAGE,
+} from "@/common/constants";
 import {
   buildAppendedOutput,
   replaceSubItems,
@@ -29,7 +32,6 @@ import MultiEditorContainer, {
 import type { SelectorState } from "@/components/OutputSelector.vue";
 import RunButton from "@/components/RunButton.vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
-import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 import { getRowMapperInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowMapperNodeSettings,
@@ -267,14 +269,9 @@ getRowMapperSettingsService().registerSettingsGetterForApply(
     </template>
     <template v-else>
       <ScriptingEditor
-        :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
         :show-control-bar="true"
         :language="LANGUAGE"
-        :initial-pane-sizes="{
-          right: 30,
-          left: 20,
-          bottom: 30,
-        }"
+        :initial-pane-sizes="INITIAL_PANE_SIZES"
         :additional-bottom-pane-tab-content="[
           {
             label: 'Output preview',

@@ -12,7 +12,11 @@ import {
   useReadonlyStore,
 } from "@knime/scripting-editor";
 
-import { DEFAULT_NUMBER_OF_ROWS_TO_RUN, LANGUAGE } from "@/common/constants";
+import {
+  DEFAULT_NUMBER_OF_ROWS_TO_RUN,
+  INITIAL_PANE_SIZES,
+  LANGUAGE,
+} from "@/common/constants";
 import {
   mapConnectionInfoToErrorMessage,
   registerInsertionListener,
@@ -23,7 +27,6 @@ import ExpressionEditorPane, {
 } from "@/components/ExpressionEditorPane.vue";
 import RunButton from "@/components/RunButton.vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
-import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 import { getRowFilterInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionRowFilterNodeSettings,
@@ -174,14 +177,9 @@ const runButtonDisabledErrorReason = computed(() => {
 <template>
   <main>
     <ScriptingEditor
-      :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
       :show-control-bar="true"
       :language="LANGUAGE"
-      :initial-pane-sizes="{
-        right: 30,
-        left: 20,
-        bottom: 30,
-      }"
+      :initial-pane-sizes="INITIAL_PANE_SIZES"
       :additional-bottom-pane-tab-content="[
         {
           label: 'Output preview',

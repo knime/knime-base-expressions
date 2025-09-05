@@ -12,7 +12,7 @@ import {
   useReadonlyStore,
 } from "@knime/scripting-editor";
 
-import { LANGUAGE } from "@/common/constants";
+import { INITIAL_PANE_SIZES, LANGUAGE } from "@/common/constants";
 import {
   buildAppendedOutput,
   replaceSubItems,
@@ -32,7 +32,6 @@ import type {
 } from "@/components/OutputSelector.vue";
 import SimpleRunButton from "@/components/SimpleRunButton.vue";
 import FunctionCatalog from "@/components/function-catalog/FunctionCatalog.vue";
-import { MIN_WIDTH_FUNCTION_CATALOG } from "@/components/function-catalog/contraints";
 import { getFlowVariableInitialDataService } from "@/expressionInitialDataService";
 import {
   type ExpressionFlowVariableNodeSettings,
@@ -261,14 +260,9 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
     </template>
     <template v-else>
       <ScriptingEditor
-        :right-pane-minimum-width-in-pixel="MIN_WIDTH_FUNCTION_CATALOG"
         :show-control-bar="true"
         :language="LANGUAGE"
-        :initial-pane-sizes="{
-          right: 30,
-          left: 20,
-          bottom: 30,
-        }"
+        :initial-pane-sizes="INITIAL_PANE_SIZES"
         :additional-bottom-pane-tab-content="[
           {
             label: 'Preview',

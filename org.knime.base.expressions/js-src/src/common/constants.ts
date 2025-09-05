@@ -1,5 +1,7 @@
 import { MarkerSeverity } from "monaco-editor";
 
+import { type PaneSizes } from "@knime/scripting-editor";
+
 export const EXPRESSION_MARKERS_OWNER = "expression-diagnostics";
 export const DIAGNOSTIC_SEVERITY_TO_MARKER_SEVERITY = {
   ERROR: MarkerSeverity.Error,
@@ -18,4 +20,10 @@ export const UNKNOWN_COLUMN_TYPE = {
 export const UNKNOWN_VARIABLE_TYPE = {
   id: "UNKNOWN",
   text: "Unknown variable type",
+};
+
+export const INITIAL_PANE_SIZES: PaneSizes = {
+  left: 260,
+  right: 320,
+  bottom: 300,
 };
