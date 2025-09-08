@@ -1,4 +1,4 @@
-import { getInitialDataService } from "@knime/scripting-editor";
+import { getInitialData } from "@knime/scripting-editor";
 
 import type {
   FlowVariableInitialData,
@@ -7,12 +7,13 @@ import type {
   RowMapperInitialData,
 } from "@/common/types";
 
+// TODO(async-init) these do not have to be async anymore
 const getExpressionInitialDataService = <
   T extends GenericExpressionInitialData,
 >() => ({
-  ...getInitialDataService(),
-  getInitialData: async (): Promise<T> =>
-    (await getInitialDataService().getInitialData()) as T,
+  getInitialData: (): Promise<T> => {
+    return Promise.resolve(getInitialData() as T);
+  },
 });
 
 export const getRowMapperInitialDataService =
