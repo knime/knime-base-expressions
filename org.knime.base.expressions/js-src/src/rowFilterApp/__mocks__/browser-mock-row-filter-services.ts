@@ -1,9 +1,4 @@
-import {
-  getInitialDataService,
-  getScriptingService,
-  getSettingsService,
-} from "@knime/scripting-editor";
-import { createInitialDataServiceMock } from "@knime/scripting-editor/initial-data-service-browser-mock";
+import { type InitMockData } from "@knime/scripting-editor";
 import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
 import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
 
@@ -19,8 +14,8 @@ export const DEFAULT_ROW_FILTER_INITIAL_SETTINGS: ExpressionRowFilterNodeSetting
     script: "mocked default script",
   };
 
-if (import.meta.env.MODE === "development.browser") {
-  const scriptingService = createScriptingServiceMock({
+export default {
+  scriptingService: createScriptingServiceMock({
     sendToServiceMockResponses: {
       runRowMapperExpression: (options: any[] | undefined) => {
         log("runRowMapperExpression", options);
@@ -28,17 +23,10 @@ if (import.meta.env.MODE === "development.browser") {
       },
       getRowFilterDiagnostics: () => Promise.resolve([]),
     },
-  });
-
-  Object.assign(getScriptingService(), scriptingService);
-
-  Object.assign(
-    getInitialDataService(),
-    createInitialDataServiceMock(ROW_FILTER_INITIAL_DATA),
-  );
-
-  Object.assign(
-    getSettingsService(),
-    createSettingsServiceMock(DEFAULT_ROW_FILTER_INITIAL_SETTINGS),
-  );
-}
+  }),
+  settingsService: createSettingsServiceMock(
+    DEFAULT_ROW_FILTER_INITIAL_SETTINGS,
+  ),
+  initialData: ROW_FILTER_INITIAL_DATA,
+  displayMode: "large",
+} satisfies InitMockData;

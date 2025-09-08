@@ -1,9 +1,4 @@
-import {
-  getInitialDataService,
-  getScriptingService,
-  getSettingsService,
-} from "@knime/scripting-editor";
-import { createInitialDataServiceMock } from "@knime/scripting-editor/initial-data-service-browser-mock";
+import { type InitMockData } from "@knime/scripting-editor";
 import { createScriptingServiceMock } from "@knime/scripting-editor/scripting-service-browser-mock";
 import { createSettingsServiceMock } from "@knime/scripting-editor/settings-service-browser-mock";
 
@@ -26,8 +21,8 @@ export const DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS: ExpressionFlowVariableNodeS
     builtinAggregationsVersion: 1,
   };
 
-if (import.meta.env.MODE === "development.browser") {
-  const scriptingService = createScriptingServiceMock({
+export default {
+  scriptingService: createScriptingServiceMock({
     sendToServiceMockResponses: {
       runFlowVariableExpression: (options: any[] | undefined) => {
         log("runFlowVariableExpression", options);
@@ -35,17 +30,10 @@ if (import.meta.env.MODE === "development.browser") {
       },
       getFlowVariableDiagnostics: () => Promise.resolve([[]]),
     },
-  });
-
-  Object.assign(getScriptingService(), scriptingService);
-
-  Object.assign(
-    getInitialDataService(),
-    createInitialDataServiceMock(FLOW_VARIABLE_INITIAL_DATA),
-  );
-
-  Object.assign(
-    getSettingsService(),
-    createSettingsServiceMock(DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS),
-  );
-}
+  }),
+  settingsService: createSettingsServiceMock(
+    DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS,
+  ),
+  initialData: FLOW_VARIABLE_INITIAL_DATA,
+  displayMode: "large",
+} satisfies InitMockData;
