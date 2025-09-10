@@ -19,6 +19,7 @@ import {
   INITIAL_PANE_SIZES,
   LANGUAGE,
 } from "@/common/constants";
+import { mapConnectionInfoToErrorMessage } from "@/common/functions";
 import {
   buildAppendedOutput,
   replaceSubItems,
