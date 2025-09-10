@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-import { LoadingIcon } from "@knime/components";
 import {
   type InputOutputModel,
   InputOutputPane,
@@ -242,92 +241,85 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
 
 <template>
   <main>
-    <template v-if="initialSettings === null || initialData === null">
-      <div class="no-editors">
-        <LoadingIcon />
-      </div>
-    </template>
-    <template v-else>
-      <ScriptingEditor
-        :show-control-bar="true"
-        :language="LANGUAGE"
-        :initial-pane-sizes="INITIAL_PANE_SIZES"
-        :additional-bottom-pane-tab-content="[
-          {
-            label: 'Preview',
-            slotName: 'bottomPaneTabSlot:outputPreview',
-          },
-        ]"
-      >
-        <!-- Extra content in the bottom tab pane -->
-        <template #bottomPaneTabSlot:outputPreview="{ grabFocus }">
-          <OutputPreviewFlowVariable @output-preview-updated="grabFocus()" />
-        </template>
+    <ScriptingEditor
+      :show-control-bar="true"
+      :language="LANGUAGE"
+      :initial-pane-sizes="INITIAL_PANE_SIZES"
+      :additional-bottom-pane-tab-content="[
+        {
+          label: 'Preview',
+          slotName: 'bottomPaneTabSlot:outputPreview',
+        },
+      ]"
+    >
+      <!-- Extra content in the bottom tab pane -->
+      <template #bottomPaneTabSlot:outputPreview="{ grabFocus }">
+        <OutputPreviewFlowVariable @output-preview-updated="grabFocus()" />
+      </template>
 
-        <template #editor>
-          <MultiEditorContainer
-            ref="multiEditorContainerRef"
-            item-type="flow variable"
-            :default-append-item="'New Flow Variable'"
-            :settings="
-              initialSettings.scripts.map((script, index) => ({
-                initialScript: script,
-                initialSelectorState: {
-                  outputMode: initialSettings.flowVariableOutputModes[index],
-                  create: initialSettings.createdFlowVariables[index],
-                  replace: initialSettings.replacedFlowVariables[index],
-                } satisfies SelectorState,
-                initialOutputReturnType:
-                  initialSettings.flowVariableReturnTypes[index],
-              }))
-            "
-            :replaceable-items-in-input-table="
-              initialData.flowVariables.subItems
-                ?.filter((c) => c.supported)
-                .map(
-                  (c): AllowedDropDownValue => ({
-                    id: c.name,
-                    text: c.name,
-                    ...(c.type.id &&
-                      c.type.title && {
-                        type: { id: c.type.id, text: c.type.title },
-                      }),
-                  }),
-                ) ?? []
-            "
-            @on-change="onChange"
-            @run-expressions="runFlowVariableExpressions"
+      <template #editor>
+        <MultiEditorContainer
+          ref="multiEditorContainerRef"
+          item-type="flow variable"
+          :default-append-item="'New Flow Variable'"
+          :settings="
+            initialSettings.scripts.map((script, index) => ({
+              initialScript: script,
+              initialSelectorState: {
+                outputMode: initialSettings.flowVariableOutputModes[index],
+                create: initialSettings.createdFlowVariables[index],
+                replace: initialSettings.replacedFlowVariables[index],
+              } satisfies SelectorState,
+              initialOutputReturnType:
+                initialSettings.flowVariableReturnTypes[index],
+            }))
+          "
+          :replaceable-items-in-input-table="
+            initialData.flowVariables.subItems
+              ?.filter((c) => c.supported)
+              .map(
+                (c): AllowedDropDownValue => ({
+                  id: c.name,
+                  text: c.name,
+                  ...(c.type.id &&
+                    c.type.title && {
+                      type: { id: c.type.id, text: c.type.title },
+                    }),
+                }),
+              ) ?? []
+          "
+          @on-change="onChange"
+          @run-expressions="runFlowVariableExpressions"
+        />
+      </template>
+
+      <template #left-pane>
+        <InputOutputPane :input-output-items="currentInputOutputItems" />
+      </template>
+
+      <template #right-pane>
+        <template v-if="initialData.functionCatalog">
+          <FunctionCatalog
+            :function-catalog-data="initialData.functionCatalog"
+            :initially-expanded="false"
           />
         </template>
+      </template>
 
-        <template #left-pane>
-          <InputOutputPane :input-output-items="currentInputOutputItems" />
-        </template>
-
-        <template #right-pane>
-          <template v-if="initialData.functionCatalog">
-            <FunctionCatalog
-              :function-catalog-data="initialData.functionCatalog"
-              :initially-expanded="false"
-            />
-          </template>
-        </template>
-
-        <!-- Controls displayed once only -->
-        <template #code-editor-controls="{ showButtonText }">
-          <SimpleRunButton
-            :run-button-disabled-error-reason="runButtonDisabledErrorReason"
-            :show-button-text="showButtonText"
-            @run-expressions="
-              () =>
-                runFlowVariableExpressions(
-                  multiEditorContainerRef!.getOrderedEditorStates(),
-                )
-            "
-          />
-        </template>
-      </ScriptingEditor>
-    </template>
+      <!-- Controls displayed once only -->
+      <template #code-editor-controls="{ showButtonText }">
+        <SimpleRunButton
+          :run-button-disabled-error-reason="runButtonDisabledErrorReason"
+          :show-button-text="showButtonText"
+          @run-expressions="
+            () =>
+              runFlowVariableExpressions(
+                multiEditorContainerRef!.getOrderedEditorStates(),
+              )
+          "
+        />
+      </template>
+    </ScriptingEditor>
   </main>
 </template>
 

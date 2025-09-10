@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-import { LoadingIcon } from "@knime/components";
 import {
   type InputOutputModel,
   InputOutputPane,
@@ -252,83 +251,76 @@ getRowMapperSettingsService().registerSettingsGetterForApply(
 
 <template>
   <main>
-    <template v-if="initialData === null || initialSettings === null">
-      <div class="no-editors">
-        <LoadingIcon />
-      </div>
-    </template>
-    <template v-else>
-      <ScriptingEditor
-        :show-control-bar="true"
-        :language="LANGUAGE"
-        :initial-pane-sizes="INITIAL_PANE_SIZES"
-        :additional-bottom-pane-tab-content="[
-          {
-            label: 'Output preview',
-            slotName: 'bottomPaneTabSlot:outputPreview',
-          },
-        ]"
-      >
-        <!-- Extra content in the bottom tab pane -->
-        <template #bottomPaneTabSlot:outputPreview="{ grabFocus }">
-          <OutputTablePreview @output-table-updated="grabFocus()" />
-        </template>
+    <ScriptingEditor
+      :show-control-bar="true"
+      :language="LANGUAGE"
+      :initial-pane-sizes="INITIAL_PANE_SIZES"
+      :additional-bottom-pane-tab-content="[
+        {
+          label: 'Output preview',
+          slotName: 'bottomPaneTabSlot:outputPreview',
+        },
+      ]"
+    >
+      <!-- Extra content in the bottom tab pane -->
+      <template #bottomPaneTabSlot:outputPreview="{ grabFocus }">
+        <OutputTablePreview @output-table-updated="grabFocus()" />
+      </template>
 
-        <template #editor>
-          <MultiEditorContainer
-            ref="multiEditorContainerRef"
-            item-type="column"
-            :default-append-item="'New Column'"
-            :settings="
-              initialSettings.scripts.map((script, index) => ({
-                initialScript: script,
-                initialSelectorState: {
-                  outputMode: initialSettings.outputModes[index],
-                  create: initialSettings.createdColumns[index],
-                  replace: initialSettings.replacedColumns[index],
-                } satisfies SelectorState,
-              }))
-            "
-            :replaceable-items-in-input-table="
-              initialData?.columnNamesAndTypes ?? []
-            "
-            @on-change="onChange"
-            @run-expressions="
-              (states) =>
-                runRowMapperExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN, states)
-            "
+      <template #editor>
+        <MultiEditorContainer
+          ref="multiEditorContainerRef"
+          item-type="column"
+          :default-append-item="'New Column'"
+          :settings="
+            initialSettings.scripts.map((script, index) => ({
+              initialScript: script,
+              initialSelectorState: {
+                outputMode: initialSettings.outputModes[index],
+                create: initialSettings.createdColumns[index],
+                replace: initialSettings.replacedColumns[index],
+              } satisfies SelectorState,
+            }))
+          "
+          :replaceable-items-in-input-table="
+            initialData?.columnNamesAndTypes ?? []
+          "
+          @on-change="onChange"
+          @run-expressions="
+            (states) =>
+              runRowMapperExpressions(DEFAULT_NUMBER_OF_ROWS_TO_RUN, states)
+          "
+        />
+      </template>
+
+      <template #left-pane>
+        <InputOutputPane :input-output-items="currentInputOutputItems" />
+      </template>
+
+      <template #right-pane>
+        <template v-if="initialData?.functionCatalog">
+          <FunctionCatalog
+            :function-catalog-data="initialData.functionCatalog"
+            :initially-expanded="false"
           />
         </template>
+      </template>
 
-        <template #left-pane>
-          <InputOutputPane :input-output-items="currentInputOutputItems" />
-        </template>
-
-        <template #right-pane>
-          <template v-if="initialData?.functionCatalog">
-            <FunctionCatalog
-              :function-catalog-data="initialData.functionCatalog"
-              :initially-expanded="false"
-            />
-          </template>
-        </template>
-
-        <!-- Controls displayed once only -->
-        <template #code-editor-controls="{ showButtonText }">
-          <RunButton
-            :run-button-disabled-error-reason="runButtonDisabledErrorReason"
-            :show-button-text="showButtonText"
-            @run-expressions="
-              (numRows) =>
-                runRowMapperExpressions(
-                  numRows,
-                  multiEditorContainerRef!.getOrderedEditorStates(),
-                )
-            "
-          />
-        </template>
-      </ScriptingEditor>
-    </template>
+      <!-- Controls displayed once only -->
+      <template #code-editor-controls="{ showButtonText }">
+        <RunButton
+          :run-button-disabled-error-reason="runButtonDisabledErrorReason"
+          :show-button-text="showButtonText"
+          @run-expressions="
+            (numRows) =>
+              runRowMapperExpressions(
+                numRows,
+                multiEditorContainerRef!.getOrderedEditorStates(),
+              )
+          "
+        />
+      </template>
+    </ScriptingEditor>
   </main>
 </template>
 
