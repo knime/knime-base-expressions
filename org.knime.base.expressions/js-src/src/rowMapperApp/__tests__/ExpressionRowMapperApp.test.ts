@@ -32,9 +32,7 @@ vi.mock("@/expressionInitialDataService", () => ({
 
 vi.mock("@/expressionSettingsService", () => ({
   getRowMapperSettingsService: vi.fn(() => ({
-    getSettings: vi.fn(() =>
-      Promise.resolve(DEFAULT_ROW_MAPPER_INITIAL_SETTINGS),
-    ),
+    getSettings: vi.fn(() => DEFAULT_ROW_MAPPER_INITIAL_SETTINGS),
     registerSettingsGetterForApply: vi.fn(),
   })),
 }));

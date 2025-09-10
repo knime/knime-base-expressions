@@ -28,8 +28,7 @@ export type ExpressionFlowVariableNodeSettings = ExpressionVersion & {
 
 const getExpressionSettingsService = <T extends GenericNodeSettings>() => ({
   ...getSettingsService(),
-  getSettings: async (): Promise<T> =>
-    (await getSettingsService().getSettings()) as T,
+  getSettings: (): T => getSettingsService().getSettings() as T,
   registerSettingsGetterForApply: (settingsGetter: () => T) =>
     getSettingsService().registerSettingsGetterForApply(settingsGetter),
 });

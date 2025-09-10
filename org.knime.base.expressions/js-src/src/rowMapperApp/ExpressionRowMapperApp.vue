@@ -43,7 +43,7 @@ import registerKnimeExpressionLanguage from "@/languageSupport/registerKnimeExpr
 import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
 
 const initialData = getRowMapperInitialDataService().getInitialData();
-const initialSettings = ref<ExpressionRowMapperNodeSettings | null>(null);
+const initialSettings = getRowMapperSettingsService().getSettings();
 const runButtonDisabledErrorReason = ref<string | null>(null);
 const multiEditorContainerRef =
   ref<InstanceType<typeof MultiEditorContainer>>();
@@ -187,9 +187,7 @@ const onChange = async (editorStates: EditorStates) => {
   refreshInputOutputItems(editorStates, returnTypes);
 };
 
-onMounted(async () => {
-  initialSettings.value = await getRowMapperSettingsService().getSettings();
-
+onMounted(() => {
   if (initialData.inputConnectionInfo[1].status !== "OK") {
     consoleHandler.writeln({
       warning: "No input available. Connect an executed node.",
@@ -208,7 +206,7 @@ onMounted(async () => {
   });
 
   useReadonlyStore().value =
-    initialSettings.value.settingsAreOverriddenByFlowVariable ?? false;
+    initialSettings.settingsAreOverriddenByFlowVariable ?? false;
 });
 
 const runRowMapperExpressions = (rows: number, editorStates: EditorState[]) => {
@@ -230,10 +228,9 @@ getRowMapperSettingsService().registerSettingsGetterForApply(
       multiEditorContainerRef.value!.getOrderedEditorStates();
 
     const expressionVersion: ExpressionVersion = {
-      languageVersion: initialSettings.value!.languageVersion,
-      builtinFunctionsVersion: initialSettings.value!.builtinFunctionsVersion,
-      builtinAggregationsVersion:
-        initialSettings.value!.builtinAggregationsVersion,
+      languageVersion: initialSettings.languageVersion,
+      builtinFunctionsVersion: initialSettings.builtinFunctionsVersion,
+      builtinAggregationsVersion: initialSettings.builtinAggregationsVersion,
     };
 
     return {
@@ -286,9 +283,9 @@ getRowMapperSettingsService().registerSettingsGetterForApply(
               initialSettings.scripts.map((script, index) => ({
                 initialScript: script,
                 initialSelectorState: {
-                  outputMode: initialSettings!.outputModes[index],
-                  create: initialSettings!.createdColumns[index],
-                  replace: initialSettings!.replacedColumns[index],
+                  outputMode: initialSettings.outputModes[index],
+                  create: initialSettings.createdColumns[index],
+                  replace: initialSettings.replacedColumns[index],
                 } satisfies SelectorState,
               }))
             "

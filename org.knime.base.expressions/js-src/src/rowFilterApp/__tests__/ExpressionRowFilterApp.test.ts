@@ -32,9 +32,7 @@ vi.mock("@/expressionInitialDataService", () => ({
 
 vi.mock("@/expressionSettingsService", () => ({
   getRowFilterSettingsService: vi.fn(() => ({
-    getSettings: vi.fn(() =>
-      Promise.resolve(DEFAULT_ROW_FILTER_INITIAL_SETTINGS),
-    ),
+    getSettings: vi.fn(() => DEFAULT_ROW_FILTER_INITIAL_SETTINGS),
     registerSettingsGetterForApply: vi.fn(),
   })),
 }));

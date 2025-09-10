@@ -42,7 +42,7 @@ import { runRowFilterDiagnostics } from "@/rowFilterApp/expressionRowFilterDiagn
 const editorRef = ref<Required<ExpressionEditorPaneExposes> | null>(null);
 
 const initialData = getRowFilterInitialDataService().getInitialData();
-const initialSettings = ref<ExpressionRowFilterNodeSettings>();
+const initialSettings = getRowFilterSettingsService().getSettings();
 const errorState = ref<EditorErrorState>({ level: "OK" });
 
 const runDiagnosticsFunction = async () => {
@@ -57,9 +57,7 @@ const runDiagnosticsFunction = async () => {
   );
 };
 
-onMounted(async () => {
-  initialSettings.value = await getRowFilterSettingsService().getSettings();
-
+onMounted(() => {
   if (initialData.inputConnectionInfo[1].status !== "OK") {
     consoleHandler.writeln({
       warning: "No input available. Connect an executed node.",
@@ -72,14 +70,14 @@ onMounted(async () => {
   });
 
   useReadonlyStore().value =
-    initialSettings.value.settingsAreOverriddenByFlowVariable || false;
+    initialSettings.settingsAreOverriddenByFlowVariable || false;
 
   const editorReference = editorRef.value;
   if (!editorReference) {
     return;
   }
 
-  editorReference.getEditorState().setInitialText(initialSettings.value.script);
+  editorReference.getEditorState().setInitialText(initialSettings.script);
   editorReference.getEditorState().editor.value?.updateOptions({
     readOnly: useReadonlyStore().value,
     readOnlyMessage: {
@@ -105,14 +103,14 @@ onMounted(async () => {
     },
   );
 
-  const register = await getSettingsService().registerSettings("model");
-  const onScriptChange = register(initialSettings.value.script);
+  const register = getSettingsService().registerSettings("model");
+  const onScriptChange = register(initialSettings.script);
 
   watch(editorReference.getEditorState().text, () => {
     runDiagnosticsFunction();
     onScriptChange.setValue(editorReference.getEditorState().text.value);
   });
-  await runDiagnosticsFunction();
+  runDiagnosticsFunction();
 });
 
 const runRowFilterExpressions = (rows: number) => {
@@ -129,10 +127,9 @@ const runRowFilterExpressions = (rows: number) => {
 getRowFilterSettingsService().registerSettingsGetterForApply(
   (): ExpressionRowFilterNodeSettings => {
     const expressionVersion: ExpressionVersion = {
-      languageVersion: initialSettings.value!.languageVersion,
-      builtinFunctionsVersion: initialSettings.value!.builtinFunctionsVersion,
-      builtinAggregationsVersion:
-        initialSettings.value!.builtinAggregationsVersion,
+      languageVersion: initialSettings.languageVersion,
+      builtinFunctionsVersion: initialSettings.builtinFunctionsVersion,
+      builtinAggregationsVersion: initialSettings.builtinAggregationsVersion,
     };
 
     return {

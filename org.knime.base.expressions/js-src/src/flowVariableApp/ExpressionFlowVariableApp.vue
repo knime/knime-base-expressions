@@ -42,7 +42,7 @@ import registerKnimeExpressionLanguage from "@/languageSupport/registerKnimeExpr
 // Input flowVariables helpers
 const runButtonDisabledErrorReason = ref<string | null>(null);
 const initialData = getFlowVariableInitialDataService().getInitialData();
-const initialSettings = ref<ExpressionFlowVariableNodeSettings | null>(null);
+const initialSettings = getFlowVariableSettingsService().getSettings();
 const multiEditorContainerRef =
   ref<InstanceType<typeof MultiEditorContainer>>();
 
@@ -181,9 +181,7 @@ const onChange = async (editorStates: EditorStates) => {
   refreshInputOutputItems(editorStates, returnTypes);
 };
 
-onMounted(async () => {
-  initialSettings.value = await getFlowVariableSettingsService().getSettings();
-
+onMounted(() => {
   registerKnimeExpressionLanguage({
     columnGetter: () => [],
     flowVariableGetter: () => [
@@ -194,7 +192,7 @@ onMounted(async () => {
   });
 
   useReadonlyStore().value =
-    initialSettings.value.settingsAreOverriddenByFlowVariable ?? false;
+    initialSettings.settingsAreOverriddenByFlowVariable ?? false;
 
   currentInputOutputItems.value = getInitialItems();
 });
@@ -217,10 +215,9 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
       multiEditorContainerRef.value!.getOrderedEditorStates();
 
     const expressionVersion: ExpressionVersion = {
-      languageVersion: initialSettings.value!.languageVersion,
-      builtinFunctionsVersion: initialSettings.value!.builtinFunctionsVersion,
-      builtinAggregationsVersion:
-        initialSettings.value!.builtinAggregationsVersion,
+      languageVersion: initialSettings.languageVersion,
+      builtinFunctionsVersion: initialSettings.builtinFunctionsVersion,
+      builtinAggregationsVersion: initialSettings.builtinAggregationsVersion,
     };
 
     return {
@@ -276,12 +273,12 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
               initialSettings.scripts.map((script, index) => ({
                 initialScript: script,
                 initialSelectorState: {
-                  outputMode: initialSettings!.flowVariableOutputModes[index],
-                  create: initialSettings!.createdFlowVariables[index],
-                  replace: initialSettings!.replacedFlowVariables[index],
+                  outputMode: initialSettings.flowVariableOutputModes[index],
+                  create: initialSettings.createdFlowVariables[index],
+                  replace: initialSettings.replacedFlowVariables[index],
                 } satisfies SelectorState,
                 initialOutputReturnType:
-                  initialSettings!.flowVariableReturnTypes[index],
+                  initialSettings.flowVariableReturnTypes[index],
               }))
             "
             :replaceable-items-in-input-table="

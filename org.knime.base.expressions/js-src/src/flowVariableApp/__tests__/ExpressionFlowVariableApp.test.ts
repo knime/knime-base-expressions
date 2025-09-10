@@ -32,9 +32,7 @@ vi.mock("@/expressionInitialDataService", () => ({
 
 vi.mock("@/expressionSettingsService", () => ({
   getFlowVariableSettingsService: vi.fn(() => ({
-    getSettings: vi.fn(() =>
-      Promise.resolve(DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS),
-    ),
+    getSettings: vi.fn(() => DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS),
     registerSettingsGetterForApply: vi.fn(),
   })),
 }));
