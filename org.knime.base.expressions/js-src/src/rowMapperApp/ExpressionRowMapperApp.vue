@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, shallowRef } from "vue";
+import { onMounted, ref } from "vue";
 
 import { LoadingIcon } from "@knime/components";
 import {
@@ -24,7 +24,7 @@ import {
   buildAppendedOutput,
   replaceSubItems,
 } from "@/common/inputOutputUtils";
-import type { ExpressionVersion, RowMapperInitialData } from "@/common/types";
+import type { ExpressionVersion } from "@/common/types";
 import type { IconRendererProps } from "@/components/IconRenderer.vue";
 import MultiEditorContainer, {
   type EditorState,
@@ -42,7 +42,7 @@ import { runOutputDiagnostics } from "@/generalDiagnostics";
 import registerKnimeExpressionLanguage from "@/languageSupport/registerKnimeExpressionLanguage";
 import { runRowMapperDiagnostics } from "@/rowMapperApp/expressionRowMapperDiagnostics";
 
-const initialData = shallowRef<RowMapperInitialData | null>(null);
+const initialData = getRowMapperInitialDataService().getInitialData();
 const initialSettings = ref<ExpressionRowMapperNodeSettings | null>(null);
 const runButtonDisabledErrorReason = ref<string | null>(null);
 const multiEditorContainerRef =
@@ -51,14 +51,9 @@ const currentInputOutputItems = ref<InputOutputModel[]>();
 const appendedSubItems = ref<SubItem<Record<string, any>>[]>([]);
 
 const getInitialItems = (): InputOutputModel[] => {
-  if (initialData.value === null) {
-    return [];
-  }
   return [
-    ...initialData.value.inputObjects.map((inputItem) =>
-      structuredClone(inputItem),
-    ),
-    structuredClone(initialData.value.flowVariables),
+    ...initialData.inputObjects.map((inputItem) => structuredClone(inputItem)),
+    structuredClone(initialData.flowVariables),
   ];
 };
 
@@ -138,7 +133,7 @@ const runDiagnosticsFunction = async ({
   const columnErrorMessages = runOutputDiagnostics(
     "column",
     states.map((state) => state.selectorState),
-    initialData.value?.inputObjects[0].subItems?.map((c) => c.name) ?? [],
+    initialData.inputObjects[0].subItems?.map((c) => c.name) ?? [],
   );
 
   for (const [index, state] of states.entries()) {
@@ -165,7 +160,7 @@ const runDiagnosticsFunction = async ({
   }
 
   const connectionErrors = mapConnectionInfoToErrorMessage(
-    initialData.value?.inputConnectionInfo,
+    initialData.inputConnectionInfo,
   );
   const haveColumnErrors = columnErrorMessages.some((error) => error !== null);
   const haveSyntaxErrors = diagnostics.some(
@@ -193,12 +188,9 @@ const onChange = async (editorStates: EditorStates) => {
 };
 
 onMounted(async () => {
-  [initialData.value, initialSettings.value] = await Promise.all([
-    getRowMapperInitialDataService().getInitialData(),
-    getRowMapperSettingsService().getSettings(),
-  ]);
+  initialSettings.value = await getRowMapperSettingsService().getSettings();
 
-  if (initialData.value?.inputConnectionInfo[1].status !== "OK") {
+  if (initialData.inputConnectionInfo[1].status !== "OK") {
     consoleHandler.writeln({
       warning: "No input available. Connect an executed node.",
     });
@@ -211,8 +203,8 @@ onMounted(async () => {
       ...(currentInputOutputItems.value?.[0].subItems ?? []),
       ...appendedSubItems.value,
     ],
-    flowVariableGetter: () => initialData.value?.flowVariables.subItems ?? [],
-    functionData: initialData.value?.functionCatalog.functions,
+    flowVariableGetter: () => initialData.flowVariables.subItems ?? [],
+    functionData: initialData.functionCatalog.functions,
   });
 
   useReadonlyStore().value =

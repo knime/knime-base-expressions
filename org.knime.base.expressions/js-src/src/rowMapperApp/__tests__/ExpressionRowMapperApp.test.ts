@@ -26,7 +26,7 @@ vi.mock("@knime/scripting-editor", async () => ({
 
 vi.mock("@/expressionInitialDataService", () => ({
   getRowMapperInitialDataService: vi.fn(() => ({
-    getInitialData: vi.fn(() => Promise.resolve(ROW_MAPPER_INITIAL_DATA)),
+    getInitialData: vi.fn(() => ROW_MAPPER_INITIAL_DATA),
   })),
 }));
 

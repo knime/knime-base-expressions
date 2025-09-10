@@ -21,7 +21,7 @@ import {
   mapConnectionInfoToErrorMessage,
   registerInsertionListener,
 } from "@/common/functions";
-import type { ExpressionVersion, RowFilterInitialData } from "@/common/types";
+import type { ExpressionVersion } from "@/common/types";
 import ExpressionEditorPane, {
   type ExpressionEditorPaneExposes,
 } from "@/components/ExpressionEditorPane.vue";
@@ -41,7 +41,7 @@ import { runRowFilterDiagnostics } from "@/rowFilterApp/expressionRowFilterDiagn
 
 const editorRef = ref<Required<ExpressionEditorPaneExposes> | null>(null);
 
-const initialData = ref<RowFilterInitialData>();
+const initialData = getRowFilterInitialDataService().getInitialData();
 const initialSettings = ref<ExpressionRowFilterNodeSettings>();
 const errorState = ref<EditorErrorState>({ level: "OK" });
 
@@ -58,20 +58,17 @@ const runDiagnosticsFunction = async () => {
 };
 
 onMounted(async () => {
-  [initialData.value, initialSettings.value] = await Promise.all([
-    getRowFilterInitialDataService().getInitialData(),
-    getRowFilterSettingsService().getSettings(),
-  ]);
+  initialSettings.value = await getRowFilterSettingsService().getSettings();
 
-  if (initialData.value?.inputConnectionInfo[1].status !== "OK") {
+  if (initialData.inputConnectionInfo[1].status !== "OK") {
     consoleHandler.writeln({
       warning: "No input available. Connect an executed node.",
     });
   }
   registerKnimeExpressionLanguage({
-    columnGetter: () => initialData.value?.inputObjects[0].subItems ?? [],
-    flowVariableGetter: () => initialData.value?.flowVariables.subItems ?? [],
-    functionData: initialData.value?.functionCatalog.functions,
+    columnGetter: () => initialData.inputObjects[0].subItems ?? [],
+    flowVariableGetter: () => initialData.flowVariables.subItems ?? [],
+    functionData: initialData.functionCatalog.functions,
   });
 
   useReadonlyStore().value =
@@ -162,7 +159,7 @@ onKeyStroke("Enter", (evt: KeyboardEvent) => {
 
 const runButtonDisabledErrorReason = computed(() => {
   const connectionErrors = mapConnectionInfoToErrorMessage(
-    initialData.value?.inputConnectionInfo,
+    initialData.inputConnectionInfo,
   );
   if (connectionErrors) {
     return connectionErrors;

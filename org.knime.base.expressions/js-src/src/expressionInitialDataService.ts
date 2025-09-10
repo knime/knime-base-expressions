@@ -7,13 +7,10 @@ import type {
   RowMapperInitialData,
 } from "@/common/types";
 
-// TODO(async-init) these do not have to be async anymore
 const getExpressionInitialDataService = <
   T extends GenericExpressionInitialData,
 >() => ({
-  getInitialData: (): Promise<T> => {
-    return Promise.resolve(getInitialData() as T);
-  },
+  getInitialData: (): T => getInitialData() as T,
 });
 
 export const getRowMapperInitialDataService =

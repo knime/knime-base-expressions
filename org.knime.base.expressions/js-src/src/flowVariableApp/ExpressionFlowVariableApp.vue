@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, shallowRef } from "vue";
+import { onMounted, ref } from "vue";
 
 import { LoadingIcon } from "@knime/components";
 import {
@@ -17,10 +17,7 @@ import {
   buildAppendedOutput,
   replaceSubItems,
 } from "@/common/inputOutputUtils";
-import type {
-  ExpressionVersion,
-  FlowVariableInitialData,
-} from "@/common/types";
+import type { ExpressionVersion } from "@/common/types";
 import type { IconRendererProps } from "@/components/IconRenderer.vue";
 import MultiEditorContainer, {
   type EditorState,
@@ -44,7 +41,7 @@ import registerKnimeExpressionLanguage from "@/languageSupport/registerKnimeExpr
 
 // Input flowVariables helpers
 const runButtonDisabledErrorReason = ref<string | null>(null);
-const initialData = shallowRef<FlowVariableInitialData | null>(null);
+const initialData = getFlowVariableInitialDataService().getInitialData();
 const initialSettings = ref<ExpressionFlowVariableNodeSettings | null>(null);
 const multiEditorContainerRef =
   ref<InstanceType<typeof MultiEditorContainer>>();
@@ -54,9 +51,7 @@ const currentInputOutputItems = ref<InputOutputModel[]>();
 const appendedSubItems = ref<SubItem<Record<string, any>>[]>([]);
 
 const getInitialItems = (): InputOutputModel[] => {
-  return initialData.value
-    ? [structuredClone(initialData.value?.flowVariables)]
-    : [];
+  return [structuredClone(initialData.flowVariables)];
 };
 
 const refreshInputOutputItems = (
@@ -136,7 +131,7 @@ const runDiagnosticsFunction = async ({
   const flowVariableErrorMessages = runOutputDiagnostics(
     "flow variable",
     states.map((state) => state.selectorState),
-    initialData.value?.flowVariables.subItems?.map((c) => c.name) ?? [],
+    initialData.flowVariables.subItems?.map((c) => c.name) ?? [],
   );
 
   for (const [index, state] of states.entries()) {
@@ -187,10 +182,7 @@ const onChange = async (editorStates: EditorStates) => {
 };
 
 onMounted(async () => {
-  [initialData.value, initialSettings.value] = await Promise.all([
-    getFlowVariableInitialDataService().getInitialData(),
-    getFlowVariableSettingsService().getSettings(),
-  ]);
+  initialSettings.value = await getFlowVariableSettingsService().getSettings();
 
   registerKnimeExpressionLanguage({
     columnGetter: () => [],
@@ -198,7 +190,7 @@ onMounted(async () => {
       ...(currentInputOutputItems.value?.[0].subItems ?? []),
       ...appendedSubItems.value,
     ],
-    functionData: initialData.value?.functionCatalog.functions,
+    functionData: initialData.functionCatalog.functions,
   });
 
   useReadonlyStore().value =
@@ -293,7 +285,7 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
               }))
             "
             :replaceable-items-in-input-table="
-              initialData!.flowVariables.subItems
+              initialData.flowVariables.subItems
                 ?.filter((c) => c.supported)
                 .map(
                   (c): AllowedDropDownValue => ({
@@ -316,7 +308,7 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
         </template>
 
         <template #right-pane>
-          <template v-if="initialData?.functionCatalog">
+          <template v-if="initialData.functionCatalog">
             <FunctionCatalog
               :function-catalog-data="initialData.functionCatalog"
               :initially-expanded="false"
