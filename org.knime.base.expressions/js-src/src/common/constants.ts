@@ -27,3 +27,6 @@ export const INITIAL_PANE_SIZES: PaneSizes = {
   right: 320,
   bottom: 300,
 };
+
+export const NO_DATA_TEXT =
+  "To see the preview, evaluate the expression using the button above.";
