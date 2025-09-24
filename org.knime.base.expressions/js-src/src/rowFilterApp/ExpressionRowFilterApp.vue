@@ -16,6 +16,7 @@ import {
   DEFAULT_NUMBER_OF_ROWS_TO_RUN,
   INITIAL_PANE_SIZES,
   LANGUAGE,
+  NO_DATA_TEXT,
 } from "@/common/constants";
 import {
   mapConnectionInfoToErrorMessage,
@@ -183,7 +184,10 @@ const runButtonDisabledErrorReason = computed(() => {
     >
       <!-- Extra content in the bottom tab pane -->
       <template #bottomPaneTabSlot:outputPreview="{ grabFocus }">
-        <OutputTablePreview @output-table-updated="grabFocus()" />
+        <OutputTablePreview
+          :no-data-text="NO_DATA_TEXT"
+          @output-table-updated="grabFocus()"
+        />
       </template>
 
       <template #editor>
