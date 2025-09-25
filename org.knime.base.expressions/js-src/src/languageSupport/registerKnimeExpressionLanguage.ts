@@ -194,6 +194,7 @@ const register = ({
       { token: "number.coloffset", foreground: "af01db" },
       { token: "string.rowinfo.escape", foreground: "3289ac" },
       { token: "string.rowinfo", foreground: "af01db" },
+      { token: "comment", foreground: "eb34cf" },
     ],
     colors: {},
   });
