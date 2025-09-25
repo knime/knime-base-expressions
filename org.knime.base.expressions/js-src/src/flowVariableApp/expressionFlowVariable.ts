@@ -2,16 +2,19 @@ import "./__mocks__/browser-mock-flow-variable-services";
 import { createApp } from "vue";
 
 import { init, initMocked } from "@knime/scripting-editor";
-import { LoadingApp } from "@knime/scripting-editor/loading";
 
 import { setupConsola } from "@/common/functions";
 import ExpressionFlowVariableApp from "@/flowVariableApp/ExpressionFlowVariableApp.vue";
+import LoadingApp from "../common/LoadingApp.vue";
 
 setupConsola();
 
 // Show loading app while initializing
 const loadingApp = createApp(LoadingApp);
 loadingApp.mount("#app");
+
+// DEBUG: wait for 2 seconds to see the loading screen
+await new Promise((resolve) => setTimeout(resolve, 2000));
 
 // Initialize application (e.g., load initial data, set up services)
 if (import.meta.env.MODE === "development.browser") {
