@@ -63,6 +63,7 @@ import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.page.Page;
 import org.knime.scripting.editor.GenericInitialDataBuilder;
+import org.knime.scripting.editor.OutputTablePreviewUtils;
 import org.knime.scripting.editor.ScriptingNodeSettingsService;
 import org.knime.scripting.editor.WorkflowControl;
 
@@ -115,7 +116,7 @@ final class ExpressionRowFilterNodeDialog implements NodeDialog {
 
         return Optional.of(RpcDataService.builder() //
             .addService("ScriptingService", scriptingService.getJsonRpcService()) //
-            .addService(OutputTablePreview.INITIAL_DATA_SERVICE_NAME, tablePreview) //
+            .addService(OutputTablePreviewUtils.INITIAL_DATA_SERVICE_NAME, tablePreview) //
             .addService(OutputTablePreview.DATA_SERVICE_NAME, tablePreview.getTableViewDataService()) //
             .onDeactivate(scriptingService::onDeactivate) //
             .build()); //

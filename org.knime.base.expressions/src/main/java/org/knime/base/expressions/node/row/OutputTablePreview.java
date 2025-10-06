@@ -90,9 +90,6 @@ import org.knime.core.webui.node.view.table.data.TableViewInitialDataImpl;
 @SuppressWarnings("restriction") // TableViewDataService is not public API
 public class OutputTablePreview {
 
-    /** The name of the initial data service. The service is provided by objects of {@link OutputTablePreview}. */
-    public static final String INITIAL_DATA_SERVICE_NAME = "OutputPreviewTableInitialDataRpcSupplier";
-
     /** The name of the data service. Use {@link OutputTablePreview#getTableViewDataService()} to get the service. */
     public static final String DATA_SERVICE_NAME = TableViewDataService.class.getSimpleName();
 

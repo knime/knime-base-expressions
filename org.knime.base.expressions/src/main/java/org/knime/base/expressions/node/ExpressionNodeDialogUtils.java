@@ -48,26 +48,14 @@
  */
 package org.knime.base.expressions.node;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 
-import org.eclipse.core.runtime.FileLocator;
-import org.eclipse.core.runtime.Platform;
 import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.NodeLogger;
-import org.knime.core.ui.CoreUIPlugin;
 import org.knime.core.webui.page.Page;
 import org.knime.node.parameters.widget.choices.TypedStringChoice;
 import org.knime.scripting.editor.GenericInitialDataBuilder.DataSupplier;
+import org.knime.scripting.editor.OutputTablePreviewUtils;
 import org.knime.scripting.editor.WorkflowControl;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.FrameworkUtil;
 
 /**
  * Utilities for the expression node dialogs.
@@ -91,7 +79,7 @@ public final class ExpressionNodeDialogUtils {
             .relativeFilePath(entryPoint) //
             .addResourceDirectory("assets") //
             .addResourceDirectory("monacoeditorwork") //
-            .addResources(ExpressionNodeDialogUtils::getCoreUIResource, "core-ui", true);
+            .addResources(OutputTablePreviewUtils::getCoreUIResource, "core-ui", true);
     }
 
     /**
@@ -107,41 +95,5 @@ public final class ExpressionNodeDialogUtils {
             .map(DataTableSpec.class::cast) //
             .map((spec) -> spec.stream().map(colSpec -> TypedStringChoice.fromColSpec(colSpec)).toArray()) //
             .orElseGet(() -> new TypedStringChoice[0]);
-    }
-
-    /**
-     * Get the resource with the given name from the js-src/dist folder of the core UI plugin.
-     *
-     * @param nameOfResource the file name of the resource
-     * @return a stream of the resource
-     */
-    private static InputStream getCoreUIResource(final String nameOfResource) {
-        try {
-            return Files.newInputStream(ExpressionNodeDialogUtils.getAbsoluteBasePath(CoreUIPlugin.class, null,
-                "js-src/dist/" + nameOfResource));
-        } catch (IOException e) {
-            NodeLogger.getLogger(ExpressionNodeDialogUtils.class).error("Failed to load " + nameOfResource, e);
-            return null;
-        }
-    }
-
-    private static Path getAbsoluteBasePath(final Class<?> clazz, final String bundleID, final String baseDir) {
-        if (clazz != null) {
-            return getAbsoluteBasePath(FrameworkUtil.getBundle(clazz), baseDir);
-        } else {
-            return getAbsoluteBasePath(Platform.getBundle(bundleID), baseDir);
-        }
-    }
-
-    private static Path getAbsoluteBasePath(final Bundle bundle, final String baseDir) {
-        var bundleUrl = bundle.getEntry(".");
-        try {
-            // must not use url.toURI() -- FileLocator leaves spaces in the URL (see eclipse bug 145096)
-            // -- taken from TableauHyperActivator.java line 158
-            var url = FileLocator.toFileURL(bundleUrl);
-            return Paths.get(new URI(url.getProtocol(), url.getFile(), null)).resolve(baseDir).normalize();
-        } catch (IOException | URISyntaxException ex) {
-            throw new IllegalStateException("Failed to resolve the directory " + baseDir, ex);
-        }
     }
 }
