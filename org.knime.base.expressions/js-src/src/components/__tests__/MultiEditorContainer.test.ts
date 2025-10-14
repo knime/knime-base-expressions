@@ -3,6 +3,9 @@ import { nextTick } from "vue";
 import { flushPromises, mount } from "@vue/test-utils";
 import { onKeyStroke } from "@vueuse/core";
 
+import { getSettingsService } from "@knime/scripting-editor";
+
+import type { FlowVariableType } from "@/flowVariableApp/flowVariableTypes";
 import type { ExpressionEditorPaneExposes } from "../ExpressionEditorPane.vue";
 import MultiEditorContainer, {
   type EditorStates,
@@ -394,5 +397,260 @@ describe("MultiEditorContainer", () => {
 
     const selectors = wrapper.findAllComponents({ name: "OutputSelector" });
     expect(selectors).toHaveLength(3);
+  });
+
+  describe("dirty state handling", () => {
+    const setupSettingsStateMock = () => {
+      const settingsStateMock = {
+        setValue: vi.fn(),
+        addControllingFlowVariable: vi.fn(),
+        addExposedFlowVariable: vi.fn(),
+        initialSettings: "" as any,
+      };
+      const registerFnMock = vi.fn(<T>(initialSettings: T) => {
+        settingsStateMock.initialSettings = initialSettings;
+        return settingsStateMock;
+      });
+
+      vi.mocked(getSettingsService().registerSettings).mockReturnValue(
+        registerFnMock,
+      );
+
+      return settingsStateMock;
+    };
+
+    type SettingsStateMock = ReturnType<typeof setupSettingsStateMock>;
+
+    const getLastSettings = (settingsStateMock: SettingsStateMock) => {
+      const lastCallIndex = settingsStateMock.setValue.mock.calls.length - 1;
+      return settingsStateMock.setValue.mock.calls[lastCallIndex][0];
+    };
+
+    it("should not change initial settings if nothing changes", async () => {
+      const settingsStateMock = setupSettingsStateMock();
+      await doMount();
+
+      const initialSettings = settingsStateMock.initialSettings;
+      const lastSettings = getLastSettings(settingsStateMock);
+      expect(lastSettings).toBe(initialSettings);
+    });
+
+    it("should mark the editor as dirty when the flow variable type changes", async () => {
+      const settingsStateMock = setupSettingsStateMock();
+
+      const wrapper = mount(MultiEditorContainer, {
+        props: {
+          defaultAppendItem: "New Flow Variable",
+          itemType: "flow variable",
+          replaceableItemsInInputTable: [],
+          settings: [
+            {
+              initialScript: "test script",
+              initialSelectorState: {
+                create: "test_var",
+                replace: "",
+                outputMode: "APPEND",
+              },
+              initialOutputReturnType: "String" as FlowVariableType,
+            },
+          ],
+        },
+      });
+      await flushPromises();
+
+      const initialSettings = settingsStateMock.initialSettings;
+
+      // Change the flow variable type
+      const returnTypeSelector = wrapper.findComponent({
+        name: "ReturnTypeSelector",
+      });
+      await returnTypeSelector.vm.$emit("update:modelValue", "Integer");
+      await nextTick();
+
+      // Settings should have changed
+      const newSettings = getLastSettings(settingsStateMock);
+      expect(newSettings).not.toBe(initialSettings);
+      expect(newSettings).toContain("Integer");
+      expect(newSettings).not.toContain("String");
+
+      // Change back to original value
+      await returnTypeSelector.vm.$emit("update:modelValue", "String");
+      await nextTick();
+
+      // Settings should equal initial settings again
+      const restoredSettings = getLastSettings(settingsStateMock);
+      expect(restoredSettings).toBe(initialSettings);
+    });
+
+    it("should not mark as dirty when flow variable type changes to same value", async () => {
+      const settingsStateMock = setupSettingsStateMock();
+
+      const wrapper = mount(MultiEditorContainer, {
+        props: {
+          defaultAppendItem: "New Flow Variable",
+          itemType: "flow variable",
+          replaceableItemsInInputTable: [],
+          settings: [
+            {
+              initialScript: "test script",
+              initialSelectorState: {
+                create: "test_var",
+                replace: "",
+                outputMode: "APPEND",
+              },
+              initialOutputReturnType: "Boolean" as FlowVariableType,
+            },
+          ],
+        },
+      });
+      await flushPromises();
+
+      const initialSettings = settingsStateMock.initialSettings;
+
+      // Change to same value
+      const returnTypeSelector = wrapper.findComponent({
+        name: "ReturnTypeSelector",
+      });
+      await returnTypeSelector.vm.$emit("update:modelValue", "Boolean");
+      await nextTick();
+
+      // Settings should be the same (no false dirty state)
+      const unchangedSettings = getLastSettings(settingsStateMock);
+      expect(unchangedSettings).toBe(initialSettings);
+    });
+
+    it.each([
+      { itemType: "flow variable" as const },
+      { itemType: "column" as const },
+    ])(
+      "should mark as dirty when output name changes in $itemType mode",
+      async ({ itemType }) => {
+        const settingsStateMock = setupSettingsStateMock();
+
+        const wrapper = mount(MultiEditorContainer, {
+          props: {
+            defaultAppendItem:
+              itemType === "flow variable" ? "New Flow Variable" : "New Column",
+            itemType,
+            replaceableItemsInInputTable: [],
+            settings: [
+              {
+                initialScript: "test script",
+                initialSelectorState: {
+                  create: "initialValue",
+                  replace: "",
+                  outputMode: "APPEND",
+                },
+                ...(itemType === "flow variable" && {
+                  initialOutputReturnType: "String" as FlowVariableType,
+                }),
+              },
+            ],
+          },
+        });
+        await flushPromises();
+
+        const initialSettings = settingsStateMock.initialSettings;
+
+        // Change the output name
+        const outputSelector = wrapper.findComponent({
+          name: "OutputSelector",
+        });
+        await outputSelector.vm.$emit("update:modelValue", {
+          create: "newValue",
+          replace: "",
+          outputMode: "APPEND",
+        });
+        await nextTick();
+
+        // Settings should have changed
+        const newSettings = getLastSettings(settingsStateMock);
+        expect(newSettings).not.toBe(initialSettings);
+        expect(newSettings).toContain("newValue");
+        expect(newSettings).not.toContain("initialValue");
+
+        // Change back to original value
+        await outputSelector.vm.$emit("update:modelValue", {
+          create: "initialValue",
+          replace: "",
+          outputMode: "APPEND",
+        });
+        await nextTick();
+
+        // Settings should equal initial settings again
+        const restoredSettings = getLastSettings(settingsStateMock);
+        expect(restoredSettings).toBe(initialSettings);
+      },
+    );
+
+    it.each([
+      { itemType: "flow variable" as const },
+      { itemType: "column" as const },
+    ])(
+      "should mark as dirty when output mode changes in $itemType mode",
+      async ({ itemType }) => {
+        const settingsStateMock = setupSettingsStateMock();
+
+        const wrapper = mount(MultiEditorContainer, {
+          props: {
+            defaultAppendItem:
+              itemType === "flow variable" ? "New Flow Variable" : "New Column",
+            itemType,
+            replaceableItemsInInputTable: [
+              {
+                id: "existing",
+                text: "existing",
+                type: { id: "string", text: "String" },
+              },
+            ],
+            settings: [
+              {
+                initialScript: "test script",
+                initialSelectorState: {
+                  create: "new_output",
+                  replace: "",
+                  outputMode: "APPEND",
+                },
+                ...(itemType === "flow variable" && {
+                  initialOutputReturnType: "String" as FlowVariableType,
+                }),
+              },
+            ],
+          },
+        });
+        await flushPromises();
+
+        const initialSettings = settingsStateMock.initialSettings;
+
+        // Change from APPEND to REPLACE_EXISTING
+        const outputSelector = wrapper.findComponent({
+          name: "OutputSelector",
+        });
+        await outputSelector.vm.$emit("update:modelValue", {
+          create: "new_output",
+          replace: "existing",
+          outputMode: "REPLACE_EXISTING",
+        });
+        await nextTick();
+
+        // Settings should have changed
+        const newSettings = getLastSettings(settingsStateMock);
+        expect(newSettings).not.toBe(initialSettings);
+        expect(newSettings).toContain("REPLACE_EXISTING");
+        expect(newSettings).toContain("existing");
+
+        // Change back to original value
+        await outputSelector.vm.$emit("update:modelValue", {
+          create: "new_output",
+          replace: "",
+          outputMode: "APPEND",
+        });
+        await nextTick();
+
+        // Settings should equal initial settings again
+        const restoredSettings = getLastSettings(settingsStateMock);
+        expect(restoredSettings).toBe(initialSettings);
+      },
+    );
   });
 });

@@ -65,6 +65,7 @@ export type EditorStates = {
 type EditorStateWatchers = {
   columnStateUnwatchHandle: WatchHandle;
   editorStateUnwatchHandle: WatchHandle;
+  flowVariableOutputTypeUnwatchHandle: WatchHandle;
 };
 export type MultiEditorContainerExposes = {
   getOrderedEditorStates: () => EditorState[];
@@ -251,6 +252,10 @@ const createElementReferencePusher = (key: string) => {
         editorRef.getEditorState().text,
         emitOnChange,
       ),
+      flowVariableOutputTypeUnwatchHandle: watch(
+        () => editorStates[key].selectedFlowVariableOutputType,
+        emitOnChange,
+      ),
     };
     editorStateWatchers[key] = newStateWatchers;
   };
@@ -358,6 +363,7 @@ const onEditorRequestedDelete = (key: string) => {
   // Clean up state
   editorStateWatchers[key].columnStateUnwatchHandle();
   editorStateWatchers[key].editorStateUnwatchHandle();
+  editorStateWatchers[key].flowVariableOutputTypeUnwatchHandle();
   delete editorStates[key];
   delete editorStateWatchers[key];
   delete editorReferences[key];
