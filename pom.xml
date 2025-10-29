@@ -46,7 +46,7 @@
 	</modules>
 
 	<properties>
-		<revision>5.8.0</revision>
+		<revision>5.9.0</revision>
 		<changelist>-SNAPSHOT</changelist>
 		<changelog.baseref>3f178f6</changelog.baseref>
 		<feature-branch-extension.branchListProperty>git.branch</feature-branch-extension.branchListProperty>
