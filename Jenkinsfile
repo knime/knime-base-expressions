@@ -20,7 +20,7 @@ properties([
 ])
 
 try {
-    node('maven && java17') {
+    node('maven && java21') {
         knimetools.defaultTychoBuild(updateSiteProject: 'org.knime.update.base.expressions')
 
         workflowTests.runTests(
@@ -44,7 +44,7 @@ try {
 
     // TODO run on a specific benchmark node
     if (params["RUN_BENCHMARKS"]) {
-        node('maven && java17 && ubuntu22.04 && workflow-tests') {
+        node('maven && java21 && ubuntu22.04 && workflow-tests') {
             stage('Run benchmarks') {
                 env.lastStage = env.STAGE_NAME
 
