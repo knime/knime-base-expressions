@@ -51,11 +51,11 @@ package org.knime.base.expressions.node;
 import java.util.Optional;
 
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder.DataSupplier;
+import org.knime.core.webui.node.dialog.scripting.OutputTablePreviewUtils;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 import org.knime.core.webui.page.Page;
 import org.knime.node.parameters.widget.choices.TypedStringChoice;
-import org.knime.scripting.editor.GenericInitialDataBuilder.DataSupplier;
-import org.knime.scripting.editor.OutputTablePreviewUtils;
-import org.knime.scripting.editor.WorkflowControl;
 
 /**
  * Utilities for the expression node dialogs.

@@ -70,7 +70,7 @@ import org.knime.core.node.workflow.VariableType.IntArrayType;
 import org.knime.core.node.workflow.VariableType.IntType;
 import org.knime.core.node.workflow.VariableType.LongType;
 import org.knime.core.node.workflow.VariableType.StringType;
-import org.knime.scripting.editor.WorkflowControl;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 import org.mockito.Mockito;
 
 /**

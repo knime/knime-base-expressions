@@ -61,11 +61,11 @@ import org.knime.core.webui.data.RpcDataService;
 import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeSettingsService;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder;
+import org.knime.core.webui.node.dialog.scripting.OutputTablePreviewUtils;
+import org.knime.core.webui.node.dialog.scripting.ScriptingNodeSettingsService;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 import org.knime.core.webui.page.Page;
-import org.knime.scripting.editor.GenericInitialDataBuilder;
-import org.knime.scripting.editor.OutputTablePreviewUtils;
-import org.knime.scripting.editor.ScriptingNodeSettingsService;
-import org.knime.scripting.editor.WorkflowControl;
 
 /**
  * The node dialog implementation of the Expression node.

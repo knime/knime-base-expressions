@@ -57,11 +57,6 @@
 
 	<repositories>
 		<repository>
-			<id>p2-knime-scripting-editor</id>
-			<layout>p2</layout>
-			<url>${knime.scripting.editor.p2}</url>
-		</repository>
-		<repository>
 			<id>p2-knime-core-columnar</id>
 			<layout>p2</layout>
 			<url>${knime.core.columnar.p2}</url>
