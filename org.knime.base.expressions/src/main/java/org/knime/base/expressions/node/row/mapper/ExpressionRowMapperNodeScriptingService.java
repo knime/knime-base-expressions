@@ -83,11 +83,11 @@ import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.scripting.editor.CodeGenerationRequest;
-import org.knime.scripting.editor.InputOutputModel;
-import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
-import org.knime.scripting.editor.ScriptingService;
-import org.knime.scripting.editor.WorkflowControl;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModel.InputOutputModelSubItemType;
+import org.knime.core.webui.node.dialog.scripting.ScriptingService;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
  * {@link ScriptingService} implementation for the Expression node.

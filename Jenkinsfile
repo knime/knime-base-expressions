@@ -27,7 +27,6 @@ try {
             dependencies: [
                 repositories: [
                     'knime-base-expressions',
-                    'knime-scripting-editor',
                     'knime-core-columnar',
                 ]
             ]

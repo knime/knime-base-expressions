@@ -66,8 +66,8 @@ import org.knime.core.expressions.ValueType;
 import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType.StringType;
-import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
-import org.knime.scripting.editor.WorkflowControl;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModel.InputOutputModelSubItemType;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
  * Test getRowMapperDiagnostics of ExpressionRowMapperNodeScriptingService.

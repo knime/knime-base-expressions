@@ -50,7 +50,7 @@ package org.knime.base.expressions.node;
 
 import java.util.List;
 
-import org.knime.scripting.editor.InputOutputModel.InputOutputModelSubItemType;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModel.InputOutputModelSubItemType;
 
 /**
  * Combines a list of diagnostics for an expression with the return type of the expression.

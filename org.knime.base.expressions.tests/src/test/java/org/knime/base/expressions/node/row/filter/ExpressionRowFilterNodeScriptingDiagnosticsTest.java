@@ -62,7 +62,7 @@ import org.knime.core.data.vector.bitvector.DenseBitVectorCell;
 import org.knime.core.node.port.inactive.InactiveBranchPortObjectSpec;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType.StringType;
-import org.knime.scripting.editor.WorkflowControl;
+import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 
 /**
  * Test getRowFilterDiagnostics of ExpressionRowFilterNodeScriptingService.

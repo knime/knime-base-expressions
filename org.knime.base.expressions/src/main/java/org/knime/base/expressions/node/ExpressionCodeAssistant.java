@@ -49,13 +49,13 @@
 package org.knime.base.expressions.node;
 
 import org.eclipse.core.runtime.Platform;
-import org.knime.scripting.editor.CodeGenerationRequest;
-import org.knime.scripting.editor.CodeGenerationRequest.Inputs;
-import org.knime.scripting.editor.CodeGenerationRequest.Outputs;
-import org.knime.scripting.editor.CodeGenerationRequest.RequestBody;
-import org.knime.scripting.editor.InputOutputModel;
-import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils;
-import org.knime.scripting.editor.InputOutputModelNameAndTypeUtils.NameAndType;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.Inputs;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.Outputs;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.RequestBody;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModelNameAndTypeUtils;
+import org.knime.core.webui.node.dialog.scripting.InputOutputModelNameAndTypeUtils.NameAndType;
 
 /**
  * This class provides methods to generate expressions with the help of AI

@@ -70,8 +70,8 @@ import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.VariableSettingsRO;
 import org.knime.core.webui.node.dialog.configmapping.ConfigMappings;
 import org.knime.core.webui.node.dialog.configmapping.NodeSettingsCorrectionUtil;
-import org.knime.scripting.editor.GenericSettingsIOManager;
-import org.knime.scripting.editor.ScriptingNodeSettings;
+import org.knime.core.webui.node.dialog.scripting.GenericSettingsIOManager;
+import org.knime.core.webui.node.dialog.scripting.ScriptingNodeSettings;
 
 /**
  * Settings for an Expression Flow Variable node, with loading, saving, and validation.
