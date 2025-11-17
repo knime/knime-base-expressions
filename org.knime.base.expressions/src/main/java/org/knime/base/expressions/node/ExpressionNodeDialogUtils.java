@@ -49,9 +49,9 @@
 package org.knime.base.expressions.node;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.knime.core.data.DataTableSpec;
-import org.knime.core.webui.node.dialog.scripting.GenericInitialDataBuilder.DataSupplier;
 import org.knime.core.webui.node.dialog.scripting.OutputTablePreviewUtils;
 import org.knime.core.webui.node.dialog.scripting.WorkflowControl;
 import org.knime.core.webui.page.Page;
@@ -88,12 +88,12 @@ public final class ExpressionNodeDialogUtils {
      * @param workflowControl the workflow control
      * @return the data supplier
      */
-    public static DataSupplier getColumnNamesAndTypesSupplier(final WorkflowControl workflowControl) {
+    public static Supplier<Object> getColumnNamesAndTypesSupplier(final WorkflowControl workflowControl) {
         return () -> Optional.ofNullable(workflowControl.getInputInfo()[0]) //
             .flatMap(info -> Optional.ofNullable(info.portSpec())) //
             .filter(DataTableSpec.class::isInstance) // can be InactiveBranchPortObjectSpec if the input is inactive
             .map(DataTableSpec.class::cast) //
-            .map((spec) -> spec.stream().map(colSpec -> TypedStringChoice.fromColSpec(colSpec)).toArray()) //
+            .map(spec -> spec.stream().map(TypedStringChoice::fromColSpec).toArray()) //
             .orElseGet(() -> new TypedStringChoice[0]);
     }
 }
