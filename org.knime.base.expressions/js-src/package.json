@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@knime/components": "1.38.0",
-    "@knime/kds-components": "0.0.8",
+    "@knime/kds-components": "0.2.1",
     "@knime/scripting-editor": "0.0.114",
     "@knime/styles": "1.10.0",
     "@knime/ui-extension-renderer": "2.3.13",
