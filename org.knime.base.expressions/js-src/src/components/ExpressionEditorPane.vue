@@ -392,17 +392,6 @@ const isEmptyExpr = computed(
       inset: -1px;
     }
 
-    /* Note: Monaco adds a focused class when it gets focus */
-    & .code-editor:has(.focused)::after {
-      position: absolute;
-      content: "";
-      background-color: var(--knime-cornflower);
-      opacity: 0.075;
-      pointer-events: none;
-      z-index: 0;
-      inset: 0;
-    }
-
     & .editor-title-bar {
       background-color: var(--knime-cornflower);
       color: var(--knime-porcelain);
