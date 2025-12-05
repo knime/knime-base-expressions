@@ -59,6 +59,7 @@ initMocked({
     getAiDisclaimer: vi.fn(),
     getAiUsage: vi.fn(),
     isCallKnimeUiApiAvailable: vi.fn(() => Promise.resolve(false)),
+    sendAlert: vi.fn(),
   },
   settingsService: {
     getSettings: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_SETTINGS)),
