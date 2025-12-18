@@ -148,9 +148,9 @@ const dropdownChoices = computed(() =>
 .output-selector-container {
   display: flex;
   flex-direction: column;
+  gap: var(--space-8);
   align-items: flex-start;
   width: 100%;
-  gap: var(--space-8);
 }
 
 .input {
@@ -168,7 +168,7 @@ const dropdownChoices = computed(() =>
 
 .with-type {
   display: flex;
-  align-items: center;
   gap: var(--space-4);
+  align-items: center;
 }
 </style>

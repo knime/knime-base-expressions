@@ -42,6 +42,16 @@
       "count": 1
     }
   },
+  "src/flowVariableApp/__tests__/ExpressionFlowVariableApp.test.ts": {
+    "vitest/no-mocks-import": {
+      "count": 2
+    }
+  },
+  "src/languageSupport/__tests__/registerKnimeExpressionLanguage.test.ts": {
+    "vitest/no-mocks-import": {
+      "count": 1
+    }
+  },
   "src/languageSupport/autoComplete.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
@@ -57,6 +67,11 @@
       "count": 1
     }
   },
+  "src/rowFilterApp/__tests__/ExpressionRowFilterApp.test.ts": {
+    "vitest/no-mocks-import": {
+      "count": 2
+    }
+  },
   "src/rowMapperApp/ExpressionRowMapperApp.vue": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
@@ -65,6 +80,11 @@
   "src/rowMapperApp/__mocks__/browser-mock-row-mapper-services.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
+    }
+  },
+  "src/rowMapperApp/__tests__/ExpressionRowMapperApp.test.ts": {
+    "vitest/no-mocks-import": {
+      "count": 2
     }
   },
   "vite.config.ts": {

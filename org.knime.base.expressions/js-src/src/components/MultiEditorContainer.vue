@@ -625,8 +625,8 @@ const getOutputLabel = (key: string) => {
 .multi-editor-container {
   display: flex;
   flex-direction: column;
-  overflow: hidden scroll;
   min-height: 100%;
+  overflow: hidden scroll;
 }
 
 .add-new-editor-button {
@@ -638,36 +638,36 @@ const getOutputLabel = (key: string) => {
 .output-settings-container {
   display: flex;
   flex-direction: row;
-  align-items: flex-end;
   gap: var(--space-8);
+  align-items: flex-end;
   width: 100%;
   margin-bottom: var(--space-8);
 }
 
 .editor-controls {
   width: 100%;
+  max-height: 150px;
   padding: 0 var(--space-8);
+  container-type: inline-size;
+  opacity: 1;
   transition:
     max-height 0.4s ease-in-out,
     opacity 0.4s ease-in-out;
-  max-height: 150px;
-  opacity: 1;
-  container-type: inline-size;
 
   &.hidden {
     /* Use visibility: hidden in addition to opacity to prevent
      * children from getting focus
      */
     visibility: hidden;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
 
     /* When hiding, add an extra delayed transition for visibility */
     transition:
       opacity 0.4s ease-in-out,
       max-height 0.4s ease-in-out,
       visibility 0s step-end 0.4s;
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
   }
 }
 
@@ -691,25 +691,25 @@ const getOutputLabel = (key: string) => {
   }
 
   & :hover {
-    stroke: var(--knime-cornflower);
     background-color: var(--knime-stone-light);
     border-radius: 50%;
+    stroke: var(--knime-cornflower);
   }
 }
 
 .output-label {
   all: unset; /* Removes default button styles */
-  width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: row;
-  cursor: pointer;
   gap: var(--space-4);
+  width: 100%;
   padding: var(--space-8);
   font-size: 13px;
   font-weight: 500;
   line-height: 14px;
   text-align: left;
-  box-sizing: border-box;
+  cursor: pointer;
 
   &:focus-visible {
     outline: 2px solid var(--knime-cornflower);
@@ -721,8 +721,8 @@ const getOutputLabel = (key: string) => {
   .output-settings-container {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
     gap: var(--space-8);
+    align-items: flex-end;
     width: 100%;
   }
 }

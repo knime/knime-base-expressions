@@ -103,7 +103,7 @@ const possibleValues = computed(() =>
 <style scoped lang="postcss">
 .with-type {
   display: flex;
-  align-items: center;
   gap: var(--space-4);
+  align-items: center;
 }
 </style>

@@ -87,35 +87,35 @@ const lowerHeader = computed(() => {
 
 <style lang="postcss" scoped>
 .description-title {
-  font-size: 16px;
-  margin-bottom: 0;
-  margin-top: 0;
-  line-height: 18px;
   min-height: 18px;
-  text-overflow: ellipsis;
+  margin-top: 0;
+  margin-bottom: 0;
   overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 16px;
+  line-height: 18px;
   white-space: nowrap;
 }
 
 .titles {
   display: flex;
-  justify-content: space-between;
   flex-direction: column;
+  justify-content: space-between;
   margin-bottom: 10px;
 
   &.is-function {
     & .description-title:last-child {
-      white-space: wrap;
-      overflow-wrap: anywhere;
-      font-weight: 300;
       font-size: 13px;
+      font-weight: 300;
+      overflow-wrap: anywhere;
+      white-space: wrap;
     }
   }
 
   &.is-category {
     & .description-title:first-child {
-      font-weight: 300;
       font-size: 13px;
+      font-weight: 300;
     }
   }
 }
