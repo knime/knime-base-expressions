@@ -155,45 +155,45 @@ onMounted(async () => {
 
 <style lang="postcss" scoped>
 .output-table-preview {
-  height: 100%;
-  width: 100%;
   display: flex;
   flex-direction: column;
+  gap: 0;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .pre-evaluation-sign {
   display: flex;
-  height: 35px;
   justify-content: center;
+  height: 35px;
   border-radius: 10px;
 }
 
 .output-table {
-  height: 100%;
   width: 100%;
+  height: 100%;
 }
 
 .preview-background {
-  width: 100%;
-  background-color: var(--knime-cornflower-semi);
-  padding: var(--space-4) 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-4) 0;
+  background-color: var(--knime-cornflower-semi);
 }
 
 .preview-warning-text {
-  background-color: white;
-  color: black;
   padding: var(--space-4) var(--space-8);
-  border-radius: 999vw;
-  box-shadow: 0 4px 8px rgb(0 0 0 / 10%);
-  text-align: center;
   font-size: small;
   vertical-align: middle;
+  color: black;
+  text-align: center;
+  background-color: white;
+  border-radius: 999vw;
+  box-shadow: 0 4px 8px rgb(0 0 0 / 10%);
 }
 </style>

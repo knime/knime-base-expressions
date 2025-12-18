@@ -286,12 +286,12 @@ const isEmptyExpr = computed(
 
 <style lang="postcss" scoped>
 .editor-and-controls-container {
-  margin: var(--space-4) var(--space-12);
   position: relative;
   display: flex;
   flex-shrink: 1;
   flex-direction: column;
   height: fit-content;
+  margin: var(--space-4) var(--space-12);
 
   --border-colour: var(--knime-cornflower);
 
@@ -315,10 +315,10 @@ const isEmptyExpr = computed(
   &.is-empty-expr {
     & .everything-except-error::after {
       position: absolute;
-      content: "";
-      pointer-events: none;
-      z-index: 1;
       inset: -1px;
+      z-index: 1;
+      pointer-events: none;
+      content: "";
     }
   }
 
@@ -335,33 +335,33 @@ const isEmptyExpr = computed(
   }
 
   & .everything-except-error {
-    box-shadow: var(--shadow-elevation-1);
+    position: relative;
+    display: flex;
     flex-grow: 1;
     flex-shrink: 1;
-    display: flex;
     flex-direction: column;
     min-height: 70px;
-    position: relative;
+    box-shadow: var(--shadow-elevation-1);
 
     &:hover {
       box-shadow: var(--shadow-elevation-2);
     }
 
     & .editor-title-bar {
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
+      justify-content: space-between;
       height: var(--space-32);
       padding: 0 var(--space-16);
-      background-color: var(--knime-porcelain);
-      flex-shrink: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 400;
       font-family: Roboto, sans-serif;
+      font-weight: 400;
+      background-color: var(--knime-porcelain);
 
       & .title-menu {
-        background-color: transparent;
         display: flex;
         gap: var(--space-8);
+        background-color: transparent;
       }
 
       & .title-text {
@@ -370,30 +370,30 @@ const isEmptyExpr = computed(
     }
 
     & .code-editor {
-      width: 100%;
-      display: flex;
       position: relative;
+      display: flex;
+      width: 100%;
     }
 
     & .editor-control-bar {
-      background-color: var(--knime-gray-light-semi);
       height: fit-content;
+      background-color: var(--knime-gray-light-semi);
     }
   }
 
   &.active {
     & .everything-except-error::after {
       position: absolute;
+      inset: -1px;
+      z-index: -1;
+      pointer-events: none;
       content: "";
       border: 1px solid var(--border-colour);
-      pointer-events: none;
-      z-index: -1;
-      inset: -1px;
     }
 
     & .editor-title-bar {
-      background-color: var(--knime-cornflower);
       color: var(--knime-porcelain);
+      background-color: var(--knime-cornflower);
 
       & .title-menu .menu-button :deep(svg) {
         stroke: var(--knime-porcelain);
@@ -405,24 +405,24 @@ const isEmptyExpr = computed(
     display: flex;
     flex-flow: row nowrap;
     align-items: flex-start;
+    min-height: 15px;
     margin-top: 2px;
     margin-bottom: -1px;
     margin-left: var(--space-4);
-    min-height: 15px;
 
     & .error-message {
-      color: var(--error-text-colour);
       font-size: 10px;
       line-height: 12px;
+      color: var(--error-text-colour);
       overflow-wrap: anywhere;
     }
 
     & .error-icon {
-      stroke: var(--error-text-colour);
       width: 12px;
       min-width: 12px;
       height: 12px;
       margin-right: var(--space-4);
+      stroke: var(--error-text-colour);
       translate: 0 2px;
     }
   }

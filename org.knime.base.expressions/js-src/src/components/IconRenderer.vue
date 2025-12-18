@@ -16,9 +16,9 @@ const props = defineProps<IconRendererProps>();
 
 <style scoped lang="postcss">
 .input-output-item-icon-container {
-  cursor: pointer;
-  padding: var(--space-4);
   display: inline-flex;
+  padding: var(--space-4);
+  cursor: pointer;
 
   &:hover {
     background-color: var(--knime-stone-light);

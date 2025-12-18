@@ -239,18 +239,18 @@ const runButtonDisabledErrorReason = computed(() => {
 
 <style lang="postcss" scoped>
 .editor-controls {
-  width: 100%;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
   flex-wrap: wrap;
+  gap: 0;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 60px;
+  padding: var(--space-8) var(--space-12);
   font-family: Roboto, serif;
   font-size: 13px;
   font-weight: 400;
   line-height: 15.23px;
   text-align: center;
-  height: 60px;
-  padding: var(--space-8) var(--space-12);
-  gap: 0;
 }
 </style>

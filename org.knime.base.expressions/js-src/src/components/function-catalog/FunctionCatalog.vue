@@ -481,28 +481,29 @@ const expandAll = () => {
 }
 
 .sticky-search {
-  background-color: white;
   padding: var(--space-4);
   padding-bottom: var(--space-8);
+  background-color: white;
 }
 
 .no-search-match {
+  display: flex;
+  justify-content: center;
   padding: var(--space-8);
   font-size: 13px;
   font-style: italic;
   font-weight: 500;
   line-height: 19.5px;
-  display: flex;
-  justify-content: center;
   color: var(--knime-masala);
 }
 
 .function-catalog {
+  display: flex;
+  flex-direction: column;
+  /* stylelint-disable-next-line csstools/value-no-unknown-custom-properties */
   width: var(--function-catalog-width);
   padding-top: var(--space-4);
   background-color: white;
-  display: flex;
-  flex-direction: column;
 
   &.slim-mode {
     width: 100%;
@@ -517,18 +518,18 @@ const expandAll = () => {
 
   &.selected {
     position: relative;
+    z-index: 0;
     color: var(--theme-dropdown-foreground-color-selected);
     background-color: transparent;
-    z-index: 0;
 
     &::before {
-      content: "";
       position: absolute;
       inset: 0 100vw 0 -100vw;
+      z-index: -1;
       width: 300vw;
       height: 105%;
+      content: "";
       background-color: var(--theme-dropdown-background-color-selected);
-      z-index: -1;
     }
   }
 }
@@ -536,9 +537,9 @@ const expandAll = () => {
 .category-header {
   display: flex;
   align-items: center;
-  font-weight: 500;
-  font-size: 13px;
   padding-left: var(--space-4);
+  font-size: 13px;
+  font-weight: 500;
 
   &:focus {
     outline: none;
@@ -572,15 +573,15 @@ const expandAll = () => {
   }
 
   &.empty {
-    cursor: default;
     visibility: hidden;
+    cursor: default;
   }
 }
 
 .function-list {
-  overflow: hidden auto;
-  padding-top: var(--space-4);
   flex: 1;
+  padding-top: var(--space-4);
+  overflow: hidden auto;
 
   &:focus {
     outline: none;
@@ -608,19 +609,19 @@ const expandAll = () => {
   border-left: 1px solid var(--knime-silver-sand);
 
   &.slim-mode {
-    border-left: none;
-    border-top: 1px solid var(--knime-silver-sand);
     width: 100%;
     height: 40%;
+    border-top: 1px solid var(--knime-silver-sand);
+    border-left: none;
   }
 }
 
 .function-header {
+  margin-left: var(--space-24);
   font-size: 13px;
   font-weight: normal;
-  margin-left: var(--space-24);
   color: var(--knime-dove-gray);
-  word-wrap: normal;
+  overflow-wrap: normal;
 
   &:focus {
     outline: none;
@@ -629,7 +630,7 @@ const expandAll = () => {
 
 .category-functions:not(.selected) > div:hover,
 .category-header:not(.selected):hover {
-  background: var(--theme-dropdown-background-color-hover);
   color: var(--theme-dropdown-foreground-color-hover);
+  background: var(--theme-dropdown-background-color-hover);
 }
 </style>
