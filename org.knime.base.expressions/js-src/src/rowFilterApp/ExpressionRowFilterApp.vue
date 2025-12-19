@@ -105,7 +105,7 @@ onMounted(() => {
   );
 
   const register = getSettingsService().registerSettings("model");
-  const onScriptChange = register(initialSettings.script);
+  const onScriptChange = register({ initialValue: initialSettings.script });
 
   watch(editorReference.getEditorState().text, () => {
     runDiagnosticsFunction();

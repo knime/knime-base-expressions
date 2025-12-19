@@ -517,7 +517,7 @@ onMounted(async () => {
   }
 
   const register = await getSettingsService().registerSettings("model");
-  onChangedState.value = register(getState());
+  onChangedState.value = register({ initialValue: getState() });
 
   // Note that we do call focusEditor here, because we do not want to steal focus
   // setActiveEditor emits the change event, so we don't need to do it here.

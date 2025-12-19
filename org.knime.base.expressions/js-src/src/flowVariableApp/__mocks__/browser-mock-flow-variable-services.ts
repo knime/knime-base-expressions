@@ -31,9 +31,9 @@ export default {
       getFlowVariableDiagnostics: () => Promise.resolve([[]]),
     },
   }),
-  settingsService: createSettingsServiceMock(
-    DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS,
-  ),
+  settingsService: createSettingsServiceMock({
+    settings: DEFAULT_FLOW_VARIABLE_INITIAL_SETTINGS,
+  }),
   initialData: FLOW_VARIABLE_INITIAL_DATA,
   displayMode: "large",
 } satisfies InitMockData;

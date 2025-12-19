@@ -407,8 +407,8 @@ describe("MultiEditorContainer", () => {
         addExposedFlowVariable: vi.fn(),
         initialSettings: "" as any,
       };
-      const registerFnMock = vi.fn(<T>(initialSettings: T) => {
-        settingsStateMock.initialSettings = initialSettings;
+      const registerFnMock = vi.fn(({ initialValue }: any) => {
+        settingsStateMock.initialSettings = initialValue;
         return settingsStateMock;
       });
 

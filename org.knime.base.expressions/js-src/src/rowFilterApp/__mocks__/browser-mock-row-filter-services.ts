@@ -24,9 +24,9 @@ export default {
       getRowFilterDiagnostics: () => Promise.resolve([]),
     },
   }),
-  settingsService: createSettingsServiceMock(
-    DEFAULT_ROW_FILTER_INITIAL_SETTINGS,
-  ),
+  settingsService: createSettingsServiceMock({
+    settings: DEFAULT_ROW_FILTER_INITIAL_SETTINGS,
+  }),
   initialData: ROW_FILTER_INITIAL_DATA,
   displayMode: "large",
 } satisfies InitMockData;
