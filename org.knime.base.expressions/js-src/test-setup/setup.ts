@@ -41,6 +41,7 @@ vi.mock("@knime/ui-extension-service", () => ({
               },
             }),
           ),
+          getResourceLocation: vi.fn(() => "someResourceLocation"),
         },
       }),
     ),

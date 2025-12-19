@@ -43,6 +43,7 @@ vi.mock("@knime/ui-extension-service", async (importOriginal) => {
         baseService: {
           getConfig: vi.fn().mockResolvedValue(mocks.config),
           callNodeDataService: vi.fn().mockResolvedValue({}),
+          getResourceLocation: vi.fn(() => mocks.dummyPath),
         },
         data: vi.fn().mockResolvedValue(JSON.stringify(mocks.initialData)),
       }),

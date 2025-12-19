@@ -7,8 +7,13 @@ import {
   UIExtension,
   type UIExtensionAPILayer,
 } from "@knime/ui-extension-renderer/vue";
-import { AlertingService, JsonDataService } from "@knime/ui-extension-service";
+import {
+  AlertingService,
+  JsonDataService,
+  type UIExtensionService,
+} from "@knime/ui-extension-service";
 
+const baseService = ref<UIExtensionService<UIExtensionAPILayer> | null>(null);
 const extensionConfig = ref<ExtensionConfig | null>(null);
 const resourceLocation = ref<string>("");
 const dataAvailable = ref<boolean>(false);
@@ -64,7 +69,10 @@ const apiLayer: UIExtensionAPILayer = {
   registerPushEventService: () => noop,
   callNodeDataService: async () => {},
   updateDataPointSelection: () => Promise.resolve({ result: null }),
-  getResourceLocation: () => Promise.resolve(resourceLocation.value),
+  // we can just forward to the baseService, because we assume that
+  // the backend provided baseUrl (e.g., org.knime.core.ui.dialog, only relevant for desktop)
+  // is same for the parent ui-extension and this nested ui-extension
+  getResourceLocation: (path) => baseService.value!.getResourceLocation(path),
   imageGenerated: noop,
   onApplied: noop,
   onDirtyStateChange: noop,
@@ -82,8 +90,8 @@ const apiLayer: UIExtensionAPILayer = {
 };
 
 const updateExtensionConfig = async (config: ExtensionConfig) => {
-  // @ts-expect-error baseUrl is not part of the type but it exists
-  resourceLocation.value = `${config.resourceInfo.baseUrl}${config.resourceInfo.path.split("/").slice(0, -1).join("/")}/core-ui/TableView.js`;
+  const path = `${config.resourceInfo.path?.split("/").slice(0, -1).join("/")}/core-ui/TableView.js`;
+  resourceLocation.value = await apiLayer.getResourceLocation(path);
 
   extensionConfig.value = await makeExtensionConfig(
     config.nodeId,
@@ -96,9 +104,12 @@ const updateExtensionConfig = async (config: ExtensionConfig) => {
 
 onMounted(async () => {
   const jsonService = await JsonDataService.getInstance();
-  const baseService = (jsonService as any).baseService;
-  const extensionConfigLoaded = await baseService.getConfig();
+  // @ts-expect-error baseService is not API but a property of the service
+  baseService.value = jsonService.baseService;
 
+  const extensionConfigLoaded: ExtensionConfig =
+    // @ts-expect-error baseService is not API but a property of the service
+    await baseService.value.getConfig();
   await updateExtensionConfig(extensionConfigLoaded);
 
   getScriptingService().registerEventHandler(
