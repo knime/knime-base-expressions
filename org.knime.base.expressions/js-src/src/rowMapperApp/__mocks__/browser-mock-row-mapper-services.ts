@@ -33,9 +33,9 @@ export default {
         ),
     },
   }),
-  settingsService: createSettingsServiceMock(
-    DEFAULT_ROW_MAPPER_INITIAL_SETTINGS,
-  ),
+  settingsService: createSettingsServiceMock({
+    settings: DEFAULT_ROW_MAPPER_INITIAL_SETTINGS,
+  }),
   initialData: ROW_MAPPER_INITIAL_DATA,
   displayMode: "large",
 } satisfies InitMockData;

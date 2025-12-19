@@ -52,6 +52,7 @@ vi.mock("@knime/ui-extension-service", () => ({
 initMocked({
   scriptingService: {
     sendToService: vi.fn(),
+    callRpcMethod: vi.fn(),
     getOutputPreviewTableInitialData: vi.fn(() => Promise.resolve(undefined)),
     registerEventHandler: vi.fn(),
     connectToLanguageServer: vi.fn(),
@@ -64,6 +65,7 @@ initMocked({
   },
   settingsService: {
     getSettings: vi.fn(() => Promise.resolve(DEFAULT_INITIAL_SETTINGS)),
+    getSettingsInitialData: vi.fn(),
     registerSettingsGetterForApply: vi.fn(),
     registerSettings: vi.fn(() => vi.fn()),
   },
