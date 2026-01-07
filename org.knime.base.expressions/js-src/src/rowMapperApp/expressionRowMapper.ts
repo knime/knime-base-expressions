@@ -1,5 +1,6 @@
 import { createApp } from "vue";
 
+import { useKdsLegacyMode } from "@knime/kds-components";
 import { init, initMocked } from "@knime/scripting-editor";
 import { LoadingApp } from "@knime/scripting-editor/loading";
 
@@ -7,6 +8,11 @@ import { setupConsola } from "@/common/functions";
 import ExpressionRowMapperApp from "@/rowMapperApp/ExpressionRowMapperApp.vue";
 
 setupConsola();
+
+// NOTE: For development, the legacy mode can be disabled and dark mode can be forced here
+// const { currentMode } = useKdsDarkMode();
+// currentMode.value = "dark"
+useKdsLegacyMode(true);
 
 // Show loading app while initializing
 const loadingApp = createApp(LoadingApp);

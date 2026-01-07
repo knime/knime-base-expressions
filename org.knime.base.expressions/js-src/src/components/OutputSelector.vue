@@ -2,7 +2,7 @@
 import { computed, watch } from "vue";
 
 import { Dropdown, InputField, ValueSwitch } from "@knime/components";
-import { DataType } from "@knime/kds-components";
+import { KdsDataType } from "@knime/kds-components";
 import {
   useReadonlyStore,
   useShouldFocusBePainted,
@@ -130,7 +130,7 @@ const dropdownChoices = computed(() =>
         compact
         ><template #option="{ slotData = {}, selectedValue, isMissing }">
           <div class="with-type">
-            <DataType
+            <KdsDataType
               size="small"
               :icon-name="slotData.typeId ?? fallbackType.id"
               :icon-title="slotData.typeText ?? fallbackType.text"

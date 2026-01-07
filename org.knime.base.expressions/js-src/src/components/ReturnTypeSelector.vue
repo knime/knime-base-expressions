@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue";
 
 import { Dropdown } from "@knime/components";
-import { DataType } from "@knime/kds-components";
+import { KdsDataType } from "@knime/kds-components";
 import { useReadonlyStore } from "@knime/scripting-editor";
 
 import { UNKNOWN_VARIABLE_TYPE } from "@/common/constants";
@@ -89,7 +89,7 @@ const possibleValues = computed(() =>
     compact
     ><template #option="{ slotData = {} }">
       <div class="with-type">
-        <DataType
+        <KdsDataType
           :icon-name="slotData.typeId ?? UNKNOWN_VARIABLE_TYPE.id"
           :icon-title="slotData.typeText ?? UNKNOWN_VARIABLE_TYPE.text"
           size="small"
