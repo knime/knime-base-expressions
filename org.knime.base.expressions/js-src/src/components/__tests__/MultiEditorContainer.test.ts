@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 import { flushPromises, mount } from "@vue/test-utils";
@@ -23,20 +24,18 @@ vi.mock("@vueuse/core", async (importOriginal) => {
 const extractKeysFromWrapper = (vm: MultiEditorContainerExposes) =>
   vm.getOrderedEditorStates().map((state) => state.key);
 
-const doMount = async () => {
+const doMount = async (
+  itemType: "column" | "flow variable" = "column",
+  replaceableItems?: Array<{ id: string; text: string }>,
+) => {
   const wrapper = mount(MultiEditorContainer, {
     props: {
       defaultAppendItem: "defaultAppendItem",
-      itemType: "column",
-      replaceableItemsInInputTable: [
-        {
-          id: "a",
-          text: "a",
-        },
-        {
-          id: "b",
-          text: "b",
-        },
+      itemType,
+      replaceableItemsInInputTable: replaceableItems ?? [
+        { id: "a", text: "a" },
+        { id: "b", text: "b" },
+        { id: "knime_column", text: "knime_column" },
       ],
       settings: [
         {
@@ -652,5 +651,107 @@ describe("MultiEditorContainer", () => {
         expect(restoredSettings).toBe(initialSettings);
       },
     );
+  });
+
+  describe("filtering items starting with 'knime'", () => {
+    it("should allow columns starting with 'knime' when itemType is 'column'", async () => {
+      const { wrapper } = await doMount("column");
+
+      const selectors = wrapper.findAllComponents({ name: "OutputSelector" });
+
+      // Check that knime_column is available in the dropdown
+      const allowedReplacementEntities = selectors[0].props(
+        "allowedReplacementEntities",
+      );
+      expect(allowedReplacementEntities).toContainEqual({
+        id: "knime_column",
+        text: "knime_column",
+      });
+    });
+
+    it("should filter out flow variables starting with 'knime' when itemType is 'flow variable'", async () => {
+      const { wrapper } = await doMount("flow variable", [
+        {
+          id: "knime_reserved",
+          text: "knime_reserved",
+        },
+        {
+          id: "knime.workflow.name",
+          text: "knime.workflow.name",
+        },
+        {
+          id: "regular_variable",
+          text: "regular_variable",
+        },
+      ]);
+
+      const selectors = wrapper.findAllComponents({ name: "OutputSelector" });
+
+      // Check that knime-prefixed variables are filtered out
+      const allowedReplacementEntities = selectors[0].props(
+        "allowedReplacementEntities",
+      );
+      expect(allowedReplacementEntities).not.toContainEqual({
+        id: "knime_reserved",
+        text: "knime_reserved",
+      });
+      expect(allowedReplacementEntities).not.toContainEqual({
+        id: "knime.workflow.name",
+        text: "knime.workflow.name",
+      });
+      expect(allowedReplacementEntities).toContainEqual({
+        id: "regular_variable",
+        text: "regular_variable",
+      });
+    });
+
+    it("should allow columns starting with 'knime' from previous editors when itemType is 'column'", async () => {
+      const wrapper = mount(MultiEditorContainer, {
+        props: {
+          defaultAppendItem: "defaultAppendItem",
+          itemType: "column",
+          replaceableItemsInInputTable: [
+            {
+              id: "existing_column",
+              text: "existing_column",
+            },
+          ],
+          settings: [
+            {
+              initialScript: "initialScript1",
+              initialSelectorState: {
+                create: "knime_new_column",
+                replace: "",
+                outputMode: "APPEND",
+              },
+            },
+            {
+              initialScript: "initialScript2",
+              initialSelectorState: {
+                create: "another_column",
+                replace: "",
+                outputMode: "APPEND",
+              },
+            },
+          ],
+        },
+      });
+
+      await flushPromises();
+
+      const selectors = wrapper.findAllComponents({ name: "OutputSelector" });
+      expect(selectors).toHaveLength(2);
+
+      // The second editor should be able to replace the column created by the first editor
+      const secondEditorAllowedItems = selectors[1].props(
+        "allowedReplacementEntities",
+      );
+      expect(secondEditorAllowedItems).toContainEqual(
+        expect.objectContaining({
+          id: "knime_new_column",
+          text: "knime_new_column",
+        }),
+      );
+    });
   });
 });
