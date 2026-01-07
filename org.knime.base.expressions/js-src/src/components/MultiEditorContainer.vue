@@ -320,8 +320,13 @@ const getAvailableColumnsForReplacement = (
     ...replaceableItemsInInputTableWithAdaptedTypes,
     ...appendedColumnsFromPreviousEditors,
   ]
-    .filter((flowVariableName) => !flowVariableName.text.startsWith("knime"))
-    .filter((flowVariableName) => flowVariableName.text.trim() !== "");
+    .filter((item) => {
+      // Filter out flow variables starting with "knime" (reserved), but allow columns with that prefix
+      const isReservedFlowVariable =
+        props.itemType === "flow variable" && item.text.startsWith("knime");
+      return !isReservedFlowVariable;
+    })
+    .filter((item) => item.text.trim() !== "");
 };
 
 /**

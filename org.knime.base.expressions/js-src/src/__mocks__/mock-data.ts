@@ -86,6 +86,7 @@ export const INPUT_OBJECTS: InputOutputModel[] = [
         type: { displayName: "problem" },
         supported: true,
       },
+      { name: "knime_column", type: { displayName: "float" }, supported: true },
     ],
     multiSelection: false,
     subItemCodeAliasTemplate: `
