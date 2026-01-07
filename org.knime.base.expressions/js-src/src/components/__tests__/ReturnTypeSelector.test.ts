@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 
 import { Dropdown } from "@knime/components";
-import { DataType } from "@knime/kds-components";
+import { KdsDataType } from "@knime/kds-components";
 
 import type { AllowedReturnTypes } from "@/components/ReturnTypeSelector.vue";
 import ReturnTypeSelector from "@/components/ReturnTypeSelector.vue";
@@ -100,7 +100,7 @@ describe("ReturnTypeSelector", () => {
 
   it("renders the data type component", () => {
     const wrapper = doMount("String", stringReturnType);
-    const dataType = wrapper.findComponent(DataType);
+    const dataType = wrapper.findComponent(KdsDataType);
     expect(dataType.exists()).toBe(true);
     expect(dataType.props()).toStrictEqual(
       expect.objectContaining({

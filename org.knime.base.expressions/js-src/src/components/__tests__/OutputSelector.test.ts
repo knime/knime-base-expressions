@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 
 import { Dropdown, InputField, ValueSwitch } from "@knime/components";
-import { DataType } from "@knime/kds-components";
+import { KdsDataType } from "@knime/kds-components";
 
 import OutputSelector, { type SelectorState } from "../OutputSelector.vue";
 
@@ -70,7 +70,7 @@ describe("OutputSelector", () => {
     expect(dropdown.props("modelValue")).toBe("c");
   });
 
-  it("shows the DataType Component in REPLACE mode", async () => {
+  it("shows the KdsDataType Component in REPLACE mode", async () => {
     const wrapper = doMount({
       outputMode: "REPLACE_EXISTING",
       create: "a1",
@@ -80,7 +80,8 @@ describe("OutputSelector", () => {
     const columnChoices = wrapper
       .find("#dropdown-box-to-select-entity")
       .find("ul");
-    const columnDataTypeComponents = columnChoices.findAllComponents(DataType);
+    const columnDataTypeComponents =
+      columnChoices.findAllComponents(KdsDataType);
     expect(columnDataTypeComponents).toHaveLength(4);
     expect(columnDataTypeComponents.at(0)?.props()).toStrictEqual(
       expect.objectContaining({ iconName: "a", iconTitle: "A" }),
@@ -97,7 +98,7 @@ describe("OutputSelector", () => {
       .find("#dropdown-box-to-select-entity")
       .find("ul");
     const variableDataTypeComponents =
-      variableChoices.findAllComponents(DataType);
+      variableChoices.findAllComponents(KdsDataType);
     expect(variableDataTypeComponents).toHaveLength(4);
     expect(variableDataTypeComponents.at(0)?.props()).toStrictEqual(
       expect.objectContaining({ iconName: "a", iconTitle: "A" }),
