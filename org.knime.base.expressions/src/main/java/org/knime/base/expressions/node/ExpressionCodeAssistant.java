@@ -50,9 +50,9 @@ package org.knime.base.expressions.node;
 
 import org.eclipse.core.runtime.Platform;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest;
+import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.CodeRequestBody;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.Inputs;
 import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.Outputs;
-import org.knime.core.webui.node.dialog.scripting.CodeGenerationRequest.RequestBody;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModel;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModelNameAndTypeUtils;
 import org.knime.core.webui.node.dialog.scripting.InputOutputModelNameAndTypeUtils.NameAndType;
@@ -119,7 +119,7 @@ public final class ExpressionCodeAssistant {
         var flowVariables = InputOutputModelNameAndTypeUtils.getSupportedFlowVariables(inputModels);
         return new CodeGenerationRequest( //
             "/code_generation/" + type.m_endpoint, //
-            new RequestBody(//
+            new CodeRequestBody(//
                 oldCode, //
                 userPrompt, //
                 new Inputs(inputPorts, 0, flowVariables), //
