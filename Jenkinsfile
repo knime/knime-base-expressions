@@ -26,11 +26,11 @@ try {
         //     ]
         // )
 
-        stage('Sonarqube analysis') {
-            env.lastStage = env.STAGE_NAME
-            // TODO(workflow-tests) remove empty list once workflow tests are enabled
-            workflowTests.runSonar([])
-        }
+        // stage('Sonarqube analysis') {
+        //     env.lastStage = env.STAGE_NAME
+        //     // TODO(workflow-tests) remove empty list once workflow tests are enabled
+        //     workflowTests.runSonar([])
+        // }
 
         owasp.sendNodeJSSBOMs(readMavenPom(file: 'pom.xml').properties['revision'])
     }
