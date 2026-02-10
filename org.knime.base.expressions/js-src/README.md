@@ -59,6 +59,10 @@ npm run build
 npm run test:unit
 ```
 
+Note: noisy Vue warnings are suppressed if you set the environment flag `SUPPRESS_WARNINGS=true`,
+and they are also suppressed when running with `CI=true` which is set by default in most pipeline
+environments.
+
 ### Lint with [ESLint](https://eslint.org/)
 
 ```sh

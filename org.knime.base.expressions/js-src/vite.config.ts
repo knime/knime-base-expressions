@@ -19,6 +19,10 @@ const monacoEditorPluginDefault = (monacoEditorPlugin as any).default as (
   options: IMonacoEditorOpts,
 ) => any;
 
+const warningPrefixesToSuppress = ["[Vue warn]", "<Suspense>"];
+const suppressWarnings =
+  process.env.CI === "true" || process.env.SUPPRESS_WARNINGS === "true";
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -81,6 +85,15 @@ export default defineConfig({
         "**/.{eslint,prettier,stylelint}rc.{js,cjs,yml}",
       ],
       reporter: ["html", "text", "lcov"],
+    },
+    // Suppress noisy warnings in CI/pipeline environments
+    //   Automatically enabled when CI=true (set by most CI systems)
+    //   Can also be manually enabled with: SUPPRESS_WARNINGS=true pnpm run test:integration
+    onConsoleLog: (l) => {
+      return !(
+        suppressWarnings &&
+        warningPrefixesToSuppress.some((p) => l.startsWith(p))
+      );
     },
   },
 });
