@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ArrowIcon from "@knime/styles/img/icons/arrow-right.svg";
+import { KdsButton } from "@knime/kds-components";
 
 export interface IconRendererProps {
   action: () => void;
@@ -9,27 +9,29 @@ const props = defineProps<IconRendererProps>();
 </script>
 
 <template>
-  <span class="input-output-item-icon-container" @click="props.action">
-    <ArrowIcon class="input-output-item-icon" />
-  </span>
+  <KdsButton
+    aria-label="Replaced column"
+    variant="transparent"
+    size="xsmall"
+    leading-icon="replace"
+    class="replaced-button"
+    @click="props.action"
+  />
 </template>
 
 <style scoped lang="postcss">
-.input-output-item-icon-container {
-  display: inline-flex;
-  padding: var(--space-4);
-  cursor: pointer;
+.replaced-button {
+  gap: var(--kds-spacing-container-0-12x);
+  width: var(--kds-dimension-component-width-1-25x);
+  height: var(--kds-dimension-component-height-1-25x);
+  padding-right: var(--kds-spacing-container-none);
+  padding-left: var(--kds-spacing-container-none);
+  background-color: var(--kds-color-background-neutral-initial);
+  border: var(--kds-border-action-transparent);
+  border-radius: var(--kds-border-radius-container-0-25x);
 
   &:hover {
-    background-color: var(--knime-stone-light);
-    border-radius: 50%;
+    background-color: var(--kds-color-background-neutral-hover);
   }
-}
-
-.input-output-item-icon {
-  width: 12px;
-  height: 12px;
-  stroke: var(--knime-masala);
-  stroke-width: 3px;
 }
 </style>
