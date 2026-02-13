@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { Button, Tooltip } from "@knime/components";
-import PlayIcon from "@knime/styles/img/icons/play.svg";
+import { Tooltip } from "@knime/components";
+import { KdsButton } from "@knime/kds-components";
 
 interface PropType {
   runButtonDisabledErrorReason: string | null;
@@ -22,22 +22,17 @@ const buttonText = computed(() => (props.showButtonText ? "Evaluate" : ""));
 
 <template>
   <Tooltip class="error-tooltip" :text="runButtonDisabledErrorReason ?? ''">
-    <Button
+    <KdsButton
+      :label="buttonText"
+      leading-icon="execute"
       primary
       compact
       :disabled="runButtonDisabledErrorReason !== null"
+      :class="{
+        'hide-button-text': !showButtonText,
+      }"
       @click="handleRunExpressions()"
-    >
-      <div
-        class="run-button"
-        :class="{
-          'hide-button-text': !showButtonText,
-        }"
-      >
-        <PlayIcon />
-      </div>
-      {{ buttonText }}
-    </Button>
+    />
   </Tooltip>
 </template>
 
@@ -53,18 +48,5 @@ const buttonText = computed(() => (props.showButtonText ? "Evaluate" : ""));
 /* Needed to be on top of the splitpane splitters */
 .error-tooltip :deep(.text) {
   z-index: 1;
-}
-
-.more-rows-submenu {
-  background-color: var(--knime-yellow);
-
-  &:focus-within,
-  &:hover {
-    background-color: var(--knime-masala);
-
-    & :deep(.submenu-toggle svg) {
-      stroke: var(--knime-white);
-    }
-  }
 }
 </style>
