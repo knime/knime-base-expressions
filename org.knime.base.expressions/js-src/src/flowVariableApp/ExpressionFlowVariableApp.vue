@@ -251,6 +251,10 @@ getFlowVariableSettingsService().registerSettingsGetterForApply(
           slotName: 'bottomPaneTabSlot:outputPreview',
         },
       ]"
+      :max-pane-sizes="{
+        // TODO(KDS-507) update the max pane size
+        right: 800,
+      }"
     >
       <!-- Extra content in the bottom tab pane -->
       <template #bottomPaneTabSlot:outputPreview="{ grabFocus }">
