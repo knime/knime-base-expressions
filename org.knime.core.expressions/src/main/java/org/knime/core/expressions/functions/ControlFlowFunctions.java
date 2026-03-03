@@ -399,7 +399,9 @@ public final class ControlFlowFunctions {
         }
 
         if (!expressions.stream().allMatch(isCompatibleTo(expressions.get(0)))) {
-            return ReturnResult.failure("All branch expressions must have the same type.");
+            return ReturnResult.failure("All potential output values must be of the same data type. "
+                + "For example, use functions like string(), parse_bool(), parse_float(), "
+                + "or parse_int() to ensure types are identical.");
         }
 
         ValueType commonReturnBaseType =
