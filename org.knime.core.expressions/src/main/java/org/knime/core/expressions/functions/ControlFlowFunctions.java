@@ -399,9 +399,12 @@ public final class ControlFlowFunctions {
         }
 
         if (!expressions.stream().allMatch(isCompatibleTo(expressions.get(0)))) {
-            return ReturnResult.failure("All potential output values must be of the same data type. "
-                + "For example, use functions like string(), parse_bool(), parse_float(), "
-                + "or parse_int() to ensure types are identical.");
+            return expressions.stream().filter(type -> !isCompatibleTo(expressions.get(0)).test(type)).findFirst()
+                .map(invalidType -> ReturnResult
+                    .<ValueType> failure("All potential output values must be of the same data type. "
+                        + "The first potential output value is of type " + expressions.get(0).name() + " but value "
+                        + (expressions.indexOf(invalidType) + 1) + " is of type " + invalidType.name() + "."))
+                .orElse(ReturnResult.<ValueType> failure("All potential output values must be of the same data type."));
         }
 
         ValueType commonReturnBaseType =
