@@ -1,15 +1,38 @@
-name: CI
+name: JS CI
 
 on:
   pull_request:
+    paths:
+      - "org.knime.base.expressions/js-src/**"
+      - ".github/workflows/ci.yml"
   push:
     branches:
       - master
       - "releases/**"
 
 jobs:
-  lint-test-build:
-    name: Lint, tests and build
+  install:
+    name: Install dependencies
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.base.expressions/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.base.expressions/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.base.expressions/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+
+  type-check:
+    name: Type check
+    needs: install
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -28,11 +51,91 @@ jobs:
         run: npm ci
       - name: Type check
         run: npm run type-check
+
+  lint:
+    name: Lint and format check
+    needs: install
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.base.expressions/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.base.expressions/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.base.expressions/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
       - name: Lint and format check
         run: npm run ci:lint-format
+
+  unit-tests:
+    name: Unit tests
+    needs: install
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.base.expressions/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.base.expressions/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.base.expressions/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
       - name: Run coverage
         run: npm run coverage
+
+  audit:
+    name: Audit
+    needs: install
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.base.expressions/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.base.expressions/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.base.expressions/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
       - name: Audit
         run: npm run audit
+
+  js-build:
+    name: JS Build
+    needs: install
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: org.knime.base.expressions/js-src
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: org.knime.base.expressions/js-src/package.json
+          cache: npm
+          cache-dependency-path: org.knime.base.expressions/js-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci
       - name: Build
         run: npm run build
